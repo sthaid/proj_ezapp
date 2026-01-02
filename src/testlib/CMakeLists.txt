@@ -15,5 +15,5 @@ target_include_directories(testlib PUBLIC include)
 
 install(FILES include/testlib.h DESTINATION include/testlib)
 
-install(TARGETS testlib ARCHIVE DESTINATION lib/static)
+install(TARGETS testlib ARCHIVE DESTINATION lib)
 

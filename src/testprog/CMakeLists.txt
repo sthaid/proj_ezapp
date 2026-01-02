@@ -5,7 +5,7 @@ set(INCLUDE_PATH "")
 cmake_path(APPEND INCLUDE_PATH "${CMAKE_PREFIX_PATH}" include)
 
 set(LIB_PATH "")
-cmake_path(APPEND LIB_PATH "${CMAKE_PREFIX_PATH}" lib/static/libtestlib.a)
+cmake_path(APPEND LIB_PATH "${CMAKE_PREFIX_PATH}" lib/libtestlib.a)
 
 include_directories(${INCLUDE_PATH})
 
