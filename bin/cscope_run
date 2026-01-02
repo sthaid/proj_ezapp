@@ -1,0 +1,12 @@
+#!/bin/bash
+
+# chdir to top of repo
+top=$(git rev-parse --show-toplevel)
+cd $top
+
+# run cscope from topdir
+cscope
+
+
+
+

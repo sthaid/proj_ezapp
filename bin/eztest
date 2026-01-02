@@ -1,0 +1,73 @@
+#!/bin/bash
+
+# default is to test app using picoc
+CMD=$1
+if [ "$CMD" = "" ]; then
+    CMD=picoc
+fi
+
+# get CMD and validate
+if [ "$CMD" != build -a "$CMD" != linux -a "$CMD" != picoc ]; then
+    echo "ERROR: expected: build, linux, or picoc"
+    echo "ERROR: default is picoc"
+    exit 1
+fi
+
+# verify parent directory is 'apps' or 'svcs'
+PARENT_DIR=$(basename $(dirname $PWD))
+if [ "$PARENT_DIR" != apps -a "$PARENT_DIR" != svcs ]; then
+    echo "ERROR: parent_dir must be apps or svcs"
+    exit 1
+fi
+
+# set variables
+APP_DIR=$(basename $(pwd))
+SRCS_COMMON="\
+       ../src/sdlx_misc.c \
+       ../src/sdlx_video.c \
+       ../src/sdlx_audio.c \
+       ../src/sdlx_sensor.c \
+       ../src/sdlx_event.c \
+       ../src/svcs_stubs.c \
+       ../src/utils.c \
+       ../src/utils_android.cpp \
+       ../src/logging.c \
+       ../cJSON/cJSON.c \
+       ../lodepng/lodepng.c"
+
+# xxx -Wno-format-truncation ?
+APP_NAME=$APP_DIR
+CFLAGS="-Wall -Werror -Wno-unused-result -Wno-format-truncation -g -I. -I../src -fcommon $(pkg-config sdl3 --cflags)"
+
+# build and run is performed from the 'files' dir
+cd ../..
+
+# get list of src files, relative to the 'files' dir
+SRCS=$(echo $PARENT_DIR/$APP_DIR/*.c)
+
+# debug
+#echo "PARENT_DIR  = $PARENT_DIR"
+#echo "APP_DIR     = $APP_DIR"
+#echo "SRCS        = $SRCS"
+#echo "SRCS_COMMON = $SRCS_COMMON"
+#echo "CFLAGS      = $CFLAGS"
+
+# perform command
+if [ "$CMD" = build ]; then
+    set -x
+    gcc -DLINUX -o /tmp/$APP_NAME $CFLAGS $SRCS $SRCS_COMMON \
+        -I ../linux/sdl_build/local/include \
+        -L ../linux/sdl_build/local/lib -lSDL3 -lSDL3_ttf -lSDL3_mixer -lm || exit 1
+    set +x
+elif [ "$CMD" = linux ]; then
+    set -x
+    gcc -DLINUX -o /tmp/$APP_NAME $CFLAGS $SRCS $SRCS_COMMON \
+        -I ../linux/sdl_build/local/include \
+        -L ../linux/sdl_build/local/lib -lSDL3 -lSDL3_ttf -lSDL3_mixer -lm || exit 1
+    set +x
+    LD_LIBRARY_PATH=../linux/sdl_build/local/lib \
+    exec -a $APP_NAME /tmp/$APP_NAME $PARENT_DIR/$APP_DIR
+elif [ "$CMD" = picoc ]; then
+    LD_LIBRARY_PATH=../linux/sdl_build/local/lib ../picoc/picoc -n $APP_NAME $SRCS - $PARENT_DIR/$APP_DIR
+fi
+
