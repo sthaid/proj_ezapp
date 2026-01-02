@@ -1,0 +1,22 @@
+#!/bin/bash
+
+top=$(git rev-parse --show-toplevel)
+if [ $? -ne 0 ]; then
+    echo "ERROR failed to get top repo directory"
+    exit 1
+fi
+
+read -p "Remove and clone src/SDL directories (y/n)? " yn
+if [ "$yn" != y ]; then
+    echo ABORT
+    exit 1
+fi
+
+cd $top/src
+
+rm -rf SDL SDL_ttf SDL_mixer
+
+git clone https://github.com/libsdl-org/SDL
+git clone https://github.com/libsdl-org/SDL_ttf
+git clone https://github.com/libsdl-org/SDL_mixer
+
