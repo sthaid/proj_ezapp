@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.16)
 
-set(CMAKE_C_FLAGS "-DHAVE_CONFIG_H -O2")
+project(mp3lame)
 
-project(mp3lame VERSION 1.0 DESCRIPTION "port of lame mp3 encoder")
+set(CMAKE_C_FLAGS "-DHAVE_CONFIG_H -O2 -Wall -g")
 
 set(LIB_SRCS
     libmp3lame/bitstream.c
