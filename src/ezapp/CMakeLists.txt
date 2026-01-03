@@ -19,6 +19,8 @@ set(LIB_CJSON "")
 cmake_path(APPEND LIB_CJSON "${CMAKE_PREFIX_PATH}" lib/libcJSON.a)
 set(LIB_PICOC "")
 cmake_path(APPEND LIB_PICOC "${CMAKE_PREFIX_PATH}" lib/libpicoc.a)
+set(LIB_LODEPNG "")
+cmake_path(APPEND LIB_LODEPNG "${CMAKE_PREFIX_PATH}" lib/liblodepng.a)
 
 include_directories(${INCLUDE_PATH} .)
 
@@ -37,6 +39,6 @@ add_executable(ezapp
 
 target_link_libraries(ezapp PRIVATE 
     ${LIB_SDL} ${LIB_SDL_TTF} ${LIB_SDL_MIXER} 
-    ${LIB_PICOC} ${LIB_MP3LAME} ${LIB_CJSON} 
+    ${LIB_PICOC} ${LIB_MP3LAME} ${LIB_CJSON} ${LIB_LODEPNG}
     m)
 

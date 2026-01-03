@@ -2,7 +2,6 @@
 
 #include <svcs.h>
 #include <logging.h>
-//#include <utils.h>
 
 //
 // routines called by apps
