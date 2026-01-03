@@ -23,14 +23,14 @@
 # error ***** A platform must be explicitly defined! *****
 #endif
 
-
 /* configurable options */
 /* select your host type (or do it in the Makefile):
  #define UNIX_HOST
  #define DEBUGGER
  #define USE_READLINE (defined by default for UNIX_HOST)
  */
-#define USE_READLINE
+// EZAPP remove USE_READLINE, not supported on Android NDK
+//#define USE_READLINE
 
 #if defined(WIN32) /*(predefined on MSVC)*/
 #undef USE_READLINE

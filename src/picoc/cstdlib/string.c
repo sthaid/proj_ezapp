@@ -49,6 +49,8 @@ void StringStrncat(struct ParseState *Parser, struct Value *ReturnValue,
 }
 
 #ifndef WIN32
+// EXAPP remove because not supported in Android NDK
+#if 0
 void StringIndex(struct ParseState *Parser, struct Value *ReturnValue,
     struct Value **Param, int NumArgs)
 {
@@ -62,6 +64,7 @@ void StringRindex(struct ParseState *Parser, struct Value *ReturnValue,
     ReturnValue->Val->Pointer = rindex(Param[0]->Val->Pointer,
         Param[1]->Val->Integer);
 }
+#endif
 #endif
 
 void StringStrlen(struct ParseState *Parser, struct Value *ReturnValue,
@@ -193,8 +196,8 @@ void StringStrtok_r(struct ParseState *Parser, struct Value *ReturnValue,
 struct LibraryFunction StringFunctions[] =
 {
 #ifndef WIN32
-	{StringIndex,   "char *index(char *,int);"},
-    {StringRindex,  "char *rindex(char *,int);"},
+/*    {StringIndex,   "char *index(char *,int);"}, */
+/*    {StringRindex,  "char *rindex(char *,int);"}, */
 #endif
     {StringMemcpy,  "void *memcpy(void *,void *,int);"},
     {StringMemmove, "void *memmove(void *,void *,int);"},
