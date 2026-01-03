@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(cJSON VERSION 1.0 DESCRIPTION "cJSON port")
+project(cJSON)
+
+set(CMAKE_C_FLAGS "-O2 -Wall -Werror -g")
 
 set(LIB_SRCS
     cJSON.c
