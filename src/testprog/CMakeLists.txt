@@ -1,5 +1,8 @@
 cmake_minimum_required(VERSION 3.16)
+
 project(testprog)
+
+set(CMAKE_C_FLAGS "-O2 -Wall -Werror -g")
 
 set(INCLUDE_PATH "")
 cmake_path(APPEND INCLUDE_PATH "${CMAKE_PREFIX_PATH}" include)

@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(testlib VERSION 1.0 DESCRIPTION "A simple example library")
+project(testlib)
+
+set(CMAKE_C_FLAGS "-O2 -Wall -Werror -g")
 
 set(LIB_SRCS
     src/testlib.c
