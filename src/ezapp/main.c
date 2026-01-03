@@ -9,6 +9,7 @@
 #ifdef ANDROID
 #include <SDL3/SDL.h>
 #endif
+#include <picoc/picoc_ezapp.h>
 
 #include "version.h"
 
@@ -74,12 +75,6 @@ static pthread_t   server_tid;
 
 static void processing(void);
 static int devel_mode_server_thread(void *cx);
-
-//
-// routines to launch a C program using picoc interpreter
-//
-
-//xxxxxxx extern int picoc_ezapp(char *args);
 
 // -----------------  XXXXXXXXXXXXXX  --------------------------------
 
@@ -464,7 +459,7 @@ int run(char *name, bool is_svc)
 
     // run the app using the picoc c language interpreter
     INFO("%s: starting, args = %s\n", name, picoc_args);
-    //xxxxxxx rc = picoc_ezapp(picoc_args);
+    rc = picoc_ezapp(picoc_args);
     INFO("%s: completed, rc = %d\n", name, rc);
 
     // return completion status

@@ -719,9 +719,9 @@ json_value_t *util_json_get_value(void *json_item, ...)
 
 // ----------------- PNG  --------------------
 
-#if 0
 int util_read_png_file(char *dir, char *filename, unsigned char **pixels, int *w, int *h)
 {
+#if 0
     char path[200];
     int rc;
 
@@ -733,12 +733,14 @@ int util_read_png_file(char *dir, char *filename, unsigned char **pixels, int *w
         ERROR("lodepng_decode32_file %s failed, rc=%d\n", path, rc);
         return -1;
     }
+#endif
 
     return 0;
 }
 
 int util_write_png_file(char *dir, char *filename, unsigned char *pixels, int w, int h)
 {
+#if 0
     char path[200];
     int rc;
 
@@ -750,7 +752,7 @@ int util_write_png_file(char *dir, char *filename, unsigned char *pixels, int w,
         ERROR("lodepng_encode32_file %s w=%d h=%d failed, rc=%d\n", path, w, h, rc);
         return -1;
     }
+#endif
 
     return 0;
 }
-#endif
