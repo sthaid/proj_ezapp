@@ -10,3 +10,7 @@ files/svcs/Location/loc_hist
 params
 
 bin/ezsh
+
+cscope.files
+cscope.out
+tags

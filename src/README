@@ -33,3 +33,13 @@ Date:   Wed Jan 17 08:33:58 2018 -0600
     Merge pull request #21 from jpoirier/develop
     Develop
 
+================
+lodepng
+================
+
+https://github.com/lvandeve/lodepng
+commit c572511174ce6864574acda70cb0cbe9ec39e23b
+Author: Lode <lvandeve@gmail.com>
+Date:   Fri Jan 2 13:51:19 2026 +0100
+    fix double-frees with clearing and setting itext, iccp and other chunks
+

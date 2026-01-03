@@ -1,20 +1,6 @@
 #!/bin/bash
 
-# chdir to top of repo
-top=$(git rev-parse --show-toplevel)
-cd $top
-
-# construct cscope.files 
-find . \( -path "./android" -o -path "./cJSON" -o -path "./picoc" -o -path "./lodepng" \) \
-    -prune -o -name "*.[ch]" -print > cscope.files
-sed -i '/save/d' cscope.files
-
-# create cscope.out database
+find . \( -name "*.[ch]" -o -name "*.cpp" \) > cscope.files
 cscope -b -i cscope.files
-
-# create tags database
 ctags -L cscope.files
-
-
-
 
