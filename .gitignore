@@ -1,2 +1,12 @@
 linux/build
 linux/local
+
+src/SDL
+src/SDL_mixer
+src/SDL_ttf
+src/ezapp/version.h
+
+files/svcs/Location/loc_hist
+params
+
+bin/ezsh

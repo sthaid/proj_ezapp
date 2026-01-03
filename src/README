@@ -20,3 +20,16 @@ Author: zlargon <zlargon@icloud.com>
 Date:   Sat Jan 28 21:11:22 2017 +0800
     3.99.5
 
+================
+pcioc 
+================
+
+https://github.com/jpoirier/picoc
+
+commit a97d94fa3d4d35c6b78b7de69faac7643e34de22
+Merge: bb3c5ef f84bf50
+Author: Joseph Poirier <jdpoirier@gmail.com>
+Date:   Wed Jan 17 08:33:58 2018 -0600
+    Merge pull request #21 from jpoirier/develop
+    Develop
+
