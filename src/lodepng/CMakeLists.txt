@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 
+#message(FATAL_ERROR "${CMAKE_CURRENT_SOURCE_DIR}")
+
 project(lodepng)
 
 set(CMAKE_C_FLAGS "-O2 -Wall -Werror -g")
@@ -7,15 +9,16 @@ set(CMAKE_C_FLAGS "-O2 -Wall -Werror -g")
 set(LIB_SRCS
     lodepng.c
 )
+
 set(LIB_HEADERS
-    lodepng.h
+    include/lodepng.h
 )
 
 add_library(lodepng STATIC ${LIB_SRCS} ${LIB_HEADERS})
 
 target_include_directories(lodepng PUBLIC include)
 
-install(FILES lodepng.h DESTINATION include/lodepng)
+install(FILES include/lodepng.h DESTINATION include)
 
 install(TARGETS lodepng ARCHIVE DESTINATION lib)
 
