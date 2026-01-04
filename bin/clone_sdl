@@ -6,17 +6,30 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+cd $top/src
+echo "Current dir: $PWD"
+
 read -p "Remove and clone src/SDL directories (y/n)? " yn
 if [ "$yn" != y ]; then
     echo ABORT
     exit 1
 fi
 
-cd $top/src
-
+# remove existing clones
 rm -rf SDL SDL_ttf SDL_mixer
 
+# clone repos
 git clone https://github.com/libsdl-org/SDL
 git clone https://github.com/libsdl-org/SDL_ttf
 git clone https://github.com/libsdl-org/SDL_mixer
 
+# checkout branches
+# note: SDL_ttf and SDL_mixer currently don't have recent release tags
+cd $top/src/SDL; git checkout -q release-3.4.0
+
+# download external repos
+cd $top/src/SDL_ttf/external;   ./download.sh
+cd $top/src/SDL_mixer/external; ./download.sh
+
+echo 
+echo DONE
