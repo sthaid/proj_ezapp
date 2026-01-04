@@ -9,14 +9,14 @@ set(LIB_SRCS
 )
 
 set(LIB_HEADERS
-    cJSON.h
+    include/cJSON.h
 )
 
 add_library(cJSON STATIC ${LIB_SRCS} ${LIB_HEADERS})
 
-target_include_directories(cJSON PUBLIC .)
+target_include_directories(cJSON PUBLIC include)
 
-install(FILES ./cJSON.h DESTINATION include/cJSON)
+install(FILES include/cJSON.h DESTINATION include)
 
 install(TARGETS cJSON ARCHIVE DESTINATION lib)
 
