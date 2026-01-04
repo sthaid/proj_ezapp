@@ -4,7 +4,8 @@ include $(CLEAR_VARS)
 
 LOCAL_MODULE := ezapp_lib
 
-LOCAL_C_INCLUDES += $(LOCAL_PATH)/../SDL/include \
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/include \
+                    $(LOCAL_PATH)/../SDL/include \
                     $(LOCAL_PATH)/../SDL_mixer/include \
                     $(LOCAL_PATH)/../SDL_ttf/include \
                     $(LOCAL_PATH)/../mp3lame/include \
@@ -25,8 +26,6 @@ LOCAL_SRC_FILES := \
     run.c
 
 LOCAL_CFLAGS := -O2
-
-LOCAL_C_INCLUDES += $(LOCAL_PATH)/include
 
 LOCAL_EXPORT_C_INCLUDES += $(LOCAL_PATH)/include
 

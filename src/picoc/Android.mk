@@ -31,7 +31,8 @@ LOCAL_SRC_FILES := \
 
 LOCAL_CFLAGS := -DUNIX_HOST -O2
 
-LOCAL_C_INCLUDES += $(LOCAL_PATH)/include
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/include \
+                    $(LOCAL_PATH)/../ezapp_lib/include
 
 LOCAL_EXPORT_C_INCLUDES += $(LOCAL_PATH)/include
 

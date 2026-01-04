@@ -22,6 +22,7 @@ set(LIB_HEADERS
     include/svcs.h
     include/utils.h
     include/run.h
+    include/logging.h
 )
 
 set(INCLUDE_PATH "")
@@ -31,7 +32,7 @@ include_directories(${INCLUDE_PATH} . ./include)
 
 add_library(ezapp_lib STATIC ${LIB_SRCS} ${LIB_HEADERS})
 
-install(FILES include/sdlx.h include/svcs.h include/utils.h include/run.h
+install(FILES include/sdlx.h include/svcs.h include/utils.h include/run.h include/logging.h
         DESTINATION include)
 
 install(TARGETS ezapp_lib ARCHIVE DESTINATION lib)
