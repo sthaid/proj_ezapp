@@ -63,6 +63,7 @@ ln -s $REPO_TOP/src/lodepng .
 ln -s $REPO_TOP/src/picoc .
 ln -s $REPO_TOP/src/SDL_mixer .
 ln -s $REPO_TOP/src/SDL_ttf .
+ln -s $REPO_TOP/src/ezapp_lib .
 cd $BUILD_DIR/app/jni/src
 ln -s $REPO_TOP/src/ezapp/* .
 cd $ANDROID_TOP
