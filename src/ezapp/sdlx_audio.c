@@ -906,7 +906,7 @@ error:
 // xxx add util_concat
 
 // includes
-#include "lame/lame.h"
+#include <lame.h>
 
 // variables
 char               playbackcapture_mp3_filename[200];

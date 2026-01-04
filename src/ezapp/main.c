@@ -9,7 +9,7 @@
 #ifdef ANDROID
 #include <SDL3/SDL.h>
 #endif
-#include <picoc/picoc_ezapp.h>
+#include <picoc_ezapp.h>
 
 #include "version.h"
 

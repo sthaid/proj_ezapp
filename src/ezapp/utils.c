@@ -3,8 +3,8 @@
 #include <utils.h>
 #include <logging.h>
 
-#include <cJSON/cJSON.h>
-#include <lodepng/lodepng.h>
+#include <cJSON.h>
+#include <lodepng.h>
 
 #define PAGE_SIZE2 (getpagesize())
 
