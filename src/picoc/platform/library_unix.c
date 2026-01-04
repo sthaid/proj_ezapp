@@ -1,7 +1,7 @@
 #include "../interpreter.h"
-#include <sdlx.h>
-#include <utils.h>
-#include <svcs.h>
+#include "../../ezapp/sdlx.h"
+#include "../../ezapp/utils.h"
+#include "../../ezapp/svcs.h"
 
 struct StdVararg
 {
