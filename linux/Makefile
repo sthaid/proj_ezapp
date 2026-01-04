@@ -7,15 +7,15 @@ ezapp:
 	cd build/$@; cmake ../../../src/$@ -DCMAKE_PREFIX_PATH=$(CMAKE_PREFIX_PATH)
 	cd build/$@; cmake --build . # --verbose
 
-SDL SDL_ttf SDL_mixer picoc lodepng cJSON mp3lame ezapp_lib:
+SDL SDL_ttf SDL_mixer lodepng cJSON mp3lame ezapp_lib picoc:
 	mkdir -p build/$@
 	cd build/$@; cmake  ../../../src/$@ -DCMAKE_INSTALL_PREFIX=$(CMAKE_INSTALL_PREFIX)
 	cd build/$@; cmake --build . # --verbose
 	cd build/$@; cmake --install .
 
-all: SDL SDL_ttf SDL_mixer picoc lodepng cJSON mp3lame ezapp_lib ezapp
+all: SDL SDL_ttf SDL_mixer lodepng cJSON mp3lame ezapp_lib picoc ezapp
 
-mini: picoc lodepng cJSON mp3lame ezapp_lib ezapp
+mini: lodepng cJSON mp3lame ezapp_lib picoc ezapp
 
 run: ezapp
 	cd ../files; ../linux/build/ezapp/ezapp
@@ -23,6 +23,6 @@ run: ezapp
 clobber:
 	rm -rf build local
 
-.PHONY: SDL SDL_ttf SDL_mixer picoc lodepng cJSON mp3lame ezapp_lib 
+.PHONY: SDL SDL_ttf SDL_mixer lodepng cJSON mp3lame ezapp_lib picoc
 .PHONY: ezapp run all mini clean
 

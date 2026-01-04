@@ -2,7 +2,7 @@
 #include <logging.h>
 #include <run.h>
 
-#include <picoc_ezapp.h>
+extern int picoc_ezapp(char *args);
 
 int run(char *name, bool is_svc)
 {

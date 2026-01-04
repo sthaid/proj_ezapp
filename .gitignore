@@ -11,6 +11,9 @@ android/assets
 android/setup_files/orig
 
 files/svcs/Location/loc_hist
+files/apps/Test/test5.png
+files/apps/Weather/*.json
+files/apps/Weather/icon
 params
 
 bin/ezsh
@@ -18,5 +21,6 @@ bin/ezsh
 cscope.files
 cscope.out
 tags
+
 
 
