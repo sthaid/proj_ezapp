@@ -1,7 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
 
-#message(FATAL_ERROR "${CMAKE_CURRENT_SOURCE_DIR}")
-
 project(lodepng)
 
 set(CMAKE_C_FLAGS "-O2 -Wall -Werror -g")

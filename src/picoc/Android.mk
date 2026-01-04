@@ -4,8 +4,6 @@ include $(CLEAR_VARS)
 
 LOCAL_MODULE := picoc
 
-LOCAL_CFLAGS := -DUNIX_HOST
-
 LOCAL_SRC_FILES := \
     clibrary.c \
     debug.c \
@@ -30,6 +28,8 @@ LOCAL_SRC_FILES := \
     cstdlib/unistd.c \
     platform/library_unix.c \
     platform/platform_unix.c
+
+LOCAL_CFLAGS := -DUNIX_HOST -O2
 
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/include
 

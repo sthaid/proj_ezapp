@@ -1,10 +1,14 @@
-linux/build
-linux/local
-
 src/SDL
 src/SDL_mixer
 src/SDL_ttf
 src/ezapp/version.h
+
+linux/build
+linux/local
+
+android/SDL
+android/assets
+android/setup_files/orig
 
 files/svcs/Location/loc_hist
 params
@@ -14,3 +18,5 @@ bin/ezsh
 cscope.files
 cscope.out
 tags
+
+

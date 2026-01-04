@@ -4,8 +4,6 @@ include $(CLEAR_VARS)
 
 LOCAL_MODULE := libmp3lame
 
-LOCAL_CFLAGS := -DHAVE_CONFIG_H
-
 LOCAL_SRC_FILES :=  \
     bitstream.c \
     encoder.c \
@@ -27,6 +25,8 @@ LOCAL_SRC_FILES :=  \
     vbrquantize.c \
     VbrTag.c \
     version.c
+
+LOCAL_CFLAGS := -DHAVE_CONFIG_H -O2
 
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/include
 
