@@ -1,0 +1,98 @@
+#!/bin/bash
+
+update_build_file()
+{
+  src=$1
+  dest=$2
+
+  echo "- updating $src to $dest"
+  if [ -f "$BUILD_DIR/$dest" ]; then
+    cp $BUILD_DIR/$dest $ANDROID_TOP/setup_files/orig/${src}
+  fi
+  ln -sf $ANDROID_TOP/setup_files/${src} $BUILD_DIR/$dest 
+}
+
+# ######### MAIN ##########
+
+read -p "Existing build will be removed, continue (y/n)? " yn
+if [ "$yn" != y ]; then
+  echo ABORT
+  exit 1
+fi
+echo
+
+echo "==== INITIALIZE ===="
+PACKAGE_NAME=org.sthaid.ezApp
+REPO_TOP=$(git rev-parse --show-toplevel)
+if [ $? -ne 0 ]; then
+  echo "ERROR failed to get REPO_TOP"
+fi
+ANDROID_TOP=$REPO_TOP/android
+SDL_DIR=$ANDROID_TOP/SDL
+BUILD_DIR=$SDL_DIR/build/$PACKAGE_NAME
+
+cd $ANDROID_TOP
+
+echo "PACKAGE_NAME = $PACKAGE_NAME"
+echo "REPO_TOP     = $REPO_TOP"
+echo "ANDROID_TOP  = $ANDROID_TOP"
+echo "SDL_DIR      = $SDL_DIR"
+echo "BUILD_DIR    = $BUILD_DIR"
+echo
+
+echo "==== REMOVE EXISTING ===="
+rm -rf SDL assets setup_files/orig
+mkdir setup_files/orig assets
+echo
+
+echo "==== MAKE COPY OF SDL TREE ===="
+cp -r ../src/SDL .
+echo
+
+echo "==== CREATE TEMPLATE BUILD DIR ===="
+touch stub.c
+$SDL_DIR/build-scripts/create-android-project.py $PACKAGE_NAME stub.c
+rm stub.c $BUILD_DIR/app/jni/src/stub.c
+echo
+
+echo "==== ADD SYMLINKS TO SRC ===="
+cd $BUILD_DIR/app/jni
+ln -s $REPO_TOP/src/cJSON .
+ln -s $REPO_TOP/src/mp3lame .
+ln -s $REPO_TOP/src/lodepng .
+ln -s $REPO_TOP/src/picoc .
+ln -s $REPO_TOP/src/SDL_mixer .
+ln -s $REPO_TOP/src/SDL_ttf .
+cd $BUILD_DIR/app/jni/src
+ln -s $REPO_TOP/src/ezapp/* .
+cd $ANDROID_TOP
+echo
+
+echo "==== UPDATE FILES IN SDL TREE ===="
+cd $BUILD_DIR
+update_build_file gradle.properties                gradle.properties
+update_build_file app_build.gradle                 app/build.gradle
+update_build_file app_jni_Application.mk           app/jni/Application.mk
+update_build_file app_jni_src_Android.mk           app/jni/src/Android.mk
+update_build_file app_src_main_AndroidManifest.xml app/src/main/AndroidManifest.xml
+update_build_file app_src_main_java_org_libsdl_app_SDLActivity.java \
+                                                   app/src/main/java/org/libsdl/app/SDLActivity.java
+update_build_file app_src_main_java_org_libsdl_app_ezapp_fgsvc.java \
+                                                   app/src/main/java/org/libsdl/app/ezapp_fgsvc.java
+update_build_file app_src_main_java_org_libsdl_app_ezapp_utils.java \
+                                                   app/src/main/java/org/libsdl/app/ezapp_utils.java
+update_build_file app_src_main_java_org_libsdl_app_ezapp_playbackcapture.java \
+                                                   app/src/main/java/org/libsdl/app/ezapp_playbackcapture.java
+
+mv app/src/main/res $ANDROID_TOP/setup_files/orig/app_src_main_res
+ln -s $ANDROID_TOP/setup_files/app_src_main_res app/src/main/res
+cd $ANDROID_TOP
+echo
+
+echo "==== CREATE SYMLINK TO ASSETS DIR ===="
+cd $BUILD_DIR/app/src/main
+ln -s ../../../../../../assets/ .
+cd $ANDROID_TOP
+echo
+
+echo "==== SETUP COMPLETE ===="

@@ -1,0 +1,253 @@
+This document was prepared using Ubuntu 25.04.
+
+===============================
+DEVELOPMENT SYSTEM SETUP
+===============================
+
+---------------------------
+--- install android/sdk ---
+---------------------------
+
+# download android sdk command line tools from here:
+https://developer.android.com/studio#command-line-tools-only
+
+# unzip the cmdlinetools
+mkdir -p ~/android/sdk
+cd ~/android/sdk
+unzip ~/Downloads/commandlinetools-linux-13114758_latest.zip
+
+# move the cmdlinetools, using the required directory structure
+mv cmdline-tools latest
+mkdir cmdline-tools
+mv latest cmdline-tools/latest
+
+# update bashrc exports
+export ANDROID_HOME=$HOME/android/sdk
+export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools
+
+# install sdk packages
+# - note that the ndk package is installed automatically on first build of azApp
+sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+
+# sdkmanager --help  (summary)
+    Usage:
+      sdkmanager [--uninstall] [<common args>] [--package_file=<file>] [<packages>...]
+      sdkmanager --update [<common args>]
+      sdkmanager --list [<common args>]
+      sdkmanager --list_installed [<common args>]
+      sdkmanager --licenses [<common args>]
+      sdkmanager --version
+
+    With --install (optional), installs or updates packages.
+        By default, the listed packages are installed or (if already installed)
+        updated to the latest version.
+
+-----------------------
+--- ubuntu packages ---
+-----------------------
+
+These packages are needed when building the linux version of ezApp.
+Linux ezApp is used for development and test.
+
+sudo apt update
+sudo apt install openjdk-17-jdk
+sudo apt install libsdl3-dev       # available on Ubuntu 25.04
+sudo apt install libsdl3-ttf-dev   # available on Ubuntu 25.04
+
+===============================
+BUILD AND INSTALL EZAPP ON ANDROID
+===============================
+
+Steps:
+- ./setup
+- make build_debug
+- make install_debug   (first connect adb)
+
+The ./setup script does the following:
+- downloads SDL3 and SDL3_ttf source code
+- extract SDL3 source code
+- creates template SDL3 build directory, using script 
+    /build-scripts/create-android-project.py 
+- extracts SDL3_ttf source to
+    SDL3-3.2.28/build/org.sthaid.ezApp/app/jni/SDL3_ttf-3.2.2/
+- downloads external SDL3_ttf packages by using the download.sh script 
+    SDL3-3.2.28/build/org.sthaid.ezApp/app/jni/SDL3_ttf-3.2.2/external/download.sh
+- update/add files; 
+  . some files in SDL3-3.2.28/build/org.sthaid.ezApp/app are replaced with 
+    symlinks to the files in ./setup_files
+  . the original files are saved to ./setup_files/orig
+  . the setup_files/diff_against_orig script is available to view the changes
+- ezApp source code files are symlinked to app/jni/src
+- ezApp assets directory symlink is created in app/src/main
+
+===============================
+ADB SETUP
+===============================
+
+Google AI says:
+  "ADB (Android Debug Bridge) is a versatile command-line tool 
+   from the Android SDK that lets your computer communicate with an Android
+   device for debugging, app management, file transfer, and running shell commands"
+
+Adb executable is here: android/sdk/platform-tools/adb
+
+----------------------------------------
+--- setup device to be used with adb ---
+----------------------------------------
+
+Enable developer mode by tapping build number 8 times.
+  Settings -> About Phone -> Software Information -> Build Number
+
+Go to Developer Options , and enable
+- Stay Awake
+- USB Debugging
+
+Connect USB data cable. And select 'allow access' on the device.
+- verify connection: 'adb shell'
+
+To use adb over Wifi, without USB cable ...
+
+With USB cable plugged in, run cmd 
+- adb tcpip 5555
+- should see message "restarting in TCP mode port: 5555"
+
+Disconnect USB cable.
+
+Issue the adb connect cmd:
+- adb connect 192.168.1.243:5555
+- verify using 'adb shell'
+
+Suggestions:
+- plug phone in with power cable, to disable sleeping while charging.
+- configure router to assign a static IP address to your Android device
+- configure your Android device so it doesn't change its MAC address,
+  when using a trusted router:
+    Connections -> Wifi -> Gear -> View More -> MAC Address Type -> Pnone MAC
+
+===============================
+ADB COMMAND EXAMPLES
+===============================
+
+adb help
+
+adb logcat --help
+adb logcat -c -b all                      # clear Android log
+adb logcat -s SDL SDL/APP AndroidRuntime  # view logs from SDL SDL/APP AndroidRuntime components
+
+adb shell  # run remote shell
+adb shell getprop ro.product.cpu.abi  # get Application Binary Interface
+
+adb kill-server   # kill and start adb server
+adb start-server
+
+adb tcpip 5555    # restart Android Debug Bridge Daemon listening on TCP port 5555
+adb connect 192.168.1.205:5555  # connect to device
+adb devices       # list connected devices
+
+===============================
+ANDROID VERSION NUMBERS
+===============================
+
+References:
+- https://apilevels.com/
+- Google: "list of android architecture versions and API levels"
+
+                Android(*)
+Codename        Version     API Level   Year    (subset)
+--------        -------     ---------   ----
+Baklava         16          36          2025
+Nougat          7.0         24          2016
+Lollipop        5           21          2015
+
+(*) Android Version found here:: Setup -> About phone -> Software information
+
+From Google AI ...
+
+Android SDK Version (minSdkVersion, targetSdkVersion)
+- These are attributes used in your app's main build configuration 
+  (like a Gradle file in Android Studio) to declare compatibility
+  with specific API levels. 
+- minSdkVersion: The minimum API level your application can run on.
+  Devices running an Android version with an API level lower than your
+  minSdkVersion will not be able to install your app from Google Play.
+- targetSdkVersion: The API level your app was tested against and is 
+  fully compatible with.
+- compileSdkVersion: The API level of the Android platform version you
+  compile your app against. You should always use the latest stable 
+  version for this to access new features and improvements. 
+
+APP_PLATFORM 
+- a variable used specifically within the Android NDK (Native Development
+  Kit) build system (primarily in the Application.mk file for ndk-build). 
+- It declares the Android API level against which your native C/C++ code
+  is compiled. For native code, the APP_PLATFORM essentially acts as the
+  minimum required API level for your native libraries, similar to how
+  minSdkVersion works for the overall application.
+- If not specified in Application.mk, ndk-build typically defaults to a
+  minimum API level supported by the NDK itself or tries to infer it from
+  your minSdkVersion set in the app's manifest/Gradle file. 
+
+NDK Version:
+- explicit configuration, in build.gradle:
+        android {
+            ...
+            ndkVersion "23.1.7779620"
+        }
+- Automatic Selection:
+  If you do not specify an ndkVersion, the Android Gradle Plugin (AGP)
+  will automatically select a default version that it is known to be
+  compatible with
+
+===============================
+SDL3 ANDROID BUILD DIRECTORY STRUCT
+===============================
+
+├── app
+│   ├── jni
+│   │   ├── SDL                   : SDL3 code
+│   │   ├── SDL3_ttf-3.2.2        : SDL3_ttf code
+│   │   └── src                   : app C-language code
+│   └── src
+│       └── main
+│           ├── assets            : files that can be accessed using SDL_LoadFile
+│           ├── java
+│           │   └── org
+│           │       ├── libsdl
+│           │       │   └── app   : main java code, SDLActivity.java ...
+│           │       └── sthaid
+│           │           └── ezApp : EzappActivity.java (stub file)
+│           └── res               : icons and values
+└── gradle
+    └── wrapper
+
+===============================
+EZAPP ADDITIONS TO LIBSDL JAVA CODE
+===============================
+
+SDL3 java code changes:
+- additions to SDLActivity.java
+- new files:
+  - ezapp_fgsvc.java 
+  - ezapp_utils.jave
+
+Capabilities added:
+- start/stop foreground mode: when foreground is enabled, ezApp continues
+  to run when the app is minimized or the android device is sleeping
+- get location: latitude, longitude, altitude
+- text to speech
+- flashlight control
+
+These added capabilities can be invoked from C language, by using NDK
+routines such as CallVoidMethod. File src/utils.cpp provides routines,
+such as "void util_text_to_speech(char *text)".
+
+===============================
+MISC
+===============================
+
+What is contained in APK:
+  ln -s ./SDL3-3.2.28/build/org.sthaid.ezApp/app/build/outputs/apk/debug/app-debug.apk app-debug.zip
+  unzip -l app-debug.zip | grep lib
+
+To specify ABIS to build for
+  ./gradlew assembleDebug -PANDROID_ABIS=arm64-v8a

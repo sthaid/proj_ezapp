@@ -1,0 +1,195 @@
+package org.libsdl.app;
+
+import android.os.Build;
+import android.content.Context;
+import android.util.Log;
+import android.os.Binder;
+import android.os.IBinder;
+
+import android.speech.tts.TextToSpeech;
+import java.util.Locale;
+
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationCallback;
+import com.google.android.gms.location.LocationResult;
+import android.location.Location;
+import android.os.Looper;
+
+import android.hardware.camera2.CameraAccessException;
+import android.hardware.camera2.CameraManager;
+import android.view.Gravity;
+
+public class ezapp_utils {
+    private static final String TAG = "SDL";
+    private static final int INVALID_NUMBER = 999999999;
+
+    private static TextToSpeech mTts;
+    private static boolean      isTtsInitialized = false;
+
+    private static FusedLocationProviderClient fusedLocationClient;
+    private static LocationCallback            locationCallback;
+    private static double                      latitude  = INVALID_NUMBER;
+    private static double                      longitude = INVALID_NUMBER;
+    private static double                      altitude  = INVALID_NUMBER;
+
+    private static CameraManager cameraManager;
+    private static String        cameraId;
+    private static boolean       flashlight_is_on = false;
+
+    //
+    // constructor
+    //
+
+    public ezapp_utils(Context cx) {
+        Log.v(TAG, "EZAPP utils init");
+
+        // Initialize TextToSpeech support
+        mTts = new TextToSpeech(cx, new TextToSpeech.OnInitListener() {
+            @Override
+            public void onInit(int status) { 
+                if (status != TextToSpeech.ERROR) {
+                    int result = mTts.setLanguage(Locale.US);
+                    if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                        Log.v(TAG, "EZAPP ERROR TTS Lang not supported");
+                    } else {
+                        isTtsInitialized = true;
+                    }
+                }
+            } 
+        });
+
+        // Initialize Location support
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(cx);
+
+        locationCallback = new LocationCallback() {
+            @Override
+            public void onLocationResult(LocationResult locationResult) {
+                if (locationResult == null) {
+                    return;
+                }
+                for (Location location : locationResult.getLocations()) {
+                    latitude = location.getLatitude();
+                    longitude = location.getLongitude();
+                    altitude = location.getAltitude();
+                    Log.v(TAG, "EZAPP lat/long/alt = " + latitude + " " + longitude + " " + altitude);
+                }
+            }
+        };
+        // - start location updates using 180 second interval
+        LocationRequest locationRequest = LocationRequest.create();
+        locationRequest.setInterval(180*1000);
+        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+        fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper());
+
+        // Initialize flashlight support
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            cameraManager = (CameraManager) cx.getSystemService(Context.CAMERA_SERVICE);
+            try {
+                // get the first camera ID
+                cameraId = cameraManager.getCameraIdList()[0];
+            } catch (CameraAccessException e) {
+                Log.v(TAG, "EZAPP CameraAccessException");
+            }
+        }
+    }
+
+    //
+    // cleanup
+    //
+
+    public void destroy() {
+        Log.v(TAG, "EZAPP utils destroy");
+        if (mTts != null) {
+            mTts.stop();
+            mTts.shutdown();
+            mTts = null;
+        }
+    }
+
+    //
+    // text to speech
+    //
+
+    // return 0 on success, INVALID_NUMBER on failure
+    public int text_to_speech(String message) {
+        int status;
+        if (isTtsInitialized && mTts != null) {
+            if (message.length() > 0) {
+                Log.v(TAG, "EZAPP tts speaking: " + message);
+                status = mTts.speak(message, TextToSpeech.QUEUE_FLUSH, null, "utteranceId1"); // xxx what are the args
+            } else {
+                Log.v(TAG, "EZAPP tts stopping");
+                status = mTts.stop();
+            }
+            return status == 0 ? 0 : INVALID_NUMBER;
+        } else {
+            return INVALID_NUMBER;
+        }
+    }
+
+    //
+    // location
+    //
+
+    public double get_latitude() {
+        return latitude;
+    }
+
+    public double get_longitude() {
+        return longitude;
+    }
+
+    public double get_altitude() {
+        return altitude;
+    }
+
+    //
+    // flashlight
+    //
+
+    public void turn_flashlight_on() {
+        if (cameraManager == null || cameraId == null) {
+            Log.v(TAG, "EZAPP flashlight not supported");
+            return;
+        }
+
+        try {
+            Log.v(TAG, "turning flashlight on");
+            cameraManager.setTorchMode(cameraId, true);
+            flashlight_is_on = true;
+            SDLActivity.showToast("Flashlight On", 0, Gravity.CENTER, 0, 0);
+        } catch (CameraAccessException e) {
+            Log.v(TAG, "EZAPP CameraAccessException");
+        }
+    }
+
+    public void turn_flashlight_off() {
+        if (cameraManager == null || cameraId == null) {
+            Log.v(TAG, "EZAPP flashlight not supported");
+            return;
+        }
+
+        try {
+            Log.v(TAG, "turning flashlight off");
+            cameraManager.setTorchMode(cameraId, false);
+            flashlight_is_on = false;
+            SDLActivity.showToast("Flashlight Off", 0, Gravity.CENTER, 0, 0);
+        } catch (CameraAccessException e) {
+            Log.v(TAG, "EZAPP CameraAccessException");
+        }
+    }
+
+    public boolean is_flashlight_on() {
+        return flashlight_is_on;
+    }
+
+    public void toggle_flashlight() {
+        if (flashlight_is_on) {
+            turn_flashlight_off();
+        } else {
+            turn_flashlight_on();
+        }
+    }
+}
