@@ -3,7 +3,7 @@
 
 // xxx comments needed
 
-void svcs_init(void);
+void svcs_init(int (*run_proc)(char *name, bool is_svc));
 void svcs_stop_all(void);
 void svcs_acquire_mutex(void);
 void svcs_release_mutex(void);

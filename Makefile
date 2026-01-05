@@ -17,7 +17,9 @@ APPS = \
     files/apps/Reversi \
     files/apps/Template \
     files/apps/Test \
-    files/apps/Tilt
+    files/apps/Tilt \
+    files/apps/Weather \
+    files/apps/Memo
 
 SVCS = \
     files/svcs/Location \

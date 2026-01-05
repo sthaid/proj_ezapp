@@ -4,7 +4,6 @@
 #include <utils.h>
 #include <logging.h>
 #include <svcs.h>
-#include <run.h>
 
 //
 // defines
@@ -56,6 +55,7 @@ typedef struct {
 
 static svc_t  svcs[MAX_SVCS];
 static int    max_svcs;
+static int  (*run)(char *name, bool is_svc);
 
 //
 // prototypes
@@ -69,12 +69,20 @@ static int svc_name_to_id(char *svc_name);
 
 // -----------------  SVCS ROUTINES USED BY MAIN.C  ---------------
 
-void svcs_init(void)
+void svcs_init(int (*run_proc)(char *name, bool is_svc))
 {
     static bool first_call = true;
     FILE *fp;
     char str[100];
     int cnt, line=0;
+
+    // The purpose of this is to  avoid circular library dependence, where
+    // the ezapp_lib svcs.c file calls picoc lib to run a service; and
+    // where picoc lib calls this ezapp_lib library, to make the platform calls.
+    // Instead the 'run' routine is provided by ezapp/main.c; this svcs.c file
+    // will call the run() routine provided here to run a service; which 
+    // avoids the circular library dependency.
+    run = run_proc;
 
     // on first call init the pthread mutex and condition
     if (first_call) {

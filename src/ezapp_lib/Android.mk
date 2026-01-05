@@ -22,8 +22,7 @@ LOCAL_SRC_FILES := \
     sdlx_video.c \
     svcs.c \
     utils.c \
-    utils_android.cpp \
-    run.c
+    utils_android.cpp 
 
 LOCAL_CFLAGS := -O2
 

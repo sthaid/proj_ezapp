@@ -4,7 +4,7 @@
 #include <utils.h>
 #include <svcs.h>
 #include <logging.h>
-#include <run.h>
+#include <picoc_ezapp.h>
 
 #ifdef ANDROID
 #include <SDL3/SDL.h>
@@ -175,6 +175,7 @@ static void print_type_sizes(void);
 #ifdef ANDROID  // xxx get rid of some ifdefs
 static void create_files(int action);
 #endif
+static int run(char *name, bool is_svc);
 
 int MAIN(int argc, char **argv)
 {
@@ -273,7 +274,7 @@ static int init(void)
 #endif
 
     // init services, this will xxx
-    svcs_init();
+    svcs_init(run);
 
     // print type sizes
     print_type_sizes();
@@ -312,7 +313,7 @@ static void create_files(int action)
         svcs_stop_all();
         system("rm -rf apps svcs");
         system("tar -xvf files.tar apps svcs");
-        svcs_init();
+        svcs_init(run);
         break;
     }
 }
@@ -412,6 +413,57 @@ static void processing(void)
             }
         }
     }
+}
+
+static int run(char *name, bool is_svc)
+{
+    char           dir_path[100];
+    int            rc;
+    DIR           *dir;
+    struct dirent *dirent;
+    char          *p;
+    char           picoc_args[1000];
+
+    // xxx comment
+    if (!is_svc) {
+        sprintf(dir_path, "apps/%s", name);
+    } else {
+        sprintf(dir_path, "svcs/%s", name);
+    }
+
+    // construct list of *.c files in the dir
+    picoc_args[0] = '\0';
+    dir = opendir(dir_path);
+    if (dir == NULL) {
+        ERROR("%s: failed to opendir %s, %s\n", name, dir_path, strerror(errno));
+        return 99;
+    }
+    p = picoc_args;
+    while ((dirent = readdir(dir)) != NULL) {
+        char *fn = dirent->d_name;
+        int len = strlen(fn);
+        if (len > 2 && strcmp(fn+len-2, ".c") == 0) {
+            p += sprintf(p, "%s/%s ", dir_path, fn);
+        }
+    }
+    closedir(dir);
+
+    // error if no source code found in dir_path
+    if (picoc_args[0] == '\0') {
+        ERROR("%s: no source code in %s\n", name, dir_path);
+        return 99;
+    }
+
+    // xxx comment
+    p += sprintf(p, " - %s %s", name, dir_path);
+
+    // run the app using the picoc c language interpreter
+    INFO("%s: starting, args = %s\n", name, picoc_args);
+    rc = picoc_ezapp(picoc_args);
+    INFO("%s: completed, rc = %d\n", name, rc);
+
+    // return completion status
+    return rc;
 }
 
 // -----------------  DISPLAY MENU  -------------------------------

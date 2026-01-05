@@ -14,14 +14,12 @@ set(LIB_SRCS
     utils.c
     utils_android.cpp
     logging.c
-    run.c
 )
 
 set(LIB_HEADERS
     include/sdlx.h
     include/svcs.h
     include/utils.h
-    include/run.h
     include/logging.h
 )
 
@@ -32,7 +30,7 @@ include_directories(${INCLUDE_PATH} . ./include)
 
 add_library(ezapp_lib STATIC ${LIB_SRCS} ${LIB_HEADERS})
 
-install(FILES include/sdlx.h include/svcs.h include/utils.h include/run.h include/logging.h
+install(FILES include/sdlx.h include/svcs.h include/utils.h include/logging.h
         DESTINATION include)
 
 install(TARGETS ezapp_lib ARCHIVE DESTINATION lib)
