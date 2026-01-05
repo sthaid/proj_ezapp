@@ -4,26 +4,8 @@ SUBDIRS = \
     android \
     src/picoc \
     bin/src 
-
-APPS = \
-    files/apps/Clock \
-    files/apps/Compass \
-    files/apps/FlshLite \
-    files/apps/HexCalc \
-    files/apps/Light \
-    files/apps/Location \
-    files/apps/Morse \
-    files/apps/Paddle \
-    files/apps/Reversi \
-    files/apps/Template \
-    files/apps/Test \
-    files/apps/Tilt \
-    files/apps/Weather \
-    files/apps/Memo
-
-SVCS = \
-    files/svcs/Location \
-    files/svcs/Template
+APPS := $(sort $(dir $(wildcard files/apps/*/.)))
+SVCS := $(sort $(dir $(wildcard files/svcs/*/.)))
 
 build:
 	for d in $(SUBDIRS) ; do echo "\n======== BUILD $$d ========\n"; make -C $$d || exit 1; done
