@@ -1,0 +1,459 @@
+review README files
+- add loc of SDL doc 
+  - https://wiki.libsdl.org/SDL3_mixer/CategorySDLMixer
+  - https://github.com/libsdl-org/SDL_mixer
+- make an outline, and plan for README files
+- in REAMDEs, include:
+  - acknowledgements, and location of copyright files
+  - ... etc ..
+- document type sig
+    https://docs.oracle.com/javase/7/docs/technotes/guides/jni/spec/types.html#wp276
+- how to run vi with tags from a subdir
+    save my .vimrc
+       " search current dir and parents for tags file
+       set tags=./tags;
+- android reference
+    https://developer.android.com/reference/android/util/Log
+- update permission comments from here
+    https://wiki.libsdl.org/SDL3/SDL_RequestAndroidPermission
+
+add SDL version to Setup, and print when starting
+
+updates to sdlx_udio and Test app for mp3
+- use Mixer to play raw files as well as mp3
+- existing raw files remain mono
+- mp3 capture is stereo
+- when playing mp3, also stereo, hook into output data
+- add butterworth filter
+- option to append to both mp3 and raw files  (is this possible for mp3)
+- consider support for wav file
+
+new Audio App 
+. start / stop capture, display file size and duration during capture;
+  also display volume during capture
+. playback, from list of files in the apps dir
+  . display volume, and duration during playback
+  . optional display color organ during playback
+
+what API level and API_PLATFORM, are needed for
+- audio capture
+- getifaddrs sdk and platform level
+- "When using the Android NDK for native code, your APP_PLATFORM should 
+   ideally be the same as, or lower than, your minSdkVersion. The Android 
+   Gradle Plugin (AGP), when using externalNativeBuild, automatically uses your 
+   minSdkVersion for the native build to ensure compatibility. "
+- API_PLATFORM  29 or 24?
+
+git checkout the ttf and mixer too
+- ask question to the mixer team
+
+use TTF_RenderText_Solid or Blended   NOT Shaded
+- this would update the printing API, bg_color not needed
+
+logging:
+- add Setup option to view the latest in logfile
+- filter for errors only, or info+errors
+  controls
+  - level  info+errors or errors
+  - colorize the errors
+  - motion for scrolling
+  - top / bottom / follow
+  - wrap enable
+- shorten the lines
+    12-24 14:23:13 I EZAPP: Clock: starting, data_dir=apps/Clock
+    123456789 123456789 123456789 123456789 123456789 123456789 123456789 123456789 
+- use a service to save the last 1000 lines of log, in breif form
+  - 2 files, one for errors and other for all
+  - circular files eiwth head/tail
+  - in format compatible with multi line print
+  - does multiline print break at newlines
+
+SDL Video updates
+- rotate the display
+- add SDL_SetRenderTarget
+- API to print rotated text, is this really needed?
+- make a split line util
+- should textures have a bg color arg
+- make pixels unsigned int, add pixel_t
+- plot apis,
+  - improve them
+  - write an app that uses them, maybe steps
+- sdl return codes are now boolean
+
+Cleanups:
+- JAVA code cleanup:
+  - media projection, etc
+     cleanup media projection  - https://developer.android.com/media/grow/media-projection#java 
+- reveiw utils.cpp - is more work needed here to cleanup
+
+running ezapp while phone is sleeping
+- how to implent this
+- Location - check how often does the service run when the phone is snoozing
+- auto dismiss the foreground notification?
+- run ezapp as a service when installed or device boots
+
+review tools
+- ezgetall - print error if files dir exits locally
+- any fixes needed in ezsh;  such as not exitting program when error occurs
+
+start app in background
+- when booting and when installing
+   - check into auto start   SampleForegroundService
+- what are the 4 pillars of Android called
+
+====================
+MAYBE
+====================
+
+New Apps
+- steps
+- blackjack
+- prime number benchmark
+
+===================
+PREPARE FOR RELEASE
+===================
+
+Android -
+- why is android build only building arm64-v8a
+- make the ezapp icon
+
+===================
+SDL ISSUES
+===================
+
+- https://github.com/libsdl-org/SDL/issues/14705
+- https://github.com/libsdl-org/SDL_mixer/issues/795
+
+===================
+BUGS
+===================
+
+Picoc
+- document picoc limitations 
+- load vanilla picoc
+- test programs for issues
+- compare these programs with improved picoc
+- expression evaluator test
+- write new expression evaluator
+
+Light app, not saving color in params correctly
+
+update params code, is this needed?
+
+why is volume low in memo
+- SDL_SetAudioDeviceGain(SDL_AudioDeviceID devid, float gain)
+- maybe set the gain from the app instead of from Settings
+
+location, just use couarse location
+
+location permission problem
+- java code may be failing if there is not permission
+
+App fixes
+- Calculater
+  - 64bit problem
+     - >> and / ops on 64 bit with msb set
+  - display numeric buttons in different color
+- Tilt app, allow different orientations
+- Location - ack the clearing of history
+- reversi
+  - add undo
+  - edge heuristic
+
+regarding foreground - 
+- dont let applications control it;  could let applications check it and fail if it is not set
+- document foreground 
+
+battery usage
+- adjust compass app interval, to trade off jitter for battery life
+
+===================
+INFO
+===================
+
+To capture audio output programmatically on Android, you must use the AudioRecord API with an AudioPlaybackCaptureConfiguration. This feature requires Android 10 (API level 29) or higher and user consent via a MediaProjection service. 
+
+Directly capturing another app's audio output is a privacy-sensitive operation, and standard apps can only capture audio produced by themselves or with explicit user permission via the screen capture dialog. 
+
+mp3 encoding 
+https://github.com/zlargon/lame/tree/master/debian
+
+===================
+OLD LIST
+===================
+
+review sdlx_audio.c, make list of changes
+- record and append to wave file
+- play an mp3 file, or wav file, or raw file
+- add wav file support
+- add support for sdl_mixer
+- SUMMARY
+  - use sdl_mixer to play files
+  - continue to support existing audio_ctl API
+- RECORD using microphone
+  - volume problem
+  - record to wav file
+  - append to wav file
+- RECORD playback capture
+  - java code wirte to mmap file,   
+  - record code copy from mmap file, using lame
+    - maintain the existing audioctl and audio status
+- PLAYBACK CAPUTE withour recording
+
+API:
+- record to wav file
+- record/append to wav file
+- play a file  (wav, mp3, raw)   all use 2 channels,   44100
+
+mp3 encoding
+- reference: "how to create an mp3 file using SDL on android"
+             "how to include LAME MP3 encoder code in an android project using SDL"
+- lame recorder https://github.com/zlargon/lame/tree/master/debian
+    - https://github.com/zlargon/lame/tree/master    libmp3lame
+- build lame from ource code ource ;  can it support streaming
+
+=====================================================================
+=====================================================================
+====================  NOT YET ORGANIZED =============================
+=====================================================================
+=====================================================================
+
+---------------
+---- picoc ----
+---------------
+
+picoc issues
+- support NAN in picoc  ??
+- picoc cant do this
+    struct_t *x;
+    x = (struct_t*)data;
+    printf("x.z=%d x.b=%d\n", x->a, x->b);
+- unsigned expressions,  and expression test
+  - picoc variable types are not being propogated to expression
+  - write tester for expressions
+- fix expression issues, so clock and calc both work
+- review diffs, and notes for other issues
+- 64 to 32 bit assignement ?
+- picoc improvements
+  - identify problems
+    - const not allowed
+    - location of defines
+    - struct declaration and init
+    - problem when declaring static structures
+    - expressions that evaluate to long need to be cast
+  - document the limitations
+  - try to fix some of them
+    - try to get NAN working in picoc
+- misc
+  - fix the assignment problem
+  - fix picoc 64 bit problem
+  - fix print 'u' 
+  - make list of problems, and a demo program
+
+add networking support for apps, and add test in unit_test
+- should this be included?
+  - util_net_connect
+  - util_net_disconnect
+  - util_net_send
+  - util_net_recv
+
+--------------------
+---- publishing ----
+--------------------
+
+review copyrights and credits
+- update clock Attribution Info
+
+repo
+- rename to ezApp
+- cleanup save files
+- compress all commits (rebase)
+
+publishing
+- icon
+- release build
+- documentation
+- demo on how to add an app
+- replace qne with ezApp
+
+android build concerns
+- update sdkmanager packages 
+- continue to undersand, and document, the sdk version numbers
+  - why is NDK 27 used, and not 29?
+
+-----------------------
+---- documentation ----
+-----------------------
+
+doxygen
+
+Readme files for each APP, and top level
+
+=====================================================================
+=====================================================================
+====================  BACKUP  =======================================
+=====================================================================
+=====================================================================
+
+===============================================================
+===================  LAT/LONG TO CITY  ========================
+===============================================================
+
+get lat/long info by city
+- https://www.geoapify.com/us-zip-codes-to-download-for-free/
+- https://www.geoapify.com/download-all-the-cities-towns-villages/
+   . The data contained in this dataset is compiled from the OpenStreetMap (OSM)
+     database and is subject to the copyright terms and conditions of OSM contributors.
+   . OpenStreetMap® is open data, licensed under the Open Data Commons Open Database License (ODbL) 
+     by the OpenStreetMap Foundation (OSMF).
+   . You are free to copy, distribute, transmit, and adapt the data, as long as you
+     credit OpenStreetMap and its contributors. If you alter or build upon our data,
+     you may distribute the result only under the same license.
+
+===============================================================
+===================  WEATHER.GOV  =============================
+===============================================================
+
+example using api.weather.gov to get temeprature at latitude longitude
+curl "https://api.weather.gov/points/38.8894,-77.0352" -H "User-Agent: my-weather-app (myemail@example.com)"
+curl "https://api.weather.gov/points/38.8894,-77.0352" -H "User-Agent: steven-haid-app (stevenhaid@gmail.com)"
+
+curl "https://api.weather.gov/points/38.8894,-77.0352" -H "User-Agent: steven-haid-app (stevenhaid@gmail.com)"
+curl "https://api.weather.gov/points/42.4334,-71.6078" -H "User-Agent: steven-haid-app (stevenhaid@gmail.com)"
+
+BOLTON: 42.4334,-71.6078
+
+https://www.weather.gov/documentation/services-web-api#:~:text=All%20of%20the%20information%20presented,to%20use%20for%20any%20purpose.
+https://api.weather.gov/
+https://api.weather.gov/points/{latitude},{longitude}
+https://api.weather.gov/points/41.0,90.1
+
+
+xxxxxxxxx
+
+User-Agent ?
+
+curl "https://api.weather.gov/points/42.4334,-71.6078"
+
+curl "https://api.weather.gov/gridpoints/BOX/52,90/forecast/hourly"
+
+        "forecast": "https://api.weather.gov/gridpoints/BOX/52,90/forecast",
+        "forecastHourly": "https://api.weather.gov/gridpoints/BOX/52,90/forecast/hourly",
+        "forecastGridData": "https://api.weather.gov/gridpoints/BOX/52,90",
+        "observationStations": "https://api.weather.gov/gridpoints/BOX/52,90/stations",
+
+
+curl "https://api.weather.gov/points/42.4334,-71.6078" -H "User-Agent: ezApp (stevenhaid@gmail.com)"
+
+
+User-Agent: (myweatherapp.com, contact@myweatherapp.com)
+
+===============================================================
+===================  COMPASS  =================================
+===============================================================
+
+maybe add these to sdl_sensor comments ...
+
+magnetic field compensation for roll and pitch
+https://www.google.com/search?q=how+to+caclulate+magnetic+heading+from+magnetic+field+strength+and+sensor+tilt&oq=how+to+caclulate+magnetic+heading+from+magnetic+field+strength+and+sensor+tilt&gs_lcrp=EgZjaHJvbWUyBggAEEUYOTIHCAEQIRiPAjIHCAIQIRiPAtIBCTIxNzAyajBqN6gCCLACAfEFUqpUJ6MY3DU&sourceid=chrome&ie=UTF-8
+
+https://www.google.com/search?q=how+to+combine+magnetic+field+and+roll%2Fpitch+data+to+obtain+heading&oq=how+to+combine+magnetic+field+and+roll%2Fpitch+data+to+obtain+heading&gs_lcrp=EgZjaHJvbWUyBggAEEUYOTIHCAEQIRiPAjIHCAIQIRiPAtIBCTE5NjAyajBqOagCBrACAfEFcKSM7Wr74wU&sourceid=chrome&ie=UTF-8
+
+===============================================================
+===================  JAVA SAMPLES  ============================
+===============================================================
+
+public class MainActivity extends AppCompatActivity {
+
+    private FusedLocationProviderClient fusedLocationClient;
+    private LocationCallback locationCallback;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+
+        locationCallback = new LocationCallback() {
+            @Override
+            public void onLocationResult(LocationResult locationResult) {
+                if (locationResult == null) {
+                    return;
+                }
+                for (Location location : locationResult.getLocations()) {
+                    // Handle the location here
+                    double latitude = location.getLatitude();
+                    double longitude = location.getLongitude();
+                    // Update UI or perform actions with latitude and longitude
+                }
+            }
+        };
+
+        startLocationUpdates();
+    }
+
+    private void startLocationUpdates() {
+        LocationRequest locationRequest = LocationRequest.create();
+        locationRequest.setInterval(10000); // Update interval in milliseconds
+        locationRequest.setFastestInterval(5000); // Fastest update interval
+        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper());
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        stopLocationUpdates();
+    }
+
+    private void stopLocationUpdates() {
+        fusedLocationClient.removeLocationUpdates(locationCallback);
+    }
+}
+
+===============================================================
+===================  LODEPNG  =================================
+===============================================================
+
+lodepng: https://github.com/lvandeve/lodepng
+
+===============================================================
+===================  IMAGES  ==================================
+===============================================================
+
+doc file for images
+- explain imagegick
+
+stock.adobe.com
+
+sudo apt install imagemagick
+convert input.png -resize 500x300 output.png
+convert input.jpg -scale 50% output.png
+identify -format "%w x %h\n" t1out.png
+convert AdobeStock_1094425893.png -resize 1000x1000 ../../files/apps/Compass/compass.png
+https://stock.adobe.com/
+
+===============================================================
+===================  ANDROID  =================================
+===============================================================
+
+gradle.properties
+android.useAndroidX=true
+
+===============================================================
+===================  cJSON  ===================================
+===============================================================
+
+cJSON
+sudo apt  install libcjson-dev
+/usr/include/cjson/cJSON.h
+https://github.com/DaveGamble/cJSON
+
+Alternate Package:
+  https://github.com/json-c/json-c  
+
