@@ -14,12 +14,14 @@ update_build_file()
 
 # ######### MAIN ##########
 
-read -p "Existing build will be removed, continue (y/n)? " yn
-if [ "$yn" != y ]; then
-  echo ABORT
-  exit 1
+if [ -d SDL ]; then
+  read -p "Existing build will be removed, continue (y/n)? " yn
+  if [ "$yn" != y ]; then
+    echo ABORT
+    exit 1
+  fi
+  echo
 fi
-echo
 
 echo "==== INITIALIZE ===="
 PACKAGE_NAME=org.sthaid.ezApp

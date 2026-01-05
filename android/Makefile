@@ -1,4 +1,4 @@
-build_debug: gen_version gen_assets
+build_debug: SDL gen_version gen_assets
 	cd SDL/build/org.sthaid.ezApp; \
         ./gradlew assembleDebug
 
@@ -7,16 +7,15 @@ install_debug: build_debug
         adb install -r ./app/build/outputs/apk/debug/app-debug.apk
 
 uninstall:
-	adb uninstall  org.sthaid.ezApp
+	adb uninstall org.sthaid.ezApp
 
 clean:
-	cd SDL/build/org.sthaid.ezApp; \
-        ./gradlew clean
-
-clobber:
 	rm -rf SDL assets setup_files/orig
 
 # -----------------------------
+
+SDL:
+	./setup
 
 gen_version:
 	../bin/build_tools/gen_version

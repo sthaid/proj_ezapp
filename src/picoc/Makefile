@@ -14,4 +14,7 @@ LIBS = -lm -lreadline \
 picoc:
 	gcc -o picoc -Wall -Werror -O2 -DUNIX_HOST -I../../linux/local/include $(SRCS) $(LIBS)
 
+clean:
+	rm -f picoc
+
 .PHONY: picoc
