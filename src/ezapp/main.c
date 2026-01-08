@@ -56,7 +56,7 @@ typedef struct {
     int    devel_port;
     char   devel_password[50];
     bool   foreground_enabled;
-    double record_scale;
+    double record_gain;
     double record_silence;
 } params_t;
 
@@ -74,97 +74,6 @@ static pthread_t   server_tid;
 
 static void processing(void);
 static int devel_mode_server_thread(void *cx);
-
-// -----------------  XXXXXXXXXXXXXX  --------------------------------
-
-#if 0
-#include "../lame/lame.h"
-lame_global_flags *gfp;
-
-int lame_test(void)
-{
-    int rc;
-    short *pcm;
-    int file_bytes;
-
-    //lame_set_errorf(gfp, my_debugf);
-    //lame_set_debugf(gfp, my_debugf);
-    //lame_set_msgf(gfp, my_debugf);
-
-    gfp = lame_init();
-    printf("lame_init ret %p\n", gfp);
-    if (gfp == NULL) {
-        printf("ERROR lame_init failed\n");
-        return 1;
-    }
-
-#define STEREO           0
-#define JOINT_STEREO     1
-#define DUAL_CHANNEL     2
-#define MONO             3
-
-    lame_set_num_channels(gfp,1);
-    //lame_set_in_samplerate(gfp,48000);
-    lame_set_in_samplerate(gfp,44100);
-    lame_set_brate(gfp,64);
-    lame_set_mode(gfp,MONO); 
-    lame_set_quality(gfp,2);   /* 2=high  5 = medium  7=low */
-
-    printf("NUM CHANNELS %d\n", lame_get_num_channels(gfp));
-
-    rc = lame_init_params(gfp);
-    printf("lame_init_params ret %d\n", rc);
-    if (rc < 0) {
-        printf("ERROR lame_init_params failed\n");
-        return 1;
-    }
-
-
-    pcm = util_read_file(".", "captured_audio.pcm", &file_bytes);
-    if (pcm == NULL) {
-        printf("ERROR failed to read test file\n");
-        return 1;
-    }
-    printf("file_bytes = %d\n", file_bytes);
-    
-    void *mp3buf = malloc(10000000);
-    void *mp3buf_orig = mp3buf;
-    int num_samples = file_bytes / 2;
-    memset(mp3buf, 0, 10000000);
-
-#if 0
-    rc = lame_encode_buffer_interleaved(gfp, pcm, num_samples, mp3buf, 0);
-#else
-    int remaining = num_samples;
-    while (remaining) {
-        int xfer = remaining > 44100 ? 44100 : remaining;
-        printf("xfer = %d\n", xfer);
-        rc = lame_encode_buffer(gfp, pcm, NULL, xfer, mp3buf, 0);
-        printf("lame_encode_buffer rc = %d\n", rc);
-        if (rc < 0) {
-            printf("ERROR\n");
-            return 1;
-        }
-        mp3buf += rc;
-        remaining -= xfer;
-        pcm += xfer;
-    }
-#endif
-
-    rc = lame_encode_flush(gfp, mp3buf, 0);
-    printf("lame_encode_flush rc = %d\n", rc);
-    if (rc < 0) {
-        printf("ERROR\n");
-        return 1;
-    }
-    mp3buf += rc;
-
-    util_write_file(".", "out.mp3", mp3buf_orig, mp3buf-mp3buf_orig);
-
-    return 0;
-}
-#endif
-
 
 // -----------------  MAIN  ------------------------------------------
 
@@ -221,9 +130,9 @@ static int init(void)
     // xxx numeric keypad decimal point
     // xxx keyboard can be dismaissed and then stuck
     // xxx audio record scaling, and params
-    params.record_scale = util_get_numeric_param(".", "record_scale", DEFAULT_RECORD_SCALE);
+    params.record_gain = util_get_numeric_param(".", "record_gain", DEFAULT_RECORD_GAIN);
     params.record_silence = util_get_numeric_param(".", "record_silence", DEFAULT_RECORD_SILENCE);
-    sdlx_audio_params_t ap = { params.record_scale, params.record_silence };
+    sdlx_audio_params_t ap = { params.record_gain, params.record_silence };
     sdlx_audio_set_params(&ap);
 
 #ifdef ANDROID
@@ -299,6 +208,8 @@ static void cleanup(void)
 
     // xxx free svc_call allocations ?
 
+    // xxx are other cleanup routines called?
+
     sdlx_quit(SUBSYS_VIDEO | SUBSYS_AUDIO | SUBSYS_SENSOR);
 }
 
@@ -358,8 +269,6 @@ static void processing(void)
     sdlx_event_t event;
 
     // sdlx_show_toast("STARTING");
-
-    //lame_test();
 
     while (true) {
         // clear the display, and set the font to default
@@ -674,7 +583,7 @@ static void get_list_of_apps(void)
 // xxx y scrolling
 
 static void copyright(void);
-static double get_number(char *prompt, double min, double max); // xxx use in other places
+static double get_number(char *prompt, double min, double max) __attribute__ ((unused)); // xxx use in other places
 
 static void settings(void)
 {
@@ -683,14 +592,14 @@ static void settings(void)
     #define RECORDING 1
     #define PLAYBACK  2
 
-    #define RECORD_TEST_FILENAME "record_test.raw"
+    #define RECORD_TEST_FILENAME "record_test.wav"
 
     #define EVID_COPYRIGHT            1001
     #define EVID_DEVEL_MODE           1002
     #define EVID_DEVEL_PORT           1003
     #define EVID_DEVEL_PASSWORD       1004
     #define EVID_SERVICES             1005
-    #define EVID_RECORD_SCALE         1006
+    #define EVID_RECORD_GAIN          1006
     #define EVID_RECORD_SILENCE       1007
     #define EVID_RECORD_TEST          1008
 #ifdef ANDROID
@@ -778,11 +687,11 @@ static void settings(void)
             sdlx_register_event(loc, EVID_SERVICES);
         }
 
-        // display Record_Scale xxx change to Gain
+        // display Record_Gain
         if (GET_Y) {
             sdlx_audio_get_params(&ap);
-            loc = sdlx_render_printf(0, y, "Record_Scale = %0.1f", ap.record_scale);
-            sdlx_register_event(loc, EVID_RECORD_SCALE);
+            loc = sdlx_render_printf(0, y, "Record_Gain = %0.1f", ap.record_gain);
+            sdlx_register_event(loc, EVID_RECORD_GAIN);
         }
 
         // display Record_Silence
@@ -805,7 +714,7 @@ static void settings(void)
                 sdlx_render_fill_rect(0, y, bar_value_w, bar_height, COLOR_RED);
                 sdlx_render_rect(0, y, sdlx_win_width, bar_height, 2, COLOR_WHITE);
             } else if (record_test_state == PLAYBACK) {
-                int bar_value_w = (as.total_ms ? (sdlx_win_width * as.processed_ms / as.total_ms) : 0);
+                int bar_value_w = (as.play_total_ms ? (sdlx_win_width * as.play_current_ms / as.play_total_ms) : 0);
                 int bar_height = sdlx_char_height;
                 sdlx_render_fill_rect(0, y, bar_value_w, bar_height, COLOR_GREEN);
                 sdlx_render_rect(0, y, sdlx_win_width, bar_height, 2, COLOR_WHITE);
@@ -832,7 +741,7 @@ static void settings(void)
         // Record_Test processing
         sdlx_audio_state(&as);
         if (record_test_state == RECORDING && as.state == AUDIO_STATE_IDLE) {
-            sdlx_audio_play(".", RECORD_TEST_FILENAME);
+            sdlx_audio_play_file(".", RECORD_TEST_FILENAME);
             record_test_state = PLAYBACK;
         } else if (record_test_state == PLAYBACK && as.state == AUDIO_STATE_IDLE) {
             util_delete_file(".", RECORD_TEST_FILENAME);
@@ -903,13 +812,13 @@ static void settings(void)
         case EVID_SERVICES:
             svcs_display(BG_COLOR);
             break;
-        case EVID_RECORD_SCALE: {
+        case EVID_RECORD_GAIN: {
             double number = get_number("Record_Scale", 1, 100);  // xxx was limitted to 10
             if (number != INVALID_NUMBER) {
-                params.record_scale = number;
-                util_set_numeric_param(".", "record_scale", number);
+                params.record_gain = number;
+                util_set_numeric_param(".", "record_gain", number);
                 sdlx_audio_get_params(&ap);
-                ap.record_scale = number;
+                ap.record_gain = number;
                 sdlx_audio_set_params(&ap);
             }
             break; }
@@ -924,7 +833,7 @@ static void settings(void)
             }
             break; }
         case EVID_RECORD_TEST: {
-            sdlx_audio_record(".", RECORD_TEST_FILENAME, 5, 2, false);
+            sdlx_audio_record_from_mic(".", RECORD_TEST_FILENAME, 5, 2, false);
             record_test_state = RECORDING;
             break; }
 #ifdef ANDROID
@@ -957,7 +866,7 @@ static void settings(void)
             break;
         case EVID_QUIT:
             if (record_test_state != IDLE) {
-                sdlx_audio_ctl(AUDIO_REQ_STOP);
+                sdlx_audio_stop();
                 record_test_state = IDLE;
             }
             done = true;

@@ -1,3 +1,68 @@
+cleanup Test App
+
+cleanup Memo App
+- sdlx_audio_file_duration needed for Memo
+
+Location,  don't get every minute, and dont repeat same location
+- retest location
+
+Light App is not saving its color correctly
+
+git rebase -i
+
+----
+
+update to sdlx_print to not need background color arg
+
+update to add pixel_t  unsigned int
+
+Logging display, either App or Setting
+
+rename args to eztet to build_linux  run_linux  run_picoc
+
+- - - - 
+- - - - 
+- - - - 
+
+- use TTF_RenderText_Solid or Blended   NOT Shaded
+  - this would update the printing API, bg_color not needed
+
+
+add SDL version to Setup, and print when starting
+review and cleanup sdlx_audio.c
+
+color organ APP
+- add butterworth filter
+- option to play files
+- or option to run color organ using playbackcapture
+- new Audio App 
+   . start / stop capture, display file size and duration during capture;
+     also display volume during capture
+   . playback, from list of files in the apps dir
+     . display volume, and duration during playback
+     . optional display color organ during playback
+- close encounters tone seq APP;  and combine with visual representation
+
+git checkout the ttf and mixer too
+- ask question to the mixer team
+- check if they have tagged versions now
+
+SDL Video updates
+- rotate the display
+- add SDL_SetRenderTarget
+- API to print rotated text, is this really needed?
+- make a split line util
+- should textures have a bg color arg
+- make pixels unsigned int, add pixel_t
+- plot apis,
+  - improve them
+  - write an app that uses them, maybe steps
+- sdl return codes are now boolean
+
+---------------------------------
+----LATER -----------------------
+---------------------------------
+
 review README files
 - add loc of SDL doc 
   - https://wiki.libsdl.org/SDL3_mixer/CategorySDLMixer
@@ -17,9 +82,7 @@ review README files
 - update permission comments from here
     https://wiki.libsdl.org/SDL3/SDL_RequestAndroidPermission
 
-add SDL version to Setup, and print when starting
-
-updates to sdlx_udio and Test app for mp3
+updates to sdlx_audio and Test app for mp3
 - use Mixer to play raw files as well as mp3
 - existing raw files remain mono
 - mp3 capture is stereo
@@ -27,13 +90,6 @@ updates to sdlx_udio and Test app for mp3
 - add butterworth filter
 - option to append to both mp3 and raw files  (is this possible for mp3)
 - consider support for wav file
-
-new Audio App 
-. start / stop capture, display file size and duration during capture;
-  also display volume during capture
-. playback, from list of files in the apps dir
-  . display volume, and duration during playback
-  . optional display color organ during playback
 
 what API level and API_PLATFORM, are needed for
 - audio capture
@@ -43,12 +99,6 @@ what API level and API_PLATFORM, are needed for
    Gradle Plugin (AGP), when using externalNativeBuild, automatically uses your 
    minSdkVersion for the native build to ensure compatibility. "
 - API_PLATFORM  29 or 24?
-
-git checkout the ttf and mixer too
-- ask question to the mixer team
-
-use TTF_RenderText_Solid or Blended   NOT Shaded
-- this would update the printing API, bg_color not needed
 
 logging:
 - add Setup option to view the latest in logfile
@@ -67,18 +117,6 @@ logging:
   - circular files eiwth head/tail
   - in format compatible with multi line print
   - does multiline print break at newlines
-
-SDL Video updates
-- rotate the display
-- add SDL_SetRenderTarget
-- API to print rotated text, is this really needed?
-- make a split line util
-- should textures have a bg color arg
-- make pixels unsigned int, add pixel_t
-- plot apis,
-  - improve them
-  - write an app that uses them, maybe steps
-- sdl return codes are now boolean
 
 Cleanups:
 - JAVA code cleanup:

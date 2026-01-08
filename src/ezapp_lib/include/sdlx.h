@@ -153,15 +153,16 @@ void sdlx_show_toast(char *message);
 // audio
 // --------------------
 
-#define AUDIO_REQ_STOP     1
-#define AUDIO_REQ_PAUSE    2
-#define AUDIO_REQ_UNPAUSE  3
+#define FRAMES_PER_SEC 48000
 
-#define AUDIO_STATE_IDLE           0
-#define AUDIO_STATE_PLAY_FILE      1
-#define AUDIO_STATE_PLAY_TONES     2
-#define AUDIO_STATE_RECORD         3
-#define AUDIO_STATE_RECORD_APPEND  4
+#define AUDIO_STATE_IDLE                0
+#define AUDIO_STATE_STOPPING            1
+#define AUDIO_STATE_PAUSED              2
+#define AUDIO_STATE_PLAY_FILE           3
+#define AUDIO_STATE_PLAY_TONES          4
+#define AUDIO_STATE_PLAY_BUFF           5
+#define AUDIO_STATE_RECORD_FROM_MIC     6
+#define AUDIO_STATE_RECORD_FROM_DEVICE  7
 
 typedef struct {
     short freq;
@@ -170,38 +171,36 @@ typedef struct {
 
 typedef struct {
     int  state;
-    bool paused;
-    int  processed_ms;
-    int  total_ms;
+    int  play_current_ms;
+    int  play_total_ms;
+    int  record_ms;
     int  volume;
-    char filename[100];
+    char pathname[200];
 } sdlx_audio_state_t;
 
-int sdlx_audio_play(char *dir, char *filename);
-int sdlx_audio_record(char *dir, char *filename, int max_duration_secs, int auto_stop_secs, bool append);
-int sdlx_audio_play_tones(sdlx_tone_t *tones);
-int sdlx_audio_file_duration(char *dir, char *filename);
-
-int sdlx_audio_play_new(char *dir, char *filename);
-
-void sdlx_audio_ctl(int req);
+int sdlx_audio_stop(void);
+void sdlx_audio_pause(void);
+void sdlx_audio_resume(void);
 void sdlx_audio_state(sdlx_audio_state_t * state);
+int sdlx_audio_file_duration_ms(char *dir, char *filename);
 
-void sdlx_audio_print_devices_info(void);
-void sdlx_audio_create_test_file(char *dir, char *filename, int duration_secs, int freq);
+int sdlx_audio_play_file(char *dir, char *filename);
+int sdlx_audio_play_tones(sdlx_tone_t *tones);
+int sdlx_audio_play_buff(short *samples, int num_samples, int num_channels,
+                         int loops, bool free_samples_when_done);
 
-void sdlx_start_playbackcapture(char *dir, char *filename);
-void sdlx_stop_playbackcapture(void);
+int sdlx_audio_record_from_mic(char *dir, char *filename, int max_duration_secs, int auto_stop_secs, bool append);
+int sdlx_audio_record_from_device(char *dir, char *filename);
 
 // not available in picoc
 #ifdef ANDROID
-    #define DEFAULT_RECORD_SCALE 5
+    #define DEFAULT_RECORD_GAIN 5
 #else
-    #define DEFAULT_RECORD_SCALE 1
+    #define DEFAULT_RECORD_GAIN 1
 #endif
 #define DEFAULT_RECORD_SILENCE 10
 typedef struct {
-    double record_scale;
+    double record_gain;
     double record_silence;
 } sdlx_audio_params_t;
 void sdlx_audio_set_params(sdlx_audio_params_t *ap);

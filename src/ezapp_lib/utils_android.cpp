@@ -60,7 +60,7 @@ void util_text_to_speech(char *text) {
 }
 void util_text_to_speech_stop(void) {
     char text[1] = { '\0' };
-    call_java2("text_to_speech_stop", text);
+    call_java2("text_to_speech", text);
 }
 
 // foreground service

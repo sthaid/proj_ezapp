@@ -121,18 +121,17 @@ int main(int argc, char **argv)
             if (y > y_display_end) break;
 
             // determine the color in which the filename[idx] will be displayed
-            if (strstr(audio_state.filename, filename[idx]) != NULL) {
-                color = (audio_state.state == AUDIO_STATE_PLAY_FILE     ? COLOR_GREEN :   // xxx picoc problem
-                        (audio_state.state == AUDIO_STATE_RECORD        ? COLOR_RED :
-                        (audio_state.state == AUDIO_STATE_RECORD_APPEND ? COLOR_RED :
-                                                                          COLOR_LIGHT_BLUE)));
+            if (strstr(audio_state.pathname, filename[idx]) != NULL) {
+                color = (audio_state.state == AUDIO_STATE_PLAY_FILE       ? COLOR_GREEN :   // xxx picoc problem
+                        (audio_state.state == AUDIO_STATE_RECORD_FROM_MIC ? COLOR_RED :
+                                                                            COLOR_LIGHT_BLUE));
             } else {
                 color = COLOR_LIGHT_BLUE;
             }
 
             // display the friendly filename and duration in the color determined above
             sdlx_print_init_color(color, COLOR_BLACK);
-            file_duration_secs = sdlx_audio_file_duration(data_dir, filename[idx]);
+            file_duration_secs = sdlx_audio_file_duration_ms(data_dir, filename[idx]) / 1000;
             loc = sdlx_render_printf(0, y, "%s-%02d", friendlyname[idx], file_duration_secs);
             if (color == COLOR_LIGHT_BLUE || color == COLOR_GREEN) {
                 sdlx_register_event(loc, EVID_PLAY+idx);
@@ -162,10 +161,10 @@ int main(int argc, char **argv)
         y = sdlx_win_height-300;
         int bar_height = 75;
         if (audio_state.state == AUDIO_STATE_PLAY_FILE) {
-            int bar_value_w = sdlx_win_width * audio_state.processed_ms / audio_state.total_ms;
+            int bar_value_w = sdlx_win_width * audio_state.play_current_ms / audio_state.play_total_ms;
             sdlx_render_fill_rect(0, y, bar_value_w, bar_height, COLOR_GREEN);
             sdlx_render_rect(0, y, sdlx_win_width, bar_height, 2, COLOR_WHITE);
-        } else if (audio_state.state == AUDIO_STATE_RECORD || audio_state.state == AUDIO_STATE_RECORD_APPEND) {
+        } else if (audio_state.state == AUDIO_STATE_RECORD_FROM_MIC) {
             int bar_value_w =  sdlx_win_width * audio_state.volume / 100;
             sdlx_render_printf(sdlx_win_width-COL2X(2), y, "%2d", audio_state.volume);
             sdlx_render_fill_rect(0, y, bar_value_w, bar_height, COLOR_RED);
@@ -198,21 +197,21 @@ int main(int argc, char **argv)
             char new_filename[100];
 
             localtime_r(&t, &tm);
-            sprintf(new_filename, "%04d%02d%02d%02d%02d%02d.raw",
+            sprintf(new_filename, "%04d%02d%02d%02d%02d%02d.wav",
                     tm.tm_year+1900, tm.tm_mon+1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
             //printf("INFO %s: EVID_NEW recording to '%s'\n", progname, new_filename);
-            sdlx_audio_record(data_dir, new_filename, 30, 2, false);
+            sdlx_audio_record_from_mic(data_dir, new_filename, 30, 2, false);
         } else if (event.event_id == EVID_STOP) {
             //printf("INFO %s: EVID_STOP\n", progname);
-            sdlx_audio_ctl(AUDIO_REQ_STOP);
+            sdlx_audio_stop();
         } else if (event.event_id >= EVID_PLAY && event.event_id < EVID_PLAY + max_filename) {
             int idx = event.event_id - EVID_PLAY;
             //printf("INFO %s: EVID_PLAY %d\n", progname, idx);
-            sdlx_audio_play(data_dir, filename[idx]);
+            sdlx_audio_play_file(data_dir, filename[idx]);
         } else if (event.event_id >= EVID_APPEND && event.event_id < EVID_APPEND + max_filename) {
             int idx = event.event_id - EVID_APPEND;
             //printf("INFO %s: EVID_APPEND %d\n", progname, idx);
-            sdlx_audio_record(data_dir, filename[idx], 30, 2, true);
+            sdlx_audio_record_from_mic(data_dir, filename[idx], 30, 2, true);
         } else if (event.event_id >= EVID_DELETE && event.event_id < EVID_DELETE + max_filename) {
             int idx = event.event_id - EVID_DELETE;
             //printf("INFO %s: EVID_DELETE %d\n", progname, idx);
@@ -253,7 +252,7 @@ void get_list_of_files(void)
 
     // run 'ls -lr' to get reverse sorted list of filenames,
     // starting with the most recent
-    sprintf(cmd, "cd %s; /bin/ls -1r *.raw", data_dir);
+    sprintf(cmd, "cd %s; /bin/ls -1r *.wav", data_dir);
     fp = popen(cmd, "r");
     while (fgets(s, sizeof(s), fp)) {
         remove_trailing_newline(s);
@@ -262,7 +261,7 @@ void get_list_of_files(void)
     pclose(fp);
 
     // create friendly filenames, for example:
-    // - filename:    20251219071933.raw
+    // - filename:    20251219071933.wav
     // - friendlyname: Dec19-07:19
     for (i = 0; i < max_filename; i++) {
         char month[8], day[8], hour[8], minute[8], month_abbrev[16];

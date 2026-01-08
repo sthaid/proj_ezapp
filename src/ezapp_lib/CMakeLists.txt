@@ -26,7 +26,7 @@ set(LIB_HEADERS
 set(INCLUDE_PATH "")
 cmake_path(APPEND INCLUDE_PATH "${CMAKE_INSTALL_PREFIX}" include)
 
-include_directories(${INCLUDE_PATH} . ./include)
+include_directories(. ./include ${INCLUDE_PATH})
 
 add_library(ezapp_lib STATIC ${LIB_SRCS} ${LIB_HEADERS})
 

@@ -151,7 +151,7 @@ int main(int argc, char **argv)
             sdlx_audio_play_tones(tones);
             break; }
         case EVID_CANCEL:
-            sdlx_audio_ctl(AUDIO_REQ_STOP);
+            sdlx_audio_stop();
             break;
         case EVID_WPM_INC:
             if (wpm < 20) {
@@ -172,7 +172,7 @@ int main(int argc, char **argv)
     }
 
     // cleanup and end program
-    sdlx_audio_ctl(AUDIO_REQ_STOP);
+    sdlx_audio_stop();
     sdlx_quit(SUBSYS_VIDEO | SUBSYS_AUDIO);
     free_word_list();
     printf("INFO %s: terminating\n", progname);

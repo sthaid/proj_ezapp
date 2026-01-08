@@ -560,7 +560,7 @@ void util_set_numeric_param(char *dir, char *name, double value)
 
     // create value string, and
     // call util_set_str_param to set it
-    sprintf(value_str, "%G", value);
+    sprintf(value_str, "%0.3f", value);
     util_set_str_param(dir, name, value_str);
 }    
 

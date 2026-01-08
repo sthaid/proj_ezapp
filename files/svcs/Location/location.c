@@ -15,7 +15,7 @@
 #include "svcs/Location/common.h"
 
 // defines
-#define INTERVAL 60  // xxx was 3600
+#define INTERVAL (15*60)  // 15 minutes
 
 // variables
 loc_hist_t *loc_hist;
@@ -81,7 +81,7 @@ int main(int argc, char **argv)
     printf("INFO: hisotry collection is %s\n", param_enabled ? "enabled" : "disabled");
 
     // set absolute time at which svc_wait_for_req will timeout;
-    // this time is rounded down to the prior hour so that the first
+    // this time is rounded down to the prior INTERVAL so that the first
     // call to svc_wait_for_req will timeout immedeately
     abstime = time(NULL) / INTERVAL * INTERVAL;
 
@@ -111,9 +111,8 @@ int main(int argc, char **argv)
 
                 // if name is different than most recent entry in loc_file
                 // then add new entry to loc file, 
-                // xxx temp, always add
-                //if (strcmp(name, "Not Found") != 0 &&
-                //    strcmp(most_recent_loc_hist_name(), name) != 0)
+                if (strcmp(name, "Not Found") != 0 &&
+                    strcmp(most_recent_loc_hist_name(), name) != 0)
                 {
                     add_entry_to_loc_hist(time(NULL), latitude, longitude, name);
                 }
@@ -208,8 +207,7 @@ void create_loc_data_str(time_t t, double latitude, double longitude, double ele
 
     // create time string
     tm = localtime(&t);
-    //xxx strftime(time_str, sizeof(time_str), "%b %d %H:%M %Z", tm);
-    strftime(time_str, sizeof(time_str), "%b %d %H:%M:%S %Z", tm);
+    strftime(time_str, sizeof(time_str), "%b %d %H:%M %Z", tm);
 
     // sprint location info to str
     p = data_str;

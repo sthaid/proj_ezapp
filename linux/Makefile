@@ -15,14 +15,14 @@ SDL SDL_ttf SDL_mixer lodepng cJSON mp3lame ezapp_lib picoc:
 	cd build/$@; cmake --build . # --verbose
 	cd build/$@; cmake --install .
 
-mini: lodepng cJSON mp3lame ezapp_lib picoc ezapp
+build: ezapp_lib picoc ezapp
 
-run: ezapp
+run: build
 	cd ../files; ../linux/build/ezapp/ezapp
 
 clean:
 	rm -rf build local
 
 .PHONY: SDL SDL_ttf SDL_mixer lodepng cJSON mp3lame ezapp_lib picoc
-.PHONY: ezapp run all mini clean
+.PHONY: ezapp run all clean
 
