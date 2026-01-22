@@ -2,8 +2,8 @@
 SUBDIRS = \
     linux \
     android \
-    src/picoc \
     bin/src 
+
 APPS := $(sort $(dir $(wildcard files/apps/*/.)))
 SVCS := $(sort $(dir $(wildcard files/svcs/*/.)))
 

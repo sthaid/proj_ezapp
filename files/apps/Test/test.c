@@ -138,7 +138,7 @@ char *page_title[] = {     // Page
         "Location",        //  10
         "Playback Capture" //  11
             };
-static int pagenum = 7;
+static int pagenum = 0;
 
 #define LAST_PAGE 11
 
@@ -683,7 +683,7 @@ static void page_7_draw(void)
     sdlx_render_printf(0, ROW2Y(row++), "play_total %0.3f", state.play_total_ms/1000.);
     sdlx_render_printf(0, ROW2Y(row++), "record     %0.3f", state.record_ms/1000.);
     sdlx_render_printf(0, ROW2Y(row++), "volume     %d", state.volume);
-    sdlx_render_printf(0, ROW2Y(row++), "%s", state.filename);
+    sdlx_render_printf(0, ROW2Y(row++), "%s", state.pathname);
     row++;
 
     // stop, pause, resume

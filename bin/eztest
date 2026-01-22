@@ -43,38 +43,38 @@ SRCS=$(echo $PARENT_DIR/$APP_DIR/*.c)
 set -x
 make -C ../linux ezapp_lib picoc
 if [ $? -ne 0 ]; then
-    { set +x; } 2>/dev/null
     echo ABORT
     exit 1
 fi
-{ set +x; } 2>/dev/null
 
 # perform command
 if [ "$CMD" = build ]; then
-    set -x
     gcc -DLINUX -o /tmp/$APP_NAME $CFLAGS $SRCS \
         -I ../linux/local/include \
         -L ../linux/local/lib -lezapp_lib -lmp3lame -llodepng -lcJSON -lSDL3 -lSDL3_ttf -lSDL3_mixer -lm
-    { set +x; } 2>/dev/null
+    if [ $? -ne 0 ]; then
+        echo ABORT
+        exit 1
+    fi
 elif [ "$CMD" = linux ]; then
     gcc -DLINUX -o /tmp/$APP_NAME $CFLAGS $SRCS \
         -I ../linux/local/include \
         -L ../linux/local/lib -lezapp_lib -lmp3lame -llodepng -lcJSON -lSDL3 -lSDL3_ttf -lSDL3_mixer -lm \
         -Wl,-rpath,../linux/local/lib
     if [ $? -ne 0 ]; then
-        { set +x; } 2>/dev/null
         echo ABORT
         exit 1
     fi
-    { set +x; } 2>/dev/null
     exec -a $APP_NAME /tmp/$APP_NAME $PARENT_DIR/$APP_DIR
 elif [ "$CMD" = picoc ]; then
-    set -x
     LIB_PATH=$(pwd)/../linux/local/lib
     gcc -o /tmp/picoc -D UNIX_HOST -O2 -g -Wall ../src/picoc/picoc.c \
         -L $LIB_PATH -lpicoc -lezapp_lib -lmp3lame -lcJSON -llodepng -lSDL3 -lSDL3_mixer -lSDL3_ttf -lm \
         -Wl,-rpath,$LIB_PATH
     /tmp/picoc -n $APP_NAME $SRCS - $PARENT_DIR/$APP_DIR
-    { set +x; } 2>/dev/null
+    if [ $? -ne 0 ]; then
+        echo ABORT
+        exit 1
+    fi
 fi
 
