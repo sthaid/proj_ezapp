@@ -1,22 +1,36 @@
-cleanup Test App
+layout file is not preserved when reloading
 
-cleanup Memo App
-- sdlx_audio_file_duration needed for Memo
+scrolling of Log is slow
+
+need horizontal scroll too
+
+should start at the bottom
+
+remove INFO, etc from y logs
+
+apps should have there own INFO, ERROR logging
+
+-------------
+
+logcat -s -d SDL SDL/APP AndroidRuntime | tail -1000
+
+01-23 07:09:26.876 19108 19139 I SDL/APP : EZAPP INFO process_req_thread: pclose_rc=0, WEXITSTATUS=0
+
+logcat -s -d SDL SDL/APP AndroidRuntime --format=brief | tail -1000
+
+logcat -s -d --format=brief SDL SDL/APP AndroidRuntime --format=tag | tail -1000 | fmt -w 40
+
+-------------------
 
 Location,  don't get every minute, and dont repeat same location
 - retest location
 
-Light App is not saving its color correctly
-
-git rebase -i
-
-----
+Logging display, either App or Setting
 
 update to sdlx_print to not need background color arg
 
 update to add pixel_t  unsigned int
 
-Logging display, either App or Setting
 
 rename args to eztet to build_linux  run_linux  run_picoc
 
