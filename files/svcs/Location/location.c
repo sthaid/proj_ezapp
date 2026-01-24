@@ -46,17 +46,17 @@ int main(int argc, char **argv)
 
     // save args
     if (argc != 2) {
-        printf("ERROR %s: data_dir arg expected\n", progname);
+        printf("E %s: data_dir arg expected\n", progname);
         return 1;
     }
     progname = argv[0];
     data_dir = argv[1];
-    printf("INFO %s: starting, data_dir=%s\n", progname, data_dir);
+    printf("I %s: starting, data_dir=%s\n", progname, data_dir);
 
     // read location data
     rc = read_loc_data();
     if (rc != 0) {
-        printf("ERROR %s: failed to read location data\n", progname);
+        printf("E %s: failed to read location data\n", progname);
         return 1;
     }
 
@@ -66,7 +66,7 @@ int main(int argc, char **argv)
     // - created (return flag) = NULL
     loc_hist = util_map_file(data_dir, LOC_HIST_FILENAME, sizeof(loc_hist_t), true, false, &created);
     if (loc_hist == NULL) {
-        printf("ERROR %s: failed to map %s\n", progname, LOC_HIST_FILENAME);
+        printf("E %s: failed to map %s\n", progname, LOC_HIST_FILENAME);
         return 1;
     }
 
@@ -78,7 +78,7 @@ int main(int argc, char **argv)
 
     // read parameters
     param_enabled = util_get_numeric_param(data_dir, "enabled", 1);
-    printf("INFO %s: history collection is %s\n", progname, param_enabled ? "enabled" : "disabled");
+    printf("I %s: history collection is %s\n", progname, param_enabled ? "enabled" : "disabled");
 
     // set absolute time at which svc_wait_for_req will timeout;
     // this time is rounded down to the prior INTERVAL so that the first
@@ -92,7 +92,7 @@ int main(int argc, char **argv)
 
         // if an unexpected error is returned, then delay and try again
         if (rc != 0 && rc != SVC_REQ_WAIT_ERROR_TIMEDOUT) {
-            printf("ERROR %s: svc_wait_for_req returned unexpected error %d\n", progname, rc);
+            printf("E %s: svc_wait_for_req returned unexpected error %d\n", progname, rc);
             sleep(1);
             continue;
         }
@@ -132,7 +132,7 @@ int main(int argc, char **argv)
     // cleanup and end program
     free_loc_data();
     util_unmap_file(loc_hist, sizeof(loc_hist_t));
-    printf("INFO %s: terminating\n", progname);
+    printf("I %s: terminating\n", progname);
     return 0;
 }
 
@@ -178,14 +178,14 @@ char *most_recent_loc_hist_name(void)
 
     ptr = strchr(data_str, '\n');
     if (ptr == NULL) {
-        printf("ERROR %s: newline char not found in data_str '%s'\n", progname, data_str);
+        printf("E %s: newline char not found in data_str '%s'\n", progname, data_str);
         return "";
     }
 
     memcpy(name, data_str, ptr-data_str);
     name[ptr-data_str] = '\0';
 
-    printf("INFO %s: most recent name = '%s'\n", progname, name);
+    printf("I %s: most recent name = '%s'\n", progname, name);
     return name;
 }
 
@@ -285,7 +285,7 @@ void process_req(svc_req_t *req)
         char *country_code = req->data;
 
         if (strlen(country_code) != 2) {
-            printf("ERROR %s: invalid country code '%s', len must be 2\n", progname, country_code);
+            printf("E %s: invalid country code '%s', len must be 2\n", progname, country_code);
             svc_req_completed(req, SVC_REQ_ERROR);
             break;
         }
@@ -339,13 +339,13 @@ void process_req(svc_req_t *req)
     case SVC_LOCATION_REQ_SET_ENABLED: {
         param_enabled = req->data[0];
         util_set_numeric_param("data_dir", "enabled", param_enabled);
-        printf("INFO %s: hisotry collection is now %s\n",
+        printf("I %s: history collection is now %s\n",
                progname,
                param_enabled ? "enabled" : "disabled");
         svc_req_completed(req, SVC_REQ_OK);
         break; }
     default:
-        printf("ERROR %s: req %d is invalid\n", progname, req->req_id);
+        printf("E %s: req %d is invalid\n", progname, req->req_id);
         svc_req_completed(req, SVC_REQ_ERROR_INVALID_REQ);
         break;
     }

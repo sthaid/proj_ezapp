@@ -38,7 +38,7 @@ int read_loc_data(void)
     // read the catenated file to variable 'loc_data'
     loc_data = util_read_file(data_dir, "all_loc", &len);
     if (loc_data == NULL) {
-        printf("ERROR %s: failed to read all_loc\n", progname);
+        printf("E %s: failed to read all_loc\n", progname);
         return -1;
     }
 
@@ -47,12 +47,12 @@ int read_loc_data(void)
 
     // set max_loc_data
     if ((len % sizeof(loc_data_t)) != 0) {
-        printf("ERROR %s: invalid len %d of file all_loc\n", progname, len);
+        printf("E %s: invalid len %d of file all_loc\n", progname, len);
         free_loc_data();
         return -1;
     }
     max_loc_data = len / sizeof(loc_data_t);
-    printf("INFO %s: max_loc_data = %d\n", progname, max_loc_data);
+    printf("I %s: max_loc_data = %d\n", progname, max_loc_data);
 
     // return success
     return 0;
@@ -114,7 +114,7 @@ void find_closest_loc_data(double latitude, double longitude, char *name, double
 
     // if no closest location found then return
     if (closest_name[0] == '\0') {
-        printf("INFO %s: closest not found for %0.3f %0.3f\n", progname, latitude, longitude);
+        printf("I %s: closest not found for %0.3f %0.3f\n", progname, latitude, longitude);
         strcpy(name, "Not Found");
         *miles = 0;
         return;
@@ -123,7 +123,7 @@ void find_closest_loc_data(double latitude, double longitude, char *name, double
     // return name and distance of the closest location
     strcpy(name, closest_name);
     *miles = 364000 * sqrt(min_distance_squared) / 5280;
-    printf("INFO %s: found closest to %0.3f %0.3f - name=%s miles=%0.1f\n",
+    printf("I %s: found closest to %0.3f %0.3f - name=%s miles=%0.1f\n",
            progname, latitude, longitude, name, *miles);
 }
 
@@ -141,7 +141,7 @@ int download_country_loc_data(char *id_arg)
     strncpy(id, id_arg, sizeof(id));
     id[sizeof(id)-1] = '\0';
     if (strlen(id) != 2 || !islower(id[0]) || !islower(id[1])) {
-        printf("ERROR %s: invalid 2 char country id code '%s'\n", progname, id);
+        printf("E %s: invalid 2 char country id code '%s'\n", progname, id);
         return ret;
     }
 
@@ -152,7 +152,7 @@ int download_country_loc_data(char *id_arg)
     sprintf(out_filename, "%s/%s.loc", data_dir, id);
     fp_out = fopen(out_filename, "wb");
     if (fp_out == NULL) {
-        printf("ERROR %s: failed to create %s\n", progname, out_filename);
+        printf("E %s: failed to create %s\n", progname, out_filename);
         goto done;
     }
 
@@ -162,7 +162,7 @@ int download_country_loc_data(char *id_arg)
             data_dir, id, id);
     ret = system(cmd);
     if (ret != 0) {
-        printf("ERROR %s: '%s' failed, ret=%d, %s\n", progname, cmd, ret, strerror(errno));
+        printf("E %s: '%s' failed, ret=%d, %s\n", progname, cmd, ret, strerror(errno));
         goto done;
     }
     
@@ -170,7 +170,7 @@ int download_country_loc_data(char *id_arg)
     sprintf(cmd, "unzip -o -d %s %s/%s.zip", data_dir, data_dir, id);
     ret = system(cmd);
     if (ret != 0) {
-        printf("ERROR %s: '%s' failed, ret=%d, %s\n", progname, cmd, ret, strerror(errno));
+        printf("E %s: '%s' failed, ret=%d, %s\n", progname, cmd, ret, strerror(errno));
         goto done;
     }
 
@@ -213,7 +213,7 @@ int read_and_parse_json_file(char *json_filename, FILE *fp_out)
     // read json into str_orig
     str_orig = util_read_file(".", json_filename, &len);
     if (str_orig == NULL) {
-        printf("ERROR %s: failed read file %s\n", progname, json_filename);
+        printf("E %s: failed read file %s\n", progname, json_filename);
         goto error;
     }
 
@@ -223,7 +223,7 @@ int read_and_parse_json_file(char *json_filename, FILE *fp_out)
         // parse json
         root = util_json_parse(str, &end_ptr);
         if (root == NULL) {
-            printf("ERROR %s: util_json_parse failed, %s\n", progname, json_filename);
+            printf("E %s: util_json_parse failed, %s\n", progname, json_filename);
             goto error;
         }
 
@@ -266,7 +266,7 @@ int read_and_parse_json_file(char *json_filename, FILE *fp_out)
     }
 
     // cleanup and return success
-    printf("INFO %s: read_and_parse_json_file %s success_cnt=%d skip_cnt=%d\n", 
+    printf("I %s: read_and_parse_json_file %s success_cnt=%d skip_cnt=%d\n", 
            progname, json_filename, success_cnt, skip_cnt);
     free(str_orig);
     util_json_free(root);

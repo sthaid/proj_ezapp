@@ -20,7 +20,7 @@ int picoc_ezapp(char *args)
 
     // setjmp for error condition
     if (PicocPlatformSetExitPoint(&pc)) {
-        printf("ERROR PICOC: longjmp error exit, exit_code=%d\n", pc.PicocExitValue);
+        printf("E picoc: longjmp error exit, exit_code=%d\n", pc.PicocExitValue);
         PicocCleanup(&pc);
         return pc.PicocExitValue;
     }
@@ -40,10 +40,10 @@ int picoc_ezapp(char *args)
         }
 
         if (!processing_argv_args) {
-            printf("INFO PICOC: scanning %s\n", s);
+            printf("I picoc: scanning %s\n", s);
             PicocPlatformScanFile(&pc, s);
         } else {
-            printf("INFO PICOC: adding argv[%d] = %s\n", argc, s);
+            printf("I picoc: adding argv[%d] = %s\n", argc, s);
             argv[argc++] = s;
         }
     }
@@ -52,7 +52,7 @@ int picoc_ezapp(char *args)
     PicocCallMain(&pc, argc, argv);
 
     // cleanup and return
-    printf("INFO PICOC: normal exit, exit_code=%d\n", pc.PicocExitValue);
+    printf("I picoc: normal exit, exit_code=%d\n", pc.PicocExitValue);
     PicocCleanup(&pc);
     return pc.PicocExitValue;
 }
