@@ -56,7 +56,7 @@ int main(int argc, char **argv)
     // read location data
     rc = read_loc_data();
     if (rc != 0) {
-        printf("ERROR: %s failed to read location data\n", progname);
+        printf("ERROR %s: failed to read location data\n", progname);
         return 1;
     }
 
@@ -66,7 +66,7 @@ int main(int argc, char **argv)
     // - created (return flag) = NULL
     loc_hist = util_map_file(data_dir, LOC_HIST_FILENAME, sizeof(loc_hist_t), true, false, &created);
     if (loc_hist == NULL) {
-        printf("ERROR: %s failed to map %s\n", progname, LOC_HIST_FILENAME);
+        printf("ERROR %s: failed to map %s\n", progname, LOC_HIST_FILENAME);
         return 1;
     }
 
@@ -78,7 +78,7 @@ int main(int argc, char **argv)
 
     // read parameters
     param_enabled = util_get_numeric_param(data_dir, "enabled", 1);
-    printf("INFO: hisotry collection is %s\n", param_enabled ? "enabled" : "disabled");
+    printf("INFO %s: history collection is %s\n", progname, param_enabled ? "enabled" : "disabled");
 
     // set absolute time at which svc_wait_for_req will timeout;
     // this time is rounded down to the prior INTERVAL so that the first
