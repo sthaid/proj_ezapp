@@ -67,6 +67,7 @@ import org.libsdl.app.ezapp_playbackcapture;
 */
 public class SDLActivity extends Activity implements View.OnSystemUiVisibilityChangeListener {
     private static final String TAG = "SDL";
+    private static final String EZAPP_TAG = "EZAPP";
     private static final int SDL_MAJOR_VERSION = 3;
     private static final int SDL_MINOR_VERSION = 4;
     private static final int SDL_MICRO_VERSION = 0;
@@ -525,13 +526,13 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
 
     // EZAPP playback capture
     public double start_playbackcapture() {
-        Log.v(TAG, "EZAPP calling startPlaybackCapture");
+        Log.i(EZAPP_TAG, "calling startPlaybackCapture");
         mezapp_playbackcapture.startPlaybackCapture(mSingleton, getContext());
         return 0;
     }
 
     public double stop_playbackcapture() {
-        Log.v(TAG, "EZAPP calling stopPlaybackCapture");
+        Log.i(EZAPP_TAG, "calling stopPlaybackCapture");
         mezapp_playbackcapture.stopPlaybackCapture();
         return 0;
     }
@@ -543,13 +544,13 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
     // EZAPP start/stop foreground
     public double start_foreground() {
         if (mezapp_fgsvc_isbound) {
-            Log.v(TAG, "EZAPP foreground already enabled");
+            Log.i(EZAPP_TAG, "foreground already enabled");
             return 0;
         }
 
         showToast("enabling foreground", 0, Gravity.CENTER, 0, 0);
             
-        Log.v(TAG, "EZAPP starting fgsvc");
+        Log.i(EZAPP_TAG, "starting fgsvc");
         ComponentName component_name;
         component_name = startForegroundService(new Intent(this, ezapp_fgsvc.class));
         bindService(new Intent(this, ezapp_fgsvc.class), ezapp_fgsvc_connection, Context.BIND_AUTO_CREATE);
@@ -558,13 +559,13 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
 
     public double stop_foreground() {
         if (!mezapp_fgsvc_isbound) {
-            Log.v(TAG, "EZAPP foreground already disabled");
+            Log.i(EZAPP_TAG, "foreground already disabled");
             return 0;
         }
 
         showToast("disabling foreground", 0, Gravity.CENTER, 0, 0);
 
-        Log.v(TAG, "EZAPP stopping fgsvc");
+        Log.i(EZAPP_TAG, "stopping fgsvc");
         Intent serviceIntent = new Intent(this, ezapp_fgsvc.class);
         stopService(serviceIntent);
         unbindService(ezapp_fgsvc_connection);
@@ -582,13 +583,13 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
             ezapp_fgsvc.InnerBinder binder = (ezapp_fgsvc.InnerBinder) service;
             mezapp_fgsvc = binder.getService();
             mezapp_fgsvc_isbound = true;
-            Log.v(TAG, "EZAPP fgsvc is bound");
+            Log.i(EZAPP_TAG, "fgsvc is bound");
         }
 
         @Override
         public void onServiceDisconnected(ComponentName name) {
             mezapp_fgsvc_isbound = false;
-            Log.v(TAG, "EZAPP fgsvc is unbound");
+            Log.i(EZAPP_TAG, "fgsvc is unbound");
         }
     };
 

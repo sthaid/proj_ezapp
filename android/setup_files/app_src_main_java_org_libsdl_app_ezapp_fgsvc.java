@@ -22,7 +22,7 @@ import org.sthaid.ezApp.R;  // needed to access R.drawable.ic_notifcation_icon
 
 public class ezapp_fgsvc extends Service {
 
-    private static final String TAG = "SDL";
+    private static final String TAG = "EZAPP";
     private final        IBinder mBinder = new InnerBinder();
     private static int   running_count;
 
@@ -39,7 +39,7 @@ public class ezapp_fgsvc extends Service {
         String CHANNEL_DESCRIPTION = "Description for My Channel";
 
         running_count = running_count + 1;
-        Log.v(TAG, "EAAPP starting fgsvc, running_count=" + running_count);
+        Log.i(TAG, "starting fgsvc, running_count=" + running_count);
 
         NotificationManager notificationManager = (NotificationManager) this.getSystemService(this.NOTIFICATION_SERVICE);
 
@@ -82,7 +82,7 @@ public class ezapp_fgsvc extends Service {
     @Override
     public void onDestroy() {
         running_count = running_count - 1;
-        Log.v(TAG, "EAAPP stopping fgsvc, running_count=" + running_count);
+        Log.i(TAG, "stopping fgsvc, running_count=" + running_count);
 
         stopForeground(true);
         stopSelf();

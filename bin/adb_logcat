@@ -4,4 +4,5 @@
 adb logcat -c -b all
 
 # view logs for SDL, SDL/APP and AndroidRuntim sources
-adb logcat -s SDL SDL/APP AndroidRuntime
+set -x
+adb logcat -s --format=tag,color EZAPP:I SDL:I SDL/APP:I AndroidRuntime:I

@@ -36,7 +36,10 @@ void log_msg(const char *lvl, const char *func, const char *fmt, ...)
 // ----------------- ANDROID LOGGING -----------------
 
 #include <SDL3/SDL.h>
+#include <android/log.h>
+
 #define ANDROID_LOG_FIFO "log_fifo"
+
 static int android_logging_thread(void *cx);
 
 int log_init(void)
@@ -100,10 +103,19 @@ static int android_logging_thread(void *cx)
             }
 
             *p = '\0';
-            if (strncmp(buffp, "EZAPP", 5) != 0) {
-                // xxx or call SDL_Log(  and without category?
-                SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "EZAPP %s", buffp); // xxx check string for lvl, and call appropriate SDL routine
+
+            if (strncmp(buffp, "I ", 2) == 0) {
+                __android_log_write(ANDROID_LOG_INFO, "EZAPP", buffp+2);
+            } else if (strncmp(buffp, "E ", 2) == 0) {
+                __android_log_write(ANDROID_LOG_ERROR, "EZAPP", buffp+2);
+            } else if (strcasestr(buffp, "ERROR") != NULL ||
+                       strcasestr(buffp, "FAIL") != NULL) 
+            {
+                __android_log_write(ANDROID_LOG_ERROR, "EZAPP", buffp);
+            } else {
+                __android_log_write(ANDROID_LOG_INFO, "EZAPP", buffp);
             }
+
             buffp = p + 1;
         }
     }

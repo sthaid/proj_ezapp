@@ -1,4 +1,14 @@
+script to check for color
+
+print multiline improvements
+
+-----------
+
 layout file is not preserved when reloading
+- this may be something in main.c
+
+shorten logfile lines
+- convert SDL/APP to EZAPP
 
 scrolling of Log is slow
 
@@ -10,6 +20,7 @@ remove INFO, etc from y logs
 
 apps should have there own INFO, ERROR logging
 
+mmap should allow for arbitrary length files
 -------------
 
 logcat -s -d SDL SDL/APP AndroidRuntime | tail -1000

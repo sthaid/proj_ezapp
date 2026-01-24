@@ -125,9 +125,9 @@ void svcs_init(int (*run_proc)(char *name, bool is_svc))
         // increment max_svcs
         max_svcs++;
 
-        // if svcs table is full print warning and break
+        // if svcs table is full print error and break
         if (max_svcs == MAX_SVCS) {
-            WARN("svcs tbl is full\n");
+            ERROR("svcs tbl is full\n");
             break;
         }
     }

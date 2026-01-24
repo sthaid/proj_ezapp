@@ -22,7 +22,7 @@ import android.hardware.camera2.CameraManager;
 import android.view.Gravity;
 
 public class ezapp_utils {
-    private static final String TAG = "SDL";
+    private static final String TAG = "EZAPP";
     private static final int INVALID_NUMBER = 999999999;
 
     private static TextToSpeech mTts;
@@ -43,7 +43,7 @@ public class ezapp_utils {
     //
 
     public ezapp_utils(Context cx) {
-        Log.v(TAG, "EZAPP utils init");
+        Log.i(TAG, "utils init");
 
         // Initialize TextToSpeech support
         mTts = new TextToSpeech(cx, new TextToSpeech.OnInitListener() {
@@ -52,7 +52,7 @@ public class ezapp_utils {
                 if (status != TextToSpeech.ERROR) {
                     int result = mTts.setLanguage(Locale.US);
                     if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-                        Log.v(TAG, "EZAPP ERROR TTS Lang not supported");
+                        Log.e(TAG, "TTS Lang not supported");
                     } else {
                         isTtsInitialized = true;
                     }
@@ -73,7 +73,7 @@ public class ezapp_utils {
                     latitude = location.getLatitude();
                     longitude = location.getLongitude();
                     altitude = location.getAltitude();
-                    Log.v(TAG, "EZAPP lat/long/alt = " + latitude + " " + longitude + " " + altitude);
+                    Log.i(TAG, "lat/long/alt = " + latitude + " " + longitude + " " + altitude);
                 }
             }
         };
@@ -90,7 +90,7 @@ public class ezapp_utils {
                 // get the first camera ID
                 cameraId = cameraManager.getCameraIdList()[0];
             } catch (CameraAccessException e) {
-                Log.v(TAG, "EZAPP CameraAccessException");
+                Log.e(TAG, "CameraAccessException");
             }
         }
     }
@@ -100,7 +100,7 @@ public class ezapp_utils {
     //
 
     public void destroy() {
-        Log.v(TAG, "EZAPP utils destroy");
+        Log.i(TAG, "utils destroy");
         if (mTts != null) {
             mTts.stop();
             mTts.shutdown();
@@ -117,10 +117,10 @@ public class ezapp_utils {
         int status;
         if (isTtsInitialized && mTts != null) {
             if (message.length() > 0) {
-                Log.v(TAG, "EZAPP tts speaking: " + message);
+                Log.i(TAG, "tts speaking: " + message);
                 status = mTts.speak(message, TextToSpeech.QUEUE_FLUSH, null, "utteranceId1"); // xxx what are the args
             } else {
-                Log.v(TAG, "EZAPP tts stopping");
+                Log.i(TAG, "tts stopping");
                 status = mTts.stop();
             }
             return status == 0 ? 0 : INVALID_NUMBER;
@@ -151,33 +151,33 @@ public class ezapp_utils {
 
     public void turn_flashlight_on() {
         if (cameraManager == null || cameraId == null) {
-            Log.v(TAG, "EZAPP flashlight not supported");
+            Log.e(TAG, "flashlight not supported");
             return;
         }
 
         try {
-            Log.v(TAG, "turning flashlight on");
+            Log.i(TAG, "turning flashlight on");
             cameraManager.setTorchMode(cameraId, true);
             flashlight_is_on = true;
             SDLActivity.showToast("Flashlight On", 0, Gravity.CENTER, 0, 0);
         } catch (CameraAccessException e) {
-            Log.v(TAG, "EZAPP CameraAccessException");
+            Log.e(TAG, "CameraAccessException");
         }
     }
 
     public void turn_flashlight_off() {
         if (cameraManager == null || cameraId == null) {
-            Log.v(TAG, "EZAPP flashlight not supported");
+            Log.e(TAG, "flashlight not supported");
             return;
         }
 
         try {
-            Log.v(TAG, "turning flashlight off");
+            Log.i(TAG, "turning flashlight off");
             cameraManager.setTorchMode(cameraId, false);
             flashlight_is_on = false;
             SDLActivity.showToast("Flashlight Off", 0, Gravity.CENTER, 0, 0);
         } catch (CameraAccessException e) {
-            Log.v(TAG, "EZAPP CameraAccessException");
+            Log.e(TAG, "CameraAccessException");
         }
     }
 

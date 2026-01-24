@@ -18,7 +18,7 @@ public class ezapp_playbackcapture {
     private static final int CHANNEL_CONFIG = AudioFormat.CHANNEL_IN_STEREO;
     private static final int AUDIO_FORMAT   = AudioFormat.ENCODING_PCM_16BIT;
 
-    private static final String TAG             = "SDL";
+    private static final String TAG             = "EZAPP";
     private static final int    PERMISSION_CODE = 1234; //xxx what is this
 
     private AudioRecord         audioRecord     = null;
@@ -47,7 +47,7 @@ public class ezapp_playbackcapture {
         MediaProjectionManager projectionManager;
 
         if (intent != null) {
-            Log.v(TAG, "ERROR startPlaybackCapture already running"); // xxx use Log.e
+            Log.e(TAG, "startPlaybackCapture already running");
             return;
         }
 
@@ -62,7 +62,7 @@ public class ezapp_playbackcapture {
 
         mediaProjection = projectionManager.getMediaProjection(-1, intent);
         if (mediaProjection == null) {
-            Log.v(TAG, "getMediaProjection failed\n");
+            Log.e(TAG, "getMediaProjection failed\n");
             return;
         }
 

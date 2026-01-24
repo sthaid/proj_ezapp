@@ -7,15 +7,11 @@ extern "C" {
 
 #define INFO(fmt, args...) \
     do { \
-        log_msg("INFO", __func__, fmt, ## args); \
-    } while (0)
-#define WARN(fmt, args...) \
-    do { \
-        log_msg("WARN", __func__, fmt, ## args); \
+        log_msg("I", __func__, fmt, ## args); \
     } while (0)
 #define ERROR(fmt, args...) \
     do { \
-        log_msg("ERROR", __func__, fmt, ## args); \
+        log_msg("E", __func__, fmt, ## args); \
     } while (0)
 
 int log_init(void);

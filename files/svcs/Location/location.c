@@ -46,7 +46,7 @@ int main(int argc, char **argv)
 
     // save args
     if (argc != 2) {
-        printf("ERROR: data_dir arg expected\n");
+        printf("ERROR %s: data_dir arg expected\n", progname);
         return 1;
     }
     progname = argv[0];
@@ -252,7 +252,6 @@ double rand_double(void)
     double rand;
 
     rand = (double)random() / 0x7fffffff;
-    printf("%f\n", rand);
     return rand;
 }
 
@@ -340,7 +339,8 @@ void process_req(svc_req_t *req)
     case SVC_LOCATION_REQ_SET_ENABLED: {
         param_enabled = req->data[0];
         util_set_numeric_param("data_dir", "enabled", param_enabled);
-        printf("INFO: hisotry collection is now %s\n",
+        printf("INFO %s: hisotry collection is now %s\n",
+               progname,
                param_enabled ? "enabled" : "disabled");
         svc_req_completed(req, SVC_REQ_OK);
         break; }
