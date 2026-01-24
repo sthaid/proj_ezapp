@@ -16,6 +16,7 @@ files/apps/Test/*.wav
 files/apps/Test/*.mp3
 files/apps/Weather/*.json
 files/apps/Weather/icon
+files/apps/Memo/*.wav
 params
 
 bin/ezsh
