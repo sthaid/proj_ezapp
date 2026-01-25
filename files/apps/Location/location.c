@@ -52,7 +52,6 @@ int main(int argc, char **argv)
     time_t       time_last_get_loc_info = 0;
 
     char         loc_curr[MAX_SVC_REQ_DATA] = "Not Initialized";
-    char        *loc_curr_lines[1] = {loc_curr};
     char        *loc_hist_lines[MAX_LOC_HIST];
 
     bool         settings_changed = false;
@@ -111,7 +110,7 @@ int main(int argc, char **argv)
         sdlx_render_text_xyctr(sdlx_win_width/2, y+sdlx_char_height/2, "Current");
         y += sdlx_char_height;
         // - display the current location
-        sdlx_render_multiline_text(y, y, y+4*sdlx_char_height, loc_curr_lines, 1);
+        sdlx_render_multiline_text_from_buff(y, y, y+4*sdlx_char_height, loc_curr);
         y += 4.5 * sdlx_char_height;
 
         // display rectangle to separate the Current and History areas
@@ -134,8 +133,8 @@ int main(int argc, char **argv)
         for (int i = 0; i < count; i++) {
             loc_hist_lines[i] = loc_hist->loc[count-1-i].data_str;
         }
-        sdlx_render_multiline_text(y_history_top, y_history_display_begin, y_history_display_end, 
-                                   loc_hist_lines, loc_hist->count);
+        sdlx_render_multiline_text_from_lines(y_history_top, y_history_display_begin, y_history_display_end, 
+                                              loc_hist_lines, loc_hist->count);
 
         // register for events
         sdlx_register_event(NULL, EVID_MOTION);
