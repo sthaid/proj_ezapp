@@ -78,8 +78,7 @@ int main(int argc, char **argv)
                 state == LOG_NOT_LOADED ?  "Loading" : "Load Failed");
             sdlx_print_init_numchars(LOG_FONT);
         } else {
-            char *lines[1] = {log};
-            sdlx_render_multiline_text(y_top, y_display_begin, y_display_end, lines, 1);
+            sdlx_render_multiline_text_from_buff(y_top, y_display_begin, y_display_end, log);
         }
 
         // register for events
@@ -97,8 +96,8 @@ int main(int argc, char **argv)
             state = (log != NULL ? LOG_LOADED : LOG_LOAD_FAILED);
         }
 
-        // wait for event, with 10 ms timeout
-        sdlx_get_event(10000, &event);
+        // wait for event, with 50 ms timeout
+        sdlx_get_event(50000, &event);
 
         // process events
         switch (event.event_id) {
