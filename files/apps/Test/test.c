@@ -400,7 +400,7 @@ static void page_3_draw(void)
 {
     sdlx_register_event(NULL, EVID_MOTION);
 
-    sdlx_render_multiline_text(y_top, y_display_begin, y_display_end, lines, 100);
+    sdlx_render_multiline_text_from_lines(y_top, y_display_begin, y_display_end, lines, 100);
 }
 
 static void page_3_process_event(sdlx_event_t *event)
@@ -849,7 +849,7 @@ static void page_8_init(void)
 static void page_8_draw(void)
 {
     sdlx_print_init(SMALL_FONT, COLOR_WHITE, COLOR_BLACK);
-    sdlx_render_multiline_text(y_top, y_display_begin, y_display_end, sit_lines, max_sit);
+    sdlx_render_multiline_text_from_lines(y_top, y_display_begin, y_display_end, sit_lines, max_sit);
 }
 
 static void page_8_exit(void)
