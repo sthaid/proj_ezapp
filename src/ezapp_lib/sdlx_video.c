@@ -454,7 +454,7 @@ static unsigned int calc_hash_idx(char *key)
     return (hash_value % MAX_HASH_LIST);
 }
 
-static sdlx_loc_t *render_text(bool xy_is_ctr, int x, int y, char * str, int wrap_length)
+static sdlx_loc_t *render_text(bool xy_is_ctr, int x, int y, char *str, int wrap_length)
 {
     char         key[100];
     ht_entry_t  *entry;
@@ -467,6 +467,25 @@ static sdlx_loc_t *render_text(bool xy_is_ctr, int x, int y, char * str, int wra
     static sdlx_loc_t loc;
 
     static int num_allocated = 0;
+
+    // xxx comment needed
+    if (str[0] == '\0') {
+        str = " ";
+#if 0
+        if (!xy_is_ctr) {
+            pos.x = x*scale;
+            pos.y = y*scale;
+            pos.w = surface->w;
+            pos.h = surface->h;
+        } else {
+            pos.x = x*scale - surface->w/2.;
+            pos.y = y*scale - surface->h/2.;
+            pos.w = surface->w;
+            pos.h = surface->h;
+        }
+#endif
+    }
+
 
     // calculate hash key and idx
     snprintf(key, sizeof(key), "%x-%d-%s", print_state.fg_color, print_state.ptsize, str);
