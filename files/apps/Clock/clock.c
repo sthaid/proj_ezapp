@@ -19,12 +19,9 @@
 #define W_CLOCK    1000
 #define H_CLOCK    1000
 
-#define EVID_SETTINGS 1
-
 // prototypes
 static char *day_of_week(struct tm *tm);
 static char *month(struct tm *tm);
-static void settings(void);
 static void draw_analog_clock_face(void);
 static void draw_analog_clock_hands(struct tm *tm);
 static void cleanup_analog_clock(void);
@@ -77,7 +74,7 @@ int main(int argc, char **argv)
         sdlx_display_init(COLOR_BLACK);
 
         // register control event to end program
-        sdlx_register_control_events("stg", NULL, "X", COLOR_WHITE, COLOR_BLACK, EVID_SETTINGS, 0, EVID_QUIT);
+        sdlx_register_control_events(NULL, NULL, "X", COLOR_WHITE, COLOR_BLACK, 0, 0, EVID_QUIT);
 
         // get the current time
         t = time(NULL);
@@ -128,9 +125,6 @@ int main(int argc, char **argv)
 
         // process events
         switch (event.event_id) {
-        case EVID_SETTINGS:
-            settings();
-            break;
         case EVID_QUIT:
             quit = true;
             break;
@@ -156,40 +150,6 @@ static char *month(struct tm *tm)
     static char s[30];
     strftime(s, sizeof(s), "%b", tm);
     return s;
-}
-
-static void settings(void)
-{
-    bool done = false;
-    sdlx_event_t event;
-    int y_top, y_bottom;
-    char *lines[1];
-
-    // xxx improve this text
-    lines[0] =
-"The sunrise & sunset times are\n\
-verified by comparison with\n\
-https://sunrise-sunset.org/api\n";
-
-    while (!done) {
-        sdlx_display_init(COLOR_BLACK);
-        sdlx_print_init(SMALL_FONT, COLOR_WHITE, COLOR_BLACK);
-
-        sdlx_register_control_events(NULL, NULL, "X", COLOR_WHITE, COLOR_BLACK, 0, 0, EVID_QUIT);
-
-        y_top = ROW2Y(2);
-        y_bottom = ROW2Y(5);
-        sdlx_render_multiline_text(y_top, y_top, y_bottom, lines, 1);
-
-        sdlx_display_present();
-
-        sdlx_get_event(-1, &event);
-        switch (event.event_id) {
-        case EVID_QUIT:
-            done = true;
-            break;
-        }
-    }
 }
 
 // -----------------  ANALOG CLOCK  ----------------------------------
