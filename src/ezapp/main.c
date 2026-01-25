@@ -900,15 +900,15 @@ static double get_number(char *prompt1, double min, double max)
 
 static void copyright(void)
 {
-    char       *str;
+    char       *buff;
     int         y_display_begin, y_display_end, y_top;
     int         len;
     sdlx_event_t event;
     bool        done = false;
 
     // read the copyright file
-    str = util_read_file(".", "copyright", &len);
-    if (str == NULL) {
+    buff = util_read_file(".", "copyright", &len);
+    if (buff == NULL) {
         ERROR("failed to read copyright file\n");
         return;
     }
@@ -924,8 +924,7 @@ static void copyright(void)
         sdlx_display_init(BG_COLOR);
         sdlx_print_init(SMALLEST_FONT, COLOR_WHITE, BG_COLOR);
         sdlx_register_event(NULL, EVID_MOTION);
-        char *lines[1] = { str };
-        sdlx_render_multiline_text(y_top, y_display_begin, y_display_end, lines, 1);
+        sdlx_render_multiline_text_from_buff(y_top, y_display_begin, y_display_end, buff);
         sdlx_register_control_events(NULL, NULL, "X", COLOR_WHITE, BG_COLOR, 0, 0, EVID_QUIT);
         sdlx_display_present();
 
@@ -948,7 +947,7 @@ static void copyright(void)
     }
 
     // free allocated copyrght buffer
-    free(str);
+    free(buff);
 }
 
 // ----------------- DEVEL MODE SERVER  ----------------
