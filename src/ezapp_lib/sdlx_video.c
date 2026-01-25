@@ -1,4 +1,5 @@
 #include <std_hdrs.h>
+#include <sys/queue.h>   //xxx or stdhdrs
 
 #include <sdlx.h>
 #include <logging.h>
@@ -359,6 +360,7 @@ static void set_render_draw_color(int color)
 
 // -----------------  RENDER TEXT  ------------------------
 
+// xxx add subsections
 static sdlx_print_state_t print_state;
 
 void sdlx_print_save(sdlx_print_state_t *save)
@@ -420,40 +422,124 @@ void sdlx_print_init(double numchars, int fg_color, int bg_color)
     sdlx_print_init_color(fg_color, bg_color);
 }
 
-static sdlx_loc_t *render_text(bool xy_is_ctr, int x, int y, char * str)
+// xxx
+// - wrap_length?
+// - define for MAX_KEY
+// - general cleanup
+// - handle color prefix = 'COLOR=ffffffff'
+
+#define MAX_HASH_LIST   300
+#define MAX_HASH_ENTRY  200
+
+TAILQ_HEAD(age_list, ht_entry_s)   age_list_head;
+TAILQ_HEAD(hash_list, ht_entry_s)  hash_list_head[MAX_HASH_LIST];
+
+typedef struct ht_entry_s {
+    char                    key[100];   // xxx maybe allocate this, but only as long as needed
+    SDL_Texture            *texture;
+    int                     surface_w;
+    int                     surface_h;
+    TAILQ_ENTRY(ht_entry_s) age_list_entry;
+    TAILQ_ENTRY(ht_entry_s) hash_list_entry;
+} ht_entry_t;
+
+static unsigned int calc_hash_idx(char *key)
 {
+    unsigned int hash_value = 0;
+
+    for (int i = 0; key[i] != '\0'; i++) {
+        hash_value = hash_value * 31 + key[i];
+    }
+
+    return (hash_value % MAX_HASH_LIST);
+}
+
+static sdlx_loc_t *render_text(bool xy_is_ctr, int x, int y, char * str, int wrap_length)
+{
+    char         key[100];
+    ht_entry_t  *entry;
+    SDL_FRect    pos;
+    bool         found;
+    int          hash_idx;
     SDL_Surface *surface;
     SDL_Texture *texture;
-    SDL_FRect     pos;
+
     static sdlx_loc_t loc;
 
-    //printf("xy_is_ctr = %d x=%d y=%d str='%s'\n", xy_is_ctr, x, y, str);
+    static int num_allocated = 0;
 
-    // if font not initialized then return error
-    if (font[print_state.ptsize] == NULL) {
-        ERROR("font ptsize %d, not initialized\n", print_state.ptsize);
-        loc.x = x; loc.y = y; loc.w = 0; loc.h = 0;
-        return &loc;
+    // calculate hash key and idx
+    snprintf(key, sizeof(key), "%x-%d-%s", print_state.fg_color, print_state.ptsize, str);
+    hash_idx = calc_hash_idx(key);
+
+    // xxx
+    found = false;
+    TAILQ_FOREACH(entry, &hash_list_head[hash_idx], hash_list_entry) {
+        if (strcmp(entry->key, key) == 0) {
+            found = true;
+            break;
+        }
     }
 
-    // if zero len str then return
-    if (str[0] == '\0') {
-        loc.x = x; loc.y = y; loc.w = 0; loc.h = 0;
-        return &loc;
+    // xxx
+    if (found) {
+        if (!xy_is_ctr) {
+            pos.x = x*scale;
+            pos.y = y*scale;
+            pos.w = entry->surface_w;
+            pos.h = entry->surface_h;
+        } else {
+            pos.x = x*scale - entry->surface_w/2.;
+            pos.y = y*scale - entry->surface_h/2.;
+            pos.w = entry->surface_w;
+            pos.h = entry->surface_h;
+        }
+
+        SDL_RenderTexture(renderer, entry->texture, NULL, &pos);
+        TAILQ_REMOVE(&age_list_head, entry, age_list_entry);
+        TAILQ_INSERT_HEAD(&age_list_head, entry, age_list_entry);
+        goto return_loc;
     }
 
-    // render the string to a surface xxx cleanup
-    surface = TTF_RenderText_Solid(font[print_state.ptsize], str, 0, 
-                                         sdlx_color(print_state.fg_color));
-                                         //sdlx_color(print_state.bg_color));
-    if (surface == NULL) {
-        ERROR("TTF_RenderText_Solid returned NULL\n");
-        loc.x = x; loc.y = y; loc.w = 0; loc.h = 0;
-        return &loc;
+    // not found ...
+
+    // if number of textures allocated is max then
+    //   free the least recently used texture, and 
+    //   remove it from age list and
+    //   remove it from the hash list
+    // endif
+    if (num_allocated == MAX_HASH_ENTRY) {
+        entry = TAILQ_LAST(&age_list_head, age_list);
+        TAILQ_REMOVE(&age_list_head, entry, age_list_entry);
+        TAILQ_REMOVE(&hash_list_head[hash_idx], entry, hash_list_entry);
+        // xxx put prints in here
+        SDL_DestroyTexture(entry->texture);
+        free(entry);
+        num_allocated--;
     }
 
-    // determine the real display position to render the text
-    // xxx dont need rint now
+    // create surface,
+    // create texture from surface
+    // destroy surface
+    // render
+    // xxx update comments
+    surface = TTF_RenderText_Solid_Wrapped(
+                    font[print_state.ptsize], str, 0,
+                    sdlx_color(print_state.fg_color),
+                    wrap_length);
+    texture = SDL_CreateTextureFromSurface(renderer, surface);
+
+    // allocate and init new entry
+    entry = malloc(sizeof(ht_entry_t));
+    strncpy(entry->key, key, sizeof(entry->key)); //xxx will this null terminate
+    entry->texture = texture;
+    entry->surface_w = surface->w;
+    entry->surface_h = surface->h;
+    TAILQ_INSERT_HEAD(&age_list_head, entry, age_list_entry);
+    TAILQ_INSERT_HEAD(&hash_list_head[hash_idx], entry, hash_list_entry);
+    num_allocated++;
+
+    // xxx
     if (!xy_is_ctr) {
         pos.x = x*scale;
         pos.y = y*scale;
@@ -465,16 +551,13 @@ static sdlx_loc_t *render_text(bool xy_is_ctr, int x, int y, char * str)
         pos.w = surface->w;
         pos.h = surface->h;
     }
-
-    // create texture from the surface, and render the texture
-    texture = SDL_CreateTextureFromSurface(renderer, surface);
     SDL_RenderTexture(renderer, texture, NULL, &pos);
 
-    // clean up
+    // xxx
     SDL_DestroySurface(surface);
-    SDL_DestroyTexture(texture);
 
     // return the display location where the text was rendered;
+return_loc:
     loc.x = pos.x / scale;
     loc.y = pos.y / scale;
     loc.w = pos.w / scale;
@@ -482,61 +565,78 @@ static sdlx_loc_t *render_text(bool xy_is_ctr, int x, int y, char * str)
     return &loc;
 }
 
-// note: each line may have embedded newline chars
-void sdlx_render_multiline_text(int y_top, int y_display_begin, int y_display_end, char **lines, int num_lines)
+// xxx review
+void sdlx_render_multiline_text_from_buff(int y_top, int y_display_begin, int y_display_end, char *text)
 {
-    int y = y_top;
-    int n = 0, k = 0, len;
-    char *ptr;
-    char str[200];
+    char *lines[1000], *ptr, *text_copy;
+    int n = 0;
 
-    while (n < num_lines) {
-        // if y pos of line is below the bottom of the
-        // display region then break
-        if (y > y_display_end - sdlx_char_height) {
+    text_copy = strdup(text);
+
+    ptr = text_copy;
+    while (true) {
+        if (*ptr == '\0') {
             break;
         }
-
-        // extract str from the line currently being processed
-        ptr = strchr(&lines[n][k], '\n');
-        if (ptr) {
-            len = ptr - &lines[n][k];
-            memcpy(str, &lines[n][k], len);
-            str[len] = '\0';
-        } else {
-            strcpy(str, &lines[n][k]);
-            len = strlen(str);
+        lines[n++] = ptr;
+        ptr = strchr(ptr, '\n');
+        if (ptr == NULL) {
+            break;
         }
+        *ptr = '\0';
+        ptr++;
+    }
 
-        // advance k and n
-        k += len;
-        if (lines[n][k] == '\n') {
-            k++;
-        }
-        if (lines[n][k] == '\0') {
-            k = 0;
-            n++;
+    sdlx_render_multiline_text_from_lines(y_top, y_display_begin, y_display_end, lines, n);
+
+    free(text_copy);
+}
+
+// note: each line may have embedded newline chars xxx is this correct still
+// xxx review
+void sdlx_render_multiline_text_from_lines(int y_top, int y_display_begin, int y_display_end, char **lines, int num_lines)
+{
+    int y = y_top;
+    int n = 0;
+    sdlx_loc_t *loc __attribute__((unused));
+    int wrap_length = 0; //1000;
+    int wrap_length_scaled = wrap_length * scale;
+    sdlx_loc_t Loc;
+
+    for (n = 0; n < num_lines; n++) {
+        // if y pos of line is below the bottom of the
+        // display region then break
+        if (y > y_display_end) {   // xxx minus ?
+            break;
         }
 
         // if y loc of line is at or below the begining of the display
         // region then render the line
-        if (y >= y_display_begin && str[0] != '\0') {
-            render_text(false, 0, y, str);
+        if (y >= y_display_begin) {
+            loc = render_text(false, 0, y, lines[n], wrap_length_scaled);
+            //if (n == 0)
+                //printf("charheight = %d    loc h = %d\n", sdlx_char_height, loc->h);
+        } else {
+            loc = &Loc;
+            loc->x = loc->y = loc->w = 0;
+            loc->h = sdlx_char_height;
         }
 
         // advance y for the next line
-        y += sdlx_char_height;
+        //y = loc->y + loc->h;
+        //y += sdlx_char_height;
+        y += loc->h;
     }
 }
 
 sdlx_loc_t *sdlx_render_text(int x, int y, char * str)
 {
-    return render_text(false, x, y, str);
+    return render_text(false, x, y, str, 0);
 }
 
 sdlx_loc_t *sdlx_render_text_xyctr(int x, int y, char * str)
 {
-    return render_text(true, x, y, str);
+    return render_text(true, x, y, str, 0);
 }
 
 sdlx_loc_t *sdlx_render_printf(int x, int y, char * fmt, ...)
