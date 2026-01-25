@@ -18,7 +18,7 @@ SDL SDL_ttf SDL_mixer lodepng cJSON mp3lame ezapp_lib picoc:
 build: ezapp_lib picoc ezapp
 
 run: build
-	cd ../files; ../linux/build/ezapp/ezapp 2>&1 | egrep --color=always "E|\$$"
+	cd ../files; ../linux/build/ezapp/ezapp 2>&1 | egrep --color=always "^E|\$$"
 
 clean:
 	rm -rf build local
