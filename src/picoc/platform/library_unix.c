@@ -271,7 +271,7 @@ void Sdl_render_printf_xyctr (struct ParseState *Parser, struct Value *ReturnVal
     ReturnValue->Val->Pointer = loc;
 }
 
-void Sdl_render_multiline_text (struct ParseState *Parser, struct Value *ReturnValue,
+void Sdl_render_multiline_text_from_lines (struct ParseState *Parser, struct Value *ReturnValue,
 	struct Value **Param, int NumArgs)
 {
     int    y_top           = Param[0]->Val->Integer;
@@ -280,7 +280,18 @@ void Sdl_render_multiline_text (struct ParseState *Parser, struct Value *ReturnV
     char **lines           = Param[3]->Val->Pointer;
     int    n               = Param[4]->Val->Integer;
 
-    sdlx_render_multiline_text(y_top, y_display_begin, y_display_end, lines, n);
+    sdlx_render_multiline_text_from_lines(y_top, y_display_begin, y_display_end, lines, n);
+}
+
+void Sdl_render_multiline_text_from_buff (struct ParseState *Parser, struct Value *ReturnValue,
+	struct Value **Param, int NumArgs)
+{
+    int    y_top           = Param[0]->Val->Integer;
+    int    y_display_begin = Param[1]->Val->Integer;
+    int    y_display_end   = Param[2]->Val->Integer;
+    char  *buff            = Param[3]->Val->Pointer;
+
+    sdlx_render_multiline_text_from_buff(y_top, y_display_begin, y_display_end, buff);    
 }
 
 //
@@ -826,7 +837,8 @@ struct LibraryFunction SdlFunctions[] = {
     { Sdl_render_printf,           "sdlx_loc_t *sdlx_render_printf(int x, int y, char *fmt, ...);" },
     { Sdl_render_text_xyctr,       "sdlx_loc_t *sdlx_render_text_xyctr(int x, int y, char *str);" },
     { Sdl_render_printf_xyctr,     "sdlx_loc_t *sdlx_render_printf_xyctr(int x, int y, char *fmt, ...);" },
-    { Sdl_render_multiline_text,   "void sdlx_render_multiline_text(int y_top, int y_display_begin, int y_display_end, char **lines, int n);" },
+    { Sdl_render_multiline_text_from_lines,   "void sdlx_render_multiline_text_from_lines(int y_top, int y_display_begin, int y_display_end, char **lines, int n);" },
+    { Sdl_render_multiline_text_from_buff,   "void sdlx_render_multiline_text_from_buff(int y_top, int y_display_begin, int y_display_end, char *buff);" },
 
     // render rectangle, lines, circles, points
     { Sdl_render_rect,     "void sdlx_render_rect(int x, int y, int w, int h, int line_width, int color);" },
