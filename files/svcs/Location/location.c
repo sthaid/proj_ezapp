@@ -21,7 +21,7 @@
 loc_hist_t *loc_hist;
 bool        param_enabled = false;
 bool        end_program = false;
-bool        test_loc_hist = false;
+bool        test_loc_hist = true;   //xxx temp
 
 // prototypes
 void add_entry_to_loc_hist(time_t t, double latitude, double longitude, char *name);
@@ -52,6 +52,11 @@ int main(int argc, char **argv)
     progname = argv[0];
     data_dir = argv[1];
     printf("I %s: starting, data_dir=%s\n", progname, data_dir);
+
+    // xxx
+    if (test_loc_hist) {
+        util_delete_file(data_dir, LOC_HIST_FILENAME);
+    }
 
     // read location data
     rc = read_loc_data();
