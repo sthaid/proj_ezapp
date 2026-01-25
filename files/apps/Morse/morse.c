@@ -122,7 +122,7 @@ int main(int argc, char **argv)
             int y_top = ROW2Y(7);
             int y_bottom = ROW2Y(17);
             char *lines[1] = {random_words};
-            sdlx_render_multiline_text(y_top, y_top, y_bottom, lines, 1);
+            sdlx_render_multiline_text_from_lines(y_top, y_top, y_bottom, lines, 1);
         }
 
         // present the display
