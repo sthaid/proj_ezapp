@@ -1,8 +1,13 @@
 #!/bin/bash
 
+c# suggested fmt options: time, tag
+fmt=time
+
+# enable script logging
+set -x
+
 # clear log buffer
 adb logcat -c -b all
 
 # view logs for SDL, SDL/APP and AndroidRuntim sources
-set -x
-adb logcat -s --format=tag,color EZAPP:I SDL:I SDL/APP:I AndroidRuntime:I
+adb logcat -s --format=$fmt,color EZAPP:I SDL:I SDL/APP:I AndroidRuntime:I
