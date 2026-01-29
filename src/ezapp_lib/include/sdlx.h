@@ -205,22 +205,6 @@ int sdlx_audio_play_buff(short *samples, int num_samples, int num_channels,
 int sdlx_audio_record_from_mic(char *dir, char *filename, int max_duration_secs, int auto_stop_secs, bool append);
 int sdlx_audio_record_from_device(char *dir, char *filename);
 
-// - - - - - - - - - - - - - - - - - - - - - - 
-// the following are not made available in picoc
-// - - - - - - - - - - - - - - - - - - - - - - 
-#ifdef ANDROID
-    #define DEFAULT_RECORD_GAIN 5
-#else
-    #define DEFAULT_RECORD_GAIN 1
-#endif
-#define DEFAULT_RECORD_SILENCE 10
-typedef struct {
-    double record_gain;
-    double record_silence;
-} sdlx_audio_params_t;
-void sdlx_audio_set_params(sdlx_audio_params_t *ap);
-void sdlx_audio_get_params(sdlx_audio_params_t *ap);
-
 // --------------------
 // SENSORS
 // --------------------
@@ -337,8 +321,22 @@ void sdlx_video_quit(void);
 void sdlx_minimize_window(void);
 
 // sdlx_audio.c
+#ifdef ANDROID
+    #define DEFAULT_RECORD_GAIN 5
+#else
+    #define DEFAULT_RECORD_GAIN 1
+#endif
+#define DEFAULT_RECORD_SILENCE 10
+
+typedef struct {
+    double record_gain;
+    double record_silence;
+} sdlx_audio_params_t;
+
 int sdlx_audio_init(void);
 void sdlx_audio_quit(void);
+void sdlx_audio_set_params(sdlx_audio_params_t *ap);
+void sdlx_audio_get_params(sdlx_audio_params_t *ap);
 
 // sdlx_sensor.c
 int sdlx_sensor_init(void);
@@ -352,6 +350,7 @@ char *sdlx_get_storage_path(void);
 void sdlx_copy_asset_file(char *asset_filename, char *dest_dir);
 int sdlx_get_permission(char *name);
 int sdlx_create_detached_thread_private(int (*thread_fn)(void*), char *thread_name, void *cx);
+// xxx is this needed
 #define sdlx_create_detached_thread(thread_fn, cx) \
     do { \
         sdlx_create_detached_thread_private(thread_fn, #thread_fn, cx); \
