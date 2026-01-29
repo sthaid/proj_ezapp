@@ -20,6 +20,7 @@ files/apps/Memo/*.wav
 params
 
 bin/ezsh
+bin/ezlogfilter
 
 cscope.files
 cscope.out

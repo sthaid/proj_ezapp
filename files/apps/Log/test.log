@@ -1,0 +1,60 @@
+I this is unit test log file, used to test on Linux
+E this is an error
+I and the following 2 are also errors
+this is an error becasue it contains 'error' string
+this is an error becasue it contains "fail" string
+this should be displayed WHITE
+I this should be displayed GREEN
+I blank line follows
+I 
+I 50 lines follow
+I line 1
+I line 2
+I line 3
+I line 4
+I line 5
+I line 6
+I line 7
+I line 8
+I line 9
+I line 10
+I line 11
+I line 12
+I line 13
+I line 14
+I line 15
+I line 16
+I line 17
+I line 18
+I line 19
+I line 20
+I line 21
+I line 22
+I line 23
+I line 24
+I line 25
+I line 26
+I line 27
+I line 28
+I line 29
+I line 30
+I line 31
+I line 32
+I line 33
+I line 34
+I line 35
+I line 36
+I line 37
+I line 38
+I line 39
+I line 40
+I line 41
+I line 42
+I line 43
+I line 44
+I line 45
+I line 46
+I line 47
+I line 48
+I line 49
+I line 50
