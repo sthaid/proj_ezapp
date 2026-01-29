@@ -11,7 +11,6 @@
 // xxx todo?
 // - landscape
 // - read pixels routine ? 
-// - use of rint vs nearbyint
 // - try SDL_SetRenderLogicalPresentation
 // xxx review sdl3 port
 // - routines now return succ
@@ -22,9 +21,6 @@
 // 
 
 #define FONT_FILE_PATH  "FreeMonoBold.ttf"
-
-#define LARGE_FONT    10
-#define DEFAULT_FONT  20
 
 #define MIN_FONT_PTSIZE  10
 #define MAX_FONT_PTSIZE  400
@@ -186,7 +182,7 @@ int sdlx_video_init(void)
 
     // xxx comment
     sdlx_win_width  = 1000;
-    sdlx_win_height = rint(1000 * aspect_ratio);
+    sdlx_win_height = nearbyint(1000 * aspect_ratio);
     scale = (double)real_win_width / sdlx_win_width;
     INFO("logical sdlx_win_width x height = %d %d  scale = %f\n", sdlx_win_width, sdlx_win_height, scale);
 
@@ -196,11 +192,11 @@ int sdlx_video_init(void)
         return -1;
     }
 
-    // init default fontsize, where DEFAULT_FONT is num chars across display;
+    // init default fontsize, where value of FONT_NORMAL is num chars across display;
     // and validate expected character size and columns
-    sdlx_print_init(DEFAULT_FONT, COLOR_WHITE, COLOR_BLACK);
-    INFO("sdlx_print_init(%d) sdlx_char_width=%d sdlx_char_height=%d\n", 
-         DEFAULT_FONT, sdlx_char_width, sdlx_char_height);
+    sdlx_print_set(FONT_NORMAL, COLOR_WHITE);
+    INFO("sdlx_print_set(%d) sdlx_char_width=%d sdlx_char_height=%d\n", 
+         FONT_NORMAL, sdlx_char_width, sdlx_char_height);
     if (sdlx_char_width != 50 || sdlx_char_height != 83) {
         ERROR("chw,chh, expected = 50,83  actual = %d,%d\n", sdlx_char_width, sdlx_char_height);
     }
@@ -360,8 +356,58 @@ static void set_render_draw_color(int color)
 
 // -----------------  RENDER TEXT  ------------------------
 
-// xxx add subsections
+// - - - - - - - - - set print state - - - - - - - - - - - 
+
 static sdlx_print_state_t print_state;
+
+void sdlx_print_set_numchars(double numchars)
+{
+    int ptsize;
+    double chw_fp, chh_fp;
+
+    // determine real font ptsize to use;
+    // nearbyint() not used here so ptsize will round down
+    chw_fp = (sdlx_win_width / numchars) * scale;
+    chh_fp = chw_fp / 0.6;
+    ptsize = chh_fp;
+
+    // ensure ptiszie is in range
+    // xxx adjust numchars if needed
+    if (ptsize < MIN_FONT_PTSIZE) ptsize = MIN_FONT_PTSIZE;
+    if (ptsize >= MAX_FONT_PTSIZE) ptsize = MAX_FONT_PTSIZE-1;
+
+    // if the requested font pointsize has not yet been opened then open it
+    if (font[ptsize] == NULL) {
+        font[ptsize] = TTF_OpenFont(FONT_FILE_PATH, ptsize);
+        if (font[ptsize] == NULL) {
+            ERROR("TTF_OpenFont failed, ptsize=%d\n", ptsize);
+            return;
+        }
+    }
+
+    // save new ptsize, char_width, and char_height to print_state
+    print_state.ptsize      = ptsize;
+    print_state.char_width  = nearbyint((sdlx_win_width / numchars));  
+    print_state.char_height = nearbyint(print_state.char_width / 0.6);
+
+    // make char_width/height available in global variables, 
+    // for easy access by the apps
+    sdlx_char_width  = print_state.char_width;
+    sdlx_char_height = print_state.char_height;
+}
+
+void sdlx_print_set_color(int color)
+{
+    print_state.color = color;
+}
+
+void sdlx_print_set(double numchars, int color)
+{
+    sdlx_print_set_numchars(numchars);
+    sdlx_print_set_color(color);
+}
+
+// - - - - - - - - - save/restore print state  - - - - - - 
 
 void sdlx_print_save(sdlx_print_state_t *save)
 {
@@ -371,71 +417,23 @@ void sdlx_print_save(sdlx_print_state_t *save)
 void sdlx_print_restore(sdlx_print_state_t *restore)
 {
     print_state = *restore;
-    sdlx_char_width = print_state.char_width;
+
+    sdlx_char_width  = print_state.char_width;
     sdlx_char_height = print_state.char_height;
 }
 
-void sdlx_print_init_color(int fg_color, int bg_color)
-{
-    print_state.fg_color = fg_color;
-    print_state.bg_color = bg_color;
-}
+// - - - - - - - - - render text - - - - - - - - - - - - - 
 
-void sdlx_print_init_numchars(double numchars)
-{
-    int ptsize;
-    double chw_fp, chh_fp;
+// xxx - handle color prefix = 'COLOR=ffffffff'
 
-    // determine real font ptsize to use;
-    // note: rint() not used here so ptsize will round down
-    chw_fp = (sdlx_win_width / numchars) * scale;
-    chh_fp = chw_fp / 0.6;
-    ptsize = chh_fp;
-
-    // ensure ptiszie is in range
-    if (ptsize < MIN_FONT_PTSIZE) ptsize = MIN_FONT_PTSIZE;
-    if (ptsize >= MAX_FONT_PTSIZE) ptsize = MAX_FONT_PTSIZE-1;
-
-    // if the requested font pointsize has not yet been opened
-    // then do so
-    if (font[ptsize] == NULL) {
-        font[ptsize] = TTF_OpenFont(FONT_FILE_PATH, ptsize);
-        if (font[ptsize] == NULL) {
-            ERROR("TTF_OpenFont failed, ptsize=%d\n", ptsize);
-            return;
-        }
-    }
-
-    // save new point size and character width/height xxx comment
-    sdlx_char_width  = rint(sdlx_win_width / numchars);  // xxx nearbyint
-    sdlx_char_height = rint(sdlx_char_width / 0.6);
-
-    // save new font ptsize and sdlx_char width/height to print_state
-    print_state.ptsize = ptsize;
-    print_state.char_width = sdlx_char_width;
-    print_state.char_height = sdlx_char_height;
-}
-
-void sdlx_print_init(double numchars, int fg_color, int bg_color)
-{
-    sdlx_print_init_numchars(numchars);
-    sdlx_print_init_color(fg_color, bg_color);
-}
-
-// xxx
-// - wrap_length?
-// - define for MAX_KEY
-// - general cleanup
-// - handle color prefix = 'COLOR=ffffffff'
-
-#define MAX_HASH_LIST   300
+#define MAX_HASH_LIST   293  // using a prime number is recomended
 #define MAX_HASH_ENTRY  200
 
-TAILQ_HEAD(age_list, ht_entry_s)   age_list_head;
-TAILQ_HEAD(hash_list, ht_entry_s)  hash_list_head[MAX_HASH_LIST];
+static TAILQ_HEAD(age_list, ht_entry_s)   age_list_head;
+static TAILQ_HEAD(hash_list, ht_entry_s)  hash_list_head[MAX_HASH_LIST];
 
 typedef struct ht_entry_s {
-    char                    key[100];   // xxx maybe allocate this, but only as long as needed
+    char                   *key;
     SDL_Texture            *texture;
     int                     surface_w;
     int                     surface_h;
@@ -454,9 +452,11 @@ static unsigned int calc_hash_idx(char *key)
     return (hash_value % MAX_HASH_LIST);
 }
 
-static sdlx_loc_t *render_text(bool xy_is_ctr, int x, int y, char *str, int wrap_length)
+// xxx prints for number of hash hits and misses
+// xxx use pixel_t for color
+static sdlx_loc_t *render_text(int x, int y, char *str, int wrap, int flags, unsigned int color)
 {
-    char         key[100];
+    char         key[1000];
     ht_entry_t  *entry;
     SDL_FRect    pos;
     bool         found;
@@ -465,33 +465,23 @@ static sdlx_loc_t *render_text(bool xy_is_ctr, int x, int y, char *str, int wrap
     SDL_Texture *texture;
 
     static sdlx_loc_t loc;
+    static int        num_allocated = 0;
 
-    static int num_allocated = 0;
-
-    // xxx comment needed
+    // if zero length string then just return the loc
+    // xxx what about CTR flags
     if (str[0] == '\0') {
-        str = " ";
-#if 0
-        if (!xy_is_ctr) {
-            pos.x = x*scale;
-            pos.y = y*scale;
-            pos.w = surface->w;
-            pos.h = surface->h;
-        } else {
-            pos.x = x*scale - surface->w/2.;
-            pos.y = y*scale - surface->h/2.;
-            pos.w = surface->w;
-            pos.h = surface->h;
-        }
-#endif
+        loc.x = x;
+        loc.y = y;
+        loc.w = 0;
+        loc.h = sdlx_char_height;
+        return &loc;
     }
 
-
     // calculate hash key and idx
-    snprintf(key, sizeof(key), "%x-%d-%s", print_state.fg_color, print_state.ptsize, str);
+    snprintf(key, sizeof(key), "%x-%d-%s", color, print_state.ptsize, str);
     hash_idx = calc_hash_idx(key);
 
-    // xxx
+    // search the hash_list_head[hash_idx] for entry matching hash key
     found = false;
     TAILQ_FOREACH(entry, &hash_list_head[hash_idx], hash_list_entry) {
         if (strcmp(entry->key, key) == 0) {
@@ -500,57 +490,55 @@ static sdlx_loc_t *render_text(bool xy_is_ctr, int x, int y, char *str, int wrap
         }
     }
 
-    // xxx
+    // matching entry found, render it, and return
     if (found) {
-        if (!xy_is_ctr) {
-            pos.x = x*scale;
-            pos.y = y*scale;
-            pos.w = entry->surface_w;
-            pos.h = entry->surface_h;
-        } else {
-            pos.x = x*scale - entry->surface_w/2.;
-            pos.y = y*scale - entry->surface_h/2.;
-            pos.w = entry->surface_w;
-            pos.h = entry->surface_h;
-        }
+        pos.x = x*scale;
+        pos.y = y*scale;
+        pos.w = entry->surface_w;
+        pos.h = entry->surface_h;
+        if (flags & FLAG_X_CTR) pos.x -= pos.w / 2;
+        if (flags & FLAG_Y_CTR) pos.y -= pos.h / 2;
 
         SDL_RenderTexture(renderer, entry->texture, NULL, &pos);
+
         TAILQ_REMOVE(&age_list_head, entry, age_list_entry);
         TAILQ_INSERT_HEAD(&age_list_head, entry, age_list_entry);
+
         goto return_loc;
     }
 
-    // not found ...
+    // hash table entry not found ...
 
+    // xxx put prints in here to test this
     // if number of textures allocated is max then
-    //   free the least recently used texture, and 
-    //   remove it from age list and
-    //   remove it from the hash list
+    //   discard the least recently used texture
     // endif
-    if (num_allocated == MAX_HASH_ENTRY) {
+    if (num_allocated >= MAX_HASH_ENTRY) {
         entry = TAILQ_LAST(&age_list_head, age_list);
         TAILQ_REMOVE(&age_list_head, entry, age_list_entry);
         TAILQ_REMOVE(&hash_list_head[hash_idx], entry, hash_list_entry);
-        // xxx put prints in here
         SDL_DestroyTexture(entry->texture);
+        free(entry->key);
         free(entry);
         num_allocated--;
     }
 
-    // create surface,
-    // create texture from surface
-    // destroy surface
-    // render
-    // xxx update comments
-    surface = TTF_RenderText_Solid_Wrapped(
-                    font[print_state.ptsize], str, 0,
-                    sdlx_color(print_state.fg_color),
-                    wrap_length);
+    // create surface, and create texture from surface
+    if (wrap != WRAP_NONE) {
+        surface = TTF_RenderText_Solid_Wrapped(
+                        font[print_state.ptsize], str, 0,
+                        sdlx_color(color),
+                        wrap * scale);
+    } else {
+        surface = TTF_RenderText_Solid(
+                        font[print_state.ptsize], str, 0,
+                        sdlx_color(color));
+    }
     texture = SDL_CreateTextureFromSurface(renderer, surface);
 
-    // allocate and init new entry
+    // allocate and init new hash table entry
     entry = malloc(sizeof(ht_entry_t));
-    strncpy(entry->key, key, sizeof(entry->key)); //xxx will this null terminate
+    entry->key = strdup(key);
     entry->texture = texture;
     entry->surface_w = surface->w;
     entry->surface_h = surface->h;
@@ -558,21 +546,17 @@ static sdlx_loc_t *render_text(bool xy_is_ctr, int x, int y, char *str, int wrap
     TAILQ_INSERT_HEAD(&hash_list_head[hash_idx], entry, hash_list_entry);
     num_allocated++;
 
-    // xxx
-    if (!xy_is_ctr) {
-        pos.x = x*scale;
-        pos.y = y*scale;
-        pos.w = surface->w;
-        pos.h = surface->h;
-    } else {
-        pos.x = x*scale - surface->w/2.;
-        pos.y = y*scale - surface->h/2.;
-        pos.w = surface->w;
-        pos.h = surface->h;
-    }
+    // render the texture
+    pos.x = x*scale;
+    pos.y = y*scale;
+    pos.w = surface->w;
+    pos.h = surface->h;
+    if (flags & FLAG_X_CTR) pos.x -= pos.w / 2;
+    if (flags & FLAG_Y_CTR) pos.y -= pos.h / 2;
+
     SDL_RenderTexture(renderer, texture, NULL, &pos);
 
-    // xxx
+    // the surface is no longer needed, destroy the surface
     SDL_DestroySurface(surface);
 
     // return the display location where the text was rendered;
@@ -584,79 +568,7 @@ return_loc:
     return &loc;
 }
 
-// xxx review
-void sdlx_render_multiline_text_from_buff(int y_top, int y_display_begin, int y_display_end, char *text)
-{
-    char *lines[1000], *ptr, *text_copy;
-    int n = 0;
-
-    text_copy = strdup(text);
-
-    ptr = text_copy;
-    while (true) {
-        if (*ptr == '\0') {
-            break;
-        }
-        lines[n++] = ptr;
-        ptr = strchr(ptr, '\n');
-        if (ptr == NULL) {
-            break;
-        }
-        *ptr = '\0';
-        ptr++;
-    }
-
-    sdlx_render_multiline_text_from_lines(y_top, y_display_begin, y_display_end, lines, n);
-
-    free(text_copy);
-}
-
-// note: each line may have embedded newline chars xxx is this correct still
-// xxx review
-void sdlx_render_multiline_text_from_lines(int y_top, int y_display_begin, int y_display_end, char **lines, int num_lines)
-{
-    int y = y_top;
-    int n = 0;
-    sdlx_loc_t *loc __attribute__((unused));
-    int wrap_length = 0; //1000;
-    int wrap_length_scaled = wrap_length * scale;
-    sdlx_loc_t Loc;
-
-    for (n = 0; n < num_lines; n++) {
-        // if y pos of line is below the bottom of the
-        // display region then break
-        if (y > y_display_end) {   // xxx minus ?
-            break;
-        }
-
-        // if y loc of line is at or below the begining of the display
-        // region then render the line
-        if (y >= y_display_begin) {
-            loc = render_text(false, 0, y, lines[n], wrap_length_scaled);
-            //if (n == 0)
-                //printf("charheight = %d    loc h = %d\n", sdlx_char_height, loc->h);
-        } else {
-            loc = &Loc;
-            loc->x = loc->y = loc->w = 0;
-            loc->h = sdlx_char_height;
-        }
-
-        // advance y for the next line
-        //y = loc->y + loc->h;
-        //y += sdlx_char_height;
-        y += loc->h;
-    }
-}
-
-sdlx_loc_t *sdlx_render_text(int x, int y, char * str)
-{
-    return render_text(false, x, y, str, 0);
-}
-
-sdlx_loc_t *sdlx_render_text_xyctr(int x, int y, char * str)
-{
-    return render_text(true, x, y, str, 0);
-}
+// - - - - - - - - -  print api routines - - - - - - - - - 
 
 sdlx_loc_t *sdlx_render_printf(int x, int y, char * fmt, ...)
 {
@@ -667,10 +579,10 @@ sdlx_loc_t *sdlx_render_printf(int x, int y, char * fmt, ...)
     vsnprintf(str, sizeof(str), fmt, ap);
     va_end(ap);
 
-    return sdlx_render_text(x, y, str);
+    return render_text(x, y, str, WRAP_NONE, 0, print_state.color);
 }
 
-sdlx_loc_t *sdlx_render_printf_xyctr(int x, int y, char * fmt, ...)
+sdlx_loc_t *sdlx_render_printf_ex(int x, int y, int flags, int wrap, char *fmt, ...)
 {
     char str[1000];
     va_list ap;
@@ -679,7 +591,64 @@ sdlx_loc_t *sdlx_render_printf_xyctr(int x, int y, char * fmt, ...)
     vsnprintf(str, sizeof(str), fmt, ap);
     va_end(ap);
 
-    return sdlx_render_text_xyctr(x, y, str);
+    return render_text(x, y, str, wrap, flags, print_state.color);
+}
+
+// each line may have embedded newline chars
+void sdlx_render_multiline_text(int x, int y, int y_top, int y_bottom, char **lines, int num_lines)
+{
+    int y2 = y;
+    int n = 0, k = 0, len, numchars;
+    char *ptr;
+    char str[1000], *str_ptr;;
+    unsigned int color = print_state.color; // xxx use pixel_t
+
+    while (n < num_lines) {
+        // if y pos of line is below the bottom of the
+        // display region then break
+        if (y2 > y_bottom - sdlx_char_height) {
+            break;
+        }
+
+        // extract str from the line currently being processed
+        ptr = strchr(&lines[n][k], '\n');
+        if (ptr) {
+            len = ptr - &lines[n][k];
+            memcpy(str, &lines[n][k], len);
+            str[len] = '\0';
+        } else {
+            strcpy(str, &lines[n][k]);
+            len = strlen(str);
+        }
+
+        // xxx 
+        str_ptr = str;
+        if (k == 0) {
+            color = print_state.color;
+            if (sscanf(str, "COLOR=%x %n", &color, &numchars) == 1) {
+                str_ptr += numchars;
+            }
+        }
+
+        // advance k and n
+        k += len;
+        if (lines[n][k] == '\n') {
+            k++;
+        }
+        if (lines[n][k] == '\0') {
+            k = 0;
+            n++;
+        }
+
+        // if y location of line (y2) is at or below the begining of the display
+        // region then render the line
+        if (y2 >= y_top) {
+            render_text(x, y2, str_ptr, WRAP_NONE, 0, color);
+        }
+
+        // advance y for the next line
+        y2 += sdlx_char_height;
+    }
 }
 
 // -----------------  RENDER RECTANGLES, LINES, CIRCLES, POINTS  --------------------
@@ -757,9 +726,9 @@ void sdlx_render_circle(int x_ctr_arg, int y_ctr_arg, int radius, int line_width
     static bool first_call = true;
 
     // xxx comment
-    x_center = rint(x_ctr_arg * scale);
-    y_center = rint(y_ctr_arg * scale);
-    radius   = rint(radius * scale);
+    x_center = nearbyint(x_ctr_arg * scale);
+    y_center = nearbyint(y_ctr_arg * scale);
+    radius   = nearbyint(radius * scale);
 
     // on first call make table of sin and cos indexed by degrees
     if (first_call) {
@@ -954,8 +923,8 @@ void sdlx_render_points(sdlx_point_t *points, int count, int color, int point_si
 
     for (i = 0; i < count; i++) {
         for (j = 0; j < pe->max; j++) {
-            x = rint((points[i].x + peo[j].x) * scale);
-            y = rint((points[i].y + peo[j].y) * scale);
+            x = nearbyint((points[i].x + peo[j].x) * scale);
+            y = nearbyint((points[i].y + peo[j].y) * scale);
             sdlx_points[sdlx_points_count].x = x;
             sdlx_points[sdlx_points_count].y = y;
             sdlx_points_count++;
@@ -1074,8 +1043,7 @@ sdlx_texture_t *sdlx_create_text_texture(char * str)
     // create a texture from the surface
     // free the surface
     surface = TTF_RenderText_Solid(font[print_state.ptsize], str, 0, 
-                                    sdlx_color(print_state.fg_color));
-                                    //sdlx_color(print_state.bg_color));
+                                    sdlx_color(print_state.color));
     if (surface == NULL) {
         ERROR("failed to allocate surface\n");
         return NULL;
@@ -1174,8 +1142,8 @@ void sdlx_query_texture(sdlx_texture_t *texture, int * width, int * height)
     }
 
     SDL_GetTextureSize((SDL_Texture *)texture, &w_float, &h_float);
-    *width = rint(w_float / scale);
-    *height = rint(h_float / scale);
+    *width = nearbyint(w_float / scale);
+    *height = nearbyint(h_float / scale);
 }
 
 // caller must free returned ptr to pixels
@@ -1225,6 +1193,7 @@ unsigned char *sdlx_read_display_pixels(int x, int y, int w, int h, int *w_pixel
     return pixels_malloced;
 }
 
+#if 0
 // -----------------  PLOTTING  ----------------------------------------- 
 
 // xxx either test and improve this, or delete it
@@ -1397,6 +1366,8 @@ void sdlx_plot_free(void *cx)
     // free cx
     free(cx);
 }
+
+#endif
 
 // -----------------  MISC  --------------------------------------------- 
 

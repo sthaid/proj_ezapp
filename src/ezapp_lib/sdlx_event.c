@@ -103,9 +103,10 @@ void sdlx_register_event(sdlx_loc_t *loc, int event_id)
     max_event++;
 }
 
-void sdlx_register_control_events(char *evstr1, char *evstr2, char *evstr3, 
-                                  int fg_color, int bg_color,
-                                  int evid1, int evid2, int evid3)
+void sdlx_register_control_events(int evid1, char *evstr1, 
+                                  int evid2, char *evstr2, 
+                                  int evid3, char *evstr3, 
+                                  int print_color, int bg_color)
 {
     sdlx_loc_t *loc;
     int i, x, y;
@@ -121,14 +122,15 @@ void sdlx_register_control_events(char *evstr1, char *evstr2, char *evstr3,
     evid[1] = evid2;
     evid[2] = evid3;
 
+    // establish print settings
     sdlx_print_save(&print_state);
+    sdlx_print_set(FONT_NORMAL, print_color);
 
-    sdlx_print_init(DEFAULT_FONT, fg_color, bg_color);
-
-    // xxx trial, fill entire control events area with bg_color
+    // fill entire control events area with bg_color
     y = sdlx_win_height - 150;
     sdlx_render_fill_rect(0, y, sdlx_win_width, sdlx_win_height-y, bg_color);
 
+    // display the 3 control events at the display bottom
     for (i = 0; i < 3; i++) {
         if (evstr[i] == NULL) {
             continue;
@@ -142,10 +144,11 @@ void sdlx_register_control_events(char *evstr1, char *evstr2, char *evstr3,
             x = sdlx_win_width - (strlen(evstr[2]) * sdlx_char_width / 2);
         }
         y = sdlx_win_height - 75;
-        loc = sdlx_render_text_xyctr(x, y, evstr[i]);
+        loc = sdlx_render_printf_ex(x, y, WRAP_NONE, FLAG_X_CTR, "%s", evstr[i]);
         sdlx_register_event(loc, evid[i]);
     }
 
+    // restore print settings
     sdlx_print_restore(&print_state);
 }
 
@@ -370,9 +373,9 @@ char *sdlx_get_input_str(char *prompt1, char *prompt2, bool numeric_keybd, int b
             numeric_keybd ?  SDL_TEXTINPUT_TYPE_NUMBER : SDL_TEXTINPUT_TYPE_TEXT);
     SDL_StartTextInputWithProperties(window, props);
 
-    // set print size and color
+    // establish print settings
     sdlx_print_save(&print_state);
-    sdlx_print_init(DEFAULT_FONT, COLOR_WHITE, bg_color);
+    sdlx_print_set(FONT_NORMAL, COLOR_WHITE);
 
     //  xxx comment
     while (true) {
@@ -398,10 +401,10 @@ char *sdlx_get_input_str(char *prompt1, char *prompt2, bool numeric_keybd, int b
         // register cancel event;
         // this event is needed to deal with the keybd being dismissed
         row += 3;
-        sdlx_print_init(DEFAULT_FONT, COLOR_LIGHT_BLUE, bg_color);
+        sdlx_print_set(FONT_NORMAL, COLOR_LIGHT_BLUE);
         loc = sdlx_render_printf(0, ROW2Y(row), "Cancel");
         sdlx_register_event(loc, EVID_QUIT);
-        sdlx_print_init(DEFAULT_FONT, COLOR_WHITE, bg_color);
+        sdlx_print_set(FONT_NORMAL, COLOR_WHITE);
 
         // register for keyboard events
         sdlx_register_event(NULL, EVID_KEYBD);
@@ -441,6 +444,8 @@ char *sdlx_get_input_str(char *prompt1, char *prompt2, bool numeric_keybd, int b
     // cleanup
     SDL_StopTextInput(window);
     SDL_DestroyProperties(props);
+
+    // restore print settings
     sdlx_print_restore(&print_state);
 
     // return input string

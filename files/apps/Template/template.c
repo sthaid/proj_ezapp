@@ -16,36 +16,41 @@ int main(int argc, char **argv)
     sdlx_event_t event;
     bool         done = false;
 
+    // set line buffering
+    setlinebuf(stdout);
+
     // save args
+    progname = argv[0];
     if (argc != 2) {
-        printf("ERROR: data_dir arg expected\n");
+        printf("E %s: data_dir arg expected\n", progname);
         return 1;
     }
-    progname = argv[0];
     data_dir = argv[1];
-    printf("INFO %s: starting, data_dir=%s\n", progname, data_dir);
+    printf("I %s: starting, data_dir=%s\n", progname, data_dir);
 
     // init sdl video subsystem
     rc = sdlx_init(SUBSYS_VIDEO);
     if (rc != 0) {
-        printf("ERROR %s: sdlx_init failed\n", progname);
+        printf("E %s: sdlx_init failed\n", progname);
         return 1;
     }
 
     // init font size and color
-    sdlx_print_init(LARGE_FONT, COLOR_PURPLE, COLOR_BLACK);
+    sdlx_print_set(FONT_LARGE, COLOR_PURPLE);
 
     // runtime loop
     while (!done) {
         // init the backbuffer
         sdlx_display_init(COLOR_BLACK);
 
-        // register control event to
-        // - end program
-        sdlx_register_control_events(NULL, NULL, "X", COLOR_WHITE, COLOR_BLACK, 0, 0, EVID_QUIT);
+        // register control event to end program
+        sdlx_register_control_events(0, NULL,
+                                     0, NULL,
+                                     EVID_QUIT, "X",
+                                     COLOR_WHITE, COLOR_BLACK);
 
         // display 'Hello' at center of display
-        sdlx_render_printf_xyctr(sdlx_win_width/2, sdlx_win_height/2, "Hello");
+        sdlx_render_printf_ex(sdlx_win_width/2, sdlx_win_height/2, FLAG_XY_CTR, 0, "Hello");
 
         // present the display
         sdlx_display_present();
@@ -63,6 +68,6 @@ int main(int argc, char **argv)
 
     // cleanup and end program
     sdlx_quit(SUBSYS_VIDEO);
-    printf("INFO %s: terminating\n", progname);
+    printf("I %s: terminating\n", progname);
     return 0;
 }

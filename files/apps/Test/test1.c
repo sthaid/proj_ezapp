@@ -4,5 +4,5 @@
 
 void test1_proc(void)
 {
-    printf("INFO %s: verified call between 2 source files\n", progname);
+    printf("I %s: verified call between 2 source files\n", progname);
 }

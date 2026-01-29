@@ -1,88 +1,75 @@
-linux dir, make run, colorize
+get latitude failed
 
----
+add sdlx_pixel_t
 
-c lang expr
-https://stackoverflow.com/questions/14472680/how-to-get-and-evaluate-the-expressions-from-a-string-in-c
+remove bg color for printing
 
+keep line wrap option, test with the copyright file modified
 
-multiline
-- perf optimization
-- wrap long lines
-- extra space between lines, option
-- allow for different colors
-- COLOR black crash
-- read about printing with SDL_ttf to surface
-- option to start at the bottom
+- - - 
 
+multiline scrolling is jumpy
 
-I/EZAPP   : #define COLOR_BLACK       (   0  |    0<<8 |    0<<16 |  255<<24 ) 
-I/EZAPP   :                                          ^
-I/EZAPP   : sdlx.h:54:41 (VariableAlloc) out of memory
-E/EZAPP   : ERROR PICOC: longjmp error exit, exit_code=1
+logging pgm
+- use script for adb logcat
+- support 'color=xxxxxxxx'  OR  build in to render_text, maybe flags arg
+- scroll left, right
+- start at the bottom
+- add top/bottom event_id
 
+SetRenderTarget
 
-------------
+picoc library, color definitions
 
-script to check for color
+remove line wrap option ??
 
-print multiline improvements
+try scaling using different method
+- to try this, set my scale factor to 1
 
------------
+start picoc list of issues
+- make test pgms
+- test pgm for stack overflow
+- also start a document on the restrictions and avoidances
+
+picoc change needed for unsinged 64bit
 
 layout file is not preserved when reloading
 - this may be something in main.c
 
-shorten logfile lines
-- convert SDL/APP to EZAPP
-
-scrolling of Log is slow
-
-need horizontal scroll too
-
-should start at the bottom
-
-remove INFO, etc from y logs
-
-apps should have there own INFO, ERROR logging
+check all apps for printing, use "I " and "E " prefix
 
 mmap should allow for arbitrary length files
--------------
-
-logcat -s -d SDL SDL/APP AndroidRuntime | tail -1000
-
-01-23 07:09:26.876 19108 19139 I SDL/APP : EZAPP INFO process_req_thread: pclose_rc=0, WEXITSTATUS=0
-
-logcat -s -d SDL SDL/APP AndroidRuntime --format=brief | tail -1000
-
-logcat -s -d --format=brief SDL SDL/APP AndroidRuntime --format=tag | tail -1000 | fmt -w 40
-
--------------------
 
 Location,  don't get every minute, and dont repeat same location
 - retest location
-
-Logging display, either App or Setting
 
 update to sdlx_print to not need background color arg
 
 update to add pixel_t  unsigned int
 
-
-rename args to eztet to build_linux  run_linux  run_picoc
-
-- - - - 
-- - - - 
-- - - - 
-
-- use TTF_RenderText_Solid or Blended   NOT Shaded
-  - this would update the printing API, bg_color not needed
-
+eztest:
+- rename args to eztet to build_linux  run_linux  run_picoc
+- color output
 
 add SDL version to Setup, and print when starting
+
 review and cleanup sdlx_audio.c
 
+git checkout the ttf and mixer too
+- ask question to the mixer team
+- check if they have tagged versions now
+
+split line option for printing - keep the wrap arg
+
+-------------
+MAYBE LATER
+-------------
+
+c lang expr
+https://stackoverflow.com/questions/14472680/how-to-get-and-evaluate-the-expressions-from-a-string-in-c
+
 color organ APP
+- add fft
 - add butterworth filter
 - option to play files
 - or option to run color organ using playbackcapture
@@ -94,15 +81,11 @@ color organ APP
      . optional display color organ during playback
 - close encounters tone seq APP;  and combine with visual representation
 
-git checkout the ttf and mixer too
-- ask question to the mixer team
-- check if they have tagged versions now
-
 SDL Video updates
 - rotate the display
 - add SDL_SetRenderTarget
 - API to print rotated text, is this really needed?
-- make a split line util
+- make a split line util OR option for printing
 - should textures have a bg color arg
 - make pixels unsigned int, add pixel_t
 - plot apis,

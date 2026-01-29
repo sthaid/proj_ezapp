@@ -725,7 +725,7 @@ int util_read_png_file(char *dir, char *filename, unsigned char **pixels, int *w
     int rc;
 
     concat(dir, filename, path);
-    INFO("reading png file %s\n", path);
+    //INFO("reading png file %s\n", path);
 
     rc = lodepng_decode32_file(pixels, (unsigned int*)w, (unsigned int*)h, path); // xxx check this doent allocate pixels on err
     if (rc != 0) {
@@ -742,7 +742,7 @@ int util_write_png_file(char *dir, char *filename, unsigned char *pixels, int w,
     int rc;
 
     concat(dir, filename, path);
-    INFO("writing png file %s\n", path);
+    //INFO("writing png file %s\n", path);
 
     rc = lodepng_encode32_file(path, pixels, w, h);
     if (rc != 0) {

@@ -6,7 +6,7 @@ extern "C" {
 #endif
 
 // --------------------
-// init / quit
+// INIT / QUIT
 // --------------------
 
 #define SUBSYS_VIDEO  1
@@ -17,7 +17,7 @@ int sdlx_init(int subsys);
 void sdlx_quit(int subsys);
 
 // --------------------
-// video    
+// VIDEO    
 // --------------------
 
 #define BYTES_PER_PIXEL   4
@@ -43,87 +43,85 @@ void sdlx_quit(int subsys);
 #define COLOR_GRAY        ( 128  |  128<<8 |  128<<16 |  255<<24 )
 #define COLOR_DARK_GRAY   (  64  |   64<<8 |   64<<16 |  255<<24 )
 
-#define ROW2Y(r) ((r) * sdlx_char_height)
-#define COL2X(c) ((c) * sdlx_char_width)
-
-#define SMALLEST_FONT 40
-#define SMALL_FONT    30
-#define DEFAULT_FONT  20
-#define LARGE_FONT    10
-
-//
-// typedefs
-//
-
 typedef struct {
     int x, y, w, h;
 } sdlx_loc_t;
-
-typedef struct {
-    int x, y;
-} sdlx_point_t;
-
-typedef struct sdlx_texture sdlx_texture_t;
-
-typedef struct {
-    int ptsize;
-    int char_width;
-    int char_height;
-    int bg_color;
-    int fg_color;
-} sdlx_print_state_t;
-
-typedef struct {
-    double xval;
-    double yval;
-} sdlx_plot_point_t;
-
-//
-// global variables
-//
 
 extern int sdlx_win_width;
 extern int sdlx_win_height;
 extern int sdlx_char_width;
 extern int sdlx_char_height;
 
-//
-// prototypes
-//
-
-// display init and present, must be done for every display update
+// - - - - - - - - - - - - - 
+// display init and present
+// - - - - - - - - - - - - - 
 void sdlx_display_init(int color);
 void sdlx_display_present(void);
 
-// create colors
+// - - - - - 
+// colors
+// - - - - - 
 int sdlx_create_color(int r, int g, int b, int a);
 int sdlx_scale_color(int color, double inten);
 int sdlx_set_color_alpha(int color, int alpha);
 int sdlx_wavelength_to_color(int wavelength);
 
+// - - - - - - - 
 // render text
-void sdlx_print_init(double numchars, int fg_color, int bg_color);
-void sdlx_print_init_numchars(double numchars);
-void sdlx_print_init_color(int fg_color, int bg_color);
+// - - - - - - - 
+#define ROW2Y(r) ((r) * sdlx_char_height)
+#define COL2X(c) ((c) * sdlx_char_width)
+
+#define FONT_TINY     40
+#define FONT_SMALL    30
+#define FONT_NORMAL   20
+#define FONT_LARGE    10
+
+#define WRAP_NONE    -1
+#define WRAP_NEWLINE  0
+
+#define FLAG_X_CTR  1
+#define FLAG_Y_CTR  2
+#define FLAG_XY_CTR (FLAG_X_CTR | FLAG_Y_CTR)
+
+typedef struct {
+    int color;
+    int ptsize;
+    int char_width;
+    int char_height;
+} sdlx_print_state_t;
+
+void sdlx_print_set(double numchars, int color);
+void sdlx_print_set_numchars(double numchars);
+void sdlx_print_set_color(int color);
 void sdlx_print_save(sdlx_print_state_t *save);
 void sdlx_print_restore(sdlx_print_state_t *restore);
-sdlx_loc_t *sdlx_render_text(int x, int y, char *str);
-sdlx_loc_t *sdlx_render_printf(int x, int y, char *fmt, ...) __attribute__ ((format (printf, 3, 4)));
-sdlx_loc_t *sdlx_render_text_xyctr(int x, int y, char *str);
-sdlx_loc_t *sdlx_render_printf_xyctr(int x, int y, char *fmt, ...) __attribute__ ((format (printf, 3, 4)));
-void sdlx_render_multiline_text_from_buff(int y_top, int y_display_begin, int y_display_end, char *buff);
-void sdlx_render_multiline_text_from_lines(int y_top, int y_display_begin, int y_display_end, char **lines, int n);
 
+sdlx_loc_t *sdlx_render_printf(int x, int y, char *fmt, ...) __attribute__ ((format (printf, 3, 4)));
+sdlx_loc_t *sdlx_render_printf_ex(int x, int y, int flags, int wrap, char *fmt, ...) __attribute__ ((format (printf, 5, 6)));
+void sdlx_render_multiline_text(int x, int y, int y_top, int y_bottom, char **lines, int num_lines);
+
+// - - - - - - - - - - - - - - - - - - - - -
 // render rectangle, lines, circles, points
+// - - - - - - - - - - - - - - - - - - - - -
+typedef struct {
+    int x, y;
+} sdlx_point_t;
+
 void sdlx_render_rect(int x, int y, int w, int h, int line_width, int color);
 void sdlx_render_fill_rect(int x, int y, int w, int h, int color);
 void sdlx_render_line(int x1, int y1, int x2, int y2, int color);
 void sdlx_render_lines(sdlx_point_t *points, int count, int color);
 void sdlx_render_circle(int x_ctr, int y_ctr, int radius, int line_width, int color);
+// xxx make filled circle proc
 void sdlx_render_point(int x, int y, int color, int point_size);
 void sdlx_render_points(sdlx_point_t *points, int count, int color, int point_size);
 
-// render using textures
+// - - - - - 
+// textures
+// - - - - - 
+typedef struct sdlx_texture sdlx_texture_t;
+
 sdlx_texture_t *sdlx_create_texture_from_pixels(unsigned char *pixels, int w, int h);  // xxx color  xxx pixel_t ?
 sdlx_texture_t *sdlx_create_filled_circle_texture(int radius, int color);  // xxx color
 sdlx_texture_t *sdlx_create_text_texture(char *str);  // xxx color
@@ -135,7 +133,15 @@ void sdlx_destroy_texture(sdlx_texture_t *texture);
 void sdlx_query_texture(sdlx_texture_t *texture, int *w, int *h);
 unsigned char *sdlx_read_display_pixels(int x, int y, int w, int h, int *w_pixels, int *h_pixels);
 
-// plotting  xxx rework or delete
+// - - - - - -
+// plotting
+// - - - - - -
+// xxx rework or delete
+typedef struct {
+    double xval;
+    double yval;
+} sdlx_plot_point_t;
+
 void *sdlx_plot_create(char *title,
                       int xleft, int xright, int ybottom, int ytop,
                       double xval_left, double xval_right, double yval_bottom, double yval_top,
@@ -147,11 +153,8 @@ void sdlx_plot_bars(void *cx,
                    int num_pts, double bar_wval);
 void sdlx_plot_free(void *cx);
 
-// misc
-void sdlx_show_toast(char *message);
-
 // --------------------
-// audio
+// AUDIO
 // --------------------
 
 #define FRAMES_PER_SEC 48000
@@ -176,24 +179,35 @@ typedef struct {
     int  play_total_ms;
     int  record_ms;
     int  volume;
-    char pathname[200];
+    char pathname[200];  // xxx or is this filename?
 } sdlx_audio_state_t;
 
+// - - - - - -
+// control
+// - - - - - -
 int sdlx_audio_stop(void);
 void sdlx_audio_pause(void);
 void sdlx_audio_resume(void);
 void sdlx_audio_state(sdlx_audio_state_t * state);
 int sdlx_audio_file_duration_ms(char *dir, char *filename);
 
+// - - - - - -
+// playback
+// - - - - - -
 int sdlx_audio_play_file(char *dir, char *filename);
 int sdlx_audio_play_tones(sdlx_tone_t *tones);
 int sdlx_audio_play_buff(short *samples, int num_samples, int num_channels,
                          int loops, bool free_samples_when_done);
 
+// - - - - - -
+// record
+// - - - - - -
 int sdlx_audio_record_from_mic(char *dir, char *filename, int max_duration_secs, int auto_stop_secs, bool append);
 int sdlx_audio_record_from_device(char *dir, char *filename);
 
-// not available in picoc
+// - - - - - - - - - - - - - - - - - - - - - - 
+// the following are not made available in picoc
+// - - - - - - - - - - - - - - - - - - - - - - 
 #ifdef ANDROID
     #define DEFAULT_RECORD_GAIN 5
 #else
@@ -208,7 +222,7 @@ void sdlx_audio_set_params(sdlx_audio_params_t *ap);
 void sdlx_audio_get_params(sdlx_audio_params_t *ap);
 
 // --------------------
-// sensors
+// SENSORS
 // --------------------
 
 #define ASENSOR_TYPE_ACCELEROMETER       1
@@ -246,8 +260,6 @@ void sdlx_audio_get_params(sdlx_audio_params_t *ap);
 #define ASENSOR_TYPE_GYROSCOPE_LIMITED_AXES_UNCALIBRATED 41
 #define ASENSOR_TYPE_HEADING 42
 
-#define INVALID_NUMBER 999999999
-
 typedef struct {
     int   id;
     int   type;  // ASENSOR_TYPE
@@ -267,7 +279,7 @@ int sdlx_sensor_read_temperature(double *degrees_c);
 int sdlx_sensor_read_humidity(double *percent);
 
 // --------------------
-// events   
+// EVENTS   
 // --------------------
 
 #define EVID_SWIPE_RIGHT       9990  // xxx are these 2 used
@@ -288,18 +300,35 @@ typedef struct {
     } u;
 } sdlx_event_t;
 
-// event registration and query
+// - - - - - - - - - - 
+// event registration
+// - - - - - - - - - - 
 void sdlx_register_event(sdlx_loc_t *loc, int event_id);
-void sdlx_register_control_events(char *evstr1, char *evstr2, char *evstr3, 
-                                  int fg_color, int bg_color,
-                                  int evid1, int evid2, int evid3);
+void sdlx_register_control_events(int evid1, char *evstr1,
+                                  int evid2, char *evstr2,
+                                  int evid3, char *evstr3,
+                                  int print_color, int bg_color);
+
+// - - - - - - - - 
+// wait for event
+// - - - - - - - - 
 void sdlx_get_event(long timeout_us, sdlx_event_t *event);
 
-// get string, from virtual keyboard when on Android
+
+// --------------------
+// MISC
+// --------------------
+
+#define INVALID_NUMBER 999999999
+
+// android show toast
+void sdlx_show_toast(char *message);
+
+// get string, using virtual keyboard when on Android
 char *sdlx_get_input_str(char *prompt1, char *prompt2, bool numeric_keybd, int bg_color);
 
 // --------------------
-// not made available in picoc
+// NOT AVAILABLE IN PICOC
 // --------------------
 
 // sdlx_video.c
