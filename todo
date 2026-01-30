@@ -1,3 +1,11 @@
+eztest: restore picoc build
+log.c   xxx
+test.c  xxx
+sdlx.h  xxx
+sdlx_video.c  xxx,  and print section review,  and remove plotting
+
+--------------
+
 get latitude failed
 
 add sdlx_pixel_t

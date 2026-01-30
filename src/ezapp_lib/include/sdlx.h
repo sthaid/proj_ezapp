@@ -22,6 +22,22 @@ void sdlx_quit(int subsys);
 
 #define BYTES_PER_PIXEL   4
 
+typedef struct {
+    int x, y, w, h;
+} sdlx_loc_t;
+
+extern int sdlx_win_width;
+extern int sdlx_win_height;
+
+// - - - - - - - - - - - - - 
+// display init and present
+// - - - - - - - - - - - - - 
+void sdlx_display_init(int color);
+void sdlx_display_present(void);
+
+// - - - - - 
+// colors
+// - - - - - 
 // https://www.w3schools.com/colors/colors_converter.asp
 // these colors are opaque (alpha equals 255)
 //                          red      green       blue      alpha
@@ -43,24 +59,6 @@ void sdlx_quit(int subsys);
 #define COLOR_GRAY        ( 128  |  128<<8 |  128<<16 |  255<<24 )
 #define COLOR_DARK_GRAY   (  64  |   64<<8 |   64<<16 |  255<<24 )
 
-typedef struct {
-    int x, y, w, h;
-} sdlx_loc_t;
-
-extern int sdlx_win_width;
-extern int sdlx_win_height;
-extern int sdlx_char_width;
-extern int sdlx_char_height;
-
-// - - - - - - - - - - - - - 
-// display init and present
-// - - - - - - - - - - - - - 
-void sdlx_display_init(int color);
-void sdlx_display_present(void);
-
-// - - - - - 
-// colors
-// - - - - - 
 int sdlx_create_color(int r, int g, int b, int a);
 int sdlx_scale_color(int color, double inten);
 int sdlx_set_color_alpha(int color, int alpha);
@@ -84,22 +82,16 @@ int sdlx_wavelength_to_color(int wavelength);
 #define FLAG_Y_CTR  2
 #define FLAG_XY_CTR (FLAG_X_CTR | FLAG_Y_CTR)
 
-typedef struct {
-    int color;
-    int ptsize;
-    int char_width;
-    int char_height;
-} sdlx_print_state_t;
+extern int sdlx_char_width;
+extern int sdlx_char_height;
 
-void sdlx_print_set(double numchars, int color);
-void sdlx_print_set_numchars(double numchars);
-void sdlx_print_set_color(int color);
-void sdlx_print_save(sdlx_print_state_t *save);
-void sdlx_print_restore(sdlx_print_state_t *restore);
+void sdlx_print_set_default(double numchars, int color);
 
 sdlx_loc_t *sdlx_render_printf(int x, int y, char *fmt, ...) __attribute__ ((format (printf, 3, 4)));
-sdlx_loc_t *sdlx_render_printf_ex(int x, int y, int flags, int wrap, char *fmt, ...) __attribute__ ((format (printf, 5, 6)));
-void sdlx_render_multiline_text(int x, int y, int y_top, int y_bottom, char **lines, int num_lines);
+sdlx_loc_t *sdlx_render_printf_color(int x, int y, unsigned int color, char *fmt, ...) __attribute__ ((format (printf, 4, 5)));
+sdlx_loc_t *sdlx_render_printf_ex(int x, int y, double numchars, unsigned int color, int flags, int wrap, char *fmt, ...) __attribute__ ((format (printf, 7, 8)));
+
+void sdlx_render_multiline_text(int x, int y, int y_top, int y_bottom, char **lines, unsigned int *colors, int num_lines);
 
 // - - - - - - - - - - - - - - - - - - - - -
 // render rectangle, lines, circles, points
@@ -287,6 +279,7 @@ typedef struct {
 // - - - - - - - - - - 
 // event registration
 // - - - - - - - - - - 
+#define CONTROL_EVENTS_DISPLAY_HEIGHT 150
 void sdlx_register_event(sdlx_loc_t *loc, int event_id);
 void sdlx_register_control_events(int evid1, char *evstr1,
                                   int evid2, char *evstr2,

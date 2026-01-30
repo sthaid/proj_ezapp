@@ -162,11 +162,12 @@ void svcs_display(int bg_color)
     #define EVID_SVC_START    100
     #define EVID_SVC_STOP     200
 
+    sdlx_print_set_default(FONT_NORMAL, COLOR_WHITE);
+
     // handle the setting display
     while (true) {
         // init display and display title line
         sdlx_display_init(bg_color);
-        sdlx_print_set(FONT_NORMAL, COLOR_WHITE);
         sdlx_render_printf(sdlx_win_width/2, sdlx_char_height/2, "%s", "Services"); // XXX was xyctr
 
         // display name and controls for each service
@@ -174,15 +175,13 @@ void svcs_display(int bg_color)
         for (id = 0; id < max_svcs; id++) {
             svc_t *x = &svcs[id];
 
-            sdlx_print_set_color(SERVICE_STATE_TO_COLOR(x->state));
-            sdlx_render_printf(0, ROW2Y(row), "%-s", x->name);
+            sdlx_render_printf_color(0, ROW2Y(row), SERVICE_STATE_TO_COLOR(x->state), "%-s", x->name);
 
-            sdlx_print_set_color(COLOR_LIGHT_BLUE);
             if (SERVICE_IS_STOPPED(x->state)) {
-                loc = sdlx_render_printf(COL2X(10), ROW2Y(row), "start");
+                loc = sdlx_render_printf_color(COL2X(10), ROW2Y(row), COLOR_LIGHT_BLUE, "start");
                 sdlx_register_event(loc, EVID_SVC_START+id);
             } else if (x->state == SERVICE_STATE_RUNNING) {
-                loc = sdlx_render_printf(COL2X(10), ROW2Y(row), "stop");
+                loc = sdlx_render_printf_color(COL2X(10), ROW2Y(row), COLOR_LIGHT_BLUE, "stop");
                 sdlx_register_event(loc, EVID_SVC_STOP+id);
             }
 
