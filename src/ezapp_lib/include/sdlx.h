@@ -82,6 +82,8 @@ int sdlx_wavelength_to_color(int wavelength);
 #define FLAG_Y_CTR  2
 #define FLAG_XY_CTR (FLAG_X_CTR | FLAG_Y_CTR)
 
+//xxx move loc_t typedef, is it only used for printf??
+
 extern int sdlx_char_width;
 extern int sdlx_char_height;
 
@@ -105,7 +107,7 @@ void sdlx_render_fill_rect(int x, int y, int w, int h, int color);
 void sdlx_render_line(int x1, int y1, int x2, int y2, int color);
 void sdlx_render_lines(sdlx_point_t *points, int count, int color);
 void sdlx_render_circle(int x_ctr, int y_ctr, int radius, int line_width, int color);
-// xxx make filled circle proc
+void sdlx_render_fill_circle(int x_ctr, int y_ctr, int radius, int color);  //xx new
 void sdlx_render_point(int x, int y, int color, int point_size);
 void sdlx_render_points(sdlx_point_t *points, int count, int color, int point_size);
 
@@ -114,16 +116,28 @@ void sdlx_render_points(sdlx_point_t *points, int count, int color, int point_si
 // - - - - - 
 typedef struct sdlx_texture sdlx_texture_t;
 
-sdlx_texture_t *sdlx_create_texture_from_pixels(unsigned char *pixels, int w, int h);  // xxx color  xxx pixel_t ?
-sdlx_texture_t *sdlx_create_filled_circle_texture(int radius, int color);  // xxx color
-sdlx_texture_t *sdlx_create_text_texture(char *str);  // xxx color
-sdlx_loc_t *sdlx_render_texture(int x, int y, int w, int h, sdlx_texture_t *texture);
-void sdlx_render_texture_ex(int x, int y, int w, int h, double angle, sdlx_texture_t *texture);
-void sdlx_render_texture_ex2(int x, int y, int w, int h, double angle, int xctr, int yctr,
-                            sdlx_texture_t *texture);
-void sdlx_destroy_texture(sdlx_texture_t *texture);
-void sdlx_query_texture(sdlx_texture_t *texture, int *w, int *h);
-unsigned char *sdlx_read_display_pixels(int x, int y, int w, int h, int *w_pixels, int *h_pixels);
+sdlx_texture_t *sdlx_create_texture(int w, int h);
+void sdlx_destroy_texture(sdlx_texture_t *t);
+void sdlx_query_texture(sdlx_texture_t *t, int *w, int *h);
+
+void sdlx_set_texture_pixels(sdlx_texture_t *t, unsigned int *pixels);
+unsigned int *sdlx_get_texture_pixels(sdlx_texture_t *t, int *w, int *h);
+
+void sdlx_render_texture(sdlx_texture_t *t, int x, int y);
+void sdlx_render_texture_ex1(sdlx_texture_t *t, int x, int y, int w, int h);
+
+void sdlx_set_render_target(sdlx_texture_t *t);
+
+//sdlx_loc_t *sdlx_render_texture(int x, int y, int w, int h, sdlx_texture_t *texture);
+//void sdlx_render_texture_ex(int x, int y, int w, int h, double angle, int xctr, int yctr, sdlx_texture_t *t);
+
+// xxx maybe not needed
+// void sdlx_query_texture(sdlx_texture_t *texture, int *w, int *h);
+// sdlx_texture_t *sdlx_create_filled_circle_texture(int radius, int color);  // xxx color
+// sdlx_texture_t *sdlx_create_text_texture(char *str);  // xxx color
+//sdlx_loc_t *sdlx_render_texture(int x, int y, int w, int h, sdlx_texture_t *texture);
+//void sdlx_render_texture_ex(int x, int y, int w, int h, double angle, sdlx_texture_t *texture);
+//unsigned char *sdlx_read_display_pixels(int x, int y, int w, int h, int *w_pixels, int *h_pixels);
 
 // - - - - - -
 // plotting

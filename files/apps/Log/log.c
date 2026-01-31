@@ -22,7 +22,7 @@
 
 #define LOG_FONT 40
 
-#define MAX_LINES 200
+#define MAX_LINES 100  //xxx try 200
 
 //
 // variables
@@ -212,6 +212,9 @@ int log_load(void)
 
     // read log lines, initialize array of lines and parallel array of colors
     while (fgets(s, sizeof(s), fp) != NULL) {
+        int len = strlen(s);  //xxx this may not be needed
+        if (len > 0 && s[len-1] == '\n') s[len-1] = '\0';
+
         colors[num_lines] = COLOR_WHITE;
         if (strncmp(s, "I ", 2) == 0) {
             colors[num_lines] = COLOR_GREEN;

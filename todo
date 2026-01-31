@@ -1,3 +1,14 @@
+	modified:   bin/eztest
+	modified:   files/apps/Compass/compass.c
+	modified:   files/apps/Log/log.c
+	modified:   files/apps/Log/test.log
+	modified:   files/apps/Test/test.c
+	modified:   src/ezapp_lib/include/sdlx.h
+	modified:   src/ezapp_lib/sdlx_event.c
+	modified:   src/ezapp_lib/sdlx_video.c
+
+
+
 eztest: restore picoc build
 log.c   xxx
 test.c  xxx

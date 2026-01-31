@@ -140,7 +140,7 @@ char *page_title[] = {     // Page
         "Sensor Values",   //   9
         "Location",        //  10
             };
-static int pagenum = 0;
+static int pagenum = 5; //xxx
 
 #define LAST_PAGE 10
 
@@ -164,10 +164,10 @@ static void page_hndlr()
     while (true) {
         // init the backbuffer, and print font/color
         sdlx_display_init(COLOR_BLACK);
-        sdlx_print_set(FONT_NORMAL, COLOR_WHITE);
+        sdlx_print_set_default(FONT_NORMAL, COLOR_WHITE);
 
         // draw title line
-        sdlx_render_printf_ex(sdlx_win_width/2, 0, FLAG_X_CTR, WRAP_NONE, "%s", page_title[pagenum]);
+        sdlx_render_printf_ex(sdlx_win_width/2, 0, FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE, "%s", page_title[pagenum]);
 
         // register control events
         // "<" - previous page
@@ -275,12 +275,12 @@ static void page_0_draw(void)
     time(&t);
     tm = localtime(&t);
     sprintf(str, "%02d:%02d:%02d", tm->tm_hour, tm->tm_min, tm->tm_sec);
-    sdlx_render_printf_ex(sdlx_win_width/2, ROW2Y(5), FLAG_X_CTR, WRAP_NONE, "%s", str);
+    sdlx_render_printf_ex(sdlx_win_width/2, ROW2Y(5), FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE, "%s", str);
 
     // print the time in microsecs
     usecs = util_get_real_time_microsec();
     util_time2str(str, usecs, false, true, false);
-    sdlx_render_printf_ex(sdlx_win_width/2, ROW2Y(7), FLAG_X_CTR, WRAP_NONE, "%s", str);
+    sdlx_render_printf_ex(sdlx_win_width/2, ROW2Y(7), FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE, "%s", str);
 
     // print microsecs since this page is first viewed, and
     // print the delta time since last display update
@@ -290,11 +290,11 @@ static void page_0_draw(void)
     }
     delta_ms = (usecs - usecs_last) / 1000;
     usecs_last = usecs;
-    sdlx_render_printf_ex(sdlx_win_width/2, ROW2Y(9), FLAG_X_CTR, WRAP_NONE, "%0.3f delta=%ld ms", 
+    sdlx_render_printf_ex(sdlx_win_width/2, ROW2Y(9), FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE, "%0.3f delta=%ld ms", 
         (usecs-usecs_first)/1000000., delta_ms);
 
     // print ipaddr
-    sdlx_render_printf_ex(sdlx_win_width/2, ROW2Y(11), FLAG_X_CTR, WRAP_NONE, "%s", util_get_ipaddr());
+    sdlx_render_printf_ex(sdlx_win_width/2, ROW2Y(11), FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE, "%s", util_get_ipaddr());
 }
 
 static void page_0_process_event(sdlx_event_t *ev)
@@ -360,22 +360,13 @@ static double x_mlt;
 static double y_mlt;
 static int    y_mlt_top;
 static int    y_mlt_bottom;
-static char *lines[100];
+static char *lines[100]; // xxx test with less lines
 
 static void page_3_init(void)
 {
-    char color_override[30];
-
     for (int i = 0; i < 100; i++) {
         lines[i] = malloc(50);
-        if (i == 0) {
-            sprintf(color_override, "COLOR=%08x", COLOR_RED);
-        } else if (i == 1) {
-            sprintf(color_override, "COLOR=%08x", COLOR_GREEN);
-        } else {
-            color_override[0] = '\0';
-        }
-        sprintf(lines[i], "%sLine %d:\n  Hello World\n", color_override, i);
+        sprintf(lines[i], "Line %d:\n  Hello World\n", i);
     }
 
     x_mlt = 0;
@@ -388,7 +379,7 @@ static void page_3_draw(void)
 {
     sdlx_register_event(NULL, EVID_MOTION);
 
-    sdlx_render_multiline_text(x_mlt, y_mlt, y_mlt_top, y_mlt_bottom, lines, 100);
+    sdlx_render_multiline_text(x_mlt, y_mlt, y_mlt_top, y_mlt_bottom, lines, NULL, 100);
 }
 
 static void page_3_process_event(sdlx_event_t *event)
@@ -467,6 +458,9 @@ static void page_4_draw(void)
         points[i].y = 1100;
     }
     sdlx_render_points(points, 10, COLOR_PURPLE, 5);
+
+    // draw filled circle, y_ctr = 1200 + radius = 1200 + 250 = 1450
+    sdlx_render_fill_circle(sdlx_win_width/2, 1450, 250, COLOR_PURPLE);
 }
 
 static void add_point(sdlx_point_t **p, int x, int y)
@@ -477,18 +471,93 @@ static void add_point(sdlx_point_t **p, int x, int y)
 }
 
 // -----------------  PAGE 5: TEXTURES  -----------------------
+//xxx cleanup
+static sdlx_texture_t *texture;
+static sdlx_texture_t *texture2;
 
-static sdlx_texture_t *circle;
-static sdlx_texture_t *text;
-
+extern double scale;
 static void page_5_init(void)
 {
-    circle = sdlx_create_filled_circle_texture(100, COLOR_RED);
-    text   = sdlx_create_text_texture("XXXXX");
+    int w, h, i;
+
+    //
+    // create texture content using sdlx_set_render_target
+    //
+
+    // create texture
+    texture = sdlx_create_texture(1000, 1000);
+
+    // query texture 
+    sdlx_query_texture(texture, &w, &h);
+    printf("I texture w,h = %d %d\n", w, h);
+
+    // set render target to the texture
+    printf("I setting render target to texture\n");
+    sdlx_set_render_target(texture);
+
+    // draw to the texture
+    scale = 1;
+    sdlx_render_rect(0, 0, w, h, 5, COLOR_WHITE);
+    sdlx_render_fill_circle(w/2, h/2, w/2, COLOR_YELLOW);
+    sdlx_render_printf_ex(w/2, h/2, FONT_NORMAL, COLOR_RED, FLAG_XY_CTR, WRAP_NONE, "%s", "Hello");
+    scale = 0.45;
+
+    // set render target back to the display
+    printf("I setting render target to display\n");
+    sdlx_set_render_target(NULL);
+
+    //
+    // test set/get textrue pixels
+    //
+
+    // create texture2, and set its pixels
+    unsigned int *pixels;
+    texture2 = sdlx_create_texture(200, 200);
+    pixels = malloc(200*200*BYTES_PER_PIXEL);
+    for (int i = 0; i < 200*200; i++) {
+        pixels[i] = COLOR_BLUE;
+    }
+    sdlx_set_texture_pixels(texture2, pixels);
+    free(pixels);
+
+    // get the pixels from texture2
+    pixels = sdlx_get_texture_pixels(texture2, &w, &h);
+    printf("I get_pixels ret w,h %d %d\n", w, h);
+    if (w != 200 || h != 200) {
+        printf("E incorrect w,h (%d,%d)  returned from sdlx_get_texture_pixels\n", w, h);
+    }
+
+    // verify pixels read back
+    for (i = 0; i < w*h; i++) {
+        if (pixels[i] != COLOR_BLUE) {
+            printf("E incorrect pixel value returned, pixels[%d]=%08x\n", i, pixels[i]);
+            break;
+        }
+    }
+    if (i == w*h) {
+        printf("I pixel readback test, okay\n");
+    }
+
+    // free pixels
+    free(pixels);
+}
+
+static void page_5_exit(void)
+{
+    printf("I destroying textures\n");
+    sdlx_destroy_texture(texture);
+    sdlx_destroy_texture(texture2);
 }
 
 static void page_5_draw(void)
 {
+    sdlx_render_texture(texture, 0, 0);
+
+    sdlx_render_texture_ex1(texture, 0, 1100, 500, 500);
+
+    sdlx_render_texture(texture2, 500, 1100);
+
+#if 0
     int ret, w, h;
     sdlx_texture_t *t;
     unsigned char *pixels;
@@ -543,13 +612,9 @@ static void page_5_draw(void)
     sdlx_destroy_texture(t);
 
     free(pixels);
+#endif
 }
 
-static void page_5_exit(void)
-{
-    sdlx_destroy_texture(circle);
-    sdlx_destroy_texture(text);
-}
 
 // -----------------  PAGE 6: COLORS  -------------------------
 
@@ -838,8 +903,8 @@ static void page_8_init(void)
 
 static void page_8_draw(void)
 {
-    sdlx_print_set(FONT_SMALL, COLOR_WHITE);
-    sdlx_render_multiline_text(x_mlt, y_mlt, y_mlt_top, y_mlt_bottom, sit_lines, max_sit);
+    sdlx_print_set_default(FONT_SMALL, COLOR_WHITE);
+    sdlx_render_multiline_text(x_mlt, y_mlt, y_mlt_top, y_mlt_bottom, sit_lines, NULL, max_sit);
 }
 
 static void page_8_exit(void)
@@ -889,7 +954,7 @@ static void page_9_draw(void)
     double mag_heading, roll, pitch, millibars, degrees_c, percent;
     double ax, ay, az;
 
-    sdlx_print_set(FONT_SMALL, COLOR_WHITE);
+    sdlx_print_set_default(FONT_SMALL, COLOR_WHITE);
 
     for (int i = 0; i < MAX_SENSOR_TEST_TBL; i++) {
         struct sensor_test_s *x = &sensor_test_tbl[i];
@@ -901,7 +966,7 @@ static void page_9_draw(void)
 
     row++;
 
-    sdlx_print_set(FONT_NORMAL, COLOR_WHITE);
+    sdlx_print_set_default(FONT_NORMAL, COLOR_WHITE);
 
     rc = sdlx_sensor_read_step_counter(&step_count);
     if (rc == 0) {

@@ -27,7 +27,11 @@ typedef struct {
 
 // defined in sdlx_video.c
 extern SDL_Window * window;
-extern double       scale;
+#if 1   // set to 'if 0' for testing of SDL_SetRenderLogicalPresentation
+extern double       scale;  //xxx cleanup
+#else
+static double       scale = 0.45;
+#endif
 
 static event_t      event_tbl[100];
 static int          max_event;

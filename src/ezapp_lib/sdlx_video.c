@@ -181,10 +181,19 @@ int sdlx_video_init(void)
     INFO("real win_width x height = %d %d  aspect = %f\n", real_win_width, real_win_height, aspect_ratio);
 
     // xxx comment
+#if 1  //xxx cleanup
     sdlx_win_width  = 1000;
-    sdlx_win_height = nearbyint(1000 * aspect_ratio);
+    sdlx_win_height = rint(sdlx_win_width * aspect_ratio);
     scale = (double)real_win_width / sdlx_win_width;
     INFO("logical sdlx_win_width x height = %d %d  scale = %f\n", sdlx_win_width, sdlx_win_height, scale);
+#else
+    // xxx to use this also adjust scale value in sdlx_event.c
+    sdlx_win_width  = 1000;
+    sdlx_win_height = rint(sdlx_win_width * aspect_ratio);
+    scale = 1;
+    INFO("LOGICAL sdlx_win_width x height = %d %d  scale = %f\n", sdlx_win_width, sdlx_win_height, scale);
+    SDL_SetRenderLogicalPresentation(renderer, sdlx_win_width, sdlx_win_height, SDL_LOGICAL_PRESENTATION_STRETCH);
+#endif
 
     // initialize True Type Font
     if (!TTF_Init()) {
@@ -377,15 +386,6 @@ void sdlx_print_set_default(double numchars, int color)
     print_dflt.char_height = nearbyint(ptsize / scale);
     print_dflt.char_width  = nearbyint(print_dflt.char_height * 0.6);
 
-    // if the requested font pointsize has not yet been opened then open it
-    if (font[ptsize] == NULL) {
-        font[ptsize] = TTF_OpenFont(FONT_FILE_PATH, ptsize);
-        if (font[ptsize] == NULL) {
-            ERROR("TTF_OpenFont failed, ptsize=%d\n", ptsize);
-            return;
-        }
-    }
-
     // make default char_width/height available in global variables, 
     // for easy access by the apps
     sdlx_char_width  = print_dflt.char_width;
@@ -402,6 +402,16 @@ static int numchars_to_ptsize(double numchars)
     // ensure ptiszie is in range
     if (ptsize < MIN_FONT_PTSIZE) ptsize = MIN_FONT_PTSIZE;
     if (ptsize >= MAX_FONT_PTSIZE) ptsize = MAX_FONT_PTSIZE-1;
+
+//xxx cleanup?
+    // if the requested font pointsize has not yet been opened then open it
+    if (font[ptsize] == NULL) {
+        font[ptsize] = TTF_OpenFont(FONT_FILE_PATH, ptsize);
+        if (font[ptsize] == NULL) {
+            ERROR("TTF_OpenFont failed, ptsize=%d\n", ptsize);
+            return ptsize;
+        }
+    }
 
     // return ptsize
     return ptsize;
@@ -449,14 +459,16 @@ static sdlx_loc_t *render_text(int x, int y, int ptsize, unsigned int color, int
     static sdlx_loc_t loc;
     static int        num_allocated = 0;
 
-    // if zero length string then just return the loc
-    // xxx what about CTR flags
+    // if zero length string then just return the location
+    // xxx consider just printing " "
     if (str[0] == '\0') {
-        loc.x = x;
-        loc.y = y;
-        loc.w = 0;
-        loc.h = sdlx_char_height;
-        return &loc;
+        pos.x = x*scale;
+        pos.y = y*scale;
+        pos.w = ptsize * 0.6;
+        pos.h = ptsize;
+        if (flags & FLAG_X_CTR) pos.x -= pos.w / 2;
+        if (flags & FLAG_Y_CTR) pos.y -= pos.h / 2;
+        goto return_loc;
     }
 
     // calculate hash key and idx
@@ -505,6 +517,10 @@ static sdlx_loc_t *render_text(int x, int y, int ptsize, unsigned int color, int
         num_allocated--;
     }
 
+    if (font[ptsize] == NULL) {
+        ERROR("NO FONT FOR ptsize %d\n", ptsize); //xxx
+    }
+
     // create surface, and create texture from surface
     if (wrap != WRAP_NONE) {
         surface = TTF_RenderText_Solid_Wrapped(
@@ -516,7 +532,17 @@ static sdlx_loc_t *render_text(int x, int y, int ptsize, unsigned int color, int
                         font[ptsize], str, 0,
                         sdlx_color(color));
     }
+
+    if (surface == NULL) { //xxx
+        ERROR("TTF_RenderTextSolid failed, %s\n", SDL_GetError());
+        return &loc; //xxx fixup
+    }
+
     texture = SDL_CreateTextureFromSurface(renderer, surface);
+    if (texture == NULL) { //xxx
+        ERROR("SDL_CreateTextureFromSurface failed, %s\n", SDL_GetError());
+        return &loc; //xxx fixup
+    }
 
     // allocate and init new hash table entry
     entry = malloc(sizeof(ht_entry_t));
@@ -587,6 +613,7 @@ sdlx_loc_t *sdlx_render_printf_ex(int x, int y, double numchars, unsigned int co
     va_end(ap);
 
     ptsize = numchars_to_ptsize(numchars);
+    //INFO("ptsize = %d\n", ptsize); xxx
 
     return render_text(x, y, ptsize, color, flags, wrap, str);
 }
@@ -617,6 +644,13 @@ void sdlx_render_multiline_text(int x, int y, int y_top, int y_bottom, char **li
             len = strlen(str);
         }
 
+        // if y location of line (y2) is at or below the begining of the display
+        // region then render the line
+        if (y2 >= y_top) {
+            int color = (colors ? colors[n] : print_dflt.color);
+            render_text(x, y2, print_dflt.ptsize, color, 0, WRAP_NONE, str);
+        }
+
         // advance k and n
         k += len;
         if (lines[n][k] == '\n') {
@@ -625,13 +659,6 @@ void sdlx_render_multiline_text(int x, int y, int y_top, int y_bottom, char **li
         if (lines[n][k] == '\0') {
             k = 0;
             n++;
-        }
-
-        // if y location of line (y2) is at or below the begining of the display
-        // region then render the line
-        if (y2 >= y_top) {
-            int color = (colors ? colors[n] : print_dflt.color);
-            render_text(x, y2, print_dflt.ptsize, color, 0, WRAP_NONE, str);
         }
 
         // advance y for the next line
@@ -702,8 +729,7 @@ void sdlx_render_lines(sdlx_point_t *points, int count, int color)
     SDL_RenderLines(renderer, scaled_points, count);
 }
 
-// xxx change args to x_ctr_arg ..
-void sdlx_render_circle(int x_ctr_arg, int y_ctr_arg, int radius, int line_width, int color)
+void sdlx_render_circle(int x_ctr, int y_ctr, int radius, int line_width, int color)
 {
     int count = 0, i, angle, x, y;
     int x_center, y_center;
@@ -713,9 +739,9 @@ void sdlx_render_circle(int x_ctr_arg, int y_ctr_arg, int radius, int line_width
     static int cos_table[370];
     static bool first_call = true;
 
-    // xxx comment
-    x_center = nearbyint(x_ctr_arg * scale);
-    y_center = nearbyint(y_ctr_arg * scale);
+    // apply scale factor
+    x_center = nearbyint(x_ctr * scale);
+    y_center = nearbyint(y_ctr * scale);
     radius   = nearbyint(radius * scale);
 
     // on first call make table of sin and cos indexed by degrees
@@ -749,6 +775,40 @@ void sdlx_render_circle(int x_ctr_arg, int y_ctr_arg, int radius, int line_width
             break;
         }
     }
+}
+
+// Bresenham’s circle algorithm)
+void sdlx_render_fill_circle(int x_ctr, int y_ctr, int radius, int color)
+{
+    int x, y, error;
+
+    x_ctr  = nearbyint(x_ctr * scale);
+    y_ctr  = nearbyint(y_ctr * scale);
+    radius = nearbyint(radius * scale);
+
+    x     = radius;
+    y     = 0;
+    error = 1 - radius;
+
+    set_render_draw_color(color);
+
+    #define draw_horizontal_line(y, x1, x2) SDL_RenderLine(renderer, x1, y, x2, y)
+    
+    //long start = util_microsec_timer();
+    while(x >= y) {
+        draw_horizontal_line(y+y_ctr, -x+x_ctr, x+x_ctr);
+        draw_horizontal_line(x+y_ctr, -y+x_ctr, y+x_ctr);
+        draw_horizontal_line(-y+y_ctr, -x+x_ctr, x+x_ctr);
+        draw_horizontal_line(-x+y_ctr, -y+x_ctr, y+x_ctr);
+        y++;
+        if (error<0) {
+            error += 2 * y + 1;
+        } else {
+            x--;
+            error += 2 * (y - x) + 1;
+        }
+    }
+    //INFO("duration = %ld\n", (util_microsec_timer() - start));
 }
 
 void sdlx_render_point(int x, int y, int color, int point_size)
@@ -932,7 +992,196 @@ void sdlx_render_points(sdlx_point_t *points, int count, int color, int point_si
 
 // -----------------  RENDER USING TEXTURES  ---------------------------- 
 
+// - - - - - - create/destroy/query texture  - - - - - - - 
 
+sdlx_texture_t *sdlx_create_texture(int width, int height)
+{
+    sdlx_texture_t *texture;
+
+    texture = (sdlx_texture_t*)
+              SDL_CreateTexture(renderer,
+                                SDL_PIXELFORMAT_ABGR8888,
+                                SDL_TEXTUREACCESS_TARGET,  // SDL_TEXTUREACCESS_STREAMING,
+                                width, height);
+    if (texture == NULL) {
+        ERROR("failed to allocate texture\n");
+        return NULL;
+    }
+
+    return texture;
+}
+
+void sdlx_destroy_texture(sdlx_texture_t *texture)
+{
+    if (texture == NULL) {
+        return;
+    }
+
+    SDL_DestroyTexture((SDL_Texture *)texture);
+}
+
+void sdlx_query_texture(sdlx_texture_t *texture, int * width, int * height)
+{
+    float w_float, h_float;
+
+    if (texture == NULL) {
+        *width = 0;
+        *height = 0;
+        return;
+    }
+
+    SDL_GetTextureSize((SDL_Texture *)texture, &w_float, &h_float);
+    *width  = nearbyint(w_float);
+    *height = nearbyint(h_float);
+}
+
+// - - - - - - set/get pixels from texture - - - - - - - - 
+
+void sdlx_set_texture_pixels(sdlx_texture_t *texture, unsigned int *pixels)
+{
+    int w, h;
+
+    sdlx_query_texture(texture, &w, &h);
+
+    SDL_UpdateTexture((SDL_Texture*)texture, NULL, pixels, w * BYTES_PER_PIXEL);
+}
+
+unsigned int *sdlx_get_texture_pixels(sdlx_texture_t *t, int *w_arg, int *h_arg)
+{
+    SDL_Texture *initial_render_target;
+    bool succ;
+    SDL_Surface *surface;
+    unsigned int *pixels, *p;
+    int w, h, row;
+
+    // save the initial_render_target, so it can be restored at then end 
+    // of this routine  xxx check error paths
+    initial_render_target = SDL_GetRenderTarget(renderer);
+
+    // set render target to the caller supplied texture
+    succ = SDL_SetRenderTarget(renderer, (SDL_Texture*)t);
+    if (!succ) {
+        ERROR("SDL_SetRenderTarget failed, %s\n", SDL_GetError());
+        return NULL;
+    }
+
+    // create surface containing the texture pixels
+    surface = SDL_RenderReadPixels(renderer, NULL);
+    if (surface == NULL) {
+        ERROR("SDL_RenderReadPixels failed, %s\n", SDL_GetError());
+        return NULL;
+    }
+
+    // get the width/height, and
+    // allocate memory to hold the pixels
+    SDL_GetCurrentRenderOutputSize(renderer, &w, &h);
+    p = pixels = malloc(w * h * BYTES_PER_PIXEL);
+
+    // copy the pixels from the surface to the allocated buffer
+    for (row = 0; row < h; row++) {
+        memcpy(p, 
+               surface->pixels + (row * surface->pitch), 
+               w * BYTES_PER_PIXEL);
+        p += w;
+    }
+
+    // destroy the surface
+    SDL_DestroySurface(surface);
+
+    // restore render target
+    SDL_SetRenderTarget(renderer, initial_render_target);
+
+    // return w, h, and pixels; caller must free pixels
+    *w_arg = w;
+    *h_arg = h;
+    return pixels;
+}
+
+// - - - - - - render texture - - - - - 
+
+void sdlx_render_texture(sdlx_texture_t *texture, int x, int y)
+{
+    int w, h;
+    SDL_FRect dest;
+
+    if (texture == NULL) {
+        return;
+    }
+
+    sdlx_query_texture(texture, &w, &h);
+
+    dest.x = x * scale;
+    dest.y = y * scale;
+    dest.w = w * scale;
+    dest.h = h * scale;
+
+    SDL_RenderTexture(renderer, (SDL_Texture*)texture, NULL, &dest);
+}
+
+void sdlx_render_texture_ex1(sdlx_texture_t *texture, int x, int y, int w, int h)
+{
+    SDL_FRect dest;
+
+    if (texture == NULL) {
+        return;
+    }
+
+    dest.x = x * scale;
+    dest.y = y * scale;
+    dest.w = w * scale;
+    dest.h = h * scale;
+
+    SDL_RenderTexture(renderer, (SDL_Texture*)texture, NULL, &dest);
+}
+
+// - - - - - - set render target - - - - - - - - 
+
+void sdlx_set_render_target(sdlx_texture_t *t)
+{
+    bool succ;
+
+    succ = SDL_SetRenderTarget(renderer, (SDL_Texture*)t);
+    if (!succ) {
+        ERROR("SDL_SetRenderTarget failed, %s\n", SDL_GetError());
+    }
+}
+
+
+// xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+// xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+// xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+// xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+
+#if 0
+sdlx_loc_t *sdlx_render_texture(int x, int y, int w, int h, sdlx_texture_t *texture)
+{
+    SDL_FRect dest;
+    static sdlx_loc_t loc;
+
+    if (texture == NULL) {
+        loc.x = x; loc.y = y; loc.w = 0; loc.h = 0;
+        return &loc;
+    }
+
+    dest.x = x * scale;
+    dest.y = y * scale;
+    dest.w = w * scale;
+    dest.h = h * scale;
+
+    SDL_RenderTexture(renderer, (SDL_Texture*)texture, NULL, &dest);
+
+    // return the display location where the text was rendered;
+    loc.x = x;
+    loc.y = y;
+    loc.w = w;
+    loc.h = h;
+    return &loc;
+}
+#endif
+
+
+#if 0
 sdlx_texture_t *sdlx_create_texture_from_pixels(unsigned char *pixels, int w, int h)
 {
     sdlx_texture_t *texture;
@@ -955,62 +1204,6 @@ sdlx_texture_t *sdlx_create_texture_from_pixels(unsigned char *pixels, int w, in
     return texture;
 }
 
-sdlx_texture_t *sdlx_create_filled_circle_texture(int radius, int color)
-{
-    radius *= scale;
-
-    int width = 2 * radius + 1;
-    int x = radius;
-    int y = 0;
-    int radiusError = 1-x;
-    int (*pixels)[width];
-    sdlx_texture_t * texture;
-
-    #define DRAWLINE(Y, XS, XE, V) \
-        do { \
-            int i; \
-            for (i = XS; i <= XE; i++) { \
-                pixels[Y][i] = (V); \
-            } \
-        } while (0)
-
-    // alloc zeroed pixels
-    pixels = calloc(width * width, BYTES_PER_PIXEL);
-
-    // initialize pixels
-    while(x >= y) {
-        DRAWLINE(y+radius, -x+radius, x+radius, color);
-        DRAWLINE(x+radius, -y+radius, y+radius, color);
-        DRAWLINE(-y+radius, -x+radius, x+radius, color);
-        DRAWLINE(-x+radius, -y+radius, y+radius, color);
-        y++;
-        if (radiusError<0) {
-            radiusError += 2 * y + 1;
-        } else {
-            x--;
-            radiusError += 2 * (y - x) + 1;
-        }
-    }
-
-    // create the texture and copy the pixels to the texture
-    texture = (sdlx_texture_t*)
-              SDL_CreateTexture(renderer,
-                                SDL_PIXELFORMAT_ABGR8888,
-                                SDL_TEXTUREACCESS_STREAMING,
-                                width, width);
-    if (texture == NULL) {
-        ERROR("failed to allocate texture\n");
-        free(pixels);
-        return NULL;
-    }
-    SDL_SetTextureBlendMode((SDL_Texture*)texture, SDL_BLENDMODE_BLEND);
-    SDL_UpdateTexture((SDL_Texture*)texture, NULL, pixels, width*BYTES_PER_PIXEL);
-
-    free(pixels);
-
-    // return texture
-    return texture;
-}
 
 sdlx_texture_t *sdlx_create_text_texture(char * str)
 {
@@ -1110,29 +1303,6 @@ void sdlx_render_texture_ex2(int x, int y, int w, int h, double angle, int xctr,
     SDL_RenderTextureRotated(renderer, (SDL_Texture*)texture, NULL, &dest, angle, &ctr, false);
 }
 
-void sdlx_destroy_texture(sdlx_texture_t *texture)
-{
-    if (texture == NULL) {
-        return;
-    }
-
-    SDL_DestroyTexture((SDL_Texture *)texture);
-}
-
-void sdlx_query_texture(sdlx_texture_t *texture, int * width, int * height)
-{
-    float w_float, h_float;
-
-    if (texture == NULL) {
-        *width = 0;
-        *height = 0;
-        return;
-    }
-
-    SDL_GetTextureSize((SDL_Texture *)texture, &w_float, &h_float);
-    *width = nearbyint(w_float / scale);
-    *height = nearbyint(h_float / scale);
-}
 
 // caller must free returned ptr to pixels
 unsigned char *sdlx_read_display_pixels(int x, int y, int w, int h, int *w_pixels, int *h_pixels)
@@ -1180,6 +1350,8 @@ unsigned char *sdlx_read_display_pixels(int x, int y, int w, int h, int *w_pixel
     *h_pixels = loc.h;
     return pixels_malloced;
 }
+
+#endif
 
 #if 0
 // -----------------  PLOTTING  ----------------------------------------- 
@@ -1359,6 +1531,7 @@ void sdlx_plot_free(void *cx)
 
 // -----------------  MISC  --------------------------------------------- 
 
+// xxx this should be in a different file
 void sdlx_show_toast(char *message)
 { 
     INFO("%s\n", message);

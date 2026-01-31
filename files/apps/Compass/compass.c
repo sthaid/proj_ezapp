@@ -48,6 +48,8 @@ int main(int argc, char **argv)
         printf("ERROR %s failed to decode png file %s\n", progname, "compass.png");
         goto cleanup_and_return;
     }
+
+#if 0
     compass = sdlx_create_texture_from_pixels(pixels, w, h);
     if (compass == NULL) {
         printf("ERROR %s failed to create compass texture\n", progname);
@@ -55,12 +57,21 @@ int main(int argc, char **argv)
     }
     free(pixels);
     pixels = NULL;
+#endif
+    compass = sdlx_create_texture(w, h);
+    if (compass == NULL) {
+        printf("ERROR %s failed to create compass texture\n", progname);
+        goto cleanup_and_return;
+    }
+    sdlx_set_texture_pixels(compass, (unsigned int*)pixels);
+    free(pixels);
+    pixels = NULL;
 
     // runtime loop
     while (!quit) {
         // init the backbuffer, and init print font/color
         sdlx_display_init(COLOR_BLACK);
-        sdlx_print_init(DEFAULT_FONT, COLOR_WHITE, COLOR_BLACK);
+        sdlx_print_set_default(FONT_NORMAL, COLOR_WHITE);
 
         // read the magnetic heading sensor
         sdlx_sensor_read_mag_heading(&heading);
@@ -70,7 +81,9 @@ int main(int argc, char **argv)
         // else
         //   display "NO DATA"
         // endif
-        if (heading != INVALID_NUMBER) {
+        if (true || heading != INVALID_NUMBER) { //xxx
+            if (heading == INVALID_NUMBER) heading = 45;
+
             // remove jitter from the heading value
             heading = smooth(heading);
 
@@ -84,21 +97,26 @@ int main(int argc, char **argv)
             }
 
             // draw the compass rotated by heading
-            sdlx_render_texture_ex(50, 150, 900, 900, -heading, compass);
+            //sdlx_render_texture_ex(50, 150, 900, 900, -heading, compass);
+            sdlx_render_texture_ex1(compass, 50, 150, 900, 900);
 
+#if 0
             // print the heading and the heading abbreviation below 
             // the area where the compass is displayed
             sdlx_print_init(LARGE_FONT, COLOR_WHITE, COLOR_BLACK);
             sdlx_render_printf_xyctr(sdlx_win_width / 2, 1100 + 1.25 * sdlx_char_height, "%.0f", heading);
             sdlx_render_printf_xyctr(sdlx_win_width / 2, 1100 + 2.75 * sdlx_char_height, "%s",
                                      abbreviation(heading));
+#endif
         } else {
-            sdlx_print_init(LARGE_FONT, COLOR_WHITE, COLOR_BLACK);
-            sdlx_render_printf_xyctr(sdlx_win_width / 2, 500, "NO DATA");
+            //sdlx_print_init(LARGE_FONT, COLOR_WHITE, COLOR_BLACK);
+            //sdlx_render_printf_xyctr(sdlx_win_width / 2, 500, "NO DATA");
+//xxx make spinning compass if no data
         }
 
         // register control event to end program
-        sdlx_register_control_events(NULL, NULL, "X", COLOR_WHITE, COLOR_BLACK, 0, 0, EVID_QUIT);
+        //sdlx_register_control_events(NULL, NULL, "X", COLOR_WHITE, COLOR_BLACK, 0, 0, EVID_QUIT);
+        sdlx_register_control_events(0, NULL, 0, NULL, EVID_QUIT, "X", COLOR_WHITE, COLOR_BLACK);
 
         // present the display
         sdlx_display_present();
