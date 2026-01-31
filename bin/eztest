@@ -59,7 +59,7 @@ fi
 
 # perform requested command
 if [ "$CMD" = build ]; then
-    gcc -DLINUX -g -o /tmp/$APP_NAME $CFLAGS $SRCS \
+    gcc -DLINUX -o /tmp/$APP_NAME $CFLAGS $SRCS \
         -I ../linux/local/include \
         -L ../linux/local/lib -lezapp_lib -lmp3lame -llodepng -lcJSON -lSDL3 -lSDL3_ttf -lSDL3_mixer -lm
     if [ $? -ne 0 ]; then
@@ -67,7 +67,7 @@ if [ "$CMD" = build ]; then
         exit 1
     fi
 elif [ "$CMD" = run ]; then
-    gcc -DLINUX -g -o /tmp/$APP_NAME $CFLAGS $SRCS \
+    gcc -DLINUX -o /tmp/$APP_NAME $CFLAGS $SRCS \
         -I ../linux/local/include \
         -L ../linux/local/lib -lezapp_lib -lmp3lame -llodepng -lcJSON -lSDL3 -lSDL3_ttf -lSDL3_mixer -lm \
         -Wl,-rpath,../linux/local/lib

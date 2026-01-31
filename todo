@@ -1,11 +1,14 @@
-	modified:   bin/eztest
+// xxx scale problem in test.c with rendering textures
+// xxx colors in test.c, page_7
+// xxx ifdef ANDROID in log.c
+
+	modified:   bin/eztest                         k
 	modified:   files/apps/Compass/compass.c
-	modified:   files/apps/Log/log.c
-	modified:   files/apps/Log/test.log
-	modified:   files/apps/Test/test.c
-	modified:   src/ezapp_lib/include/sdlx.h
-	modified:   src/ezapp_lib/sdlx_event.c
-	modified:   src/ezapp_lib/sdlx_video.c
+	modified:   files/apps/Log/log.c               k
+	modified:   files/apps/Test/test.c             k
+	modified:   src/ezapp_lib/include/sdlx.h       k
+	modified:   src/ezapp_lib/sdlx_event.c         k
+	modified:   src/ezapp_lib/sdlx_video.c         k
 
 
 

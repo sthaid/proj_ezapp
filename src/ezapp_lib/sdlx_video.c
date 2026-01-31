@@ -1,5 +1,5 @@
 #include <std_hdrs.h>
-#include <sys/queue.h>   //xxx or stdhdrs
+#include <sys/queue.h>
 
 #include <sdlx.h>
 #include <logging.h>
@@ -9,8 +9,6 @@
 #include <SDL3_ttf/SDL_ttf.h>
 
 // xxx todo?
-// - landscape
-// - read pixels routine ? 
 // - try SDL_SetRenderLogicalPresentation
 // xxx review sdl3 port
 // - routines now return succ
@@ -74,8 +72,7 @@ static void set_render_draw_color(int color);
 // inline routines
 //
 
-//xxx static assert
-// xxx [-Werror=strict-aliasing]
+// xxx [-Werror=strict-aliasing]  comment needed
 static inline SDL_Color sdlx_color(int color)
 {
     SDL_Color val;
@@ -126,16 +123,6 @@ bool event_watcher(void* userdata, SDL_Event* event)
     if (!succ) {
         ERROR("failed to set SDL_HINT_ENABLE_SCREEN_KEYBOARD\n");
     }
-#endif
-
-#if 0 //xxx make this a font routine
-        // debug code to print font info
-        for (int ptsize = MIN_FONT_PTSIZE; ptsize < MAX_FONT_PTSIZE; ptsize++) {
-            TTF_Font *f = TTF_OpenFont(FONT_FILE_PATH, ptsize);
-            TTF_SizeText(f, "X", &chw, &chh);
-            TTF_CloseFont(f);
-            INFO("font ptsize = %d  chw/chh = %d %d\n", ptsize, chw, chh);
-        }
 #endif
 
 int sdlx_video_init(void)
@@ -244,13 +231,6 @@ void sdlx_video_quit(void)
     SDL_QuitSubSystem(SDL_INIT_VIDEO);
 }
 
-#if 0
-SDL_Window *sdlx_get_window(void)
-{
-    return window;
-}
-#endif
-
 void sdlx_minimize_window(void)
 {   
     SDL_MinimizeWindow(window);
@@ -261,7 +241,8 @@ void sdlx_minimize_window(void)
 void sdlx_display_init(int color)
 {
     sdlx_reset_events();
-    // xxx need a routine in sdlx_event
+
+    // xxx should have a routine in sdlx_event
     max_event = 0;
     evid_swipe_right_registered = false;
     evid_swipe_left_registered = false;
@@ -403,7 +384,6 @@ static int numchars_to_ptsize(double numchars)
     if (ptsize < MIN_FONT_PTSIZE) ptsize = MIN_FONT_PTSIZE;
     if (ptsize >= MAX_FONT_PTSIZE) ptsize = MAX_FONT_PTSIZE-1;
 
-//xxx cleanup?
     // if the requested font pointsize has not yet been opened then open it
     if (font[ptsize] == NULL) {
         font[ptsize] = TTF_OpenFont(FONT_FILE_PATH, ptsize);
@@ -453,15 +433,22 @@ static sdlx_loc_t *render_text(int x, int y, int ptsize, unsigned int color, int
     SDL_FRect    pos;
     bool         found;
     int          hash_idx;
-    SDL_Surface *surface;
-    SDL_Texture *texture;
+    SDL_Surface *surface = NULL;
+    SDL_Texture *texture = NULL;
 
     static sdlx_loc_t loc;
     static int        num_allocated = 0;
 
-    // if zero length string then just return the location
-    // xxx consider just printing " "
+    // if font for ptsize has not been initialized then goto error
+    if (font[ptsize] == NULL) {
+        ERROR("no font for ptsize %d\n", ptsize);
+        goto return_error;
+    }
+
+    // if zero length string, which will fail to print, then
+    // set the str arg to single space char
     if (str[0] == '\0') {
+#if 0 // xxx del later
         pos.x = x*scale;
         pos.y = y*scale;
         pos.w = ptsize * 0.6;
@@ -469,6 +456,9 @@ static sdlx_loc_t *render_text(int x, int y, int ptsize, unsigned int color, int
         if (flags & FLAG_X_CTR) pos.x -= pos.w / 2;
         if (flags & FLAG_Y_CTR) pos.y -= pos.h / 2;
         goto return_loc;
+#else
+        str = " ";
+#endif
     }
 
     // calculate hash key and idx
@@ -517,11 +507,7 @@ static sdlx_loc_t *render_text(int x, int y, int ptsize, unsigned int color, int
         num_allocated--;
     }
 
-    if (font[ptsize] == NULL) {
-        ERROR("NO FONT FOR ptsize %d\n", ptsize); //xxx
-    }
-
-    // create surface, and create texture from surface
+    // create surface containing the rendered text
     if (wrap != WRAP_NONE) {
         surface = TTF_RenderText_Solid_Wrapped(
                         font[ptsize], str, 0,
@@ -532,16 +518,16 @@ static sdlx_loc_t *render_text(int x, int y, int ptsize, unsigned int color, int
                         font[ptsize], str, 0,
                         sdlx_color(color));
     }
-
-    if (surface == NULL) { //xxx
+    if (surface == NULL) {
         ERROR("TTF_RenderTextSolid failed, %s\n", SDL_GetError());
-        return &loc; //xxx fixup
+        goto return_error;
     }
 
+    // create texture from the surface
     texture = SDL_CreateTextureFromSurface(renderer, surface);
-    if (texture == NULL) { //xxx
+    if (texture == NULL) {
         ERROR("SDL_CreateTextureFromSurface failed, %s\n", SDL_GetError());
-        return &loc; //xxx fixup
+        goto return_error;
     }
 
     // allocate and init new hash table entry
@@ -561,11 +547,11 @@ static sdlx_loc_t *render_text(int x, int y, int ptsize, unsigned int color, int
     pos.h = surface->h;
     if (flags & FLAG_X_CTR) pos.x -= pos.w / 2;
     if (flags & FLAG_Y_CTR) pos.y -= pos.h / 2;
-
     SDL_RenderTexture(renderer, texture, NULL, &pos);
 
     // the surface is no longer needed, destroy the surface
     SDL_DestroySurface(surface);
+    surface = NULL;
 
     // return the display location where the text was rendered;
 return_loc:
@@ -573,6 +559,18 @@ return_loc:
     loc.y = pos.y / scale;
     loc.w = pos.w / scale;
     loc.h = pos.h / scale;
+    return &loc;
+
+    // error return path
+return_error:
+    if (surface) {
+        SDL_DestroySurface(surface);
+        surface = NULL;
+    }
+    loc.x = 0;
+    loc.y = 0;
+    loc.w = 0;
+    loc.h = 0;
     return &loc;
 }
 
@@ -613,7 +611,6 @@ sdlx_loc_t *sdlx_render_printf_ex(int x, int y, double numchars, unsigned int co
     va_end(ap);
 
     ptsize = numchars_to_ptsize(numchars);
-    //INFO("ptsize = %d\n", ptsize); xxx
 
     return render_text(x, y, ptsize, color, flags, wrap, str);
 }
@@ -794,7 +791,6 @@ void sdlx_render_fill_circle(int x_ctr, int y_ctr, int radius, int color)
 
     #define draw_horizontal_line(y, x1, x2) SDL_RenderLine(renderer, x1, y, x2, y)
     
-    //long start = util_microsec_timer();
     while(x >= y) {
         draw_horizontal_line(y+y_ctr, -x+x_ctr, x+x_ctr);
         draw_horizontal_line(x+y_ctr, -y+x_ctr, y+x_ctr);
@@ -808,7 +804,6 @@ void sdlx_render_fill_circle(int x_ctr, int y_ctr, int radius, int color)
             error += 2 * (y - x) + 1;
         }
     }
-    //INFO("duration = %ld\n", (util_microsec_timer() - start));
 }
 
 void sdlx_render_point(int x, int y, int color, int point_size)
@@ -1055,7 +1050,7 @@ unsigned int *sdlx_get_texture_pixels(sdlx_texture_t *t, int *w_arg, int *h_arg)
     int w, h, row;
 
     // save the initial_render_target, so it can be restored at then end 
-    // of this routine  xxx check error paths
+    // of this routine 
     initial_render_target = SDL_GetRenderTarget(renderer);
 
     // set render target to the caller supplied texture
@@ -1069,6 +1064,7 @@ unsigned int *sdlx_get_texture_pixels(sdlx_texture_t *t, int *w_arg, int *h_arg)
     surface = SDL_RenderReadPixels(renderer, NULL);
     if (surface == NULL) {
         ERROR("SDL_RenderReadPixels failed, %s\n", SDL_GetError());
+        SDL_SetRenderTarget(renderer, initial_render_target);
         return NULL;
     }
 
@@ -1146,126 +1142,12 @@ void sdlx_set_render_target(sdlx_texture_t *t)
     }
 }
 
-
 // xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 // xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 // xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 // xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-
-#if 0
-sdlx_loc_t *sdlx_render_texture(int x, int y, int w, int h, sdlx_texture_t *texture)
-{
-    SDL_FRect dest;
-    static sdlx_loc_t loc;
-
-    if (texture == NULL) {
-        loc.x = x; loc.y = y; loc.w = 0; loc.h = 0;
-        return &loc;
-    }
-
-    dest.x = x * scale;
-    dest.y = y * scale;
-    dest.w = w * scale;
-    dest.h = h * scale;
-
-    SDL_RenderTexture(renderer, (SDL_Texture*)texture, NULL, &dest);
-
-    // return the display location where the text was rendered;
-    loc.x = x;
-    loc.y = y;
-    loc.w = w;
-    loc.h = h;
-    return &loc;
-}
-#endif
-
-
-#if 0
-sdlx_texture_t *sdlx_create_texture_from_pixels(unsigned char *pixels, int w, int h)
-{
-    sdlx_texture_t *texture;
-
-    // create the texture
-    texture = (sdlx_texture_t*)
-              SDL_CreateTexture(renderer,
-                                SDL_PIXELFORMAT_ABGR8888,
-                                SDL_TEXTUREACCESS_STREAMING,
-                                w, h);
-    if (texture == NULL) {
-        ERROR("failed to allocate texture\n");
-        return NULL;
-    }
-
-    // update the texture with the pixels
-    SDL_UpdateTexture((SDL_Texture*)texture, NULL, pixels, w * BYTES_PER_PIXEL);
-
-    // return the texture
-    return texture;
-}
-
-
-sdlx_texture_t *sdlx_create_text_texture(char * str)
-{
-    SDL_Surface * surface;
-    SDL_Texture * texture;
-
-    if (str[0] == '\0') {
-        return NULL;
-    }
-
-    // if font not initialized then return error
-    if (font[print_dflt.ptsize] == NULL) {
-        ERROR("font ptsize %d, not initialized\n", print_dflt.ptsize);
-        return NULL;
-    }
-
-    // render the text to a surface,  xxx cleanup
-    // create a texture from the surface
-    // free the surface
-    surface = TTF_RenderText_Solid(font[print_dflt.ptsize], str, 0, 
-                                    sdlx_color(print_dflt.color));
-    if (surface == NULL) {
-        ERROR("failed to allocate surface\n");
-        return NULL;
-    }
-    texture = SDL_CreateTextureFromSurface(renderer, surface);
-    if (texture == NULL) {
-        ERROR("failed to allocate texture\n");
-        SDL_DestroySurface(surface);
-        return NULL;
-    }
-    SDL_DestroySurface(surface);
-
-    // return the texture which contains the text
-    return (sdlx_texture_t*)texture;
-}
-
-sdlx_loc_t *sdlx_render_texture(int x, int y, int w, int h, sdlx_texture_t *texture)
-{
-    SDL_FRect dest;
-    static sdlx_loc_t loc;
-
-    if (texture == NULL) {
-        loc.x = x; loc.y = y; loc.w = 0; loc.h = 0;
-        return &loc;
-    }
-
-    dest.x = x * scale;
-    dest.y = y * scale;
-    dest.w = w * scale;
-    dest.h = h * scale;
-
-    SDL_RenderTextureRotated(renderer, (SDL_Texture*)texture, NULL, &dest, 0, NULL, false);
-
-    // return the display location where the text was rendered;
-    loc.x = x;
-    loc.y = y;
-    loc.w = w;
-    loc.h = h;
-    return &loc;
-}
-
+#if 0 // xxx cleanup
 void sdlx_render_texture_ex(int x, int y, int w, int h, double angle, sdlx_texture_t *texture)
 {
     SDL_FRect dest;
@@ -1302,236 +1184,10 @@ void sdlx_render_texture_ex2(int x, int y, int w, int h, double angle, int xctr,
 
     SDL_RenderTextureRotated(renderer, (SDL_Texture*)texture, NULL, &dest, angle, &ctr, false);
 }
-
-
-// caller must free returned ptr to pixels
-unsigned char *sdlx_read_display_pixels(int x, int y, int w, int h, int *w_pixels, int *h_pixels)
-{
-    SDL_Rect       loc;
-    SDL_Surface   *surface;
-    unsigned char *pixels;
-    unsigned char *pixels_malloced;
-
-    // init display location to read the pixels from
-    loc.x = x * scale; // xxx rint
-    loc.y = y * scale;
-    loc.w = w * scale;
-    loc.h = h * scale;
-
-    // read the pixels to SDL_Surface  xxx check all rets 
-    surface = SDL_RenderReadPixels(renderer, &loc);
-    if (surface == NULL) {
-        ERROR("SDL_RenderReadPixels, %s\n", SDL_GetError());
-        return NULL;
-    }
-
-    // allocate memory for the return array of pixels
-    pixels_malloced = malloc(loc.w * loc.h * BYTES_PER_PIXEL);
-    if (pixels_malloced == NULL) {
-        ERROR("allocate pixels failed\n");
-        SDL_DestroySurface(surface);
-        return NULL;
-    }
-
-    // copy pixels from 'surface' to pixels buffer
-    pixels = pixels_malloced;
-    for (int row = 0; row < loc.h; row++) {
-        memcpy(pixels, 
-               surface->pixels + (row * surface->pitch), 
-               loc.w * BYTES_PER_PIXEL);
-        pixels += (loc.w * BYTES_PER_PIXEL);
-    }
-
-    // destroy surface
-    SDL_DestroySurface(surface);
-
-    // success, return pixels
-    *w_pixels = loc.w;
-    *h_pixels = loc.h;
-    return pixels_malloced;
-}
-
-#endif
-
-#if 0
-// -----------------  PLOTTING  ----------------------------------------- 
-
-// xxx either test and improve this, or delete it
-
-typedef struct {
-    char   title[64];
-    int    xleft;
-    int    xright;
-    int    xspan;
-    int    ybottom;
-    int    ytop;
-    int    yspan;
-    double xval_min;
-    double xval_max;
-    double xval_span;
-    double yval_min;
-    double yval_max;
-    double yval_span;
-    double yval_of_x_axis;
-} plot_cx_t;
-
-static int xval2x(plot_cx_t *cx, double xval)
-{
-    int x;
-
-    x = cx->xleft + (xval - cx->xval_min) * (cx->xspan / cx->xval_span);  // xxx add cvt constant to cx
-    return x;
-}
-
-static int yval2y(plot_cx_t *cx, double yval)
-{
-    int y;
-
-    y = cx->ybottom - (yval - cx->yval_min) * (cx->yspan / cx->yval_span);  // xxx add cvt constant to cx
-    return y;
-}
-
-void *sdlx_plot_create(char *title, 
-                      int xleft, int xright, int ybottom, int ytop,
-                      double xval_left, double xval_right, double yval_bottom, double yval_top,
-                      double yval_of_x_axis)
-{
-    plot_cx_t *cx;
-
-    // alloc cx and save params in cx
-    cx = calloc(1, sizeof(plot_cx_t));
-    strcpy(cx->title, title);
-    cx->xleft          = xleft;
-    cx->xright         = xright;
-    cx->xspan          = xright - xleft;
-    cx->ybottom        = ybottom;
-    cx->ytop           = ytop;
-    cx->yspan          = ybottom - ytop;
-    cx->xval_min       = xval_left;
-    cx->xval_max       = xval_right;
-    cx->xval_span      = xval_right - xval_left;
-    cx->yval_min       = yval_bottom;
-    cx->yval_max       = yval_top;
-    cx->yval_span      = yval_top - yval_bottom;
-    cx->yval_of_x_axis = yval_of_x_axis;
-
-    // return cx
-    return cx;
-}
-
-void sdlx_plot_axis(void *cx_arg, char *xmin_str, char *xmax_str, char *ymin_str, char *ymax_str)
-{
-    plot_cx_t        *cx = (plot_cx_t*)cx_arg;
-    sdlx_print_state_t print_state;
-    int               i, y;
-
-    // print save and init
-    sdlx_print_save(&print_state);
-    sdlx_print_init(SMALLEST_FONT, COLOR_WHITE, COLOR_BLACK);
-
-    // draw rectangle around the plot area
-    sdlx_render_rect(cx->xleft, cx->ytop, cx->xspan, cx->yspan, 3, COLOR_BLUE);
-
-    // draw and label x-axis xxx option to not do this
-    if (cx->yval_of_x_axis != INVALID_NUMBER) {
-        y = yval2y(cx, cx->yval_of_x_axis);
-        for (i = -1; i <= 1; i++) {
-            sdlx_render_line(cx->xleft, y+i, cx->xright, y+i, COLOR_BLUE);
-        }
-        y = yval2y(cx, cx->yval_of_x_axis);
-        if ((xmin_str != NULL) && (xmin_str[0] != '\0')) {
-            sdlx_render_printf(cx->xleft+3, y+3, "%s", xmin_str);
-        }
-        if ((xmax_str != NULL) && (xmax_str[0] != '\0')) {
-            sdlx_render_printf(cx->xright-3-strlen(xmax_str)*sdlx_char_width, y+3, "%s", xmax_str);
-        }
-    }
-
-    // label y-axis
-    if ((ymin_str != NULL) && (ymin_str[0] != '\0')) {
-        sdlx_render_printf(cx->xleft+3, cx->ybottom-3-sdlx_char_height, "%s", ymin_str);
-        sdlx_render_printf(cx->xright-3-strlen(ymin_str)*sdlx_char_width, cx->ybottom-3-sdlx_char_height, "%s", ymin_str);
-    }
-    if ((ymax_str != NULL) && (ymax_str[0] != '\0')) {
-        sdlx_render_printf(cx->xleft+3, cx->ytop+3, "%s", ymax_str);
-        sdlx_render_printf(cx->xright-3-strlen(ymax_str)*sdlx_char_width, cx->ytop+3, "%s", ymax_str);
-    }
-
-    // restore saved print state
-    sdlx_print_restore(&print_state);
-}
-
-void sdlx_plot_points(void *cx_arg, sdlx_plot_point_t *pts, int num_pts)
-{
-    plot_cx_t   *cx = (plot_cx_t*)cx_arg;
-    sdlx_point_t *points;
-    int          i, n=0, point_size=5;
-
-    points = malloc(num_pts * sizeof(sdlx_point_t));
-
-    for (i = 0; i < num_pts; i++) {
-        points[n].x = xval2x(cx, pts[i].xval);
-        points[n].y = yval2y(cx, pts[i].yval);
-        n++;
-    }
-    sdlx_render_points(points, n, COLOR_WHITE, point_size);
-
-    free(points);
-}
-
-void sdlx_plot_bars(void *cx_arg, 
-                   sdlx_plot_point_t *pts_avg, sdlx_plot_point_t *pts_min, sdlx_plot_point_t *pts_max,
-                   int num_pts, double bar_wval)
-{
-    int        i, x, y, w, h;
-    double     wval, hval, xval, yval;
-    plot_cx_t *cx = (plot_cx_t*)cx_arg;
-
-    static bool first = 1;
-
-    //xxxpts_min[0].yval = pts_max[0].yval = pts_avg[0].yval = 1010;
-
-    for (i = 0; i < num_pts; i++) {
-        wval = bar_wval;
-        hval = pts_max[i].yval - pts_min[i].yval;
-        xval = pts_min[i].xval - wval/2;
-        yval = pts_max[i].yval;
-
-        x = xval2x(cx, xval);
-        y = yval2y(cx, yval);
-        w = wval * cx->xspan / cx->xval_span;
-        h = hval * cx->yspan / cx->yval_span;
-
-        if (h < 7) {
-            y -= (7-h) / 2;
-            h = 7;
-        }
-
-        if (first) printf("%d: %f %f %f\n", i, 
-                         pts_min[i].yval, pts_avg[i].yval, pts_max[i].yval);
-        if (first) printf("    %d %d %d %d - hval=%f yspan=%d yval_span=%f\n", 
-               x, y, w, h,
-               hval, cx->yspan, cx->yval_span);
-
-        sdlx_render_fill_rect(x, y, w, h, COLOR_PURPLE);
-    }
-
-    sdlx_plot_points(cx, pts_avg, num_pts);
-
-    first = 0;
-}
-
-void sdlx_plot_free(void *cx)
-{
-    // free cx
-    free(cx);
-}
-
 #endif
 
 // -----------------  MISC  --------------------------------------------- 
 
-// xxx this should be in a different file
 void sdlx_show_toast(char *message)
 { 
     INFO("%s\n", message);

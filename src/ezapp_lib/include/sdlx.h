@@ -82,8 +82,6 @@ int sdlx_wavelength_to_color(int wavelength);
 #define FLAG_Y_CTR  2
 #define FLAG_XY_CTR (FLAG_X_CTR | FLAG_Y_CTR)
 
-//xxx move loc_t typedef, is it only used for printf??
-
 extern int sdlx_char_width;
 extern int sdlx_char_height;
 
@@ -127,37 +125,6 @@ void sdlx_render_texture(sdlx_texture_t *t, int x, int y);
 void sdlx_render_texture_ex1(sdlx_texture_t *t, int x, int y, int w, int h);
 
 void sdlx_set_render_target(sdlx_texture_t *t);
-
-//sdlx_loc_t *sdlx_render_texture(int x, int y, int w, int h, sdlx_texture_t *texture);
-//void sdlx_render_texture_ex(int x, int y, int w, int h, double angle, int xctr, int yctr, sdlx_texture_t *t);
-
-// xxx maybe not needed
-// void sdlx_query_texture(sdlx_texture_t *texture, int *w, int *h);
-// sdlx_texture_t *sdlx_create_filled_circle_texture(int radius, int color);  // xxx color
-// sdlx_texture_t *sdlx_create_text_texture(char *str);  // xxx color
-//sdlx_loc_t *sdlx_render_texture(int x, int y, int w, int h, sdlx_texture_t *texture);
-//void sdlx_render_texture_ex(int x, int y, int w, int h, double angle, sdlx_texture_t *texture);
-//unsigned char *sdlx_read_display_pixels(int x, int y, int w, int h, int *w_pixels, int *h_pixels);
-
-// - - - - - -
-// plotting
-// - - - - - -
-// xxx rework or delete
-typedef struct {
-    double xval;
-    double yval;
-} sdlx_plot_point_t;
-
-void *sdlx_plot_create(char *title,
-                      int xleft, int xright, int ybottom, int ytop,
-                      double xval_left, double xval_right, double yval_bottom, double yval_top,
-                      double yval_of_x_axis);
-void sdlx_plot_axis(void *cx_arg, char *xmin_str, char *xmax_str, char *ymin_str, char *ymax_str);
-void sdlx_plot_points(void *cx, sdlx_plot_point_t *pts, int num_pts);
-void sdlx_plot_bars(void *cx,
-                   sdlx_plot_point_t *pts_avg, sdlx_plot_point_t *pts_min, sdlx_plot_point_t *pts_max,
-                   int num_pts, double bar_wval);
-void sdlx_plot_free(void *cx);
 
 // --------------------
 // AUDIO

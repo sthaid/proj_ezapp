@@ -140,7 +140,7 @@ char *page_title[] = {     // Page
         "Sensor Values",   //   9
         "Location",        //  10
             };
-static int pagenum = 5; //xxx
+static int pagenum = 0;
 
 #define LAST_PAGE 10
 
@@ -356,15 +356,17 @@ static void page_2_draw(void)
 
 // -----------------  PAGE 3: MULTI LINE TEXT  ----------------
 
+#define MAX_LINES 20
+
 static double x_mlt;
 static double y_mlt;
 static int    y_mlt_top;
 static int    y_mlt_bottom;
-static char *lines[100]; // xxx test with less lines
+static char  *lines[MAX_LINES];
 
 static void page_3_init(void)
 {
-    for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < MAX_LINES; i++) {
         lines[i] = malloc(50);
         sprintf(lines[i], "Line %d:\n  Hello World\n", i);
     }
@@ -379,12 +381,11 @@ static void page_3_draw(void)
 {
     sdlx_register_event(NULL, EVID_MOTION);
 
-    sdlx_render_multiline_text(x_mlt, y_mlt, y_mlt_top, y_mlt_bottom, lines, NULL, 100);
+    sdlx_render_multiline_text(x_mlt, y_mlt, y_mlt_top, y_mlt_bottom, lines, NULL, MAX_LINES);
 }
 
 static void page_3_process_event(sdlx_event_t *event)
 {
-    // xxx handle x
     if (event->event_id == EVID_MOTION) {
         y_mlt += event->u.motion.yrel;
         if (y_mlt >= y_mlt_top) {
@@ -395,7 +396,7 @@ static void page_3_process_event(sdlx_event_t *event)
 
 static void page_3_exit(void)
 {
-    for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < MAX_LINES; i++) {
         free(lines[i]);
         lines[i] = NULL;
     }
@@ -471,8 +472,8 @@ static void add_point(sdlx_point_t **p, int x, int y)
 }
 
 // -----------------  PAGE 5: TEXTURES  -----------------------
-//xxx cleanup
-static sdlx_texture_t *texture;
+
+static sdlx_texture_t *texture1;
 static sdlx_texture_t *texture2;
 
 extern double scale;
@@ -484,23 +485,23 @@ static void page_5_init(void)
     // create texture content using sdlx_set_render_target
     //
 
-    // create texture
-    texture = sdlx_create_texture(1000, 1000);
+    // create texture1
+    texture1 = sdlx_create_texture(1000, 1000);
 
-    // query texture 
-    sdlx_query_texture(texture, &w, &h);
-    printf("I texture w,h = %d %d\n", w, h);
+    // query texture1
+    sdlx_query_texture(texture1, &w, &h);
+    printf("I texture1 w,h = %d %d\n", w, h);
 
-    // set render target to the texture
-    printf("I setting render target to texture\n");
-    sdlx_set_render_target(texture);
+    // set render target to texture1
+    printf("I setting render target to texture1\n");  //xxx check progname in prints
+    sdlx_set_render_target(texture1);
 
-    // draw to the texture
-    scale = 1;
+    // draw to texture1
+    scale = 1;  //xxx fixme
     sdlx_render_rect(0, 0, w, h, 5, COLOR_WHITE);
     sdlx_render_fill_circle(w/2, h/2, w/2, COLOR_YELLOW);
     sdlx_render_printf_ex(w/2, h/2, FONT_NORMAL, COLOR_RED, FLAG_XY_CTR, WRAP_NONE, "%s", "Hello");
-    scale = 0.45;
+    scale = 0.45;  //xxx fixme
 
     // set render target back to the display
     printf("I setting render target to display\n");
@@ -525,6 +526,8 @@ static void page_5_init(void)
     printf("I get_pixels ret w,h %d %d\n", w, h);
     if (w != 200 || h != 200) {
         printf("E incorrect w,h (%d,%d)  returned from sdlx_get_texture_pixels\n", w, h);
+        free(pixels);
+        return;
     }
 
     // verify pixels read back
@@ -545,74 +548,17 @@ static void page_5_init(void)
 static void page_5_exit(void)
 {
     printf("I destroying textures\n");
-    sdlx_destroy_texture(texture);
+    sdlx_destroy_texture(texture1);
     sdlx_destroy_texture(texture2);
 }
 
 static void page_5_draw(void)
 {
-    sdlx_render_texture(texture, 0, 0);
+    sdlx_render_texture(texture1, 0, 0);
 
-    sdlx_render_texture_ex1(texture, 0, 1100, 500, 500);
+    sdlx_render_texture_ex1(texture1, 0, 1100, 500, 500);
 
     sdlx_render_texture(texture2, 500, 1100);
-
-#if 0
-    int ret, w, h;
-    sdlx_texture_t *t;
-    unsigned char *pixels;
-    int w_pixels, h_pixels;
-
-    // render the circle texture at varying x location, y = 200 .. 400
-    static int circle_x=-200;
-    sdlx_query_texture(circle, &w, &h);
-    sdlx_render_texture(circle_x, 200, w, h, circle);
-    circle_x += 10;
-    if (circle_x > 1000) circle_x = -200;
-
-    // render the circle texture using scaling, y = 400 .. 600
-    sdlx_render_texture(500-200, 400, 400, 200, circle);
-
-    // render text texture, at y = 500
-    sdlx_query_texture(text, &w, &h);
-    sdlx_render_texture(0, 500-h/2, w, h, text);
-
-    // rotate and render the text texture at y = 600 .. 850
-    static double angle = 0;
-    angle += 5;
-    sdlx_render_texture_ex(500-w/2, 600+w/2-h/2, w, h, angle, text);
-
-    // create unit_test_pixels file from the top row of the display
-    pixels = sdlx_read_display_pixels(0, 0, sdlx_win_width, sdlx_char_height, &w_pixels, &h_pixels);
-    if (pixels == NULL) {
-        printf("E %s: failed to read display pixels\n", progname);
-        return;
-    }
-
-    ret = util_write_png_file(data_dir, "test5.png", pixels, w_pixels, h_pixels);
-    if (ret != 0) {
-        printf("E %s: failed to write test5.png\n", progname);
-        free(pixels);
-        return;
-    }
-
-    free(pixels);
-
-    // read the png file created above
-    // create a texture from the pixels, and
-    // display the texture rotated 180 degrees
-    ret = util_read_png_file(data_dir, "test5.png", &pixels, &w_pixels, &h_pixels);
-    if (ret != 0) {
-        printf("E %s: failed to read test5.png\n", progname);
-        return;
-    }
-
-    t = sdlx_create_texture_from_pixels(pixels, w_pixels, h_pixels);
-    sdlx_render_texture_ex(0, 900, sdlx_win_width, sdlx_char_height, 180, t);
-    sdlx_destroy_texture(t);
-
-    free(pixels);
-#endif
 }
 
 
@@ -724,7 +670,7 @@ static void page_7_init(void)
 
 static void page_7_draw(void)
 {
-    //xxx delete files events
+    //xxx support deleting files
 
     sdlx_audio_state_t state;
     sdlx_loc_t *loc;
