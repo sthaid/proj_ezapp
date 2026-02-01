@@ -25,19 +25,22 @@ int main(int argc, char **argv)
     double          heading = 0;
     bool            quit = false;
 
+    // set line buffering
+    setlinebuf(stdout);
+
     // save args
+    progname = argv[0];
     if (argc != 2) {
-        printf("ERROR: data_dir arg expected\n");
+        printf("E %s: data_dir arg expected\n", progname);
         return 1;
     }
-    progname = argv[0];
     data_dir = argv[1];
-    printf("INFO %s: starting, data_dir=%s\n", progname, data_dir);
+    printf("I %s: starting, data_dir=%s\n", progname, data_dir);
 
     // init sdl
     rc = sdlx_init(SUBSYS_VIDEO | SUBSYS_SENSOR);
     if (rc != 0) {
-        printf("ERROR %s: sdlx_init failed\n", progname);
+        printf("E %s: sdlx_init failed\n", progname);
         return 1;
     }
 
@@ -45,48 +48,41 @@ int main(int argc, char **argv)
     // create compass image texture
     rc = util_read_png_file(data_dir, "compass.png", &pixels, &w, &h);
     if (rc != 0) {
-        printf("ERROR %s failed to decode png file %s\n", progname, "compass.png");
+        printf("E %s failed to decode png file %s\n", progname, "compass.png");
         goto cleanup_and_return;
     }
 
-#if 0
-    compass = sdlx_create_texture_from_pixels(pixels, w, h);
-    if (compass == NULL) {
-        printf("ERROR %s failed to create compass texture\n", progname);
-        goto cleanup_and_return;
-    }
-    free(pixels);
-    pixels = NULL;
-#endif
     compass = sdlx_create_texture(w, h);
     if (compass == NULL) {
-        printf("ERROR %s failed to create compass texture\n", progname);
+        printf("E %s failed to create compass texture\n", progname);
         goto cleanup_and_return;
     }
     sdlx_set_texture_pixels(compass, (unsigned int*)pixels);
     free(pixels);
     pixels = NULL;
 
+    // set default printf font and color
+    sdlx_print_set_default(FONT_LARGE, COLOR_WHITE);
+
     // runtime loop
     while (!quit) {
         // init the backbuffer, and init print font/color
         sdlx_display_init(COLOR_BLACK);
-        sdlx_print_set_default(FONT_NORMAL, COLOR_WHITE);
 
         // read the magnetic heading sensor
+#ifdef ANDROID
         sdlx_sensor_read_mag_heading(&heading);
+        heading = smooth(heading);
+#else
+        heading = (int)(heading + 1) % 360;
+#endif
 
         // if magnetic heading is valid then
         //   display heading info
         // else
         //   display "NO DATA"
         // endif
-        if (true || heading != INVALID_NUMBER) { //xxx
-            if (heading == INVALID_NUMBER) heading = 45;
-
-            // remove jitter from the heading value
-            heading = smooth(heading);
-
+        if (heading != INVALID_NUMBER) {
             // display white background in the area where the compass 
             // will be displayed
             sdlx_render_fill_rect(0, 100, 1000, 1000, COLOR_WHITE);
@@ -97,26 +93,31 @@ int main(int argc, char **argv)
             }
 
             // draw the compass rotated by heading
-            //sdlx_render_texture_ex(50, 150, 900, 900, -heading, compass);
-            sdlx_render_texture_ex1(compass, 50, 150, 900, 900);
+            sdlx_render_texture_ex2(compass, 50, 150, 900, 900, heading);
 
-#if 0
             // print the heading and the heading abbreviation below 
             // the area where the compass is displayed
-            sdlx_print_init(LARGE_FONT, COLOR_WHITE, COLOR_BLACK);
-            sdlx_render_printf_xyctr(sdlx_win_width / 2, 1100 + 1.25 * sdlx_char_height, "%.0f", heading);
-            sdlx_render_printf_xyctr(sdlx_win_width / 2, 1100 + 2.75 * sdlx_char_height, "%s",
-                                     abbreviation(heading));
-#endif
+            // xxx issue with sdlx_char_height, may need to be a routine
+            sdlx_render_printf_ex(
+                sdlx_win_width / 2, 1100 + 1.25 * sdlx_char_height,    // x,y
+                FONT_LARGE, COLOR_WHITE, FLAG_XY_CTR, WRAP_NONE,
+                "%.0f", heading);
+            sdlx_render_printf_ex(
+                sdlx_win_width / 2, 1100 + 2.75 * sdlx_char_height, 
+                FONT_LARGE, COLOR_WHITE, FLAG_XY_CTR, WRAP_NONE,
+                "%s", abbreviation(heading));
         } else {
-            //sdlx_print_init(LARGE_FONT, COLOR_WHITE, COLOR_BLACK);
-            //sdlx_render_printf_xyctr(sdlx_win_width / 2, 500, "NO DATA");
-//xxx make spinning compass if no data
+            sdlx_render_printf_ex(
+                sdlx_win_width / 2, 500, 
+                FONT_LARGE, COLOR_WHITE, FLAG_XY_CTR, WRAP_NONE,
+                "%s", "NO DATA");
         }
 
         // register control event to end program
-        //sdlx_register_control_events(NULL, NULL, "X", COLOR_WHITE, COLOR_BLACK, 0, 0, EVID_QUIT);
-        sdlx_register_control_events(0, NULL, 0, NULL, EVID_QUIT, "X", COLOR_WHITE, COLOR_BLACK);
+        sdlx_register_control_events(0, NULL, 
+                                     0, NULL, 
+                                     EVID_QUIT, "X", 
+                                     COLOR_WHITE, COLOR_BLACK);
 
         // present the display
         sdlx_display_present();
@@ -147,7 +148,7 @@ cleanup_and_return:
     sdlx_quit(SUBSYS_VIDEO | SUBSYS_SENSOR);
 
     // return success
-    printf("INFO %s: terminating\n", progname);
+    printf("I %s: terminating\n", progname);
     return 0;
 }
 
@@ -156,6 +157,10 @@ double smooth(double newval)
 {
     static double smoothed = INVALID_NUMBER;
     double delta;
+
+    if (newval == INVALID_NUMBER) {
+        return INVALID_NUMBER;
+    }
 
     if (smoothed == INVALID_NUMBER) {
         smoothed = newval;

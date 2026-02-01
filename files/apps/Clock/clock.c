@@ -9,10 +9,6 @@
 
 #include "apps/Clock/common.h"
 
-// xxx
-// - adjust size of control bottons
-// - maybe pixels shoudl be unsigned int
-
 // defines
 #define XCTR_CLOCK 500
 #define YCTR_CLOCK 600
@@ -37,44 +33,36 @@ int main(int argc, char **argv)
     struct tm       tm;
     char            sunrise_calc[50], sunset_calc[50], midday_calc[50];
 
+    // set line buffering
+    setlinebuf(stdout);
+
     // save args
+    progname = argv[0];
     if (argc != 2) {
-        printf("ERROR: data_dir arg expected\n");
+        printf("E %s: data_dir arg expected\n", progname);
         return 1;
     }
-    progname = argv[0];
     data_dir = argv[1];
-    printf("INFO %s: starting, data_dir=%s\n", progname, data_dir);
-
-    // Get sunrise / sunset times from https://sunrise-sunset.org/api.
-    // The purpose of this is to test that the sunrise_sunset_calc code 
-    // produces the correct result.
-    //char sunrise_web[50], sunset_web[50], midday_web[50];
-    //sunrise_sunset_web(sunrise_web, sunset_web, midday_web);
-    //printf("INFO %s: WEB   %s %s %s\n", progname, sunrise_web, midday_web, sunset_web);
-
-    // xxx move this and the unit test above to a routine and call from
-    //   inside the loop, stop calling once lat & long acquired
-    // xxx return INVALID NUMBER when getting lat/lng if they are 0
+    printf("I %s: starting, data_dir=%s\n", progname, data_dir);
 
     // get the sunrise, sunset, and midday (solar noon) times
     sunrise_sunset_calc(sunrise_calc, sunset_calc, midday_calc);
-    printf("INFO %s: CALC  %s %s %s\n", progname, sunrise_calc, midday_calc, sunset_calc);
+    printf("I %s: CALC  %s %s %s\n", progname, sunrise_calc, midday_calc, sunset_calc);
 
     // init sdl video subsystem
     rc = sdlx_init(SUBSYS_VIDEO);
     if (rc != 0) {
-        printf("ERROR %s: sdlx_init failed\n", progname);
+        printf("E %s: sdlx_init failed\n", progname);
         return 1;
     }
+
+    // set default font
+    sdlx_print_set_default(FONT_NORMAL, COLOR_WHITE);
 
     // runtime loop
     while (!quit) {
         // init the backbuffer
         sdlx_display_init(COLOR_BLACK);
-
-        // register control event to end program
-        sdlx_register_control_events(NULL, NULL, "X", COLOR_WHITE, COLOR_BLACK, 0, 0, EVID_QUIT);
 
         // get the current time
         t = time(NULL);
@@ -84,20 +72,19 @@ int main(int argc, char **argv)
         draw_analog_clock_face();
         draw_analog_clock_hands(&tm);
 
-        // set the font fg and bg colors for the code that follows
-        sdlx_print_init(DEFAULT_FONT, COLOR_WHITE, COLOR_BLACK);
-
         // display the date and time below the analog clock, example:
         //   13:30:00 EDT
         //   Wed Oct 21 2025
         y = YCTR_CLOCK + H_CLOCK / 2 + 1.5 * sdlx_char_height;
-        sdlx_render_printf_xyctr(
-                sdlx_win_width/2, y, 
+        sdlx_render_printf_ex(
+                sdlx_win_width/2, y,
+                FONT_NORMAL, COLOR_WHITE, FLAG_XY_CTR, WRAP_NONE,
                 "%02d:%02d:%02d %s",
                 tm.tm_hour, tm.tm_min, tm.tm_sec, tm.tm_zone);
         y += 1.5 * sdlx_char_height;
-        sdlx_render_printf_xyctr(
+        sdlx_render_printf_ex(
                 sdlx_win_width/2, y, 
+                FONT_NORMAL, COLOR_WHITE, FLAG_XY_CTR, WRAP_NONE,
                 "%s %s %d %d",
                 day_of_week(&tm), month(&tm), tm.tm_mday, tm.tm_year+1900);
         y += 1.5 * sdlx_char_height;
@@ -113,6 +100,12 @@ int main(int argc, char **argv)
         sdlx_render_printf(sdlx_win_width/2-5*sdlx_char_width/2, y, "%s", midday_calc);
         sdlx_render_printf(sdlx_win_width-5*sdlx_char_width, y, "%s", sunset_calc);
     
+        // register control event to end program
+        sdlx_register_control_events(0, NULL, 
+                                     0, NULL, 
+                                     EVID_QUIT, "X", 
+                                     COLOR_WHITE, COLOR_BLACK);
+
         // present the display
         sdlx_display_present();
 
@@ -134,7 +127,7 @@ int main(int argc, char **argv)
     // cleanup and end program
     cleanup_analog_clock();
     sdlx_quit(SUBSYS_VIDEO);
-    printf("INFO %s: terminating\n", progname);
+    printf("I %s: terminating\n", progname);
     return 0;
 }
 
@@ -160,14 +153,15 @@ static void draw_analog_clock_face(void)
 {
     int hour, x, y;
 
-    sdlx_render_fill_rect(0, 100, 1000, 1000, COLOR_WHITE); //xxx use defines
-
-    sdlx_print_init(DEFAULT_FONT, COLOR_BLACK, COLOR_WHITE);
+    sdlx_render_fill_rect(0, 100, 1000, 1000, COLOR_WHITE);
 
     for (hour = 1; hour <= 12; hour++) {
         x = XCTR_CLOCK + 400 * sin(hour * 30 * (M_PI / 180));
         y = YCTR_CLOCK - 400 * cos(hour * 30 * (M_PI / 180));
-        sdlx_render_printf_xyctr(x, y, "%d", hour);
+        sdlx_render_printf_ex(
+            x, y, 
+            FONT_NORMAL, COLOR_BLACK, FLAG_XY_CTR, WRAP_NONE,
+            "%d", hour);
     }
 }
 
@@ -189,7 +183,7 @@ sdlx_texture_t *hour_hand;
 sdlx_texture_t *minute_hand;
 sdlx_texture_t *second_hand;
 
-static sdlx_texture_t * create_rectangle_texture(int w, int h, int color);
+static sdlx_texture_t * create_rectangle_texture(int w, int h, sdlx_color_t color);
 
 static void draw_analog_clock_hands(struct tm *tm)
 {
@@ -211,38 +205,35 @@ static void draw_analog_clock_hands(struct tm *tm)
     minute_hand_angle = secs * (360. / 3600);
     second_hand_angle = secs * (360. / 60);
 
-    sdlx_render_texture_ex2(XCTR_CLOCK-(W_HH/2), YCTR_CLOCK-H_HH+O_HH, 
-                            W_HH, H_HH, 
-                            hour_hand_angle, 
-                            W_HH/2, H_HH-O_HH,
-                            hour_hand);
+    sdlx_render_texture_ex3(hour_hand,                                   // texture
+                            XCTR_CLOCK-(W_HH/2), YCTR_CLOCK-H_HH+O_HH,   // x,y
+                            W_HH, H_HH,                                  // w,h
+                            hour_hand_angle,                             // angle
+                            W_HH/2, H_HH-O_HH);                          // rotation center
 
-    sdlx_render_texture_ex2(XCTR_CLOCK-(W_MH/2), YCTR_CLOCK-H_MH+O_MH, 
+    sdlx_render_texture_ex3(minute_hand,
+                            XCTR_CLOCK-(W_MH/2), YCTR_CLOCK-H_MH+O_MH, 
                             W_MH, H_MH, 
                             minute_hand_angle, 
-                            W_MH/2, H_MH-O_MH,
-                            minute_hand);
+                            W_MH/2, H_MH-O_MH);
 
-    sdlx_render_texture_ex2(XCTR_CLOCK-(W_SH/2), YCTR_CLOCK-H_SH+O_SH, 
+    sdlx_render_texture_ex3(second_hand,
+                            XCTR_CLOCK-(W_SH/2), YCTR_CLOCK-H_SH+O_SH, 
                             W_SH, H_SH, 
                             second_hand_angle,
-                            W_SH/2, H_SH-O_SH,
-                            second_hand);
+                            W_SH/2, H_SH-O_SH);
 
     sdlx_render_point(XCTR_CLOCK, YCTR_CLOCK, COLOR_RED, 9);
 }
     
-static sdlx_texture_t * create_rectangle_texture(int w, int h, int color)
+static sdlx_texture_t * create_rectangle_texture(int w, int h, sdlx_color_t color)
 {
-    unsigned int *pixels = malloc(w * h * BYTES_PER_PIXEL);
     sdlx_texture_t *t;
 
-    pixels = malloc(w * h * BYTES_PER_PIXEL);
-    for (int i = 0; i < w * h; i++) {
-        pixels[i] = color;
-    }
-    t = sdlx_create_texture_from_pixels((unsigned char*)pixels, w, h);
-    free(pixels);
+    t = sdlx_create_texture(w,h);
+    sdlx_set_render_target(t);
+    sdlx_render_fill_rect(0, 0, w, h, color);
+    sdlx_set_render_target(NULL);
 
     return t;
 }

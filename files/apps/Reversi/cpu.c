@@ -34,7 +34,7 @@ int cpu_get_move(int level, board_t *b, char *eval_str)
 
     // sanity check level arg
     if (level < 1 || level > 8) {
-        printf("ERROR %s: invlaid level %d\n", progname, level);
+        printf("E %s: invlaid level %d\n", progname, level);
         return MOVE_PASS;
     }
 
@@ -380,7 +380,7 @@ static void init_edge_gateway_to_corner(void)
     initialized = true;
         
     // xxx
-    printf("ERROR %s: FIXME MAX_BLACK_GATEWAY_TO_CORNER_PATTERNS = %d\n",
+    printf("E %s: FIXME MAX_BLACK_GATEWAY_TO_CORNER_PATTERNS = %d\n",
            progname, (int)MAX_BLACK_GATEWAY_TO_CORNER_PATTERNS);
 
     int i,j;

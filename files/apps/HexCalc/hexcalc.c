@@ -5,8 +5,7 @@
 #include <sdlx.h>
 #include <utils.h>
 
-// xxx
-// - code cleanup and comments
+// xxx - code cleanup and comments
 
 // display locations
 #define DISPLAY_Y_TOP       100
@@ -83,19 +82,22 @@ int main(int argc, char **argv)
     unsigned long operand_value = 0;
     bool          error         = false;
 
+    // set line buffering
+    setlinebuf(stdout);
+
     // save args
+    progname = argv[0];
     if (argc != 2) {
-        printf("ERROR: data_dir arg expected\n");
+        printf("E %s: data_dir arg expected\n", progname);
         return 1;
     }
-    progname = argv[0];
     data_dir = argv[1];
-    printf("INFO %s: starting, data_dir=%s\n", progname, data_dir);
+    printf("I %s: starting, data_dir=%s\n", progname, data_dir);
 
     // init sdl video subsystem
     rc = sdlx_init(SUBSYS_VIDEO);
     if (rc != 0) {
-        printf("ERROR %s: sdlx_init failed\n", progname);
+        printf("E %s: sdlx_init failed\n", progname);
         return 1;
     }
 
@@ -256,7 +258,7 @@ int main(int argc, char **argv)
     // cleanup and end program
     cleanup();
     sdlx_quit(SUBSYS_VIDEO);
-    printf("INFO %s: terminating\n", progname);
+    printf("I %s: terminating\n", progname);
     return 0;
 }
 
@@ -273,7 +275,7 @@ void update_numeric_display(unsigned long value, int bits, int display_fmt, bool
         max_chars = (bits == EVID_32BIT ? 10 : 20);
     }
 
-    sdlx_print_init(max_chars, DISPLAY_NUMBER_COLOR, BACKGROUND_COLOR);
+    sdlx_print_set_default(max_chars, DISPLAY_NUMBER_COLOR);
 
     if (error) {
         sprintf(fmt, "%%%ds", max_chars);
@@ -315,7 +317,7 @@ void draw_button(int row, int col, bool highlight)
     sdlx_render_texture(x-texture_w/2, y-texture_h/2, texture_w, texture_h,
         !highlight ? button_texture : highlighted_button_texture);
 
-    sdlx_print_init(20, BUTTON_COLOR_TEXT, !highlight ? BUTTON_COLOR_NORMAL : BUTTON_COLOR_HIGHLIGHT);
+    sdlx_print_set_default(20, BUTTON_COLOR_TEXT, !highlight ? BUTTON_COLOR_NORMAL : BUTTON_COLOR_HIGHLIGHT);
     memset(str, 0, sizeof(str));
     memcpy(str, &button[row][col], 4);
     sdlx_render_printf_xyctr(x, y, "%s", str);
@@ -365,7 +367,7 @@ unsigned long process_op(int op, unsigned long operand1, unsigned long operand2,
     case '*':      result = operand1 * operand2; break;
     case '/':      result = operand1 / operand2; break;
     default:
-        printf("ERROR %s: BUG process_op, op=%x\n", progname, op);
+        printf("E %s: BUG process_op, op=%x\n", progname, op);
         return 0;
     }
 

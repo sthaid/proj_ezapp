@@ -178,10 +178,6 @@ static void page_hndlr()
                                      EVID_QUIT, "X",
                                      COLOR_WHITE, COLOR_BLACK);
 
-        // register swipe events, also used to change page
-        sdlx_register_event(NULL, EVID_SWIPE_LEFT);
-        sdlx_register_event(NULL, EVID_SWIPE_RIGHT);
-
         // draw display
         switch (pagenum) {
         case 0: page_0_draw(); break;
@@ -216,13 +212,13 @@ static void page_hndlr()
         case EVID_QUIT:
             end_program = true;
             break;      
-        case EVID_SWIPE_RIGHT: case EVID_PREV_PAGE:
+        case EVID_PREV_PAGE:
             new_pagenum = pagenum - 1;
             if (new_pagenum < 0) {
                 new_pagenum = LAST_PAGE;
             }
             break;      
-        case EVID_SWIPE_LEFT: case EVID_NEXT_PAGE:
+        case EVID_NEXT_PAGE:
             new_pagenum = pagenum + 1;
             if (new_pagenum > LAST_PAGE) {
                 new_pagenum = 0;
@@ -434,7 +430,7 @@ static void page_4_draw(void)
 
     // draw 2 squares and vary intensity and wavelen, y = 800 .. 900
     static double inten;
-    int color;
+    sdlx_color_t color;
     inten = inten + 0.01;
     if (inten > 1) inten = 0;
     color = sdlx_scale_color(COLOR_YELLOW, inten);
@@ -476,7 +472,6 @@ static void add_point(sdlx_point_t **p, int x, int y)
 static sdlx_texture_t *texture1;
 static sdlx_texture_t *texture2;
 
-extern double scale;
 static void page_5_init(void)
 {
     int w, h, i;
@@ -490,21 +485,19 @@ static void page_5_init(void)
 
     // query texture1
     sdlx_query_texture(texture1, &w, &h);
-    printf("I texture1 w,h = %d %d\n", w, h);
+    printf("I %s: texture1 w,h = %d %d\n", progname, w, h);
 
     // set render target to texture1
-    printf("I setting render target to texture1\n");  //xxx check progname in prints
+    printf("I %s: setting render target to texture1\n", progname);
     sdlx_set_render_target(texture1);
 
     // draw to texture1
-    scale = 1;  //xxx fixme
     sdlx_render_rect(0, 0, w, h, 5, COLOR_WHITE);
     sdlx_render_fill_circle(w/2, h/2, w/2, COLOR_YELLOW);
     sdlx_render_printf_ex(w/2, h/2, FONT_NORMAL, COLOR_RED, FLAG_XY_CTR, WRAP_NONE, "%s", "Hello");
-    scale = 0.45;  //xxx fixme
 
     // set render target back to the display
-    printf("I setting render target to display\n");
+    printf("I %s: setting render target to display\n", progname);
     sdlx_set_render_target(NULL);
 
     //
@@ -523,9 +516,9 @@ static void page_5_init(void)
 
     // get the pixels from texture2
     pixels = sdlx_get_texture_pixels(texture2, &w, &h);
-    printf("I get_pixels ret w,h %d %d\n", w, h);
+    printf("I %s: get_pixels ret w,h %d %d\n", progname, w, h);
     if (w != 200 || h != 200) {
-        printf("E incorrect w,h (%d,%d)  returned from sdlx_get_texture_pixels\n", w, h);
+        printf("E %s: incorrect w,h (%d,%d)  returned from sdlx_get_texture_pixels\n", progname, w, h);
         free(pixels);
         return;
     }
@@ -533,12 +526,12 @@ static void page_5_init(void)
     // verify pixels read back
     for (i = 0; i < w*h; i++) {
         if (pixels[i] != COLOR_BLUE) {
-            printf("E incorrect pixel value returned, pixels[%d]=%08x\n", i, pixels[i]);
+            printf("E %s: incorrect pixel value returned, pixels[%d]=%08x\n", progname, i, pixels[i]);
             break;
         }
     }
     if (i == w*h) {
-        printf("I pixel readback test, okay\n");
+        printf("I %s: pixel readback test, okay\n", progname);
     }
 
     // free pixels
@@ -547,25 +540,25 @@ static void page_5_init(void)
 
 static void page_5_exit(void)
 {
-    printf("I destroying textures\n");
+    printf("I %s: destroying textures\n", progname);
     sdlx_destroy_texture(texture1);
     sdlx_destroy_texture(texture2);
 }
 
 static void page_5_draw(void)
 {
-    sdlx_render_texture(texture1, 0, 0);
+    sdlx_render_texture(texture1, 0, 100);
 
-    sdlx_render_texture_ex1(texture1, 0, 1100, 500, 500);
+    sdlx_render_texture_ex1(texture1, 0, 1200, 500, 500);
 
-    sdlx_render_texture(texture2, 500, 1100);
+    sdlx_render_texture(texture2, 500, 1200);
 }
 
 
 // -----------------  PAGE 6: COLORS  -------------------------
 
-static void color_test(int idx, char *color_name, int color);
-static void alpha_test(int idx, char *test_name, int bg_color, int fg_color);
+static void color_test(int idx, char *color_name, sdlx_color_t color);
+static void alpha_test(int idx, char *test_name, sdlx_color_t bg_color, sdlx_color_t fg_color);
 
 static void page_6_draw(void)
 {
@@ -590,7 +583,7 @@ static void page_6_draw(void)
     alpha_test(idx++, "ALPHA_TEST", COLOR_WHITE, COLOR_BLUE);
 }
 
-static void color_test(int idx, char *color_name, int color)
+static void color_test(int idx, char *color_name, sdlx_color_t color)
 {
     int y = 2 * sdlx_char_height + idx * 100;
 
@@ -598,10 +591,11 @@ static void color_test(int idx, char *color_name, int color)
     sdlx_render_fill_rect(500, y, 500, sdlx_char_height, color);
 }
 
-static void alpha_test(int idx, char *test_name, int bg_color, int fg_color)
+static void alpha_test(int idx, char *test_name, sdlx_color_t bg_color, sdlx_color_t fg_color)
 {
     int y = 2 * sdlx_char_height + idx * 100;
-    int alpha, x, color;
+    int alpha, x;
+    sdlx_color_t color;
 
     sdlx_render_printf(0, y, "%s", test_name);
     sdlx_render_fill_rect(500, y, 500, sdlx_char_height, bg_color);
@@ -670,14 +664,12 @@ static void page_7_init(void)
 
 static void page_7_draw(void)
 {
-    //xxx support deleting files
-
     sdlx_audio_state_t state;
     sdlx_loc_t *loc;
     int row=1;
 
     // display state
-    sdlx_audio_state(&state); // xxx rename to get_state
+    sdlx_audio_get_state(&state);
     sdlx_render_printf(0, ROW2Y(row++), "%s",    audio_state_str(state.state));
     sdlx_render_printf(0, ROW2Y(row++), "play_curr  %0.3f", state.play_current_ms/1000.);
     sdlx_render_printf(0, ROW2Y(row++), "play_total %0.3f", state.play_total_ms/1000.);
@@ -687,63 +679,52 @@ static void page_7_draw(void)
     row++;
 
     // stop, pause, resume
-    //xxx sdlx_print_init_color(COLOR_LIGHT_BLUE, COLOR_BLACK);
-    loc = sdlx_render_printf(0, ROW2Y(row), "STOP");
+    loc = sdlx_render_printf_color(0, ROW2Y(row), COLOR_LIGHT_BLUE, "STOP");
     sdlx_register_event(loc, EVID_AUDIO_STOP);
-    loc = sdlx_render_printf(COL2X(6), ROW2Y(row), "PAUSE");
+    loc = sdlx_render_printf_color(COL2X(6), ROW2Y(row), COLOR_LIGHT_BLUE, "PAUSE");
     sdlx_register_event(loc, EVID_AUDIO_PAUSE);
-    loc = sdlx_render_printf(COL2X(13), ROW2Y(row), "RESUME");
+    loc = sdlx_render_printf_color(COL2X(13), ROW2Y(row), COLOR_LIGHT_BLUE, "RESUME");
     sdlx_register_event(loc, EVID_AUDIO_RESUME);
     row += 3;
 
     // record mic, device
-    //xxx sdlx_print_init_color(COLOR_WHITE, COLOR_BLACK);
     sdlx_render_printf(0, ROW2Y(row), "REC");
-    //xxx sdlx_print_init_color(COLOR_LIGHT_BLUE, COLOR_BLACK);
-    loc = sdlx_render_printf(COL2X(5), ROW2Y(row), "MIC");  // xxx add append test
+    loc = sdlx_render_printf_color(COL2X(5), ROW2Y(row), COLOR_LIGHT_BLUE, "MIC");
     sdlx_register_event(loc, EVID_AUDIO_RECORD_FROM_MIC);
-    loc = sdlx_render_printf(COL2X(10), ROW2Y(row), "DEV");
+    loc = sdlx_render_printf_color(COL2X(10), ROW2Y(row), COLOR_LIGHT_BLUE, "DEV");
     sdlx_register_event(loc, EVID_AUDIO_RECORD_FROM_DEV);
-    loc = sdlx_render_printf(COL2X(15), ROW2Y(row), "MICAP");  // xxx add append test
+    loc = sdlx_render_printf_color(COL2X(15), ROW2Y(row), COLOR_LIGHT_BLUE, "MICAP");
     sdlx_register_event(loc, EVID_AUDIO_RECORD_FROM_MIC_APPEND);
     row += 3;
 
     // play mic file, device file, tones
-    //xxx sdlx_print_init_color(COLOR_WHITE, COLOR_BLACK);
     sdlx_render_printf(0, ROW2Y(row), "PLAY");
-    //xxx sdlx_print_init_color(COLOR_LIGHT_BLUE, COLOR_BLACK);
-    loc = sdlx_render_printf(COL2X(5), ROW2Y(row), "MIC");
+    loc = sdlx_render_printf_color(COL2X(5), ROW2Y(row), COLOR_LIGHT_BLUE, "MIC");
     sdlx_register_event(loc, EVID_AUDIO_PLAY_MIC_FILE);
-    loc = sdlx_render_printf(COL2X(10), ROW2Y(row), "DEV");
+    loc = sdlx_render_printf_color(COL2X(10), ROW2Y(row), COLOR_LIGHT_BLUE, "DEV");
     sdlx_register_event(loc, EVID_AUDIO_PLAY_DEV_FILE);
-    loc = sdlx_render_printf(COL2X(15), ROW2Y(row), "TONES");
+    loc = sdlx_render_printf_color(COL2X(15), ROW2Y(row), COLOR_LIGHT_BLUE, "TONES");
     sdlx_register_event(loc, EVID_AUDIO_PLAY_TONES);
     row += 3;
 
     // play buff mone, stereo
-    //xxx sdlx_print_init_color(COLOR_WHITE, COLOR_BLACK);
     sdlx_render_printf(0, ROW2Y(row), "PLAY-BUFF");
-    //xxx sdlx_print_init_color(COLOR_LIGHT_BLUE, COLOR_BLACK);
-    loc = sdlx_render_printf(COL2X(10), ROW2Y(row), "MONO");
+    loc = sdlx_render_printf_color(COL2X(10), ROW2Y(row), COLOR_LIGHT_BLUE, "MONO");
     sdlx_register_event(loc, EVID_AUDIO_PLAY_MONO_BUFF);
-    loc = sdlx_render_printf(COL2X(15), ROW2Y(row), "STEREO");
+    loc = sdlx_render_printf_color(COL2X(15), ROW2Y(row), COLOR_LIGHT_BLUE, "STEREO");
     sdlx_register_event(loc, EVID_AUDIO_PLAY_STEREO_BUFF);
     row += 3;
 
     // play test file
-    //xxx sdlx_print_init_color(COLOR_WHITE, COLOR_BLACK);
     sdlx_render_printf(0, ROW2Y(row), "PLAY");
-    //xxx sdlx_print_init_color(COLOR_LIGHT_BLUE, COLOR_BLACK);
-    loc = sdlx_render_printf(COL2X(5), ROW2Y(row), "TEST.WAV");
+    loc = sdlx_render_printf_color(COL2X(5), ROW2Y(row), COLOR_LIGHT_BLUE, "TEST.WAV");
     sdlx_register_event(loc, EVID_AUDIO_PLAY_TEST_WAV);
     row += 3;
-
-    //xxx sdlx_print_init_color(COLOR_WHITE, COLOR_BLACK);
 }
 
 static void page_7_process_event(sdlx_event_t *ev)
 {
-    printf("event %d\n", ev->event_id);
+    printf("I %s: event %d\n", progname, ev->event_id);
 
     switch (ev->event_id) {
     case EVID_AUDIO_STOP:

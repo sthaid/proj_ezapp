@@ -12,7 +12,6 @@ static int LittleEndian;
 /* global initialisation for libraries */
 void LibraryInit(Picoc *pc)
 {
-
     /* define the version number macro */
     pc->VersionString = TableStrRegister(pc, PICOC_VERSION);
     VariableDefinePlatformVar(pc, NULL, "PICOC_VERSION", pc->CharPtrType,
@@ -26,6 +25,13 @@ void LibraryInit(Picoc *pc)
         (union AnyValue*)&BigEndian, false);
     VariableDefinePlatformVar(pc, NULL, "LITTLE_ENDIAN", &pc->IntType,
         (union AnyValue*)&LittleEndian, false);
+
+    /* EZAPP: define ANDROID macro when picoc built for Android */
+#ifdef ANDROID
+    int one = 1;
+    VariableDefinePlatformVar(pc, NULL, "ANDROID", &pc->IntType,
+        (union AnyValue*)&one, false);
+#endif
 }
 
 /* add a library */

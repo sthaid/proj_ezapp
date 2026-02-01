@@ -1,3 +1,6 @@
+// The code in this file is no longer being used.
+// It is being kept for possible future reference.
+
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -30,7 +33,7 @@ void sunrise_sunset_web(char *sunrise, char *sunset, char *midday)
     // get location
     util_get_location(&latitude, &longitude, NULL);
     if (latitude == INVALID_NUMBER || longitude == INVALID_NUMBER) {
-        printf("ERROR %s: failed to get gps location\n", progname);
+        printf("E %s: failed to get gps location\n", progname);
         goto done;
     }
 
@@ -41,24 +44,24 @@ void sunrise_sunset_web(char *sunrise, char *sunset, char *midday)
     sprintf(curl_url, "\"https://api.sunrise-sunset.org/json?lat=%0.4f&lng=%0.4f&formatted=0\"", latitude, longitude);
     ret = run_curl(curl_url, "curl.out");
     if (ret != 0) {
-        printf("ERROR %s: run_curl failed\n", progname);
+        printf("E %s: run_curl failed\n", progname);
         goto done;
     }
 
     // parse ths json
     root = get_json_root("curl.out");
     if (root == NULL) {
-        printf("ERROR %s: json parse failed\n", progname);
+        printf("E %s: json parse failed\n", progname);
         goto done;
     }
 
     // extract sunrise time from json
     rise = *util_json_get_value(root, "results", "sunrise", NULL);
-    printf("INFO %s: web  RISE %s UTC\n", progname, rise.u.string);
+    printf("I %s: web  RISE %s UTC\n", progname, rise.u.string);
     memset(&tm, 0, sizeof(tm));
     cnt = sscanf(rise.u.string, "%d-%d-%dT%d:%d:%d", &tm.tm_year, &tm.tm_mon, &tm.tm_mday, &tm.tm_hour, &tm.tm_min, &tm.tm_sec);
     if (cnt != 6) {
-        printf("ERROR %s: sscanf failed, cnt=%d\n", progname, cnt);
+        printf("E %s: sscanf failed, cnt=%d\n", progname, cnt);
         goto done;
     }
     tm.tm_year -= 1900;
@@ -69,11 +72,11 @@ void sunrise_sunset_web(char *sunrise, char *sunset, char *midday)
 
     // extract sunset time from json
     set = *util_json_get_value(root, "results", "sunset", NULL);
-    printf("INFO %s: web  SET  %s UTC\n", progname, set.u.string);
+    printf("I %s: web  SET  %s UTC\n", progname, set.u.string);
     memset(&tm, 0, sizeof(tm));
     cnt = sscanf(set.u.string, "%d-%d-%dT%d:%d:%d", &tm.tm_year, &tm.tm_mon, &tm.tm_mday, &tm.tm_hour, &tm.tm_min, &tm.tm_sec);
     if (cnt != 6) {
-        printf("ERROR %s: sscanf failed, cnt=%d\n", progname, cnt);
+        printf("E %s: sscanf failed, cnt=%d\n", progname, cnt);
         goto done;
     }
     tm.tm_year -= 1900;
@@ -88,7 +91,7 @@ void sunrise_sunset_web(char *sunrise, char *sunset, char *midday)
     t_midday_gm = t_rise_gm / 2 + t_set_gm / 2;
     localtime_r(&t_midday_gm, &tm);
     strftime(s, sizeof(s), "%c", &tm);
-    printf("INFO %s: web  MID  %s\n", progname, s);
+    printf("I %s: web  MID  %s\n", progname, s);
     sprintf(midday, "%02d:%02d", tm.tm_hour, tm.tm_min);
 
 done:
@@ -105,7 +108,7 @@ static int run_curl(char *url, char *filename)
     sprintf(cmd, "curl -s %s > %s/%s", url, data_dir, filename);
     ret = system(cmd);
     if (ret != 0) {
-        printf("ERROR %s: curl failed for url '%s'\n", progname, url);
+        printf("E %s: curl failed for url '%s'\n", progname, url);
         return -1;
     }
 
@@ -120,13 +123,13 @@ static void *get_json_root(char *filename)
 
     str = util_read_file(data_dir, filename, &len);
     if (str == NULL) {
-        printf("ERROR %s: failed to read file %s/%s\n", progname, data_dir, filename);
+        printf("E %s: failed to read file %s/%s\n", progname, data_dir, filename);
         return NULL;
     }
 
     root = util_json_parse(str, &end_ptr);
     if (root == NULL) {
-        printf("ERROR %s: failed to parse json\n", progname);
+        printf("E %s: failed to parse json\n", progname);
         free(str);
         return NULL;
     }

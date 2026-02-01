@@ -34,7 +34,7 @@ char         *data_dir;
 int           state = LOG_NOT_LOADED;
 
 char         *lines[MAX_LINES];
-unsigned int  colors[MAX_LINES];
+sdlx_color_t  colors[MAX_LINES];
 int           num_lines;
 
 double        x;

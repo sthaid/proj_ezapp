@@ -271,7 +271,7 @@ void sdlx_audio_resume(void)
     state.state = state_resume;
 }
 
-void sdlx_audio_state(sdlx_audio_state_t *x)
+void sdlx_audio_get_state(sdlx_audio_state_t *x)
 {
     *x = state;
 }

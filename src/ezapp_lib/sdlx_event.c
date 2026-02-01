@@ -10,7 +10,8 @@
 // defines
 //
 
-#define ONE_MS 1000
+#define ONE_MS       1000
+#define EVID_KEYBD   9999 
 
 //
 // typedefs
@@ -27,17 +28,10 @@ typedef struct {
 
 // defined in sdlx_video.c
 extern SDL_Window * window;
-#if 1   // set to 'if 0' for testing of SDL_SetRenderLogicalPresentation
-extern double       scale;  //xxx cleanup
-#else
-static double       scale = 0.45;
-#endif
 
 static event_t      event_tbl[100];
 static int          max_event;
 
-static bool         evid_swipe_right_registered;
-static bool         evid_swipe_left_registered;
 static bool         evid_motion_registered;
 static bool         evid_keybd_registered;
 
@@ -54,8 +48,6 @@ static void process_sdlx_event(SDL_Event *ev, sdlx_event_t *event);
 void sdlx_reset_events(void)
 {
     max_event = 0;
-    evid_swipe_right_registered = false;
-    evid_swipe_left_registered = false;
     evid_motion_registered = false;
     evid_keybd_registered = false;
 }
@@ -64,14 +56,6 @@ void sdlx_register_event(sdlx_loc_t *loc, int event_id)
 {
     sdlx_loc_t loc2;
 
-    if (event_id == EVID_SWIPE_RIGHT) {
-        evid_swipe_right_registered = true;
-        return;
-    }
-    if (event_id == EVID_SWIPE_LEFT) {
-        evid_swipe_left_registered = true;
-        return;
-    }
     if (event_id == EVID_MOTION) {
         evid_motion_registered = true;
         return;
@@ -110,7 +94,7 @@ void sdlx_register_event(sdlx_loc_t *loc, int event_id)
 void sdlx_register_control_events(int evid1, char *evstr1, 
                                   int evid2, char *evstr2, 
                                   int evid3, char *evstr3, 
-                                  int print_color, int bg_color)
+                                  sdlx_color_t print_color, sdlx_color_t bg_color)
 {
     sdlx_loc_t *loc;
     int i, x, y;
@@ -228,8 +212,8 @@ static void process_sdlx_event(SDL_Event *ev, sdlx_event_t *event)
                ev->button.x,
                ev->button.y);
 #endif
-        x = ev->button.x / scale;
-        y = ev->button.y / scale;
+        x = ev->button.x / scale_events;
+        y = ev->button.y / scale_events;
 
         if (ev->button.down) {
             last_pressed_x = x;
@@ -239,16 +223,6 @@ static void process_sdlx_event(SDL_Event *ev, sdlx_event_t *event)
             int delta_y = y - last_pressed_y;
 
             INFO("button released xy = %d %d, delta xy = %d %d\n", x, y, delta_x, delta_y);
-
-            if (delta_x > 300 && evid_swipe_right_registered) {
-                INFO("got EVID_SWIPE_RIGHT %d %d\n", delta_x, delta_y);
-                event->event_id = EVID_SWIPE_RIGHT;
-                break;
-            } else if (delta_x < -300 && evid_swipe_left_registered) {
-                INFO("got EVID_SWIPE_LEFT %d %d\n", delta_x, delta_y);
-                event->event_id = EVID_SWIPE_LEFT;
-                break;
-            }
 
             for (i = 0; i < max_event; i++) {
                 if (AT_LOC(x, y, event_tbl[i].loc)) {
@@ -271,10 +245,10 @@ static void process_sdlx_event(SDL_Event *ev, sdlx_event_t *event)
             //    ev->motion.yrel);
 
             event->event_id = EVID_MOTION;
-            event->u.motion.x = ev->motion.x / scale;
-            event->u.motion.y = ev->motion.y / scale;
-            event->u.motion.xrel = ev->motion.xrel / scale;
-            event->u.motion.yrel = ev->motion.yrel / scale;
+            event->u.motion.x = ev->motion.x / scale_events;
+            event->u.motion.y = ev->motion.y / scale_events;
+            event->u.motion.xrel = ev->motion.xrel / scale_events;
+            event->u.motion.yrel = ev->motion.yrel / scale_events;
         }
         break; }
     case SDL_EVENT_SENSOR_UPDATE: {
@@ -348,7 +322,7 @@ static void process_sdlx_event(SDL_Event *ev, sdlx_event_t *event)
     }
 }
 
-char *sdlx_get_input_str(char *prompt1, char *prompt2, bool numeric_keybd, int bg_color)
+char *sdlx_get_input_str(char *prompt1, char *prompt2, bool numeric_keybd, sdlx_color_t bg_color)
 {
     static char        input[100];
     int                max_input, row;

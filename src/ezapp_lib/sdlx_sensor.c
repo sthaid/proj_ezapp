@@ -88,6 +88,9 @@ int sdlx_sensor_init(void)
     SDL_free(ids);
 
     // xxx comment
+    // xxx - what is this for
+    // xxx - why isn't compass included
+    // xxx - are there other routines that need to be called from here
     sdlx_sensor_read_temperature(&dummy);
     sdlx_sensor_read_humidity(&dummy);
     sdlx_sensor_read_pressure(&dummy);
@@ -389,7 +392,7 @@ int sdlx_sensor_read_pressure(double *millibars)
     return 0;
 }
 
-// xxx not tested
+// not tested
 int sdlx_sensor_read_temperature(double *degrees_c)
 {
     double data[3];
@@ -416,7 +419,7 @@ int sdlx_sensor_read_temperature(double *degrees_c)
     return 0;
 }
 
-// xxx not tested
+// not tested
 int sdlx_sensor_read_humidity(double *percent)
 {
     double data[3];

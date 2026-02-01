@@ -1,7 +1,3 @@
-/* xxx
-- introduce random errors in autonomous mode
-*/
-
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -100,19 +96,22 @@ int main(int argc, char **argv)
     long         start_us, timeout_us;
     bool         end_program = false;
 
+    // set line buffering
+    setlinebuf(stdout);
+
     // save args
+    progname = argv[0];
     if (argc != 2) {
-        printf("ERROR %s: data_dir arg expected\n", progname);
+        printf("E %s: data_dir arg expected\n", progname);
         return 1;
     }
-    progname = argv[0];
     data_dir = argv[1];
-    printf("INFO %s: starting, data_dir=%s\n", progname, data_dir);
+    printf("I %s: starting, data_dir=%s\n", progname, data_dir);
 
     // init sdl video subsystem
     rc = sdlx_init(SUBSYS_VIDEO|SUBSYS_AUDIO);
     if (rc != 0) {
-        printf("ERROR %s: sdlx_init failed\n", progname);
+        printf("E %s: sdlx_init failed\n", progname);
         return 1;
     }
 
@@ -122,7 +121,10 @@ int main(int argc, char **argv)
     // - state
     state = STATE_READY;
     // - ball texture
-    ball = sdlx_create_filled_circle_texture(BALL_RADIUS, COLOR_GREEN);
+    ball = sdlx_create_texture(2*BALL_RADIUS, 2*BALL_RADIUS);
+    sdlx_set_render_target(ball);
+    sdlx_render_fill_circle(BALL_RADIUS, BALL_RADIUS, BALL_RADIUS, COLOR_GREEN);
+    sdlx_set_render_target(NULL);
     // - scores
     computer_score    = 0;
     human_score       = 0;
@@ -189,31 +191,44 @@ int main(int argc, char **argv)
         }
 
         // display scores
-        sdlx_print_init_numchars(LARGE_FONT);
-        sdlx_render_printf(0, 0, "%2d", computer_score);
-        sdlx_render_printf(sdlx_win_width-2*sdlx_char_width, 0, "%d", human_score);
-        sdlx_print_init_numchars(DEFAULT_FONT);
+        sdlx_print_set_default(FONT_LARGE,COLOR_WHITE);  // xxx temp for sdlx_char_width problem
+        sdlx_render_printf_ex(0, 0, 
+                              FONT_LARGE, COLOR_WHITE, 0, WRAP_NONE, 
+                              "%d", computer_score);
+        sdlx_render_printf_ex(sdlx_win_width-2*sdlx_char_width, 0,
+                              FONT_LARGE, COLOR_WHITE, 0, WRAP_NONE,
+                              "%2d", human_score);
 
         // display ball speed, and skill setting
-        sdlx_render_printf_xyctr(sdlx_win_width/2, ROW2Y(1), "%0.2f %s",
-                                 ball_speed_court_per_sec, 
-                                 short_skill_str[param_skill]);
+        sdlx_print_set_default(FONT_NORMAL,COLOR_WHITE);  // xxx temp for sdlx_char_width problem
+        sdlx_render_printf_ex(sdlx_win_width/2, ROW2Y(1), 
+                              FONT_NORMAL, COLOR_WHITE, FLAG_XY_CTR, WRAP_NONE,
+                              "%0.2f %s", ball_speed_court_per_sec, short_skill_str[param_skill]);
 
         // display the ball and paddles
-        sdlx_render_texture(x-BALL_RADIUS, y-BALL_RADIUS, 2*BALL_RADIUS, 2*BALL_RADIUS, ball);
+        sdlx_render_texture(ball, x-BALL_RADIUS, y-BALL_RADIUS);
         sdlx_render_fill_rect(human_paddle_x-PADDLE_W/2, human_paddle_y-PADDLE_H/2, PADDLE_W, PADDLE_H, COLOR_WHITE);
         sdlx_render_fill_rect(computer_paddle_x-PADDLE_W/2, computer_paddle_y-PADDLE_H/2, PADDLE_W, PADDLE_H, COLOR_WHITE);
 
         // register game control events
         sdlx_register_event(NULL, EVID_MOTION);
         if (state == STATE_READY) {
-            sdlx_register_control_events("START", "STG",   "X", COLOR_WHITE, COLOR_BLACK, EVID_START, EVID_SETTINGS, EVID_QUIT);
+            sdlx_register_control_events(EVID_START,    "START", 
+                                         EVID_SETTINGS, "STG",   
+                                         EVID_QUIT,     "X", 
+                                         COLOR_WHITE, COLOR_BLACK);
         } else if (state == STATE_SERVING || state == STATE_SERVING_DELAY || state == STATE_RUNNING) {
-            sdlx_register_control_events("PAUSE", "RESET", "X", COLOR_WHITE, COLOR_BLACK, EVID_PAUSE, EVID_RESET, EVID_QUIT);
+            sdlx_register_control_events(EVID_PAUSE,    "PAUSE", 
+                                         EVID_RESET,    "RESET",   
+                                         EVID_QUIT,     "X", 
+                                         COLOR_WHITE, COLOR_BLACK);
         } else if (state == STATE_PAUSED) {
-            sdlx_register_control_events("CONT",  "RESET", "X", COLOR_WHITE, COLOR_BLACK, EVID_CONT, EVID_RESET, EVID_QUIT);
+            sdlx_register_control_events(EVID_CONT,     "CONT", 
+                                         EVID_RESET,    "RESET",   
+                                         EVID_QUIT,     "X", 
+                                         COLOR_WHITE, COLOR_BLACK);
         } else {
-            printf("ERROR %s: invalid state %d\n", progname, state);
+            printf("E %s: invalid state %d\n", progname, state);
         }
 
         // present the display
@@ -229,7 +244,7 @@ int main(int argc, char **argv)
 
             // if calculated timeout is <= 0 then break out of the loop
             if (timeout_us <= 0) {
-                //printf("INFO %s: INTVL %ld ms\n", progname, (util_microsec_timer() - start_us) / 1000);
+                //printf("I %s: INTVL %ld ms\n", progname, (util_microsec_timer() - start_us) / 1000);
                 break;
             }
 
@@ -273,7 +288,7 @@ int main(int argc, char **argv)
     // cleanup and end program
     sdlx_destroy_texture(ball);
     sdlx_quit(SUBSYS_VIDEO|SUBSYS_AUDIO);
-    printf("INFO %s: terminating\n", progname);
+    printf("I %s: terminating\n", progname);
     return 0;
 }
 
@@ -473,29 +488,29 @@ void settings(void)
     sdlx_event_t event;
     sdlx_loc_t *loc;
     char *str;
+    char range_str[50];
 
     while (!done) {
         // init the backbuffer
         sdlx_display_init(COLOR_BLACK);
 
         // display values, and register events to change the values
-        sdlx_print_init_color(COLOR_LIGHT_BLUE, COLOR_BLACK);
-
-        loc = sdlx_render_printf(0, ROW2Y(2), "autonomous = %s", param_autonomous ? "ON" : "OFF");
+        loc = sdlx_render_printf_color(0, ROW2Y(2), COLOR_LIGHT_BLUE, "autonomous = %s", param_autonomous ? "ON" : "OFF");
         sdlx_register_event(loc, EVID_AUTONOMOUS);
-        loc = sdlx_render_printf(0, ROW2Y(4), "sound = %s", param_sound ? "ON" : "OFF");
+        loc = sdlx_render_printf_color(0, ROW2Y(4), COLOR_LIGHT_BLUE, "sound = %s", param_sound ? "ON" : "OFF");
         sdlx_register_event(loc, EVID_SOUND);
-        loc = sdlx_render_printf(0, ROW2Y(6), "min_speed = %G", param_min_ball_speed);
+        loc = sdlx_render_printf_color(0, ROW2Y(6), COLOR_LIGHT_BLUE, "min_speed = %G", param_min_ball_speed);
         sdlx_register_event(loc, EVID_MIN_BALL_SPEED);
-        loc = sdlx_render_printf(0, ROW2Y(8), "max_speed = %G", param_max_ball_speed);
+        loc = sdlx_render_printf_color(0, ROW2Y(8), COLOR_LIGHT_BLUE, "max_speed = %G", param_max_ball_speed);
         sdlx_register_event(loc, EVID_MAX_BALL_SPEED);
-        loc = sdlx_render_printf(0, ROW2Y(10), "%s", skill_str[param_skill]);
+        loc = sdlx_render_printf_color(0, ROW2Y(10), COLOR_LIGHT_BLUE, "%s", skill_str[param_skill]);
         sdlx_register_event(loc, EVID_SKILL);
 
-        sdlx_print_init_color(COLOR_WHITE, COLOR_BLACK);
-
         // register control event to exit the settings screen
-        sdlx_register_control_events(NULL, NULL, "X", COLOR_WHITE, COLOR_BLACK, 0, 0, EVID_QUIT);
+        sdlx_register_control_events(0, NULL, 
+                                     0, NULL, 
+                                     EVID_QUIT, "X",
+                                     COLOR_WHITE, COLOR_BLACK);
 
         // present the display
         sdlx_display_present();
@@ -514,14 +529,16 @@ void settings(void)
             util_set_numeric_param(data_dir, "sound", param_sound);
             break;
         case EVID_MIN_BALL_SPEED:
-            str = sdlx_get_input_str("min_ball_speed", "xxx range", true, COLOR_BLACK);
+            sprintf(range_str, "%.1f-%.1f", MIN_BALL_SPEED, MAX_BALL_SPEED);
+            str = sdlx_get_input_str("min_ball_speed", range_str, true, COLOR_BLACK);
             sscanf(str, "%lf", &param_min_ball_speed);
             clip(&param_min_ball_speed, MIN_BALL_SPEED, MAX_BALL_SPEED);
             ball_speed_court_per_sec = param_min_ball_speed;
             util_set_numeric_param(data_dir, "min_ball_speed", param_min_ball_speed);
             break;
         case EVID_MAX_BALL_SPEED:
-            str = sdlx_get_input_str("max_ball_speed", "xxx range", true, COLOR_BLACK);
+            sprintf(range_str, "%.1f-%.1f", MIN_BALL_SPEED, MAX_BALL_SPEED);
+            str = sdlx_get_input_str("max_ball_speed", range_str, true, COLOR_BLACK);
             sscanf(str, "%lf", &param_max_ball_speed);
             clip(&param_max_ball_speed, MIN_BALL_SPEED, MAX_BALL_SPEED);
             util_set_numeric_param(data_dir, "max_ball_speed", param_max_ball_speed);

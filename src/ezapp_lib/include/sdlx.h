@@ -22,17 +22,21 @@ void sdlx_quit(int subsys);
 
 #define BYTES_PER_PIXEL   4
 
+typedef unsigned int sdlx_color_t;
+
 typedef struct {
     int x, y, w, h;
 } sdlx_loc_t;
 
-extern int sdlx_win_width;
-extern int sdlx_win_height;
+extern int    sdlx_win_width;
+extern int    sdlx_win_height;
+extern double scale_render;
+extern double scale_events;
 
 // - - - - - - - - - - - - - 
 // display init and present
 // - - - - - - - - - - - - - 
-void sdlx_display_init(int color);
+void sdlx_display_init(sdlx_color_t color);
 void sdlx_display_present(void);
 
 // - - - - - 
@@ -41,28 +45,28 @@ void sdlx_display_present(void);
 // https://www.w3schools.com/colors/colors_converter.asp
 // these colors are opaque (alpha equals 255)
 //                          red      green       blue      alpha
-#define COLOR_BLACK       (   0  |    0<<8 |    0<<16 |  255<<24 )
-#define COLOR_WHITE       ( 255  |  255<<8 |  255<<16 |  255<<24 )
-#define COLOR_RED         ( 255  |    0<<8 |    0<<16 |  255<<24 )
-#define COLOR_ORANGE      ( 255  |  128<<8 |    0<<16 |  255<<24 )
-#define COLOR_YELLOW      ( 255  |  255<<8 |    0<<16 |  255<<24 )
-#define COLOR_GREEN       (   0  |  255<<8 |    0<<16 |  255<<24 )
-#define COLOR_BLUE        (   0  |    0<<8 |  255<<16 |  255<<24 )
-#define COLOR_INDIGO      (  75  |    0<<8 |  130<<16 |  255<<24 )
-#define COLOR_VIOLET      ( 238  |  130<<8 |  238<<16 |  255<<24 )
-#define COLOR_PURPLE      ( 127  |    0<<8 |  255<<16 |  255<<24 )
-#define COLOR_LIGHT_BLUE  (   0  |  255<<8 |  255<<16 |  255<<24 )
-#define COLOR_LIGHT_GREEN ( 144  |  238<<8 |  144<<16 |  255<<24 )
-#define COLOR_PINK        ( 255  |  105<<8 |  180<<16 |  255<<24 )
-#define COLOR_TEAL        (   0  |  128<<8 |  128<<16 |  255<<24 )
-#define COLOR_LIGHT_GRAY  ( 192  |  192<<8 |  192<<16 |  255<<24 )
-#define COLOR_GRAY        ( 128  |  128<<8 |  128<<16 |  255<<24 )
-#define COLOR_DARK_GRAY   (  64  |   64<<8 |   64<<16 |  255<<24 )
+#define COLOR_BLACK       ((sdlx_color_t)(   0  |    0<<8 |    0<<16 |  255<<24 ))
+#define COLOR_WHITE       ((sdlx_color_t)( 255  |  255<<8 |  255<<16 |  255<<24 ))
+#define COLOR_RED         ((sdlx_color_t)( 255  |    0<<8 |    0<<16 |  255<<24 ))
+#define COLOR_ORANGE      ((sdlx_color_t)( 255  |  128<<8 |    0<<16 |  255<<24 ))
+#define COLOR_YELLOW      ((sdlx_color_t)( 255  |  255<<8 |    0<<16 |  255<<24 ))
+#define COLOR_GREEN       ((sdlx_color_t)(   0  |  255<<8 |    0<<16 |  255<<24 ))
+#define COLOR_BLUE        ((sdlx_color_t)(   0  |    0<<8 |  255<<16 |  255<<24 ))
+#define COLOR_INDIGO      ((sdlx_color_t)(  75  |    0<<8 |  130<<16 |  255<<24 ))
+#define COLOR_VIOLET      ((sdlx_color_t)( 238  |  130<<8 |  238<<16 |  255<<24 ))
+#define COLOR_PURPLE      ((sdlx_color_t)( 127  |    0<<8 |  255<<16 |  255<<24 ))
+#define COLOR_LIGHT_BLUE  ((sdlx_color_t)(   0  |  255<<8 |  255<<16 |  255<<24 ))
+#define COLOR_LIGHT_GREEN ((sdlx_color_t)( 144  |  238<<8 |  144<<16 |  255<<24 ))
+#define COLOR_PINK        ((sdlx_color_t)( 255  |  105<<8 |  180<<16 |  255<<24 ))
+#define COLOR_TEAL        ((sdlx_color_t)(   0  |  128<<8 |  128<<16 |  255<<24 ))
+#define COLOR_LIGHT_GRAY  ((sdlx_color_t)( 192  |  192<<8 |  192<<16 |  255<<24 ))
+#define COLOR_GRAY        ((sdlx_color_t)( 128  |  128<<8 |  128<<16 |  255<<24 ))
+#define COLOR_DARK_GRAY   ((sdlx_color_t)(  64  |   64<<8 |   64<<16 |  255<<24 ))
 
-int sdlx_create_color(int r, int g, int b, int a);
-int sdlx_scale_color(int color, double inten);
-int sdlx_set_color_alpha(int color, int alpha);
-int sdlx_wavelength_to_color(int wavelength);
+sdlx_color_t sdlx_create_color(int r, int g, int b, int a);
+sdlx_color_t sdlx_scale_color(sdlx_color_t color, double inten);
+sdlx_color_t sdlx_set_color_alpha(sdlx_color_t color, int alpha);
+sdlx_color_t sdlx_wavelength_to_color(int wavelength);
 
 // - - - - - - - 
 // render text
@@ -85,13 +89,13 @@ int sdlx_wavelength_to_color(int wavelength);
 extern int sdlx_char_width;
 extern int sdlx_char_height;
 
-void sdlx_print_set_default(double numchars, int color);
+void sdlx_print_set_default(double numchars, sdlx_color_t color);
 
 sdlx_loc_t *sdlx_render_printf(int x, int y, char *fmt, ...) __attribute__ ((format (printf, 3, 4)));
-sdlx_loc_t *sdlx_render_printf_color(int x, int y, unsigned int color, char *fmt, ...) __attribute__ ((format (printf, 4, 5)));
-sdlx_loc_t *sdlx_render_printf_ex(int x, int y, double numchars, unsigned int color, int flags, int wrap, char *fmt, ...) __attribute__ ((format (printf, 7, 8)));
+sdlx_loc_t *sdlx_render_printf_color(int x, int y, sdlx_color_t color, char *fmt, ...) __attribute__ ((format (printf, 4, 5)));
+sdlx_loc_t *sdlx_render_printf_ex(int x, int y, double numchars, sdlx_color_t color, int flags, int wrap, char *fmt, ...) __attribute__ ((format (printf, 7, 8)));
 
-void sdlx_render_multiline_text(int x, int y, int y_top, int y_bottom, char **lines, unsigned int *colors, int num_lines);
+void sdlx_render_multiline_text(int x, int y, int y_top, int y_bottom, char **lines, sdlx_color_t *colors, int num_lines);
 
 // - - - - - - - - - - - - - - - - - - - - -
 // render rectangle, lines, circles, points
@@ -100,14 +104,14 @@ typedef struct {
     int x, y;
 } sdlx_point_t;
 
-void sdlx_render_rect(int x, int y, int w, int h, int line_width, int color);
-void sdlx_render_fill_rect(int x, int y, int w, int h, int color);
-void sdlx_render_line(int x1, int y1, int x2, int y2, int color);
-void sdlx_render_lines(sdlx_point_t *points, int count, int color);
-void sdlx_render_circle(int x_ctr, int y_ctr, int radius, int line_width, int color);
-void sdlx_render_fill_circle(int x_ctr, int y_ctr, int radius, int color);  //xx new
-void sdlx_render_point(int x, int y, int color, int point_size);
-void sdlx_render_points(sdlx_point_t *points, int count, int color, int point_size);
+void sdlx_render_rect(int x, int y, int w, int h, int line_width, sdlx_color_t color);
+void sdlx_render_fill_rect(int x, int y, int w, int h, sdlx_color_t color);
+void sdlx_render_line(int x1, int y1, int x2, int y2, sdlx_color_t color);
+void sdlx_render_lines(sdlx_point_t *points, int count, sdlx_color_t color);
+void sdlx_render_circle(int x_ctr, int y_ctr, int radius, int line_width, sdlx_color_t color);
+void sdlx_render_fill_circle(int x_ctr, int y_ctr, int radius, sdlx_color_t color);
+void sdlx_render_point(int x, int y, sdlx_color_t color, int point_size);
+void sdlx_render_points(sdlx_point_t *points, int count, sdlx_color_t color, int point_size);
 
 // - - - - - 
 // textures
@@ -123,6 +127,8 @@ unsigned int *sdlx_get_texture_pixels(sdlx_texture_t *t, int *w, int *h);
 
 void sdlx_render_texture(sdlx_texture_t *t, int x, int y);
 void sdlx_render_texture_ex1(sdlx_texture_t *t, int x, int y, int w, int h);
+void sdlx_render_texture_ex2(sdlx_texture_t *t, int x, int y, int w, int h, double angle);
+void sdlx_render_texture_ex3(sdlx_texture_t *texture, int x, int y, int w, int h, double angle, int xctr, int yctr);
 
 void sdlx_set_render_target(sdlx_texture_t *t);
 
@@ -152,7 +158,7 @@ typedef struct {
     int  play_total_ms;
     int  record_ms;
     int  volume;
-    char pathname[200];  // xxx or is this filename?
+    char pathname[200];
 } sdlx_audio_state_t;
 
 // - - - - - -
@@ -161,7 +167,7 @@ typedef struct {
 int sdlx_audio_stop(void);
 void sdlx_audio_pause(void);
 void sdlx_audio_resume(void);
-void sdlx_audio_state(sdlx_audio_state_t * state);
+void sdlx_audio_get_state(sdlx_audio_state_t * state);
 int sdlx_audio_file_duration_ms(char *dir, char *filename);
 
 // - - - - - -
@@ -182,6 +188,7 @@ int sdlx_audio_record_from_device(char *dir, char *filename);
 // SENSORS
 // --------------------
 
+// these are from ndk android/sensor.h
 #define ASENSOR_TYPE_ACCELEROMETER       1
 #define ASENSOR_TYPE_MAGNETIC_FIELD      2
 #define ASENSOR_TYPE_GYROSCOPE           4
@@ -227,7 +234,7 @@ sdlx_sensor_info_t *sdlx_sensor_get_info_tbl(int *max);
 int sdlx_sensor_find(int type);  // returns sensor id, or -1 if not found
 int sdlx_sensor_read_raw(int id, double *data, int num_values);
 
-int sdlx_sensor_read_step_counter(double *step_count);  // xxx just return INVALID_NUMBER
+int sdlx_sensor_read_step_counter(double *step_count);
 int sdlx_sensor_read_mag_heading(double *mag_heading);
 int sdlx_sensor_read_accelerometer(double *ax, double *ay, double *az);
 int sdlx_sensor_read_roll_pitch(double *roll, double *pitch);
@@ -239,11 +246,8 @@ int sdlx_sensor_read_humidity(double *percent);
 // EVENTS   
 // --------------------
 
-#define EVID_SWIPE_RIGHT       9990  // xxx are these 2 used
-#define EVID_SWIPE_LEFT        9991
-#define EVID_MOTION            9992
-#define EVID_KEYBD             9993  // xxx move define
-#define EVID_QUIT              9999  // xxx review where this is used
+#define EVID_MOTION  9990
+#define EVID_QUIT    9991
 
 typedef struct {
     int event_id;
@@ -261,17 +265,17 @@ typedef struct {
 // event registration
 // - - - - - - - - - - 
 #define CONTROL_EVENTS_DISPLAY_HEIGHT 150
+
 void sdlx_register_event(sdlx_loc_t *loc, int event_id);
 void sdlx_register_control_events(int evid1, char *evstr1,
                                   int evid2, char *evstr2,
                                   int evid3, char *evstr3,
-                                  int print_color, int bg_color);
+                                  sdlx_color_t print_color, sdlx_color_t bg_color);
 
 // - - - - - - - - 
 // wait for event
 // - - - - - - - - 
 void sdlx_get_event(long timeout_us, sdlx_event_t *event);
-
 
 // --------------------
 // MISC
@@ -283,7 +287,7 @@ void sdlx_get_event(long timeout_us, sdlx_event_t *event);
 void sdlx_show_toast(char *message);
 
 // get string, using virtual keyboard when on Android
-char *sdlx_get_input_str(char *prompt1, char *prompt2, bool numeric_keybd, int bg_color);
+char *sdlx_get_input_str(char *prompt1, char *prompt2, bool numeric_keybd, sdlx_color_t bg_color);
 
 // --------------------
 // NOT AVAILABLE IN PICOC
@@ -324,11 +328,8 @@ char *sdlx_get_storage_path(void);
 void sdlx_copy_asset_file(char *asset_filename, char *dest_dir);
 int sdlx_get_permission(char *name);
 int sdlx_create_detached_thread_private(int (*thread_fn)(void*), char *thread_name, void *cx);
-// xxx is this needed
 #define sdlx_create_detached_thread(thread_fn, cx) \
-    do { \
-        sdlx_create_detached_thread_private(thread_fn, #thread_fn, cx); \
-    } while (0)
+    do { sdlx_create_detached_thread_private(thread_fn, #thread_fn, cx); } while (0)
 
 #ifdef __cplusplus
 }

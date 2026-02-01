@@ -1,30 +1,40 @@
-// xxx scale problem in test.c with rendering textures
-// xxx colors in test.c, page_7
-// xxx ifdef ANDROID in log.c
+Clock            k
+Compass          k         sdlx_char_width problem
+FlshLite         k
+HexCalc          
+Light            k
+Location
+Log              k
+Memo
+Morse           k
+Paddle          k          sdlx_char_width problem
+Reversi
+Template            k
+Test
+Tilt
+Weather
 
-	modified:   bin/eztest                         k
-	modified:   files/apps/Compass/compass.c
-	modified:   files/apps/Log/log.c               k
-	modified:   files/apps/Test/test.c             k
-	modified:   src/ezapp_lib/include/sdlx.h       k
-	modified:   src/ezapp_lib/sdlx_event.c         k
-	modified:   src/ezapp_lib/sdlx_video.c         k
+Location
+Template
 
 
-
-eztest: restore picoc build
-log.c   xxx
-test.c  xxx
-sdlx.h  xxx
+isue with sdlx_char_height,  see compass.c
 sdlx_video.c  xxx,  and print section review,  and remove plotting
+
+other apps
+
+build the linux dir, and test
+
+-- LATER --
+
+fixup picoc library_unix
+eztest: restore picoc build
 
 --------------
 
 get latitude failed
 
 add sdlx_pixel_t
-
-remove bg color for printing
 
 keep line wrap option, test with the copyright file modified
 

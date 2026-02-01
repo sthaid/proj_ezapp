@@ -17,7 +17,7 @@ char *data_dir;
 int main(int argc, char **argv)
 {
     bool done = false;
-    unsigned int bg_color;
+    sdlx_color_t color;
     sdlx_event_t event;
     int rc;
 
@@ -40,21 +40,21 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    // get bg_color from param store; set to COLOR_WHITE if not in params
-    bg_color = util_get_numeric_param(data_dir, "color", COLOR_WHITE);
+    // get color from param store; set to COLOR_WHITE if not in params
+    color = util_get_numeric_param(data_dir, "color", COLOR_WHITE);
 
     // runtime loop
     while (!done) {
         // init the backbuffer
-        sdlx_display_init(bg_color);
+        sdlx_display_init(color);
 
         // register control events to
-        // - set bg_color either to white or red, or
+        // - set color either to white or red, or
         // - end program
         sdlx_register_control_events(EVID_SET_COLOR_WHITE, "W",
                                      EVID_SET_COLOR_RED,   "R",
                                      EVID_QUIT,            "X",
-                                     COLOR_BLACK, bg_color);
+                                     COLOR_BLACK, color);
 
         // present the display
         sdlx_display_present();
@@ -65,12 +65,12 @@ int main(int argc, char **argv)
         // process events
         switch (event.event_id) {
         case EVID_SET_COLOR_WHITE:
-            bg_color = COLOR_WHITE;
-            util_set_numeric_param(data_dir, "color", bg_color);
+            color = COLOR_WHITE;
+            util_set_numeric_param(data_dir, "color", color);
             break;
         case EVID_SET_COLOR_RED:
-            bg_color = COLOR_RED;
-            util_set_numeric_param(data_dir, "color", bg_color);
+            color = COLOR_RED;
+            util_set_numeric_param(data_dir, "color", color);
             break;
         case EVID_QUIT:
             done = true;

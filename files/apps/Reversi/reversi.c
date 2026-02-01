@@ -49,14 +49,17 @@ int main(int argc, char **argv)
     board_t board;
     char    eval_str[100];
 
-   // save args
+    // set line buffering
+    setlinebuf(stdout);
+
+    // save args
+    progname = argv[0];
     if (argc != 2) {
-        printf("ERROR: data_dir arg expected\n");
+        printf("E %s: data_dir arg expected\n", progname);
         return 1;
     }
-    progname = argv[0];
     data_dir = argv[1];
-    printf("INFO %s: starting, data_dir=%s\n", progname, data_dir);
+    printf("I %s: starting, data_dir=%s\n", progname, data_dir);
 
     // init variables
     game_state = GAME_STATE_READY;
@@ -150,7 +153,7 @@ int main(int argc, char **argv)
                 game_state = GAME_STATE_OVER;
             }
         } else {
-            printf("ERROR %s: unexpected event_id %d\n", progname, event.event_id);
+            printf("E %s: unexpected event_id %d\n", progname, event.event_id);
         }
     }
 
@@ -161,7 +164,7 @@ int main(int argc, char **argv)
     sdlx_quit(SUBSYS_VIDEO);
 
     // return success
-    printf("INFO %s: terminating\n", progname);
+    printf("I %s: terminating\n", progname);
     return 0;
 }
 
@@ -472,7 +475,7 @@ void apply_move(board_t *b, int move)
     succ = false;
     move_to_rc(move, &r, &c);
     if (b->pos[r][c] != NONE) {
-        printf("ERROR %s: pos[%d][%d] is occupied, color=%d\n", progname, r, c, b->pos[r][c]);
+        printf("E %s: pos[%d][%d] is occupied, color=%d\n", progname, r, c, b->pos[r][c]);
         return;
     }
 
@@ -515,7 +518,7 @@ void apply_move(board_t *b, int move)
     }
 
     if (!succ) {
-        printf("ERROR %s: invalid call to apply_move, move=%d\n", progname, move);
+        printf("E %s: invalid call to apply_move, move=%d\n", progname, move);
         return;
     }
 

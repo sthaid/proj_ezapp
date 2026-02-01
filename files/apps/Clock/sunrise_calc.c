@@ -1,3 +1,6 @@
+// One way to test the accuracey of the sunrise/sunset times calculated,
+// is use Google search: "what are sunrise and sunset times in your-town"
+
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
@@ -42,7 +45,7 @@ void sunrise_sunset_calc(char *sunrise, char *sunset, char *midday)
     // get location
     util_get_location(&latitude, &longitude, NULL);
     if (latitude == INVALID_NUMBER || longitude == INVALID_NUMBER) {
-        printf("ERROR %s: failed to get location\n", progname);
+        printf("E %s: failed to get location\n", progname);
         return;
     }
 
@@ -65,7 +68,7 @@ void sunrise_sunset_calc(char *sunrise, char *sunset, char *midday)
     // solar mean anomaly
     M = (357.5291 + 0.98560028 * jstar);
     if (M < 0) {
-        printf("ERROR %s: BUG M < 0\n", progname);
+        printf("E %s: BUG M < 0\n", progname);
         return;
     }
     while (M >= 360) M -= 360; 
@@ -76,7 +79,7 @@ void sunrise_sunset_calc(char *sunrise, char *sunset, char *midday)
     // ecliptic longitude
     lambda = (M +  C + 180 + 102.9372);
     if (lambda < 0) {
-        printf("ERROR %s: BUG lambda < 0\n", progname);
+        printf("E %s: BUG lambda < 0\n", progname);
         return;
     }
     while (lambda >= 360) lambda -= 360;
@@ -128,7 +131,7 @@ static void make_local_time_str(double jd, char *str, char *debug)
     t = timegm(&tm_gmt);
 
     localtime_r(&t, &tm_local);
-    printf("INFO %s: %s %02d/%02d/%d %02d:%02d:%02d\n", 
+    printf("I %s: %s %02d/%02d/%d %02d:%02d:%02d\n", 
            progname, debug,
            tm_local.tm_mon+1, tm_local.tm_mday, tm_local.tm_year+1900,
            tm_local.tm_hour, tm_local.tm_min, tm_local.tm_sec);

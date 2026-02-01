@@ -47,14 +47,17 @@ int main(int argc, char **argv)
     sdlx_tone_t        tones[2000];
     char               random_words[200] = "";
 
+    // set line buffering
+    setlinebuf(stdout);
+
     // save args
+    progname = argv[0];
     if (argc != 2) {
-        printf("ERROR: data_dir arg expected\n");
+        printf("E %s: data_dir arg expected\n", progname);
         return 1;
     }
-    progname = argv[0];
     data_dir = argv[1];
-    printf("INFO %s: starting, data_dir=%s\n", progname, data_dir);
+    printf("I %s: starting, data_dir=%s\n", progname, data_dir);
 
     // seen random number generator so that different random words are 
     // chosen on repeated runs of this program
@@ -66,14 +69,14 @@ int main(int argc, char **argv)
     // read word list, sets global variables word_list and max_word_list
     rc = read_word_list();
     if (rc != 0) {
-        printf("ERROR %s: read_word_list failed\n", progname);
+        printf("E %s: read_word_list failed\n", progname);
         return 1;
     }
 
     // init sdl video subsystem
     rc = sdlx_init(SUBSYS_VIDEO | SUBSYS_AUDIO);
     if (rc != 0) {
-        printf("ERROR %s: sdlx_init failed\n", progname);
+        printf("E %s: sdlx_init failed\n", progname);
         free_word_list();
         return 1;
     }
@@ -84,16 +87,22 @@ int main(int argc, char **argv)
         sdlx_display_init(COLOR_BLACK);
 
         // get current audio state, used in code that follows
-        sdlx_audio_state(&state);
+        sdlx_audio_get_state(&state);
 
         // register control events:
         // - 'X' end program
         // - '>' start playing 10 random morse code words
         // - 'C' cancel playing morse code
         if (state.state == AUDIO_STATE_IDLE) {
-            sdlx_register_control_events(">", NULL, "X", COLOR_WHITE, COLOR_BLACK, EVID_START, 0, EVID_QUIT);
+            sdlx_register_control_events(EVID_START, ">",
+                                         0, NULL,
+                                         EVID_QUIT, "X",
+                                         COLOR_WHITE, COLOR_BLACK);
         } else {
-            sdlx_register_control_events("C", NULL, "X", COLOR_WHITE, COLOR_BLACK, EVID_CANCEL, 0, EVID_QUIT);
+            sdlx_register_control_events(EVID_CANCEL, "C",
+                                         0, NULL,
+                                         EVID_QUIT, "X",
+                                         COLOR_WHITE, COLOR_BLACK);
         }
 
         // display state, either Ready or Running
@@ -107,22 +116,19 @@ int main(int argc, char **argv)
         if (state.state == AUDIO_STATE_IDLE) {
             sdlx_loc_t *loc;
 
-            sdlx_print_init_color(COLOR_LIGHT_BLUE, COLOR_BLACK);
-
-            loc = sdlx_render_printf(8*sdlx_char_width, ROW2Y(5), "DEC");
+            loc = sdlx_render_printf_color(8*sdlx_char_width, ROW2Y(5), COLOR_LIGHT_BLUE, "DEC");
             sdlx_register_event(loc, EVID_WPM_DEC);
-            loc = sdlx_render_printf(14*sdlx_char_width, ROW2Y(5), "INC");
+            loc = sdlx_render_printf_color(14*sdlx_char_width, ROW2Y(5), COLOR_LIGHT_BLUE, "INC");
             sdlx_register_event(loc, EVID_WPM_INC);
-
-            sdlx_print_init_color(COLOR_WHITE, COLOR_BLACK);
         }
 
         // display last completed list of words
         if (state.state == AUDIO_STATE_IDLE) {
             int y_top = ROW2Y(7);
             int y_bottom = ROW2Y(17);
+            int y = y_top;
             char *lines[1] = {random_words};
-            sdlx_render_multiline_text_from_lines(y_top, y_top, y_bottom, lines, 1);
+            sdlx_render_multiline_text(0, y, y_top, y_bottom, lines, NULL, 1);
         }
 
         // present the display
@@ -175,7 +181,7 @@ int main(int argc, char **argv)
     sdlx_audio_stop();
     sdlx_quit(SUBSYS_VIDEO | SUBSYS_AUDIO);
     free_word_list();
-    printf("INFO %s: terminating\n", progname);
+    printf("I %s: terminating\n", progname);
     return 0;
 }
 
@@ -192,7 +198,7 @@ static int read_word_list(void)
     // read words file
     words_file = util_read_file(data_dir, "words", &file_len);
     if (words_file == NULL) {
-        printf("ERROR %s: failed to read %s/%s\n", progname, data_dir, "words");
+        printf("E %s: failed to read %s/%s\n", progname, data_dir, "words");
         return -1;
     }
 
@@ -220,9 +226,9 @@ static int read_word_list(void)
     free(words_file);
 
     // test
-    printf("INFO %s: max_words = %d\n", progname, max_words);
-    printf("INFO %s: words[0]  = %s\n", progname, words[0]);
-    printf("INFO %s: words[%d] = %s\n", progname, max_words-1, words[max_words-1]);
+    printf("I %s: max_words = %d\n", progname, max_words);
+    printf("I %s: words[0]  = %s\n", progname, words[0]);
+    printf("I %s: words[%d] = %s\n", progname, max_words-1, words[max_words-1]);
 
     // success
     return 0;

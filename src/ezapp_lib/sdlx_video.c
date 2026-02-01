@@ -26,6 +26,8 @@
 #define ONE_MS 1000
 #define TEN_MS 10000
 
+//#define USE_SET_RENDER_LOGICAL_PRESENTATION
+
 //
 // typedefs
 //
@@ -50,7 +52,9 @@ int sdlx_char_height;
 
 // used by other sdl*.c files
 SDL_Window            * window;
-double                  scale;
+double                  scale_render;
+double                  scale_events;
+double                  scale_render_save;
 
 static SDL_Renderer   * renderer;
 
@@ -66,14 +70,14 @@ static bool             evid_keybd_registered;
 // prototypes
 //
 
-static void set_render_draw_color(int color);
+static void set_render_draw_color(sdlx_color_t color);
 
 //
 // inline routines
 //
 
 // xxx [-Werror=strict-aliasing]  comment needed
-static inline SDL_Color sdlx_color(int color)
+static inline SDL_Color sdlx_color(sdlx_color_t color)
 {
     SDL_Color val;
     memcpy(&val, &color, sizeof(color));
@@ -168,19 +172,24 @@ int sdlx_video_init(void)
     INFO("real win_width x height = %d %d  aspect = %f\n", real_win_width, real_win_height, aspect_ratio);
 
     // xxx comment
-#if 1  //xxx cleanup
     sdlx_win_width  = 1000;
     sdlx_win_height = rint(sdlx_win_width * aspect_ratio);
-    scale = (double)real_win_width / sdlx_win_width;
-    INFO("logical sdlx_win_width x height = %d %d  scale = %f\n", sdlx_win_width, sdlx_win_height, scale);
+#ifndef USE_SET_RENDER_LOGICAL_PRESENTATION
+    scale_render = scale_render_save = (double)real_win_width / sdlx_win_width;
+    scale_events = scale_render;
 #else
-    // xxx to use this also adjust scale value in sdlx_event.c
-    sdlx_win_width  = 1000;
-    sdlx_win_height = rint(sdlx_win_width * aspect_ratio);
-    scale = 1;
-    INFO("LOGICAL sdlx_win_width x height = %d %d  scale = %f\n", sdlx_win_width, sdlx_win_height, scale);
-    SDL_SetRenderLogicalPresentation(renderer, sdlx_win_width, sdlx_win_height, SDL_LOGICAL_PRESENTATION_STRETCH);
+    scale_render = scale_render_save = 1;
+    scale_events = (double)real_win_width / sdlx_win_width;
+    SDL_SetRenderLogicalPresentation(renderer, sdlx_win_width, sdlx_win_height, 
+                                      SDL_LOGICAL_PRESENTATION_STRETCH);
 #endif
+    INFO("logical sdlx_win_width x height = %d %d  scale = %f %f\n", 
+         sdlx_win_width, sdlx_win_height, scale_render, scale_events);
+
+    // xxx test
+    int w, h;
+    SDL_GetCurrentRenderOutputSize(renderer, &w, &h);
+    INFO("GetCurrentRenderOutputSize = %d %d\n", w, h);
 
     // initialize True Type Font
     if (!TTF_Init()) {
@@ -194,6 +203,7 @@ int sdlx_video_init(void)
     INFO("sdlx_print_set(%d) sdlx_char_width=%d sdlx_char_height=%d\n", 
          FONT_NORMAL, sdlx_char_width, sdlx_char_height);
     if (sdlx_char_width != 50 || sdlx_char_height != 83) {
+        // xxx this is off by 1
         ERROR("chw,chh, expected = 50,83  actual = %d,%d\n", sdlx_char_width, sdlx_char_height);
     }
 
@@ -238,7 +248,7 @@ void sdlx_minimize_window(void)
 
 // ----------------- DISPLAY INIT / PRESENT ---------------
 
-void sdlx_display_init(int color)
+void sdlx_display_init(sdlx_color_t color)
 {
     sdlx_reset_events();
 
@@ -260,17 +270,17 @@ void sdlx_display_present(void)
 
 // -----------------  COLORS  -----------------------------
 
-int sdlx_create_color(int r, int g, int b, int a)
+sdlx_color_t sdlx_create_color(int r, int g, int b, int a)
 {
     return (r << 0) | (g << 8) | (b << 16) | (a << 24);
 }
 
-int sdlx_scale_color(int color, double inten)
+sdlx_color_t sdlx_scale_color(sdlx_color_t color, double inten)
 {
-    int r = (color >> 0) & 0xff;
-    int g = (color >> 8) & 0xff;
-    int b = (color >> 16) & 0xff;
-    int a = (color >> 24) & 0xff;
+    unsigned int r = (color >> 0) & 0xff;
+    unsigned int g = (color >> 8) & 0xff;
+    unsigned int b = (color >> 16) & 0xff;
+    unsigned int a = (color >> 24) & 0xff;
 
     if (inten < 0) inten = 0;
     if (inten > 1) inten = 1;
@@ -282,13 +292,13 @@ int sdlx_scale_color(int color, double inten)
     return (r << 0) | (g << 8) | (b << 16) | (a << 24);
 }
 
-int sdlx_set_color_alpha(int color, int alpha)
+sdlx_color_t sdlx_set_color_alpha(sdlx_color_t color, int alpha)
 {
     return (color & 0x00ffffff) | ((alpha & 0xff) << 24);
 }
 
 // ported from http://www.noah.org/wiki/Wavelength_to_RGB_in_Python
-int sdlx_wavelength_to_color(int wavelength_arg)
+sdlx_color_t sdlx_wavelength_to_color(int wavelength_arg)
 {
     double wavelength = wavelength_arg;
     double attenuation;
@@ -334,12 +344,12 @@ int sdlx_wavelength_to_color(int wavelength_arg)
     return sdlx_create_color(R*255, G*255, B*255, 255);
 }
 
-static void set_render_draw_color(int color)
+static void set_render_draw_color(sdlx_color_t color)
 {
-    int r = (color >> 0) & 0xff;
-    int g = (color >> 8) & 0xff;
-    int b = (color >> 16) & 0xff;
-    int a = (color >> 24) & 0xff;
+    unsigned int r = (color >> 0) & 0xff;
+    unsigned int g = (color >> 8) & 0xff;
+    unsigned int b = (color >> 16) & 0xff;
+    unsigned int a = (color >> 24) & 0xff;
 
     SDL_SetRenderDrawColor(renderer, r, g, b, a);
 }
@@ -349,7 +359,7 @@ static void set_render_draw_color(int color)
 // - - - - - - - - - set print default - - - - - - - - - - - 
 
 static struct {
-    unsigned int color;
+    sdlx_color_t color;
     int          ptsize;
     int          char_width;
     int          char_height;
@@ -357,14 +367,14 @@ static struct {
 
 static int numchars_to_ptsize(double numchars);
 
-void sdlx_print_set_default(double numchars, int color)
+void sdlx_print_set_default(double numchars, sdlx_color_t color)
 {
     int ptsize = numchars_to_ptsize(numchars);
 
     // init print_dflt structure 
     print_dflt.color       = color;
     print_dflt.ptsize      = ptsize;
-    print_dflt.char_height = nearbyint(ptsize / scale);
+    print_dflt.char_height = nearbyint(ptsize / scale_render);
     print_dflt.char_width  = nearbyint(print_dflt.char_height * 0.6);
 
     // make default char_width/height available in global variables, 
@@ -378,7 +388,7 @@ static int numchars_to_ptsize(double numchars)
     int ptsize;
 
     // calculate ptsize
-    ptsize = ((sdlx_win_width / numchars) * scale) / 0.6;
+    ptsize = ((sdlx_win_width / numchars) * scale_render) / 0.6;
 
     // ensure ptiszie is in range
     if (ptsize < MIN_FONT_PTSIZE) ptsize = MIN_FONT_PTSIZE;
@@ -426,7 +436,7 @@ static unsigned int calc_hash_idx(char *key)
 }
 
 // xxx prints for number of hash hits and misses
-static sdlx_loc_t *render_text(int x, int y, int ptsize, unsigned int color, int flags, int wrap, char *str)
+static sdlx_loc_t *render_text(int x, int y, int ptsize, sdlx_color_t color, int flags, int wrap, char *str)
 {
     char         key[1000];
     ht_entry_t  *entry;
@@ -448,17 +458,7 @@ static sdlx_loc_t *render_text(int x, int y, int ptsize, unsigned int color, int
     // if zero length string, which will fail to print, then
     // set the str arg to single space char
     if (str[0] == '\0') {
-#if 0 // xxx del later
-        pos.x = x*scale;
-        pos.y = y*scale;
-        pos.w = ptsize * 0.6;
-        pos.h = ptsize;
-        if (flags & FLAG_X_CTR) pos.x -= pos.w / 2;
-        if (flags & FLAG_Y_CTR) pos.y -= pos.h / 2;
-        goto return_loc;
-#else
         str = " ";
-#endif
     }
 
     // calculate hash key and idx
@@ -476,8 +476,8 @@ static sdlx_loc_t *render_text(int x, int y, int ptsize, unsigned int color, int
 
     // matching entry found, render it, and return
     if (found) {
-        pos.x = x*scale;
-        pos.y = y*scale;
+        pos.x = x*scale_render;
+        pos.y = y*scale_render;
         pos.w = entry->surface_w;
         pos.h = entry->surface_h;
         if (flags & FLAG_X_CTR) pos.x -= pos.w / 2;
@@ -512,7 +512,7 @@ static sdlx_loc_t *render_text(int x, int y, int ptsize, unsigned int color, int
         surface = TTF_RenderText_Solid_Wrapped(
                         font[ptsize], str, 0,
                         sdlx_color(color),
-                        wrap * scale);
+                        wrap * scale_render);
     } else {
         surface = TTF_RenderText_Solid(
                         font[ptsize], str, 0,
@@ -541,8 +541,8 @@ static sdlx_loc_t *render_text(int x, int y, int ptsize, unsigned int color, int
     num_allocated++;
 
     // render the texture
-    pos.x = x*scale;
-    pos.y = y*scale;
+    pos.x = x*scale_render;
+    pos.y = y*scale_render;
     pos.w = surface->w;
     pos.h = surface->h;
     if (flags & FLAG_X_CTR) pos.x -= pos.w / 2;
@@ -555,10 +555,10 @@ static sdlx_loc_t *render_text(int x, int y, int ptsize, unsigned int color, int
 
     // return the display location where the text was rendered;
 return_loc:
-    loc.x = pos.x / scale;
-    loc.y = pos.y / scale;
-    loc.w = pos.w / scale;
-    loc.h = pos.h / scale;
+    loc.x = pos.x / scale_render;
+    loc.y = pos.y / scale_render;
+    loc.w = pos.w / scale_render;
+    loc.h = pos.h / scale_render;
     return &loc;
 
     // error return path
@@ -588,7 +588,7 @@ sdlx_loc_t *sdlx_render_printf(int x, int y, char * fmt, ...)
     return render_text(x, y, print_dflt.ptsize, print_dflt.color, 0, WRAP_NONE, str);
 }
 
-sdlx_loc_t *sdlx_render_printf_color(int x, int y, unsigned int color, char * fmt, ...)
+sdlx_loc_t *sdlx_render_printf_color(int x, int y, sdlx_color_t color, char * fmt, ...)
 {
     char str[1000];
     va_list ap;
@@ -600,7 +600,7 @@ sdlx_loc_t *sdlx_render_printf_color(int x, int y, unsigned int color, char * fm
     return render_text(x, y, print_dflt.ptsize, color, 0, WRAP_NONE, str);
 }
 
-sdlx_loc_t *sdlx_render_printf_ex(int x, int y, double numchars, unsigned int color, int flags, int wrap, char *fmt, ...)
+sdlx_loc_t *sdlx_render_printf_ex(int x, int y, double numchars, sdlx_color_t color, int flags, int wrap, char *fmt, ...)
 {
     char str[1000];
     va_list ap;
@@ -644,7 +644,7 @@ void sdlx_render_multiline_text(int x, int y, int y_top, int y_bottom, char **li
         // if y location of line (y2) is at or below the begining of the display
         // region then render the line
         if (y2 >= y_top) {
-            int color = (colors ? colors[n] : print_dflt.color);
+            sdlx_color_t color = (colors ? colors[n] : print_dflt.color);
             render_text(x, y2, print_dflt.ptsize, color, 0, WRAP_NONE, str);
         }
 
@@ -665,15 +665,15 @@ void sdlx_render_multiline_text(int x, int y, int y_top, int y_bottom, char **li
 
 // -----------------  RENDER RECTANGLES, LINES, CIRCLES, POINTS  --------------------
 
-void sdlx_render_rect(int x, int y, int w, int h, int line_width, int color)
+void sdlx_render_rect(int x, int y, int w, int h, int line_width, sdlx_color_t color)
 {
     SDL_FRect rect;
     int i;
 
-    rect.x = x * scale;
-    rect.y = y * scale;
-    rect.w = w * scale;
-    rect.h = h * scale;
+    rect.x = x * scale_render;
+    rect.y = y * scale_render;
+    rect.w = w * scale_render;
+    rect.h = h * scale_render;
 
     set_render_draw_color(color);
 
@@ -689,26 +689,26 @@ void sdlx_render_rect(int x, int y, int w, int h, int line_width, int color)
     }
 }
 
-void sdlx_render_fill_rect(int x, int y, int w, int h, int color)
+void sdlx_render_fill_rect(int x, int y, int w, int h, sdlx_color_t color)
 {
     SDL_FRect rect;
 
-    rect.x = x * scale;
-    rect.y = y * scale;
-    rect.w = w * scale;
-    rect.h = h * scale;
+    rect.x = x * scale_render;
+    rect.y = y * scale_render;
+    rect.w = w * scale_render;
+    rect.h = h * scale_render;
 
     set_render_draw_color(color);
     SDL_RenderFillRect(renderer, &rect);
 }
 
-void sdlx_render_line(int x1, int y1, int x2, int y2, int color)
+void sdlx_render_line(int x1, int y1, int x2, int y2, sdlx_color_t color)
 {
     sdlx_point_t points[2] = { {x1,y1}, {x2,y2} };
     sdlx_render_lines(points, 2, color);
 }
 
-void sdlx_render_lines(sdlx_point_t *points, int count, int color)
+void sdlx_render_lines(sdlx_point_t *points, int count, sdlx_color_t color)
 {
     SDL_FPoint scaled_points[100];  // xxx malloc this
 
@@ -717,8 +717,8 @@ void sdlx_render_lines(sdlx_point_t *points, int count, int color)
     }
 
     for (int i = 0; i < count; i++) {
-        scaled_points[i].x = points[i].x * scale;
-        scaled_points[i].y = points[i].y * scale;
+        scaled_points[i].x = points[i].x * scale_render;
+        scaled_points[i].y = points[i].y * scale_render;
     }
 
     set_render_draw_color(color);
@@ -726,7 +726,7 @@ void sdlx_render_lines(sdlx_point_t *points, int count, int color)
     SDL_RenderLines(renderer, scaled_points, count);
 }
 
-void sdlx_render_circle(int x_ctr, int y_ctr, int radius, int line_width, int color)
+void sdlx_render_circle(int x_ctr, int y_ctr, int radius, int line_width, sdlx_color_t color)
 {
     int count = 0, i, angle, x, y;
     int x_center, y_center;
@@ -737,9 +737,9 @@ void sdlx_render_circle(int x_ctr, int y_ctr, int radius, int line_width, int co
     static bool first_call = true;
 
     // apply scale factor
-    x_center = nearbyint(x_ctr * scale);
-    y_center = nearbyint(y_ctr * scale);
-    radius   = nearbyint(radius * scale);
+    x_center = nearbyint(x_ctr * scale_render);
+    y_center = nearbyint(y_ctr * scale_render);
+    radius   = nearbyint(radius * scale_render);
 
     // on first call make table of sin and cos indexed by degrees
     if (first_call) {
@@ -775,13 +775,13 @@ void sdlx_render_circle(int x_ctr, int y_ctr, int radius, int line_width, int co
 }
 
 // Bresenham’s circle algorithm)
-void sdlx_render_fill_circle(int x_ctr, int y_ctr, int radius, int color)
+void sdlx_render_fill_circle(int x_ctr, int y_ctr, int radius, sdlx_color_t color)
 {
     int x, y, error;
 
-    x_ctr  = nearbyint(x_ctr * scale);
-    y_ctr  = nearbyint(y_ctr * scale);
-    radius = nearbyint(radius * scale);
+    x_ctr  = nearbyint(x_ctr * scale_render);
+    y_ctr  = nearbyint(y_ctr * scale_render);
+    radius = nearbyint(radius * scale_render);
 
     x     = radius;
     y     = 0;
@@ -806,14 +806,14 @@ void sdlx_render_fill_circle(int x_ctr, int y_ctr, int radius, int color)
     }
 }
 
-void sdlx_render_point(int x, int y, int color, int point_size)
+void sdlx_render_point(int x, int y, sdlx_color_t color, int point_size)
 {
     sdlx_point_t point = {x,y};
 
     sdlx_render_points(&point, 1, color, point_size);
 }
 
-void sdlx_render_points(sdlx_point_t *points, int count, int color, int point_size)
+void sdlx_render_points(sdlx_point_t *points, int count, sdlx_color_t color, int point_size)
 {
     #define MAX_SDL_POINTS 1000
 
@@ -966,8 +966,8 @@ void sdlx_render_points(sdlx_point_t *points, int count, int color, int point_si
 
     for (i = 0; i < count; i++) {
         for (j = 0; j < pe->max; j++) {
-            x = nearbyint((points[i].x + peo[j].x) * scale);
-            y = nearbyint((points[i].y + peo[j].y) * scale);
+            x = nearbyint((points[i].x + peo[j].x) * scale_render);
+            y = nearbyint((points[i].y + peo[j].y) * scale_render);
             sdlx_points[sdlx_points_count].x = x;
             sdlx_points[sdlx_points_count].y = y;
             sdlx_points_count++;
@@ -1106,10 +1106,10 @@ void sdlx_render_texture(sdlx_texture_t *texture, int x, int y)
 
     sdlx_query_texture(texture, &w, &h);
 
-    dest.x = x * scale;
-    dest.y = y * scale;
-    dest.w = w * scale;
-    dest.h = h * scale;
+    dest.x = x * scale_render;
+    dest.y = y * scale_render;
+    dest.w = w * scale_render;
+    dest.h = h * scale_render;
 
     SDL_RenderTexture(renderer, (SDL_Texture*)texture, NULL, &dest);
 }
@@ -1122,12 +1122,60 @@ void sdlx_render_texture_ex1(sdlx_texture_t *texture, int x, int y, int w, int h
         return;
     }
 
-    dest.x = x * scale;
-    dest.y = y * scale;
-    dest.w = w * scale;
-    dest.h = h * scale;
+    dest.x = x * scale_render;
+    dest.y = y * scale_render;
+    dest.w = w * scale_render;
+    dest.h = h * scale_render;
 
     SDL_RenderTexture(renderer, (SDL_Texture*)texture, NULL, &dest);
+}
+
+void sdlx_render_texture_ex2(sdlx_texture_t *texture, int x, int y, int w, int h, double angle)
+{
+    SDL_FRect dest;
+
+    if (texture == NULL) {
+        return;
+    }
+
+    dest.x = x * scale_render;
+    dest.y = y * scale_render;
+    dest.w = w * scale_render;
+    dest.h = h * scale_render;
+
+    SDL_RenderTextureRotated(renderer,
+                             (SDL_Texture*)texture, 
+                             NULL,      // source, NULL means the entire texture
+                             &dest,     // dest rectangle
+                             angle,     // rotation angle
+                             NULL,      // point around which dest will be rotated
+                             SDL_FLIP_NONE);
+}
+
+void sdlx_render_texture_ex3(sdlx_texture_t *texture, int x, int y, int w, int h, double angle, int xctr, int yctr)
+{
+    SDL_FRect dest;
+    SDL_FPoint ctr;
+
+    if (texture == NULL) {
+        return;
+    }
+
+    dest.x = x * scale_render;
+    dest.y = y * scale_render;
+    dest.w = w * scale_render;
+    dest.h = h * scale_render;
+
+    ctr.x = xctr * scale_render;
+    ctr.y = yctr * scale_render;
+
+    SDL_RenderTextureRotated(renderer,
+                             (SDL_Texture*)texture, 
+                             NULL,      // source, NULL means the entire texture
+                             &dest,     // dest rectangle
+                             angle,     // rotation angle
+                             &ctr,      // point around which dest will be rotated
+                             SDL_FLIP_NONE);
 }
 
 // - - - - - - set render target - - - - - - - - 
@@ -1140,51 +1188,9 @@ void sdlx_set_render_target(sdlx_texture_t *t)
     if (!succ) {
         ERROR("SDL_SetRenderTarget failed, %s\n", SDL_GetError());
     }
+
+    scale_render = (t ? 1 : scale_render_save);
 }
-
-// xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-// xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-// xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-// xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-#if 0 // xxx cleanup
-void sdlx_render_texture_ex(int x, int y, int w, int h, double angle, sdlx_texture_t *texture)
-{
-    SDL_FRect dest;
-
-    if (texture == NULL) {
-        return;
-    }
-
-    dest.x = x * scale;
-    dest.y = y * scale;
-    dest.w = w * scale;
-    dest.h = h * scale;
-
-    SDL_RenderTextureRotated(renderer, (SDL_Texture*)texture, NULL, &dest, angle, NULL, false);
-}
-
-void sdlx_render_texture_ex2(int x, int y, int w, int h, double angle, int xctr, int yctr,
-                            sdlx_texture_t *texture)
-{
-    SDL_FRect dest;
-    SDL_FPoint ctr;
-
-    if (texture == NULL) {
-        return;
-    }
-
-    dest.x = x * scale;
-    dest.y = y * scale;
-    dest.w = w * scale;
-    dest.h = h * scale;
-
-    ctr.x = xctr * scale;
-    ctr.y = yctr * scale;
-
-    SDL_RenderTextureRotated(renderer, (SDL_Texture*)texture, NULL, &dest, angle, &ctr, false);
-}
-#endif
 
 // -----------------  MISC  --------------------------------------------- 
 
