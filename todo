@@ -2,20 +2,20 @@ Log              OK
 Template            OK
 Compass            OK
 Paddle          OK
+Clock            OK
+FlshLite         OK
+Light           OK
+Morse           OK
+Test            OK
 
-Clock            k
-FlshLite         k
-Light            k
-Morse           k
 
+Weather            in prog     sdlx_char_xxx problem
 
 HexCalc          
 Location
 Memo
 Reversi
-Test
 Tilt
-Weather            in prog     sdlx_char_xxx problem
 
 Location
 Template

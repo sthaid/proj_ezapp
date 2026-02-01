@@ -14,8 +14,8 @@
 
 #define MAX_FORECAST 100
 
-#define DAY_AND_NIGHT  0
-#define DAILY          1
+#define DAILY          0
+#define DAY_AND_NIGHT  1
 #define HOURLY         2
 #define MAX_MODE       3
 
@@ -60,7 +60,7 @@ char       *progname;
 char       *data_dir;
 char        icon_dir[100];
 
-int         mode = DAY_AND_NIGHT;
+int         mode = DAILY;
 
 info_t      info;
 forecast_t  daily[MAX_FORECAST];
@@ -69,8 +69,6 @@ forecast_t  hourly[MAX_FORECAST];
 int         y_top;  // xxx check names
 int         y_display_begin;
 int         y_display_end;
-
-int         chw, chh;
 
 //
 // prototypes
@@ -147,7 +145,7 @@ int main(int argc, char **argv)
     }
 
     // init font size and color
-    sdlx_print_set_default(FONT_SMALL, COLOR_WHITE, &chw, &chh);
+    sdlx_print_set_default(FONT_SMALL, COLOR_WHITE);
 
     // runtime loop
     while (!done) {
@@ -170,7 +168,7 @@ int main(int argc, char **argv)
         } else if (mode == HOURLY && hourly_forecast_parsed) {
             display_forecast();
         } else {
-            sdlx_render_printf_ex(
+            sdlx_render_printf_ex2(
                 sdlx_win_width/2, sdlx_win_height/2, 
                 FONT_NORMAL, COLOR_WHITE, FLAG_XY_CTR, WRAP_NONE,
                 "%s", download_status);
@@ -738,11 +736,11 @@ void display_forecast(void)
 
     y = y_top;
 
-    sdlx_render_printf_ex(
+    sdlx_render_printf_ex2(
             sdlx_win_width/2, y, 
             FONT_SMALL, COLOR_WHITE, FLAG_XY_CTR, WRAP_NONE,
             "%s %s", info.city, info.state);
-    y += chh;
+    y += sdlx_char_height_dflt;
 
     for (int i = 0; i < MAX_FORECAST; i++) {
         forecast_t *x = (mode == HOURLY ? &hourly[i] : &daily[i]);
@@ -786,7 +784,7 @@ void display_forecast(void)
                            x->day_name, x->temperature, x->wind, x->precip);
 
         // - short_forecast
-        sdlx_render_printf_ex(ICON_WH, y+2+chh, 
+        sdlx_render_printf_ex2(ICON_WH, y+2+sdlx_char_height_dflt, 
                               FONT_SMALL, COLOR_WHITE, 0, sdlx_win_width-ICON_WH,  // xx define 'wrap' var
                               "%s", x->short_forecast);
 
@@ -824,14 +822,14 @@ void display_detailed_forecast(int idx)
                            x->day_name, x->temperature, x->wind, x->precip);
 
         // - short_forecast
-        sdlx_render_printf_ex(ICON_WH, y+2+chh, 
-                              FONT_SMALL, COLOR_WHITE, 0, sdlx_win_width-ICON_WH,
-                              "%s", x->short_forecast);
+        sdlx_render_printf_ex2(ICON_WH, y+2+sdlx_char_height_dflt, 
+                               FONT_SMALL, COLOR_WHITE, 0, sdlx_win_width-ICON_WH,
+                               "%s", x->short_forecast);
 
         // - detailed_forecast
-        sdlx_render_printf_ex(0, y+ICON_WH+chh, 
-                              FONT_SMALL, COLOR_WHITE, 0, sdlx_win_width,
-                              "%s", x->detailed_forecast);
+        sdlx_render_printf_ex2(0, y+ICON_WH+sdlx_char_height_dflt, 
+                               FONT_SMALL, COLOR_WHITE, 0, sdlx_win_width,
+                               "%s", x->detailed_forecast);
 
         // pass detailed_forecast to text_to_speech
         if (strlen(x->detailed_forecast) > 0) {
