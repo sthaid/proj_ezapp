@@ -175,13 +175,13 @@ void svcs_display(int bg_color)
         for (id = 0; id < max_svcs; id++) {
             svc_t *x = &svcs[id];
 
-            sdlx_render_printf_color(0, ROW2Y(row), SERVICE_STATE_TO_COLOR(x->state), "%-s", x->name);
+            sdlx_render_printf_ex1(0, ROW2Y(row), FONT_NORMAL, SERVICE_STATE_TO_COLOR(x->state), "%-s", x->name);
 
             if (SERVICE_IS_STOPPED(x->state)) {
-                loc = sdlx_render_printf_color(COL2X(10), ROW2Y(row), COLOR_LIGHT_BLUE, "start");
+                loc = sdlx_render_printf_ex1(COL2X(10), ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "start");
                 sdlx_register_event(loc, EVID_SVC_START+id);
             } else if (x->state == SERVICE_STATE_RUNNING) {
-                loc = sdlx_render_printf_color(COL2X(10), ROW2Y(row), COLOR_LIGHT_BLUE, "stop");
+                loc = sdlx_render_printf_ex1(COL2X(10), ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "stop");
                 sdlx_register_event(loc, EVID_SVC_STOP+id);
             }
 

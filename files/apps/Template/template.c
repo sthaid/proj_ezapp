@@ -50,7 +50,7 @@ int main(int argc, char **argv)
                                      COLOR_WHITE, COLOR_BLACK);
 
         // display 'Hello' at center of display
-        sdlx_render_printf_ex(sdlx_win_width/2, sdlx_win_height/2, FONT_LARGE, COLOR_PURPLE, FLAG_XY_CTR, 0, "Hello");
+        sdlx_render_printf_ex2(sdlx_win_width/2, sdlx_win_height/2, FONT_LARGE, COLOR_PURPLE, FLAG_XY_CTR, 0, "Hello");
 
         // present the display
         sdlx_display_present();

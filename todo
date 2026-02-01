@@ -1,12 +1,13 @@
+Log              OK
+Template            OK
+Compass            OK
+Paddle          OK
+
 Clock            k
 FlshLite         k
 Light            k
-Log              k
 Morse           k
-Template            k
 
-Compass          k         sdlx_char_width problem
-Paddle          k          sdlx_char_width problem
 
 HexCalc          
 Location

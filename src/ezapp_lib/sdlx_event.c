@@ -129,7 +129,7 @@ void sdlx_register_control_events(int evid1, char *evstr1,
             x = sdlx_win_width - (strlen(evstr[2]) * chw / 2);
         }
         y = sdlx_win_height - (CONTROL_EVENTS_DISPLAY_HEIGHT / 2);
-        loc = sdlx_render_printf_ex(x, y, FONT_NORMAL, print_color, FLAG_XY_CTR, WRAP_NONE, "%s", evstr[i]);
+        loc = sdlx_render_printf_ex2(x, y, FONT_NORMAL, print_color, FLAG_XY_CTR, WRAP_NONE, "%s", evstr[i]);
         sdlx_register_event(loc, evid[i]);
     }
 }
@@ -353,22 +353,22 @@ char *sdlx_get_input_str(char *prompt1, char *prompt2, bool numeric_keybd, sdlx_
         row = 0;
         if (prompt1 && prompt1[0] != '\0') {
             row += 1;
-            sdlx_render_printf_ex(0, ROW2Y(row), FONT_NORMAL, COLOR_WHITE, 0, WRAP_NONE, "%s", prompt1);
+            sdlx_render_printf_ex2(0, ROW2Y(row), FONT_NORMAL, COLOR_WHITE, 0, WRAP_NONE, "%s", prompt1);
         }
         if (prompt2 && prompt2[0] != '\0') {
             row += 1;
-            sdlx_render_printf_ex(0, ROW2Y(row), FONT_NORMAL, COLOR_WHITE, 0, WRAP_NONE, "%s", prompt2);
+            sdlx_render_printf_ex2(0, ROW2Y(row), FONT_NORMAL, COLOR_WHITE, 0, WRAP_NONE, "%s", prompt2);
         }
 
         // display input value string
         row += 2;
-        loc = sdlx_render_printf_ex(0, ROW2Y(row), FONT_NORMAL, COLOR_WHITE, 0, WRAP_NONE, "? %s", input);
-        sdlx_render_printf_ex(loc->x+loc->w, loc->y, FONT_NORMAL, COLOR_WHITE, 0, WRAP_NONE, "%s", "_");
+        loc = sdlx_render_printf_ex2(0, ROW2Y(row), FONT_NORMAL, COLOR_WHITE, 0, WRAP_NONE, "? %s", input);
+        sdlx_render_printf_ex2(loc->x+loc->w, loc->y, FONT_NORMAL, COLOR_WHITE, 0, WRAP_NONE, "%s", "_");
 
         // register cancel event;
         // this event is needed to deal with the keybd being dismissed
         row += 3;
-        loc = sdlx_render_printf_ex(0, ROW2Y(row), FONT_NORMAL, COLOR_WHITE, 0, WRAP_NONE, "Cancel");
+        loc = sdlx_render_printf_ex2(0, ROW2Y(row), FONT_NORMAL, COLOR_WHITE, 0, WRAP_NONE, "Cancel");
         sdlx_register_event(loc, EVID_QUIT);
 
         // register for keyboard events

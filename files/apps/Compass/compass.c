@@ -61,9 +61,6 @@ int main(int argc, char **argv)
     free(pixels);
     pixels = NULL;
 
-    // set default printf font and color
-    sdlx_print_set_default(FONT_LARGE, COLOR_WHITE);
-
     // runtime loop
     while (!quit) {
         // init the backbuffer, and init print font/color
@@ -97,17 +94,16 @@ int main(int argc, char **argv)
 
             // print the heading and the heading abbreviation below 
             // the area where the compass is displayed
-            // xxx issue with sdlx_char_height, may need to be a routine
-            sdlx_render_printf_ex(
-                sdlx_win_width / 2, 1100 + 1.25 * sdlx_char_height,    // x,y
+            sdlx_render_printf_ex2(
+                sdlx_win_width / 2, 1100 + 1.25 * sdlx_char_height(FONT_LARGE),
                 FONT_LARGE, COLOR_WHITE, FLAG_XY_CTR, WRAP_NONE,
                 "%.0f", heading);
-            sdlx_render_printf_ex(
-                sdlx_win_width / 2, 1100 + 2.75 * sdlx_char_height, 
+            sdlx_render_printf_ex2(
+                sdlx_win_width / 2, 1100 + 2.75 * sdlx_char_height(FONT_LARGE), 
                 FONT_LARGE, COLOR_WHITE, FLAG_XY_CTR, WRAP_NONE,
                 "%s", abbreviation(heading));
         } else {
-            sdlx_render_printf_ex(
+            sdlx_render_printf_ex2(
                 sdlx_win_width / 2, 500, 
                 FONT_LARGE, COLOR_WHITE, FLAG_XY_CTR, WRAP_NONE,
                 "%s", "NO DATA");

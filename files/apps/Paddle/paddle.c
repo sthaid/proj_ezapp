@@ -191,19 +191,17 @@ int main(int argc, char **argv)
         }
 
         // display scores
-        sdlx_print_set_default(FONT_LARGE,COLOR_WHITE);  // xxx temp for sdlx_char_width problem
-        sdlx_render_printf_ex(0, 0, 
-                              FONT_LARGE, COLOR_WHITE, 0, WRAP_NONE, 
-                              "%d", computer_score);
-        sdlx_render_printf_ex(sdlx_win_width-2*sdlx_char_width, 0,
-                              FONT_LARGE, COLOR_WHITE, 0, WRAP_NONE,
-                              "%2d", human_score);
+        sdlx_render_printf_ex2(0, 0, 
+                               FONT_LARGE, COLOR_WHITE, 0, WRAP_NONE, 
+                               "%d", computer_score);
+        sdlx_render_printf_ex2(sdlx_win_width-2*sdlx_char_width(FONT_LARGE), 0,
+                               FONT_LARGE, COLOR_WHITE, 0, WRAP_NONE,
+                               "%2d", human_score);
 
         // display ball speed, and skill setting
-        sdlx_print_set_default(FONT_NORMAL,COLOR_WHITE);  // xxx temp for sdlx_char_width problem
-        sdlx_render_printf_ex(sdlx_win_width/2, ROW2Y(1), 
-                              FONT_NORMAL, COLOR_WHITE, FLAG_XY_CTR, WRAP_NONE,
-                              "%0.2f %s", ball_speed_court_per_sec, short_skill_str[param_skill]);
+        sdlx_render_printf_ex2(sdlx_win_width/2, sdlx_char_height(FONT_NORMAL),
+                               FONT_NORMAL, COLOR_WHITE, FLAG_XY_CTR, WRAP_NONE,
+                               "%0.2f %s", ball_speed_court_per_sec, short_skill_str[param_skill]);
 
         // display the ball and paddles
         sdlx_render_texture(ball, x-BALL_RADIUS, y-BALL_RADIUS);
@@ -495,15 +493,15 @@ void settings(void)
         sdlx_display_init(COLOR_BLACK);
 
         // display values, and register events to change the values
-        loc = sdlx_render_printf_color(0, ROW2Y(2), COLOR_LIGHT_BLUE, "autonomous = %s", param_autonomous ? "ON" : "OFF");
+        loc = sdlx_render_printf_ex1(0, ROW2Y(2), FONT_NORMAL, COLOR_LIGHT_BLUE, "autonomous = %s", param_autonomous ? "ON" : "OFF");
         sdlx_register_event(loc, EVID_AUTONOMOUS);
-        loc = sdlx_render_printf_color(0, ROW2Y(4), COLOR_LIGHT_BLUE, "sound = %s", param_sound ? "ON" : "OFF");
+        loc = sdlx_render_printf_ex1(0, ROW2Y(4), FONT_NORMAL, COLOR_LIGHT_BLUE, "sound = %s", param_sound ? "ON" : "OFF");
         sdlx_register_event(loc, EVID_SOUND);
-        loc = sdlx_render_printf_color(0, ROW2Y(6), COLOR_LIGHT_BLUE, "min_speed = %G", param_min_ball_speed);
+        loc = sdlx_render_printf_ex1(0, ROW2Y(6), FONT_NORMAL, COLOR_LIGHT_BLUE, "min_speed = %G", param_min_ball_speed);
         sdlx_register_event(loc, EVID_MIN_BALL_SPEED);
-        loc = sdlx_render_printf_color(0, ROW2Y(8), COLOR_LIGHT_BLUE, "max_speed = %G", param_max_ball_speed);
+        loc = sdlx_render_printf_ex1(0, ROW2Y(8), FONT_NORMAL, COLOR_LIGHT_BLUE, "max_speed = %G", param_max_ball_speed);
         sdlx_register_event(loc, EVID_MAX_BALL_SPEED);
-        loc = sdlx_render_printf_color(0, ROW2Y(10), COLOR_LIGHT_BLUE, "%s", skill_str[param_skill]);
+        loc = sdlx_render_printf_ex1(0, ROW2Y(10), FONT_NORMAL, COLOR_LIGHT_BLUE, "%s", skill_str[param_skill]);
         sdlx_register_event(loc, EVID_SKILL);
 
         // register control event to exit the settings screen

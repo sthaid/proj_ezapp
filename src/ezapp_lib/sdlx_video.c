@@ -20,8 +20,8 @@
 
 #define FONT_FILE_PATH  "FreeMonoBold.ttf"
 
-#define MIN_FONT_NUMCHARS  10
-#define MAX_FONT_NUMCHARS  100 
+#define MIN_FONTID  10
+#define MAX_FONTID  100 
 
 #define ONE_MS 1000
 #define TEN_MS 10000
@@ -65,7 +65,7 @@ double                  scale_render_save;
 
 static SDL_Renderer   * renderer;
 
-static font_t           font[MAX_FONT_NUMCHARS];
+static font_t           font[MAX_FONTID];
 
 static int              max_event;
 static bool             evid_swipe_right_registered;
@@ -234,7 +234,7 @@ void sdlx_video_quit(void)
     INFO("quitting\n");
 
     // close fonts
-    for (i = 0; i < MAX_FONT_NUMCHARS; i++) {
+    for (i = 0; i < MAX_FONTID; i++) {
         if (font[i].font != NULL) {
             TTF_CloseFont(font[i].font);
         }
@@ -367,22 +367,22 @@ static void set_render_draw_color(sdlx_color_t color)
 // - - - - - - - - - set print default - - - - - - - - - - - 
 
 static struct {
+    int          fontid;
     sdlx_color_t color;
-    int          numchars;
 } print_dflt;
 
-static void font_create(int numchars)
+static void font_create(int fontid)
 {
     font_t   *f;
     TTF_Font *fnt;
     int       ptsize;
 
-    // if numchars out of range then print an error, and use FONT_NORMAL
-    if (numchars < MIN_FONT_NUMCHARS || numchars >= MAX_FONT_NUMCHARS) {
-        ERROR("invalid numchars %d\n", numchars);
-        numchars = FONT_NORMAL;
+    // if fontid out of range then print an error, and use FONT_NORMAL
+    if (fontid < MIN_FONTID || fontid >= MAX_FONTID) {
+        ERROR("invalid fontid %d\n", fontid);
+        fontid = FONT_NORMAL;
     }
-    f = &font[numchars];
+    f = &font[fontid];
 
     // if font already exists then return
     if (f->font != NULL) {
@@ -391,7 +391,7 @@ static void font_create(int numchars)
 
     // open TTF font;
     // if failed then use FONT_MORMAL
-    ptsize = ((sdlx_win_width / numchars) * scale_render) / 0.6;
+    ptsize = ((sdlx_win_width / fontid) * scale_render) / 0.6;
     fnt = TTF_OpenFont(FONT_FILE_PATH, ptsize);
     if (fnt == NULL) {
         ERROR("TTF_OpenFont failed, ptsize=%d, %s\n", ptsize, SDL_GetError());
@@ -409,44 +409,44 @@ static void font_create(int numchars)
     f->chw    = nearbyint(f->chh * 0.6);
 }
 
-void sdlx_print_set_default(int numchars, sdlx_color_t color)
+void sdlx_print_set_default(int fontid, sdlx_color_t color)
 {
-    if (numchars < MIN_FONT_NUMCHARS || numchars >= MAX_FONT_NUMCHARS) {
-        ERROR("invalid numchars %d\n", numchars);
-        numchars = FONT_NORMAL;
+    if (fontid < MIN_FONTID || fontid >= MAX_FONTID) {
+        ERROR("invalid fontid %d\n", fontid);
+        fontid = FONT_NORMAL;
     }
 
     print_dflt.color    = color;
-    print_dflt.numchars = numchars;
+    print_dflt.fontid = fontid;
 
-    font_create(numchars);
+    font_create(fontid);
 
-    sdlx_char_width_dflt  = font[numchars].chw;
-    sdlx_char_height_dflt = font[numchars].chh;
+    sdlx_char_width_dflt  = font[fontid].chw;
+    sdlx_char_height_dflt = font[fontid].chh;
 }
 
-int sdlx_char_width(int numchars)
+int sdlx_char_width(int fontid)
 {
-    if (numchars < MIN_FONT_NUMCHARS || numchars >= MAX_FONT_NUMCHARS) {
-        ERROR("invalid numchars %d\n", numchars);
-        numchars = FONT_NORMAL;
+    if (fontid < MIN_FONTID || fontid >= MAX_FONTID) {
+        ERROR("invalid fontid %d\n", fontid);
+        fontid = FONT_NORMAL;
     }
 
-    font_create(numchars);
+    font_create(fontid);
 
-    return font[numchars].chw;
+    return font[fontid].chw;
 }
 
-int sdlx_char_height(int numchars)
+int sdlx_char_height(int fontid)
 {
-    if (numchars < MIN_FONT_NUMCHARS || numchars >= MAX_FONT_NUMCHARS) {
-        ERROR("invalid numchars %d\n", numchars);
-        numchars = FONT_NORMAL;
+    if (fontid < MIN_FONTID || fontid >= MAX_FONTID) {
+        ERROR("invalid fontid %d\n", fontid);
+        fontid = FONT_NORMAL;
     }
 
-    font_create(numchars);
+    font_create(fontid);
 
-    return font[numchars].chh;
+    return font[fontid].chh;
 }
 
 // - - - - - - - - - render text - - - - - - - - - - - - - 
@@ -478,7 +478,7 @@ static unsigned int calc_hash_idx(char *key)
 }
 
 // xxx prints for number of hash hits and misses
-static sdlx_loc_t *render_text(int x, int y, int numchars, sdlx_color_t color, int flags, int wrap, char *str)
+static sdlx_loc_t *render_text(int x, int y, int fontid, sdlx_color_t color, int flags, int wrap, char *str)
 {
     char         key[1000];
     ht_entry_t  *entry;
@@ -492,8 +492,8 @@ static sdlx_loc_t *render_text(int x, int y, int numchars, sdlx_color_t color, i
     static int        num_allocated = 0;
 
     // if font has not been created then do so
-    if (font[numchars].font == NULL) {
-        font_create(numchars);
+    if (font[fontid].font == NULL) {
+        font_create(fontid);
     }
 
     // if zero length string, which will fail to print, then
@@ -503,7 +503,7 @@ static sdlx_loc_t *render_text(int x, int y, int numchars, sdlx_color_t color, i
     }
 
     // calculate hash key and idx
-    snprintf(key, sizeof(key), "%x-%d-%s", color, numchars, str);
+    snprintf(key, sizeof(key), "%x-%d-%s", color, fontid, str);
     hash_idx = calc_hash_idx(key);
 
     // search the hash_list_head[hash_idx] for entry matching hash key
@@ -551,12 +551,12 @@ static sdlx_loc_t *render_text(int x, int y, int numchars, sdlx_color_t color, i
     // create surface containing the rendered text
     if (wrap != WRAP_NONE) {
         surface = TTF_RenderText_Solid_Wrapped(
-                        font[numchars].font, str, 0,
+                        font[fontid].font, str, 0,
                         sdlx_color(color),
                         wrap * scale_render);
     } else {
         surface = TTF_RenderText_Solid(
-                        font[numchars].font, str, 0,
+                        font[fontid].font, str, 0,
                         sdlx_color(color));
     }
     if (surface == NULL) {
@@ -626,10 +626,10 @@ sdlx_loc_t *sdlx_render_printf(int x, int y, char * fmt, ...)
     vsnprintf(str, sizeof(str), fmt, ap);
     va_end(ap);
 
-    return render_text(x, y, print_dflt.numchars, print_dflt.color, 0, WRAP_NONE, str);
+    return render_text(x, y, print_dflt.fontid, print_dflt.color, 0, WRAP_NONE, str);
 }
 
-sdlx_loc_t *sdlx_render_printf_color(int x, int y, sdlx_color_t color, char * fmt, ...)
+sdlx_loc_t *sdlx_render_printf_ex1(int x, int y, int fontid, sdlx_color_t color, char * fmt, ...)
 {
     char str[1000];
     va_list ap;
@@ -638,10 +638,10 @@ sdlx_loc_t *sdlx_render_printf_color(int x, int y, sdlx_color_t color, char * fm
     vsnprintf(str, sizeof(str), fmt, ap);
     va_end(ap);
 
-    return render_text(x, y, print_dflt.numchars, color, 0, WRAP_NONE, str);
+    return render_text(x, y, fontid, color, 0, WRAP_NONE, str);
 }
 
-sdlx_loc_t *sdlx_render_printf_ex(int x, int y, double numchars, sdlx_color_t color, int flags, int wrap, char *fmt, ...)
+sdlx_loc_t *sdlx_render_printf_ex2(int x, int y, int fontid, sdlx_color_t color, int flags, int wrap, char *fmt, ...)
 {
     char str[1000];
     va_list ap;
@@ -650,18 +650,18 @@ sdlx_loc_t *sdlx_render_printf_ex(int x, int y, double numchars, sdlx_color_t co
     vsnprintf(str, sizeof(str), fmt, ap);
     va_end(ap);
 
-    return render_text(x, y, numchars, color, flags, wrap, str);
+    return render_text(x, y, fontid, color, flags, wrap, str);
 }
 
 // each line may have embedded newline chars
 // xxx should also have font as arg?
-void sdlx_render_multiline_text(int x, int y, int y_top, int y_bottom, int numchars, char **lines, unsigned int *colors, int num_lines)
+void sdlx_render_multiline_text(int x, int y, int y_top, int y_bottom, int fontid, char **lines, unsigned int *colors, int num_lines)
 {
     int   y2 = y;
     int   n = 0, k = 0, len;
     char *ptr;
     char  str[1000];
-    int   chh = sdlx_char_height(numchars);  // xxx
+    int   chh = sdlx_char_height(fontid);  // xxx
 
     while (n < num_lines) {
         // if y pos of line is below the bottom of the
@@ -685,7 +685,7 @@ void sdlx_render_multiline_text(int x, int y, int y_top, int y_bottom, int numch
         // region then render the line
         if (y2 >= y_top) {
             sdlx_color_t color = (colors ? colors[n] : print_dflt.color);
-            render_text(x, y2, numchars, color, 0, WRAP_NONE, str);
+            render_text(x, y2, fontid, color, 0, WRAP_NONE, str);
         }
 
         // advance k and n

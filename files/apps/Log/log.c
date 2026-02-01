@@ -97,10 +97,10 @@ int main(int argc, char **argv)
         //   display log
         // endif
         if (state == LOG_NOT_LOADED || state == LOG_LOAD_FAILED) {
-            sdlx_render_printf_ex(sdlx_win_width/2, sdlx_win_height/2, 
-                                  FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE,
-                                  "%s",
-                                  state == LOG_NOT_LOADED ?  "Loading" : "Load Failed");
+            sdlx_render_printf_ex2(sdlx_win_width/2, sdlx_win_height/2, 
+                                   FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE,
+                                   "%s",
+                                   state == LOG_NOT_LOADED ?  "Loading" : "Load Failed");
         } else {
             sdlx_render_multiline_text(x, y, y_top, y_bottom, FONT_LOG, lines, colors, num_lines);
         }

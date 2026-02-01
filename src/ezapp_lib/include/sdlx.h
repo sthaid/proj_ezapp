@@ -72,13 +72,9 @@ sdlx_color_t sdlx_wavelength_to_color(int wavelength);
 // render text
 // - - - - - - - 
 
-// xxx use fontid instead of numchars
-// xxx use ex1 and ex2 names
-// xxx ex1 should include numchars too
-
-#define FONT_TINY     40
-#define FONT_SMALL    30
-#define FONT_NORMAL   20
+#define FONT_TINY     40   // 40 chars fit in display width
+#define FONT_SMALL    30   // 30 chars fit in display width
+#define FONT_NORMAL   20   // etc
 #define FONT_LARGE    10
 
 #define WRAP_NONE    -1
@@ -88,21 +84,21 @@ sdlx_color_t sdlx_wavelength_to_color(int wavelength);
 #define FLAG_Y_CTR  2
 #define FLAG_XY_CTR (FLAG_X_CTR | FLAG_Y_CTR)
 
-#define ROW2Y(r) ((r) * sdlx_char_height_dflt)
-#define COL2X(c) ((c) * sdlx_char_width_dflt)
-
+// The following work with the default font;
+// the default font is specified by call to sdlx_print_set_default.
+void sdlx_print_set_default(int fontid, sdlx_color_t color);
 extern int sdlx_char_width_dflt;
 extern int sdlx_char_height_dflt;
-
-void sdlx_print_set_default(int numchars, sdlx_color_t color);
-int sdlx_char_width(int numchars);
-int sdlx_char_height(int numchars);
-
+#define ROW2Y(r) ((r) * sdlx_char_height_dflt)
+#define COL2X(c) ((c) * sdlx_char_width_dflt)
 sdlx_loc_t *sdlx_render_printf(int x, int y, char *fmt, ...) __attribute__ ((format (printf, 3, 4)));
-sdlx_loc_t *sdlx_render_printf_color(int x, int y, sdlx_color_t color, char *fmt, ...) __attribute__ ((format (printf, 4, 5)));
-sdlx_loc_t *sdlx_render_printf_ex(int x, int y, int numchars, sdlx_color_t color, int flags, int wrap, char *fmt, ...) __attribute__ ((format (printf, 7, 8)));
 
-void sdlx_render_multiline_text(int x, int y, int y_top, int y_bottom, int numchars, char **lines, sdlx_color_t *colors, int num_lines);
+// The following work with the font specified by fontid.
+int sdlx_char_width(int fontid);
+int sdlx_char_height(int fontid);
+sdlx_loc_t *sdlx_render_printf_ex1(int x, int y, int fontid, sdlx_color_t color, char * fmt, ...);
+sdlx_loc_t *sdlx_render_printf_ex2(int x, int y, int fontid, sdlx_color_t color, int flags, int wrap, char *fmt, ...);
+void sdlx_render_multiline_text(int x, int y, int y_top, int y_bottom, int fontid, char **lines, sdlx_color_t *colors, int num_lines);
 
 // - - - - - - - - - - - - - - - - - - - - -
 // render rectangle, lines, circles, points

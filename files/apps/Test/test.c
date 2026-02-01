@@ -90,7 +90,7 @@ int main(int argc, char **argv)
     // print window and char sized, these are global variables from sdl.c;
     // the initial char size provides 20 chars across the display width
     printf("I %s: sdlx_win_width/height  = %d %d\n", progname, sdlx_win_width, sdlx_win_height);
-    printf("I %s: sdlx_char_width/height = %d %d\n", progname, sdlx_char_width, sdlx_char_height);
+    printf("I %s: sdlx_char_width/height = %d %d\n", progname, sdlx_char_width_dflt, sdlx_char_height_dflt);
 
     // test calling a routine that is defined in another file
     test1_proc();
@@ -167,7 +167,7 @@ static void page_hndlr()
         sdlx_print_set_default(FONT_NORMAL, COLOR_WHITE);
 
         // draw title line
-        sdlx_render_printf_ex(sdlx_win_width/2, 0, FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE, "%s", page_title[pagenum]);
+        sdlx_render_printf_ex2(sdlx_win_width/2, 0, FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE, "%s", page_title[pagenum]);
 
         // register control events
         // "<" - previous page
@@ -271,12 +271,12 @@ static void page_0_draw(void)
     time(&t);
     tm = localtime(&t);
     sprintf(str, "%02d:%02d:%02d", tm->tm_hour, tm->tm_min, tm->tm_sec);
-    sdlx_render_printf_ex(sdlx_win_width/2, ROW2Y(5), FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE, "%s", str);
+    sdlx_render_printf_ex2(sdlx_win_width/2, ROW2Y(5), FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE, "%s", str);
 
     // print the time in microsecs
     usecs = util_get_real_time_microsec();
     util_time2str(str, usecs, false, true, false);
-    sdlx_render_printf_ex(sdlx_win_width/2, ROW2Y(7), FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE, "%s", str);
+    sdlx_render_printf_ex2(sdlx_win_width/2, ROW2Y(7), FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE, "%s", str);
 
     // print microsecs since this page is first viewed, and
     // print the delta time since last display update
@@ -286,11 +286,11 @@ static void page_0_draw(void)
     }
     delta_ms = (usecs - usecs_last) / 1000;
     usecs_last = usecs;
-    sdlx_render_printf_ex(sdlx_win_width/2, ROW2Y(9), FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE, "%0.3f delta=%ld ms", 
+    sdlx_render_printf_ex2(sdlx_win_width/2, ROW2Y(9), FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE, "%0.3f delta=%ld ms", 
         (usecs-usecs_first)/1000000., delta_ms);
 
     // print ipaddr
-    sdlx_render_printf_ex(sdlx_win_width/2, ROW2Y(11), FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE, "%s", util_get_ipaddr());
+    sdlx_render_printf_ex2(sdlx_win_width/2, ROW2Y(11), FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE, "%s", util_get_ipaddr());
 }
 
 static void page_0_process_event(sdlx_event_t *ev)
@@ -370,14 +370,14 @@ static void page_3_init(void)
     x_mlt = 0;
     y_mlt = ROW2Y(2); 
     y_mlt_top = ROW2Y(2);
-    y_mlt_bottom = sdlx_win_height-3*sdlx_char_height;
+    y_mlt_bottom = sdlx_win_height-3*sdlx_char_height_dflt;
 }
 
 static void page_3_draw(void)
 {
     sdlx_register_event(NULL, EVID_MOTION);
 
-    sdlx_render_multiline_text(x_mlt, y_mlt, y_mlt_top, y_mlt_bottom, lines, NULL, MAX_LINES);
+    sdlx_render_multiline_text(x_mlt, y_mlt, y_mlt_top, y_mlt_bottom, FONT_NORMAL, lines, NULL, MAX_LINES);
 }
 
 static void page_3_process_event(sdlx_event_t *event)
@@ -494,7 +494,7 @@ static void page_5_init(void)
     // draw to texture1
     sdlx_render_rect(0, 0, w, h, 5, COLOR_WHITE);
     sdlx_render_fill_circle(w/2, h/2, w/2, COLOR_YELLOW);
-    sdlx_render_printf_ex(w/2, h/2, FONT_NORMAL, COLOR_RED, FLAG_XY_CTR, WRAP_NONE, "%s", "Hello");
+    sdlx_render_printf_ex2(w/2, h/2, FONT_NORMAL, COLOR_RED, FLAG_XY_CTR, WRAP_NONE, "%s", "Hello");
 
     // set render target back to the display
     printf("I %s: setting render target to display\n", progname);
@@ -585,26 +585,26 @@ static void page_6_draw(void)
 
 static void color_test(int idx, char *color_name, sdlx_color_t color)
 {
-    int y = 2 * sdlx_char_height + idx * 100;
+    int y = 2 * sdlx_char_height_dflt + idx * 100;
 
     sdlx_render_printf(0, y, "%s", color_name);
-    sdlx_render_fill_rect(500, y, 500, sdlx_char_height, color);
+    sdlx_render_fill_rect(500, y, 500, sdlx_char_height_dflt, color);
 }
 
 static void alpha_test(int idx, char *test_name, sdlx_color_t bg_color, sdlx_color_t fg_color)
 {
-    int y = 2 * sdlx_char_height + idx * 100;
+    int y = 2 * sdlx_char_height_dflt + idx * 100;
     int alpha, x;
     sdlx_color_t color;
 
     sdlx_render_printf(0, y, "%s", test_name);
-    sdlx_render_fill_rect(500, y, 500, sdlx_char_height, bg_color);
+    sdlx_render_fill_rect(500, y, 500, sdlx_char_height_dflt, bg_color);
 
     for (x = 500; x < 1000; x+=2) {
         alpha = (x - 500) / 2;  // will range from 0 to 249
         color = sdlx_set_color_alpha(fg_color, alpha);
-        sdlx_render_line(x, y, x, y+sdlx_char_height, color);
-        sdlx_render_line(x+1, y, x+1, y+sdlx_char_height, color);
+        sdlx_render_line(x, y, x, y+sdlx_char_height_dflt, color);
+        sdlx_render_line(x+1, y, x+1, y+sdlx_char_height_dflt, color);
     }
 
 }
@@ -679,45 +679,45 @@ static void page_7_draw(void)
     row++;
 
     // stop, pause, resume
-    loc = sdlx_render_printf_color(0, ROW2Y(row), COLOR_LIGHT_BLUE, "STOP");
+    loc = sdlx_render_printf_ex1(0, ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "STOP");
     sdlx_register_event(loc, EVID_AUDIO_STOP);
-    loc = sdlx_render_printf_color(COL2X(6), ROW2Y(row), COLOR_LIGHT_BLUE, "PAUSE");
+    loc = sdlx_render_printf_ex1(COL2X(6), ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "PAUSE");
     sdlx_register_event(loc, EVID_AUDIO_PAUSE);
-    loc = sdlx_render_printf_color(COL2X(13), ROW2Y(row), COLOR_LIGHT_BLUE, "RESUME");
+    loc = sdlx_render_printf_ex1(COL2X(13), ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "RESUME");
     sdlx_register_event(loc, EVID_AUDIO_RESUME);
     row += 3;
 
     // record mic, device
     sdlx_render_printf(0, ROW2Y(row), "REC");
-    loc = sdlx_render_printf_color(COL2X(5), ROW2Y(row), COLOR_LIGHT_BLUE, "MIC");
+    loc = sdlx_render_printf_ex1(COL2X(5), ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "MIC");
     sdlx_register_event(loc, EVID_AUDIO_RECORD_FROM_MIC);
-    loc = sdlx_render_printf_color(COL2X(10), ROW2Y(row), COLOR_LIGHT_BLUE, "DEV");
+    loc = sdlx_render_printf_ex1(COL2X(10), ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "DEV");
     sdlx_register_event(loc, EVID_AUDIO_RECORD_FROM_DEV);
-    loc = sdlx_render_printf_color(COL2X(15), ROW2Y(row), COLOR_LIGHT_BLUE, "MICAP");
+    loc = sdlx_render_printf_ex1(COL2X(15), ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "MICAP");
     sdlx_register_event(loc, EVID_AUDIO_RECORD_FROM_MIC_APPEND);
     row += 3;
 
     // play mic file, device file, tones
     sdlx_render_printf(0, ROW2Y(row), "PLAY");
-    loc = sdlx_render_printf_color(COL2X(5), ROW2Y(row), COLOR_LIGHT_BLUE, "MIC");
+    loc = sdlx_render_printf_ex1(COL2X(5), ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "MIC");
     sdlx_register_event(loc, EVID_AUDIO_PLAY_MIC_FILE);
-    loc = sdlx_render_printf_color(COL2X(10), ROW2Y(row), COLOR_LIGHT_BLUE, "DEV");
+    loc = sdlx_render_printf_ex1(COL2X(10), ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "DEV");
     sdlx_register_event(loc, EVID_AUDIO_PLAY_DEV_FILE);
-    loc = sdlx_render_printf_color(COL2X(15), ROW2Y(row), COLOR_LIGHT_BLUE, "TONES");
+    loc = sdlx_render_printf_ex1(COL2X(15), ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "TONES");
     sdlx_register_event(loc, EVID_AUDIO_PLAY_TONES);
     row += 3;
 
     // play buff mone, stereo
     sdlx_render_printf(0, ROW2Y(row), "PLAY-BUFF");
-    loc = sdlx_render_printf_color(COL2X(10), ROW2Y(row), COLOR_LIGHT_BLUE, "MONO");
+    loc = sdlx_render_printf_ex1(COL2X(10), ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "MONO");
     sdlx_register_event(loc, EVID_AUDIO_PLAY_MONO_BUFF);
-    loc = sdlx_render_printf_color(COL2X(15), ROW2Y(row), COLOR_LIGHT_BLUE, "STEREO");
+    loc = sdlx_render_printf_ex1(COL2X(15), ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "STEREO");
     sdlx_register_event(loc, EVID_AUDIO_PLAY_STEREO_BUFF);
     row += 3;
 
     // play test file
     sdlx_render_printf(0, ROW2Y(row), "PLAY");
-    loc = sdlx_render_printf_color(COL2X(5), ROW2Y(row), COLOR_LIGHT_BLUE, "TEST.WAV");
+    loc = sdlx_render_printf_ex1(COL2X(5), ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "TEST.WAV");
     sdlx_register_event(loc, EVID_AUDIO_PLAY_TEST_WAV);
     row += 3;
 }
@@ -820,7 +820,7 @@ static void page_8_init(void)
     x_mlt = 0;
     y_mlt = ROW2Y(2); 
     y_mlt_top = ROW2Y(2);
-    y_mlt_bottom = sdlx_win_height-3*sdlx_char_height;
+    y_mlt_bottom = sdlx_win_height-3*sdlx_char_height_dflt;
 
     for (int i = 0; i < max_sit; i++) {
         sprintf(str, "%2d %2d %s", sit[i].id, sit[i].type, sit[i].name);
@@ -830,8 +830,7 @@ static void page_8_init(void)
 
 static void page_8_draw(void)
 {
-    sdlx_print_set_default(FONT_SMALL, COLOR_WHITE);
-    sdlx_render_multiline_text(x_mlt, y_mlt, y_mlt_top, y_mlt_bottom, sit_lines, NULL, max_sit);
+    sdlx_render_multiline_text(x_mlt, y_mlt, y_mlt_top, y_mlt_bottom, FONT_SMALL, sit_lines, NULL, max_sit);
 }
 
 static void page_8_exit(void)

@@ -116,9 +116,9 @@ int main(int argc, char **argv)
         if (state.state == AUDIO_STATE_IDLE) {
             sdlx_loc_t *loc;
 
-            loc = sdlx_render_printf_color(8*sdlx_char_width, ROW2Y(5), COLOR_LIGHT_BLUE, "DEC");
+            loc = sdlx_render_printf_ex1(8*sdlx_char_width_dflt, ROW2Y(5), FONT_NORMAL, COLOR_LIGHT_BLUE, "DEC");
             sdlx_register_event(loc, EVID_WPM_DEC);
-            loc = sdlx_render_printf_color(14*sdlx_char_width, ROW2Y(5), COLOR_LIGHT_BLUE, "INC");
+            loc = sdlx_render_printf_ex1(14*sdlx_char_width_dflt, ROW2Y(5), FONT_NORMAL, COLOR_LIGHT_BLUE, "INC");
             sdlx_register_event(loc, EVID_WPM_INC);
         }
 
@@ -128,7 +128,7 @@ int main(int argc, char **argv)
             int y_bottom = ROW2Y(17);
             int y = y_top;
             char *lines[1] = {random_words};
-            sdlx_render_multiline_text(0, y, y_top, y_bottom, lines, NULL, 1);
+            sdlx_render_multiline_text(0, y, y_top, y_bottom, FONT_NORMAL, lines, NULL, 1);
         }
 
         // present the display

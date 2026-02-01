@@ -75,30 +75,30 @@ int main(int argc, char **argv)
         // display the date and time below the analog clock, example:
         //   13:30:00 EDT
         //   Wed Oct 21 2025
-        y = YCTR_CLOCK + H_CLOCK / 2 + 1.5 * sdlx_char_height;
-        sdlx_render_printf_ex(
+        y = YCTR_CLOCK + H_CLOCK / 2 + 1.5 * sdlx_char_height_dflt;
+        sdlx_render_printf_ex2(
                 sdlx_win_width/2, y,
                 FONT_NORMAL, COLOR_WHITE, FLAG_XY_CTR, WRAP_NONE,
                 "%02d:%02d:%02d %s",
                 tm.tm_hour, tm.tm_min, tm.tm_sec, tm.tm_zone);
-        y += 1.5 * sdlx_char_height;
-        sdlx_render_printf_ex(
+        y += 1.5 * sdlx_char_height_dflt;
+        sdlx_render_printf_ex2(
                 sdlx_win_width/2, y, 
                 FONT_NORMAL, COLOR_WHITE, FLAG_XY_CTR, WRAP_NONE,
                 "%s %s %d %d",
                 day_of_week(&tm), month(&tm), tm.tm_mday, tm.tm_year+1900);
-        y += 1.5 * sdlx_char_height;
+        y += 1.5 * sdlx_char_height_dflt;
 
         // display sunrise, midday, sunset times, example:
         //   RISE     MID      SET
         //   07:00   12:00   17:00
-        sdlx_render_printf(sdlx_char_width/2, y, "RISE");
-        sdlx_render_printf(sdlx_win_width/2-3*sdlx_char_width/2, y, "MID");
-        sdlx_render_printf(sdlx_win_width-4*sdlx_char_width, y, "SET");
-        y += 1.5 * sdlx_char_height;
+        sdlx_render_printf(sdlx_char_width_dflt/2, y, "RISE");
+        sdlx_render_printf(sdlx_win_width/2-3*sdlx_char_width_dflt/2, y, "MID");
+        sdlx_render_printf(sdlx_win_width-4*sdlx_char_width_dflt, y, "SET");
+        y += 1.5 * sdlx_char_height_dflt;
         sdlx_render_printf(0, y, "%s", sunrise_calc);
-        sdlx_render_printf(sdlx_win_width/2-5*sdlx_char_width/2, y, "%s", midday_calc);
-        sdlx_render_printf(sdlx_win_width-5*sdlx_char_width, y, "%s", sunset_calc);
+        sdlx_render_printf(sdlx_win_width/2-5*sdlx_char_width_dflt/2, y, "%s", midday_calc);
+        sdlx_render_printf(sdlx_win_width-5*sdlx_char_width_dflt, y, "%s", sunset_calc);
     
         // register control event to end program
         sdlx_register_control_events(0, NULL, 
@@ -158,7 +158,7 @@ static void draw_analog_clock_face(void)
     for (hour = 1; hour <= 12; hour++) {
         x = XCTR_CLOCK + 400 * sin(hour * 30 * (M_PI / 180));
         y = YCTR_CLOCK - 400 * cos(hour * 30 * (M_PI / 180));
-        sdlx_render_printf_ex(
+        sdlx_render_printf_ex2(
             x, y, 
             FONT_NORMAL, COLOR_BLACK, FLAG_XY_CTR, WRAP_NONE,
             "%d", hour);
