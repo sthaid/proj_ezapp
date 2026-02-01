@@ -20,7 +20,7 @@
 #define LOG_LOADED      1
 #define LOG_LOAD_FAILED 2
 
-#define LOG_FONT 40
+#define FONT_LOG 40
 
 #define MAX_LINES 200
 
@@ -84,7 +84,7 @@ int main(int argc, char **argv)
     x        = 0;
 
     // set default font size and color
-    sdlx_print_set_default(LOG_FONT, COLOR_WHITE);
+    sdlx_print_set_default(FONT_LOG, COLOR_WHITE);
 
     // runtime loop
     while (!done) {
@@ -102,7 +102,7 @@ int main(int argc, char **argv)
                                   "%s",
                                   state == LOG_NOT_LOADED ?  "Loading" : "Load Failed");
         } else {
-            sdlx_render_multiline_text(x, y, y_top, y_bottom, lines, colors, num_lines);
+            sdlx_render_multiline_text(x, y, y_top, y_bottom, FONT_LOG, lines, colors, num_lines);
         }
 
         // register control events
@@ -171,9 +171,9 @@ void init_xy(void)
     x = 0;
 
     // set y to display last lines of the log
-    num_last_lines_to_display = (y_bottom - y_top) / sdlx_char_height - 2;
+    num_last_lines_to_display = (y_bottom - y_top) / sdlx_char_height_dflt - 2;
     if (num_lines > num_last_lines_to_display) {
-        y = y_top - (num_lines - num_last_lines_to_display) * sdlx_char_height;
+        y = y_top - (num_lines - num_last_lines_to_display) * sdlx_char_height_dflt;
     } else {
         y = y_top;
     }

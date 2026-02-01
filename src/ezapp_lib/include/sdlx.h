@@ -71,8 +71,10 @@ sdlx_color_t sdlx_wavelength_to_color(int wavelength);
 // - - - - - - - 
 // render text
 // - - - - - - - 
-#define ROW2Y(r) ((r) * sdlx_char_height)
-#define COL2X(c) ((c) * sdlx_char_width)
+
+// xxx use fontid instead of numchars
+// xxx use ex1 and ex2 names
+// xxx ex1 should include numchars too
 
 #define FONT_TINY     40
 #define FONT_SMALL    30
@@ -86,16 +88,21 @@ sdlx_color_t sdlx_wavelength_to_color(int wavelength);
 #define FLAG_Y_CTR  2
 #define FLAG_XY_CTR (FLAG_X_CTR | FLAG_Y_CTR)
 
-extern int sdlx_char_width;
-extern int sdlx_char_height;
+#define ROW2Y(r) ((r) * sdlx_char_height_dflt)
+#define COL2X(c) ((c) * sdlx_char_width_dflt)
 
-void sdlx_print_set_default(double numchars, sdlx_color_t color);
+extern int sdlx_char_width_dflt;
+extern int sdlx_char_height_dflt;
+
+void sdlx_print_set_default(int numchars, sdlx_color_t color);
+int sdlx_char_width(int numchars);
+int sdlx_char_height(int numchars);
 
 sdlx_loc_t *sdlx_render_printf(int x, int y, char *fmt, ...) __attribute__ ((format (printf, 3, 4)));
 sdlx_loc_t *sdlx_render_printf_color(int x, int y, sdlx_color_t color, char *fmt, ...) __attribute__ ((format (printf, 4, 5)));
-sdlx_loc_t *sdlx_render_printf_ex(int x, int y, double numchars, sdlx_color_t color, int flags, int wrap, char *fmt, ...) __attribute__ ((format (printf, 7, 8)));
+sdlx_loc_t *sdlx_render_printf_ex(int x, int y, int numchars, sdlx_color_t color, int flags, int wrap, char *fmt, ...) __attribute__ ((format (printf, 7, 8)));
 
-void sdlx_render_multiline_text(int x, int y, int y_top, int y_bottom, char **lines, sdlx_color_t *colors, int num_lines);
+void sdlx_render_multiline_text(int x, int y, int y_top, int y_bottom, int numchars, char **lines, sdlx_color_t *colors, int num_lines);
 
 // - - - - - - - - - - - - - - - - - - - - -
 // render rectangle, lines, circles, points

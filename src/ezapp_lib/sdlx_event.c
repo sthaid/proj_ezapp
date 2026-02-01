@@ -115,16 +115,18 @@ void sdlx_register_control_events(int evid1, char *evstr1,
 
     // display the 3 control events at the display bottom
     for (i = 0; i < 3; i++) {
+        int chw = sdlx_char_width(FONT_NORMAL);
+
         if (evstr[i] == NULL) {
             continue;
         }
 
         x = (sdlx_win_width/3/2) + i * (sdlx_win_width/3);
-        if (i == 0 && x < strlen(evstr[0]) * sdlx_char_width / 2) {
-            x = strlen(evstr[0]) * sdlx_char_width / 2;
+        if (i == 0 && x < strlen(evstr[0]) * chw / 2) {
+            x = strlen(evstr[0]) * chw / 2;
         }
-        if (i == 2 && x > sdlx_win_width - (strlen(evstr[2]) * sdlx_char_width / 2)) {
-            x = sdlx_win_width - (strlen(evstr[2]) * sdlx_char_width / 2);
+        if (i == 2 && x > sdlx_win_width - (strlen(evstr[2]) * chw / 2)) {
+            x = sdlx_win_width - (strlen(evstr[2]) * chw / 2);
         }
         y = sdlx_win_height - (CONTROL_EVENTS_DISPLAY_HEIGHT / 2);
         loc = sdlx_render_printf_ex(x, y, FONT_NORMAL, print_color, FLAG_XY_CTR, WRAP_NONE, "%s", evstr[i]);

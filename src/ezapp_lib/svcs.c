@@ -168,7 +168,7 @@ void svcs_display(int bg_color)
     while (true) {
         // init display and display title line
         sdlx_display_init(bg_color);
-        sdlx_render_printf(sdlx_win_width/2, sdlx_char_height/2, "%s", "Services"); // XXX was xyctr
+        sdlx_render_printf(sdlx_win_width/2, sdlx_char_height_dflt/2, "%s", "Services"); // XXX was xyctr
 
         // display name and controls for each service
         row = 2;

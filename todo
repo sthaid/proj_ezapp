@@ -1,18 +1,20 @@
 Clock            k
-Compass          k         sdlx_char_width problem
 FlshLite         k
-HexCalc          
 Light            k
-Location
 Log              k
-Memo
 Morse           k
-Paddle          k          sdlx_char_width problem
-Reversi
 Template            k
+
+Compass          k         sdlx_char_width problem
+Paddle          k          sdlx_char_width problem
+
+HexCalc          
+Location
+Memo
+Reversi
 Test
 Tilt
-Weather
+Weather            in prog     sdlx_char_xxx problem
 
 Location
 Template
