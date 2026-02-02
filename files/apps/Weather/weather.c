@@ -66,9 +66,9 @@ info_t      info;
 forecast_t  daily[MAX_FORECAST];
 forecast_t  hourly[MAX_FORECAST];
 
-int         y_top;  // xxx check names
-int         y_display_begin;
-int         y_display_end;
+int         y;
+int         y_top;
+int         y_bottom;
 
 //
 // prototypes
@@ -128,11 +128,13 @@ int main(int argc, char **argv)
     }
 
     // init variables that define the display region
-    y_display_begin = 100;
-    y_display_end   = sdlx_win_height - 200;
-    y_top           = y_display_begin;
+    y_top    = 100;
+    y_bottom = sdlx_win_height - CONTROL_EVENTS_DISPLAY_HEIGHT;
+    y        = y_top;
 
-    // initiate weather forecast download
+    // initiate weather forecast download;
+    // a new forecast will be downloaded if the existing forecast
+    // json files are more than one hour old
     if (is_new_forecast_needed()) {
         download_status = initiate_forecast_download();
         daily_forecast_parsed = false;
@@ -203,12 +205,12 @@ int main(int argc, char **argv)
             break;
         case EVID_MODE_SELECT:
             mode = (mode + 1) % MAX_MODE;
-            y_top = y_display_begin;
+            y = y_top;
             break;
         case EVID_MOTION:
-            y_top += event.u.motion.yrel;
-            if (y_top >= y_display_begin) {
-                y_top = y_display_begin;
+            y += event.u.motion.yrel;
+            if (y >= y_top) {
+                y = y_top;
             }
         }
 
@@ -655,7 +657,7 @@ void parse_forecast(int which)
         x->valid = true;
 
         // debug print forecast info
-        if (1) {
+        if (false) {
             printf("I %s: %s periods[%s] ...\n", progname, json_filename, period_str);
             printf("I %s:   is_daytime        %d\n", progname, x->is_daytime);
             printf("I %s:   day_name          %s\n", progname, x->day_name);
@@ -731,16 +733,16 @@ void parse_forecast(int which)
 
 void display_forecast(void)
 {
-    int y;
+    int y2;
     sdlx_loc_t loc;
 
-    y = y_top;
+    y2 = y;
 
     sdlx_render_printf_ex2(
             sdlx_win_width/2, y, 
             FONT_SMALL, COLOR_WHITE, FLAG_XY_CTR, WRAP_NONE,
             "%s %s", info.city, info.state);
-    y += sdlx_char_height_dflt;
+    y2 += sdlx_char_height_dflt;
 
     for (int i = 0; i < MAX_FORECAST; i++) {
         forecast_t *x = (mode == HOURLY ? &hourly[i] : &daily[i]);
@@ -756,22 +758,22 @@ void display_forecast(void)
         }
 
         // if y coord is below bottom then done displaying
-        if (y > y_display_end - ICON_WH) {
+        if (y2 > y_bottom - ICON_WH) {
             break;
         }
 
         // if y coord is above top then skip
-        if (y < y_display_begin - ICON_WH) {
-            y += Y_STEP;
+        if (y2 < y_top - ICON_WH) {
+            y2 += Y_STEP;
             continue;
         }
 
         // display the forecast icon
         if (x->icon_texture) {
-            sdlx_render_texture_ex1(x->icon_texture, 0, y, ICON_WH, ICON_WH);
+            sdlx_render_texture_ex1(x->icon_texture, 0, y2, ICON_WH, ICON_WH);
 
             loc.x = 0;
-            loc.y = y;
+            loc.y = y2;
             loc.w = sdlx_win_width;
             loc.h = ICON_WH;
             sdlx_register_event(&loc, EVID_FORECAST+i);
@@ -779,17 +781,19 @@ void display_forecast(void)
 
         // display forecast info ...
         // - day_name, temperature, wind, and precip probability
-        sdlx_render_printf(ICON_WH, y+2, 
+        sdlx_render_printf(ICON_WH, y2+2, 
                            "%s: %s %s %s", 
                            x->day_name, x->temperature, x->wind, x->precip);
 
         // - short_forecast
-        sdlx_render_printf_ex2(ICON_WH, y+2+sdlx_char_height_dflt, 
-                              FONT_SMALL, COLOR_WHITE, 0, sdlx_win_width-ICON_WH,  // xx define 'wrap' var
+        int flags = 0;
+        int wrap = sdlx_win_width-ICON_WH;
+        sdlx_render_printf_ex2(ICON_WH, y2+2+sdlx_char_height_dflt, 
+                              FONT_SMALL, COLOR_WHITE, flags, wrap,
                               "%s", x->short_forecast);
 
         // advance y
-        y += Y_STEP;
+        y2 += Y_STEP;
     }
 }
 
@@ -800,11 +804,9 @@ void display_forecast(void)
 void display_detailed_forecast(int idx)
 {
     forecast_t  *x = (mode == HOURLY ? &hourly[idx] : &daily[idx]);
-    int          y = y_display_begin;
-    bool         done = false;
     sdlx_event_t event;
-    //char        *lines[MAX_DETAILED_FORECAST_LINES];
-    //int          max_lines;
+    int          flags, wrap;
+    bool         done = false;
 
     while (!done) {
         // init the backbuffer
@@ -812,23 +814,27 @@ void display_detailed_forecast(int idx)
 
         // display the forecast icon
         if (x->icon_texture) {
-            sdlx_render_texture_ex1(x->icon_texture, 0, y, ICON_WH, ICON_WH);
+            sdlx_render_texture_ex1(x->icon_texture, 0, y_top, ICON_WH, ICON_WH);
         }
 
         // display forecast info ...
         // - day_name, temperature, wind, and precip probability
-        sdlx_render_printf(ICON_WH, y+2, 
+        sdlx_render_printf(ICON_WH, y_top+2, 
                            "%s: %s %s %s", 
                            x->day_name, x->temperature, x->wind, x->precip);
 
         // - short_forecast
-        sdlx_render_printf_ex2(ICON_WH, y+2+sdlx_char_height_dflt, 
-                               FONT_SMALL, COLOR_WHITE, 0, sdlx_win_width-ICON_WH,
+        flags = 0;
+        wrap  = sdlx_win_width-ICON_WH;
+        sdlx_render_printf_ex2(ICON_WH, y_top+2+sdlx_char_height_dflt, 
+                               FONT_SMALL, COLOR_WHITE, flags, wrap,
                                "%s", x->short_forecast);
 
         // - detailed_forecast
-        sdlx_render_printf_ex2(0, y+ICON_WH+sdlx_char_height_dflt, 
-                               FONT_SMALL, COLOR_WHITE, 0, sdlx_win_width,
+        flags = 0;
+        wrap  = sdlx_win_width;
+        sdlx_render_printf_ex2(0, y_top+ICON_WH+sdlx_char_height_dflt, 
+                               FONT_SMALL, COLOR_WHITE, flags, wrap,
                                "%s", x->detailed_forecast);
 
         // pass detailed_forecast to text_to_speech

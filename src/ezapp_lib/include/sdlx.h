@@ -77,15 +77,8 @@ sdlx_color_t sdlx_wavelength_to_color(int wavelength);
 #define FONT_NORMAL   20   // etc
 #define FONT_LARGE    10
 
-#define WRAP_NONE    -1
-#define WRAP_NEWLINE  0
-
-#define FLAG_X_CTR  1
-#define FLAG_Y_CTR  2
-#define FLAG_XY_CTR (FLAG_X_CTR | FLAG_Y_CTR)
-
-// The following work with the default font;
-// the default font is specified by call to sdlx_print_set_default.
+// The following work with the default font.
+// The default font settings (fontid and color) are specified by call to sdlx_print_set_default.
 void sdlx_print_set_default(int fontid, sdlx_color_t color);
 extern int sdlx_char_width_dflt;
 extern int sdlx_char_height_dflt;
@@ -93,7 +86,13 @@ extern int sdlx_char_height_dflt;
 #define COL2X(c) ((c) * sdlx_char_width_dflt)
 sdlx_loc_t *sdlx_render_printf(int x, int y, char *fmt, ...) __attribute__ ((format (printf, 3, 4)));
 
-// The following work with the font specified by fontid.
+// The following work with the font specified by fontid, and the 
+// specified color. These also support the flag and wrap params
+#define FLAG_X_CTR    1
+#define FLAG_Y_CTR    2
+#define FLAG_XY_CTR   (FLAG_X_CTR | FLAG_Y_CTR)
+#define WRAP_NONE    -1
+#define WRAP_NEWLINE  0
 int sdlx_char_width(int fontid);
 int sdlx_char_height(int fontid);
 sdlx_loc_t *sdlx_render_printf_ex1(int x, int y, int fontid, sdlx_color_t color, char * fmt, ...);
