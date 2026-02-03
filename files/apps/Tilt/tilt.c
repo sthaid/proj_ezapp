@@ -5,12 +5,12 @@
 #include <sdlx.h>
 #include <utils.h>
 
-// xxx
-// - handle other orientations
-
 // defines
 #define RAD_TO_DEG (180 / M_PI)
 #define DEG_TO_RAD (M_PI / 180)
+
+#define SMALL_CIRCLE_RADIUS 25
+#define LARGE_CIRCLE_RADIUS 500
 
 // variables
 char *progname;
@@ -27,41 +27,45 @@ sdlx_texture_t *light_gray_circle;
 // prototypes
 void smooth(double newval, double *smoothed);
 void no_accelerometer(void);
-void horizontal(double ax, double ay, double az);
+sdlx_texture_t *create_filled_circle_texture(int radius, sdlx_color_t color);
+void display_tilt(double ax, double ay, double az);
 
 // -----------------  MAIN  ------------------------------------------
     
 int main(int argc, char **argv)
 {
-    int          rc;
-    double       ax_raw, ay_raw, az_raw;
-    double       ax=INVALID_NUMBER, ay=INVALID_NUMBER, az=INVALID_NUMBER;
+    int    rc;
+    double ax_raw, ay_raw, az_raw;
+    double ax=INVALID_NUMBER, ay=INVALID_NUMBER, az=INVALID_NUMBER;
+
+    // set line buffering
+    setlinebuf(stdout);
 
     // save args
+    progname = argv[0];
     if (argc != 2) {
-        printf("ERROR: data_dir arg expected\n");
+        printf("E %s: data_dir arg expected\n", progname);
         return 1;
     }
-    progname = argv[0];
     data_dir = argv[1];
-    printf("INFO %s: starting, data_dir=%s\n", progname, data_dir);
+    printf("I %s: starting, data_dir=%s\n", progname, data_dir);
 
     // init sdl video subsystem
     rc = sdlx_init(SUBSYS_VIDEO|SUBSYS_SENSOR);
     if (rc != 0) {
-        printf("ERROR %s: sdlx_init failed\n", progname);
+        printf("E %s: sdlx_init failed\n", progname);
         return 1;
     }
 
     // create textures
-    green_circle      = sdlx_create_filled_circle_texture(50, COLOR_GREEN);
-    blue_circle       = sdlx_create_filled_circle_texture(50, COLOR_BLUE);
-    red_circle        = sdlx_create_filled_circle_texture(50, COLOR_RED);
-    gray_circle       = sdlx_create_filled_circle_texture(500, COLOR_GRAY);
-    light_gray_circle = sdlx_create_filled_circle_texture(500, COLOR_LIGHT_GRAY);
+    green_circle      = create_filled_circle_texture(SMALL_CIRCLE_RADIUS, COLOR_GREEN);
+    blue_circle       = create_filled_circle_texture(SMALL_CIRCLE_RADIUS, COLOR_BLUE);
+    red_circle        = create_filled_circle_texture(SMALL_CIRCLE_RADIUS, COLOR_RED);
+    gray_circle       = create_filled_circle_texture(LARGE_CIRCLE_RADIUS, COLOR_GRAY);
+    light_gray_circle = create_filled_circle_texture(LARGE_CIRCLE_RADIUS, COLOR_LIGHT_GRAY);
 
-    // use default font size and color
-    sdlx_print_init(DEFAULT_FONT, COLOR_WHITE, COLOR_BLACK);
+    // use normal font size and color white
+    sdlx_print_set_default(FONT_NORMAL, COLOR_WHITE);
 
     // runtime loop
     while (!end_program) {
@@ -77,11 +81,8 @@ int main(int argc, char **argv)
         smooth(ay_raw, &ay);
         smooth(az_raw, &az);
 
-        // determine orientation
-        // xxx todo
-
-        // if orientation is horizontal ..
-        horizontal(ax, ay, az);
+        // display the tilt, using the accelerometer values
+        display_tilt(ax, ay, az);
     }
 
     // free allocations
@@ -93,7 +94,7 @@ int main(int argc, char **argv)
 
     // quit sdl subsystems and end program
     sdlx_quit(SUBSYS_VIDEO|SUBSYS_SENSOR);
-    printf("INFO %s: terminating\n", progname);
+    printf("I %s: terminating\n", progname);
     return 0;
 }
 
@@ -113,11 +114,16 @@ void no_accelerometer(void)
     sdlx_event_t event;
 
     sdlx_display_init(COLOR_BLACK);
-    sdlx_register_control_events(NULL, NULL, "X", COLOR_WHITE, COLOR_BLACK, 0, 0, EVID_QUIT);
-    sdlx_render_printf_xyctr(sdlx_win_width/2, sdlx_win_height/2, "No Accelerometer");
+    sdlx_register_control_events(0, NULL,
+                                 0, NULL,
+                                 EVID_QUIT, "X",
+                                 COLOR_WHITE, COLOR_BLACK);
+    sdlx_render_printf_ex2(sdlx_win_width/2, sdlx_win_height/2, 
+                           FONT_NORMAL, COLOR_WHITE, FLAG_XY_CTR, WRAP_NONE,
+                           "%s", "No Accelerometer");
     sdlx_display_present();
 
-    sdlx_get_event(100000, &event);  // 100 ms timeout
+    sdlx_get_event(-1, &event);  // infinite timeout
     switch (event.event_id) {
     case EVID_QUIT:
         end_program = true;
@@ -125,20 +131,34 @@ void no_accelerometer(void)
     }
 }
 
-// -----------------  HORIZONTAL  ---------------------------
+sdlx_texture_t *create_filled_circle_texture(int radius, sdlx_color_t color)
+{
+    int w, h;
+    sdlx_texture_t *t;
+
+    w = h = 2 * radius;
+
+    t = sdlx_create_texture(w, h);
+    sdlx_set_render_target(t);
+    sdlx_render_fill_circle(w/2, h/2, radius, color);
+    sdlx_set_render_target(NULL);
+
+    return t;
+}
+
+// -----------------  DISPLAY TILT  -------------------------
 
 #define EVID_INCR_MAX_BULLS_EYE 1
 #define EVID_DECR_MAX_BULLS_EYE 2
 
 #define MAX_BULLS_EYE_DEFAULT 5
 
-void horizontal(double ax, double ay, double az)
+void display_tilt(double ax, double ay, double az)
 {
-    int                 width, xctr, yctr, deg;
+    int                 diameter, xctr, yctr, deg;
     sdlx_texture_t     *t;
     double              tilt_dir, tilt_amount;
     sdlx_event_t        event;
-    sdlx_print_state_t  print_state;
 
     static int          max_bulls_eye = -1;
 
@@ -150,13 +170,6 @@ void horizontal(double ax, double ay, double az)
     // init the backbuffer
     sdlx_display_init(COLOR_BLACK);
 
-    // register control event to
-    // - end program
-    // - adjust max_bulls_eye
-    sdlx_register_control_events(
-            "-", "+", "X", COLOR_WHITE, COLOR_BLACK, 
-            EVID_DECR_MAX_BULLS_EYE, EVID_INCR_MAX_BULLS_EYE, EVID_QUIT);
-
     // init center location of the bulls-eye
     xctr = sdlx_win_width/2;
     yctr = sdlx_win_height/2;
@@ -164,27 +177,26 @@ void horizontal(double ax, double ay, double az)
     // draw bulls-eye
     t = gray_circle;
     for (deg = max_bulls_eye; deg >= 1; deg--) {
-        width = nearbyint((double)sdlx_win_width / max_bulls_eye * deg);
+        diameter = nearbyint((double)sdlx_win_width / max_bulls_eye * deg);
         t = (t == gray_circle ? light_gray_circle : gray_circle);
-        sdlx_render_texture(xctr-width/2, yctr-width/2, width, width, t);
+        sdlx_render_texture_ex1(t, xctr-diameter/2, yctr-diameter/2, diameter, diameter);
     }
 
     // calculate tilt amount and direction
     tilt_dir    = atan2(ax, ay) * RAD_TO_DEG;
     tilt_amount = atan( sqrt(ax*ax + ay*ay) / az ) * RAD_TO_DEG;
+    //printf("I %s: tilt dir = %0.1f amount = %0.1f\n", progname, tilt_dir, tilt_amount);
     
     // display ...
     // - tilt_amount
-    sdlx_print_save(&print_state);
-    sdlx_print_init(LARGE_FONT, COLOR_WHITE, COLOR_BLACK);  // xxx add new sdlx routine to just choose the font size
-    sdlx_render_printf_xyctr(
-            xctr,
-            yctr - sdlx_win_width/2 - ROW2Y(1.5),
-            "%0.2f",
-            tilt_amount);
-    sdlx_print_restore(&print_state);
+    diameter = sdlx_win_width;
+    sdlx_render_printf_ex2(xctr, yctr - diameter/2 - 1.5 * sdlx_char_height(FONT_LARGE),
+                           FONT_LARGE, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE,
+                           "%0.2f", tilt_amount);
     // - max_bulls_eye (degrees)
-    sdlx_render_printf_xyctr(sdlx_win_width/2, sdlx_win_height-ROW2Y(3), "max %d deg", max_bulls_eye);
+    sdlx_render_printf_ex2(sdlx_win_width/2, sdlx_win_height-CONTROL_EVENTS_DISPLAY_HEIGHT-2*sdlx_char_height(FONT_NORMAL),
+                           FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE,
+                           "max %d deg", max_bulls_eye);
 
     // limit tilt amount to the max that can be displayed on the bulls-eye
     if (tilt_amount > max_bulls_eye) {
@@ -194,33 +206,36 @@ void horizontal(double ax, double ay, double az)
     // display small circle on the bulls-eye pattern, 
     // at location indicating the tilt direction and amount
     double dx, dy;
-    int x, y, small_circle_diameter;
+    int x, y;
 
     dx = tilt_amount * sin(tilt_dir*DEG_TO_RAD) * ((double)(sdlx_win_width/2) / max_bulls_eye);
     dy = tilt_amount * cos(tilt_dir*DEG_TO_RAD) * ((double)(sdlx_win_width/2) / max_bulls_eye);
     x = nearbyint(xctr  + dx);
     y = nearbyint(yctr - dy);
 
-    small_circle_diameter = 50;
-
     t = ((fabs(tilt_amount) < 0.2)            ? green_circle :
          ((fabs(tilt_amount) < max_bulls_eye) ? blue_circle :
                                                 red_circle));
 
-    sdlx_render_texture(x-small_circle_diameter/2, 
-                        y-small_circle_diameter/2, 
-                        small_circle_diameter, 
-                        small_circle_diameter, 
-                        t);
+    sdlx_render_texture(t, x-SMALL_CIRCLE_RADIUS, y-SMALL_CIRCLE_RADIUS);
 
     // display dot at center of bulls_eye
     sdlx_render_point(xctr, yctr, COLOR_BLACK, 9);
 
+    // register control event to
+    // - end program
+    // - adjust max_bulls_eye
+    sdlx_register_control_events(EVID_DECR_MAX_BULLS_EYE, "-",
+                                 EVID_INCR_MAX_BULLS_EYE, "+",
+                                 EVID_QUIT, "X",
+                                 COLOR_WHITE, COLOR_BLACK);
+
     // present the display
     sdlx_display_present();
 
-    // wait for event, with 100ms timeout
-    sdlx_get_event(100000, &event);
+    // wait for event, with 10 ms timeout
+    // xxx trying 10 ms, was 100 ms
+    sdlx_get_event(10000, &event);
 
     // process events
     switch (event.event_id) {
