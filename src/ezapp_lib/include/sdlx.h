@@ -88,6 +88,7 @@ sdlx_loc_t *sdlx_render_printf(int x, int y, char *fmt, ...) __attribute__ ((for
 
 // The following work with the font specified by fontid, and the 
 // specified color. These also support the flag and wrap params
+#define FLAG_NONE     0
 #define FLAG_X_CTR    1
 #define FLAG_Y_CTR    2
 #define FLAG_XY_CTR   (FLAG_X_CTR | FLAG_Y_CTR)
