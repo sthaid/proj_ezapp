@@ -1,30 +1,37 @@
 Log              OK
-Template            OK
-Compass            OK
-Paddle          OK
+Template         OK
+Compass          OK
+Paddle           OK
 Clock            OK
 FlshLite         OK
-Light           OK
-Morse           OK
-Test            OK
-Weather         OK
+Light            OK
+Morse            OK
+Test             OK
+Weather          OK
+Tilt             OK
+Memo             OK
+SVC Template     OK but needs to be tested in Linux-APP
 
 HexCalc          
 Location
-Memo
 Reversi
-Tilt
+SVC Location
 
-Location
-Template
+Location,  don't get every minute, and dont repeat same location
+- retest location
 
-
-isue with sdlx_char_height,  see compass.c
-sdlx_video.c  xxx,  and print section review,  and remove plotting
-
-other apps
+sdlx_video.c  xxx,  and print section review
 
 build the linux dir, and test
+
+logging program , if script not used then delete it
+xxxxxxxxxxxxxxx
+
+Logical Presentation
+- ask SDL team bout LogicalPresentation issues
+- test this on Android build
+
+check all apps for printing, use "I " and "E " prefix
 
 -- LATER --
 
@@ -35,29 +42,7 @@ eztest: restore picoc build
 
 get latitude failed
 
-add sdlx_pixel_t
-
-keep line wrap option, test with the copyright file modified
-
-- - - 
-
-multiline scrolling is jumpy
-
-logging pgm
-- use script for adb logcat
-- support 'color=xxxxxxxx'  OR  build in to render_text, maybe flags arg
-- scroll left, right
-- start at the bottom
-- add top/bottom event_id
-
-SetRenderTarget
-
 picoc library, color definitions
-
-remove line wrap option ??
-
-try scaling using different method
-- to try this, set my scale factor to 1
 
 start picoc list of issues
 - make test pgms
@@ -69,20 +54,7 @@ picoc change needed for unsinged 64bit
 layout file is not preserved when reloading
 - this may be something in main.c
 
-check all apps for printing, use "I " and "E " prefix
-
 mmap should allow for arbitrary length files
-
-Location,  don't get every minute, and dont repeat same location
-- retest location
-
-update to sdlx_print to not need background color arg
-
-update to add pixel_t  unsigned int
-
-eztest:
-- rename args to eztet to build_linux  run_linux  run_picoc
-- color output
 
 add SDL version to Setup, and print when starting
 
@@ -91,8 +63,6 @@ review and cleanup sdlx_audio.c
 git checkout the ttf and mixer too
 - ask question to the mixer team
 - check if they have tagged versions now
-
-split line option for printing - keep the wrap arg
 
 -------------
 MAYBE LATER
