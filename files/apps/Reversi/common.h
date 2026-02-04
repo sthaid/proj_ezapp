@@ -19,6 +19,8 @@
 #define MOVE_PASS -1
 
 #define HUMAN 0
+#define DEFAULT_CPU_LEVEL 1
+#define MAX_CPU_LEVEL 2
 #define CPU(level)  (level)
 
 typedef struct {
