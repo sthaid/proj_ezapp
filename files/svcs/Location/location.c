@@ -17,6 +17,9 @@
 // defines
 #define INTERVAL (15*60)  // 15 minutes
 
+#define CREATE_IF_NEEDED true
+#define READ_WRITE       false
+
 // variables
 loc_hist_t *loc_hist;
 bool        param_enabled = false;
@@ -44,19 +47,18 @@ int main(int argc, char **argv)
     int           rc;
     int           created;
 
+    // set line buffering
+    setlinebuf(stdout);
+
     // save args
+    progname = argv[0];
     if (argc != 2) {
         printf("E %s: data_dir arg expected\n", progname);
         return 1;
     }
-    progname = argv[0];
     data_dir = argv[1];
     printf("I %s: starting, data_dir=%s\n", progname, data_dir);
 
-    // xxx
-    if (test_loc_hist) {
-        util_delete_file(data_dir, LOC_HIST_FILENAME);
-    }
 
     // read location data
     rc = read_loc_data();
@@ -65,11 +67,16 @@ int main(int argc, char **argv)
         return 1;
     }
 
+    // when test mode is anabled, delete LOC_HIST_FILENAME, so that
+    // a new empty LOC_HIST_FILENAME will be created, and initialized 
+    // with test data
+    if (test_loc_hist) {
+        util_delete_file(data_dir, LOC_HIST_FILENAME);
+    }
+
     // map the loc_hist file
-    // - create_if_needed = true
-    // - read_only = false
-    // - created (return flag) = NULL
-    loc_hist = util_map_file(data_dir, LOC_HIST_FILENAME, sizeof(loc_hist_t), true, false, &created);
+    loc_hist = util_map_file(data_dir, LOC_HIST_FILENAME, sizeof(loc_hist_t),
+                             CREATE_IF_NEEDED, READ_WRITE, &created);
     if (loc_hist == NULL) {
         printf("E %s: failed to map %s\n", progname, LOC_HIST_FILENAME);
         return 1;

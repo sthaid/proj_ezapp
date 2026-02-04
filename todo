@@ -11,11 +11,10 @@ Weather          OK
 Tilt             OK
 Memo             OK
 SVC Template     OK but needs to be tested in Linux-APP
+Reversi          OK
+SVC Location     OK but needs to be tested
 
 HexCalc          
-Location
-Reversi
-SVC Location
 
 Location,  don't get every minute, and dont repeat same location
 - retest location
