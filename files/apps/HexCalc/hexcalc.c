@@ -17,7 +17,7 @@
 #define MAX_BUTTON_ROW 7
 #define MAX_BUTTON_COL 5
 
-#define BUTTON_HIGHLIGHT_DURATION_MS 100
+#define BUTTON_HIGHLIGHT_DURATION_MS 200
 
 #define EVID_64BIT   ('6' | '4' << 8)
 #define EVID_32BIT   ('3' | '2' << 8)
@@ -40,11 +40,12 @@ int button[MAX_BUTTON_ROW][MAX_BUTTON_COL] = {
         };
 
 // colors
-#define BACKGROUND_COLOR         COLOR_LIGHT_GRAY
-#define BUTTON_COLOR_NORMAL      COLOR_WHITE
-#define BUTTON_COLOR_HIGHLIGHT   COLOR_GRAY
-#define BUTTON_COLOR_TEXT        COLOR_BLACK
-#define DISPLAY_NUMBER_COLOR     COLOR_BLACK
+#define BACKGROUND_COLOR            COLOR_LIGHT_GRAY
+#define BUTTON_COLOR_NORMAL         COLOR_WHITE
+#define BUTTON_COLOR_HIGHLIGHT      COLOR_GRAY
+#define BUTTON_COLOR_TEXT           COLOR_BLACK
+#define DISPLAY_NUMBER_COLOR        COLOR_BLACK
+#define DISPLAY_NUMBER_ERROR_COLOR  COLOR_RED
 
 // values for display_state
 #define RESULT     0
@@ -59,10 +60,11 @@ char *progname;
 char *data_dir;
 
 // prototypes
-void update_numeric_display(unsigned long value, int bits, int display, bool error);
+void update_number_display(unsigned long value, int bits, int display, bool error);
 void draw_button(int row, int col, bool highlight);
 void evid_to_button_row_and_col(int evid, int *button_row, int *button_col);
 unsigned long process_op(int op, unsigned long operand1, unsigned long operand2, int bits, bool *error);
+sdlx_texture_t *create_filled_circle_texture(int radius, sdlx_color_t color);
 void cleanup(void);
 
 // -----------------  MAIN  ----------------------------------
@@ -110,9 +112,6 @@ int main(int argc, char **argv)
         // init the backbuffer
         sdlx_display_init(BACKGROUND_COLOR);
 
-        // register control event to end program
-        sdlx_register_control_events(NULL, NULL, "X", BUTTON_COLOR_TEXT, BACKGROUND_COLOR, 0, 0, EVID_QUIT);
-
         // display calculator buttons, which will also register the button events
         for (int row = 0; row < MAX_BUTTON_ROW; row++) {
             for (int col = 0; col < MAX_BUTTON_COL; col++) {
@@ -121,8 +120,14 @@ int main(int argc, char **argv)
             }
         }
         
-        // update numeric display
-        update_numeric_display(display_value, bits, display_fmt, error);
+        // update number display
+        update_number_display(display_value, bits, display_fmt, error);
+
+        // register control event to end program
+        sdlx_register_control_events(0, NULL,
+                                     0, NULL,
+                                     EVID_QUIT, "X",
+                                     BUTTON_COLOR_TEXT, BACKGROUND_COLOR);
 
         // present the display
         sdlx_display_present();
@@ -264,28 +269,34 @@ int main(int argc, char **argv)
 
 // -----------------  SUPPORT ROUTINES  ----------------------------
 
-void update_numeric_display(unsigned long value, int bits, int display_fmt, bool error)
+void update_number_display(unsigned long value, int bits, int display_fmt, bool error)
 {
-    int max_chars;
+    int font_max_chars;
     char fmt[20];
 
+    // set font_max_chars to the number of chars that will fit in display_width
     if (display_fmt == EVID_DSP_HEX) {
-        max_chars = (bits == EVID_32BIT ? 8 : 16);
+        font_max_chars = (bits == EVID_32BIT ? 8 : 16);
     } else {
-        max_chars = (bits == EVID_32BIT ? 10 : 20);
+        font_max_chars = (bits == EVID_32BIT ? 10 : 20);
     }
 
-    sdlx_print_set_default(max_chars, DISPLAY_NUMBER_COLOR);
-
+    // write to number display: either 'error', or hex value, or decimal value
     if (error) {
-        sprintf(fmt, "%%%ds", max_chars);
-        sdlx_render_printf(0, DISPLAY_Y_TOP, fmt, "error");
+        sprintf(fmt, "%%%ds", font_max_chars);
+        sdlx_render_printf_ex1(0, DISPLAY_Y_TOP, 
+                               font_max_chars, DISPLAY_NUMBER_ERROR_COLOR,
+                               fmt, "error");
     } else if (display_fmt == EVID_DSP_HEX) {
-        sprintf(fmt, "%%%dlX", max_chars);
-        sdlx_render_printf(0, DISPLAY_Y_TOP, fmt, value);
+        sprintf(fmt, "%%%dlX", font_max_chars);
+        sdlx_render_printf_ex1(0, DISPLAY_Y_TOP, 
+                               font_max_chars, DISPLAY_NUMBER_COLOR,
+                               fmt, value);
     } else {
-        sprintf(fmt, "%%%dlu", max_chars);
-        sdlx_render_printf(0, DISPLAY_Y_TOP, fmt, value);
+        sprintf(fmt, "%%%dlu", font_max_chars);
+        sdlx_render_printf_ex1(0, DISPLAY_Y_TOP, 
+                               font_max_chars, DISPLAY_NUMBER_COLOR,
+                               fmt, value);
     }
 }
 
@@ -302,8 +313,8 @@ void draw_button(int row, int col, bool highlight)
 
     if (button_texture == NULL) {
         radius = BUTTONS_SPACING * 45 / 100;
-        button_texture = sdlx_create_filled_circle_texture(radius, BUTTON_COLOR_NORMAL);
-        highlighted_button_texture = sdlx_create_filled_circle_texture(radius,BUTTON_COLOR_HIGHLIGHT);
+        button_texture = create_filled_circle_texture(radius, BUTTON_COLOR_NORMAL);
+        highlighted_button_texture = create_filled_circle_texture(radius,BUTTON_COLOR_HIGHLIGHT);
         sdlx_query_texture(button_texture, &texture_w, &texture_h);
     }
 
@@ -314,13 +325,17 @@ void draw_button(int row, int col, bool highlight)
     x = BUTTONS_X_LEFT + col * BUTTONS_SPACING;
     y = BUTTONS_Y_TOP + row * BUTTONS_SPACING;
 
-    sdlx_render_texture(x-texture_w/2, y-texture_h/2, texture_w, texture_h,
-        !highlight ? button_texture : highlighted_button_texture);
+    sdlx_render_texture(
+        !highlight ? button_texture : highlighted_button_texture,
+        x-texture_w/2, y-texture_h/2);
 
-    sdlx_print_set_default(20, BUTTON_COLOR_TEXT, !highlight ? BUTTON_COLOR_NORMAL : BUTTON_COLOR_HIGHLIGHT);
+    //xxx sdlx_print_set_default(20, BUTTON_COLOR_TEXT, !highlight ? BUTTON_COLOR_NORMAL : BUTTON_COLOR_HIGHLIGHT);
+    //xxx sdlx_print_set_default(20, BUTTON_COLOR_TEXT);
     memset(str, 0, sizeof(str));
     memcpy(str, &button[row][col], 4);
-    sdlx_render_printf_xyctr(x, y, "%s", str);
+    sdlx_render_printf_ex2(x, y, 
+                           FONT_NORMAL, BUTTON_COLOR_TEXT, FLAG_XY_CTR, WRAP_NONE,
+                           "%s", str);
 
     loc.x = x - texture_w/2;
     loc.y = y - texture_h/2;
@@ -378,8 +393,24 @@ unsigned long process_op(int op, unsigned long operand1, unsigned long operand2,
     return result;
 }
 
+sdlx_texture_t *create_filled_circle_texture(int radius, sdlx_color_t color)
+{
+    int w, h;
+    sdlx_texture_t *t;
+
+    w = h = 2 * radius;
+
+    t = sdlx_create_texture(w, h);
+    sdlx_set_render_target(t);
+    sdlx_render_fill_circle(w/2, h/2, radius, color);
+    sdlx_set_render_target(NULL);
+
+    return t;
+}
+
 void cleanup(void)
 {
     sdlx_destroy_texture(button_texture);
     sdlx_destroy_texture(highlighted_button_texture);
 }
+
