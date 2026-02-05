@@ -126,12 +126,10 @@ static int init(void)
     params.devel_port = util_get_numeric_param(".", "devel_port", DEFAULT_DEVEL_PORT);
     strcpy(params.devel_password, util_get_str_param(".", "devel_password", DEFAULT_DEVEL_PASSWORD));
     params.foreground_enabled = util_get_numeric_param(".", "foreground_enabled", 0);
-
-    // xxx numeric keypad decimal point
-    // xxx keyboard can be dismaissed and then stuck
-    // xxx audio record scaling, and params
     params.record_gain = util_get_numeric_param(".", "record_gain", DEFAULT_RECORD_GAIN);
     params.record_silence = util_get_numeric_param(".", "record_silence", DEFAULT_RECORD_SILENCE);
+
+    // provide the audio params to the sdlx_audio code
     sdlx_audio_params_t ap = { params.record_gain, params.record_silence };
     sdlx_audio_set_params(&ap);
 
@@ -160,7 +158,7 @@ static int init(void)
     // init sdl xxx move
     sdlx_init(SUBSYS_VIDEO | SUBSYS_AUDIO | SUBSYS_SENSOR);
     INFO("sdlx_win_width,height = %d %d  sdlx_char_width,height=%d %d\n",
-         sdlx_win_width, sdlx_win_height, sdlx_char_width, sdlx_char_height);
+         sdlx_win_width, sdlx_win_height, sdlx_char_width_dflt, sdlx_char_height_dflt);
 
 #ifdef ANDROID
     // get permissions when running on Android
@@ -273,17 +271,22 @@ static void processing(void)
     while (true) {
         // clear the display, and set the font to default
         sdlx_display_init(BG_COLOR);
-        sdlx_print_init(DEFAULT_FONT, COLOR_WHITE, BG_COLOR);
+        sdlx_print_set_default(FONT_NORMAL, COLOR_WHITE);
 
         // display menu, and register for events
         display_menu();
 
         // register for screen bottom control events
         if (LAST_PAGE > 0) {
-            sdlx_register_control_events("<", ">", "X", COLOR_WHITE, BG_COLOR,
-                                        EVID_PAGE_DECREMENT, EVID_PAGE_INCREMENT, EVID_MINIMIZE);
+            sdlx_register_control_events(EVID_PAGE_DECREMENT, "<",
+                                         EVID_PAGE_INCREMENT, ">",
+                                         EVID_QUIT, "X",
+                                         COLOR_WHITE, BG_COLOR);
         } else {
-            sdlx_register_control_events(NULL, NULL, "X", COLOR_WHITE, BG_COLOR, 0, 0, EVID_MINIMIZE);
+            sdlx_register_control_events(0, NULL, 
+                                         0, NULL, 
+                                         EVID_QUIT, "X",
+                                         COLOR_WHITE, BG_COLOR);
         }
 
         // update the display
@@ -311,13 +314,12 @@ static void processing(void)
             }
         } else if (event.event_id >= 0 && event.event_id <= max_apps-1) {
             int id = event.event_id;
+            sdlx_print_set_default(FONT_NORMAL, COLOR_WHITE);
             if (apps[id] == NULL) {
                 ERROR("apps[%d] is NULL\n", id);
             } else if (strcmp(apps[id], "Settings") == 0) {
-                sdlx_print_init(DEFAULT_FONT, COLOR_WHITE, COLOR_BLACK);
                 settings();
             } else {
-                sdlx_print_init(DEFAULT_FONT, COLOR_WHITE, COLOR_BLACK);
                 run(apps[id], false);
             }
         }
@@ -377,17 +379,18 @@ static int run(char *name, bool is_svc)
 
 // -----------------  DISPLAY MENU  -------------------------------
 
+static sdlx_texture_t *create_filled_circle_texture(int radius, sdlx_color_t color);
+
 static void display_menu(void)
 {
     static sdlx_texture_t *circle;
-    int first, last, w, h;
-    sdlx_print_state_t print_state;
+    int first, last;
 
     #define RADIUS 100
 
     // allocate circle texture, which is used when displaying menu items
     if (circle == NULL) {
-        circle = sdlx_create_filled_circle_texture(RADIUS, COLOR_BLUE);
+        circle = create_filled_circle_texture(RADIUS, COLOR_BLUE);  // xxx free?
     }
 
     // get the list of apps: 
@@ -400,11 +403,10 @@ static void display_menu(void)
     first = page * 18;
     last  = first + 17;
 
-    if (LAST_PAGE > 0) {
-        sdlx_print_save(&print_state);
-        sdlx_print_init(SMALL_FONT, COLOR_WHITE, BG_COLOR);
-        sdlx_render_printf_xyctr(sdlx_win_width/2, sdlx_char_height/2, "Page %d", page);
-        sdlx_print_restore(&print_state);
+    if (LAST_PAGE > 0) { // xxx test multiple pages
+        sdlx_render_printf_ex1(sdlx_win_width/2, sdlx_char_height_dflt/2, 
+                               FONT_SMALL, COLOR_WHITE, 
+                               "Page %d", page);
     }
 
     for (int i = first; i <= last; i++) {
@@ -455,14 +457,18 @@ static void display_menu(void)
         // display the menu item
         // - first render the circle
         // - then render the app name text within the circle
-        sdlx_query_texture(circle, &w, &h);
-        sdlx_render_texture(x-RADIUS, y-RADIUS, w, h, circle);
-        sdlx_print_init(numchars, COLOR_WHITE, COLOR_BLUE);
+        sdlx_render_texture(circle, x-RADIUS, y-RADIUS);
         if (s2[0] == '\0') {
-            sdlx_render_text_xyctr(x, y, s1);
+            sdlx_render_printf_ex2(x, y, 
+                                   numchars, COLOR_WHITE, FLAG_XY_CTR, WRAP_NONE,
+                                   "%s", s1);
         } else {
-            sdlx_render_text_xyctr(x, nearbyint(y-0.5*chh), s1);
-            sdlx_render_text_xyctr(x, nearbyint(y+0.5*chh), s2);
+            sdlx_render_printf_ex2(x, nearbyint(y-0.5*chh), 
+                                   numchars, COLOR_WHITE, FLAG_XY_CTR, WRAP_NONE,
+                                   "%s", s1);
+            sdlx_render_printf_ex2(x, nearbyint(y+0.5*chh), 
+                                   numchars, COLOR_WHITE, FLAG_XY_CTR, WRAP_NONE,
+                                   "%s", s2);
         }
 
         // register event
@@ -472,6 +478,21 @@ static void display_menu(void)
         loc.h = 2 * RADIUS;
         sdlx_register_event(&loc, i);
     }
+}
+
+static sdlx_texture_t *create_filled_circle_texture(int radius, sdlx_color_t color)
+{
+    int w, h;
+    sdlx_texture_t *t;
+
+    w = h = 2 * radius;
+
+    t = sdlx_create_texture(w, h);
+    sdlx_set_render_target(t);
+    sdlx_render_fill_circle(w/2, h/2, radius, color);
+    sdlx_set_render_target(NULL);
+
+    return t;
 }
 
 static void get_list_of_apps(void)
@@ -580,8 +601,6 @@ static void get_list_of_apps(void)
 
 // -----------------  SETTINGS  -----------------------------------
 
-// xxx y scrolling
-
 static void copyright(void);
 static double get_number(char *prompt, double min, double max) __attribute__ ((unused)); // xxx use in other places
 
@@ -607,9 +626,8 @@ static void settings(void)
     #define EVID_FOREGROUND           1021
 #endif
 
-    #define GET_Y ({ y = y_next; \
-                     y_next += 2*sdlx_char_height; \
-                     y >= y_display_begin - 30 && y <= y_display_end - sdlx_char_height; })
+    #define GET_Y2 ({ y2 += 2*sdlx_char_height_dflt; \
+                      y2 >= y_top - 1.5 * sdlx_char_height_dflt && y2 <= y_bottom; })
 
     bool                done = false;
     sdlx_event_t        event;
@@ -620,126 +638,110 @@ static void settings(void)
     int                 record_test_state = IDLE;
     sdlx_audio_params_t ap;
     sdlx_audio_state_t  as;
-    int                 y_display_begin;
-    int                 y_display_end;
-    double              y_top, y_next, y;
+    int                 y_top;
+    int                 y_bottom;
+    double              y;
+    int                 y2;
 
     // get this device ipaddr
     ipaddr = util_get_ipaddr();
 
     // init variables which define the vertical region of the display
     // being used for the filename list
-    y_display_begin = ROW2Y(4.5);
-    y_display_end   = sdlx_win_height - 500;
-    y_top           = y_display_begin;
+    y_top    = ROW2Y(4.5);
+    y_bottom = sdlx_win_height - CONTROL_EVENTS_DISPLAY_HEIGHT;
+    y        = y_top;
 
     // handle the setting display
     while (true) {
-        // init display and display title line
+        // init display and font size/color
         sdlx_display_init(BG_COLOR);
-        sdlx_print_init(DEFAULT_FONT, COLOR_WHITE, BG_COLOR);
-        sdlx_render_text_xyctr(sdlx_win_width/2, sdlx_char_height/2, "Settings");
-
-        // display version
-        sdlx_render_printf(0, ROW2Y(1), "Version = %s", VERSION);
-        sdlx_render_printf(0, ROW2Y(2), "%s", BUILD_DATE);
-
-        // when in developer mode display ipaddr
-        if (params.devel_mode) {
-            sdlx_render_printf(0, ROW2Y(3), "%s:%d", ipaddr, params.devel_port);
-        }
-
-        // init print color to COLOR_LIGHT_BLUE for the following,
-        // because these all are selectable
-        sdlx_print_init_color(COLOR_LIGHT_BLUE, BG_COLOR);
-
-        // init y_next; used by GET_Y to obtain the y location;
-        // GET_Y will return true if the y value is in the display range
-        y_next = y_top;
 
         // display Copyright
-        if (GET_Y) {
-            loc = sdlx_render_printf(0, y, "Copyright");
+        sdlx_print_set_default(FONT_NORMAL, COLOR_LIGHT_BLUE);
+        y2 = nearbyint(y - 2*sdlx_char_height_dflt);
+        if (GET_Y2) {
+            loc = sdlx_render_printf(0, y2, "Copyright");
             sdlx_register_event(loc, EVID_COPYRIGHT);
         }
 
         // display Devel_Mode
-        if (GET_Y) {
-            loc = sdlx_render_printf(0, y, "Devel_Mode = %s", params.devel_mode ? "ON" : "OFF");
+        if (GET_Y2) {
+            loc = sdlx_render_printf(0, y2, "Devel_Mode = %s", params.devel_mode ? "ON" : "OFF");
             sdlx_register_event(loc, EVID_DEVEL_MODE);
         }
 
         // display Devel_Port
-        if (GET_Y) {
-            loc = sdlx_render_printf(0, y, "Devel_Port = %d", params.devel_port);
+        if (GET_Y2) {
+            loc = sdlx_render_printf(0, y2, "Devel_Port = %d", params.devel_port);
             sdlx_register_event(loc, EVID_DEVEL_PORT);
         }
 
         // display Devel_Password
-        if (GET_Y) {
-            loc = sdlx_render_printf(0, y, "Devel_Password");
+        if (GET_Y2) {
+            loc = sdlx_render_printf(0, y2, "Devel_Password");
             sdlx_register_event(loc, EVID_DEVEL_PASSWORD);
         }
 
         // display Services
-        if (GET_Y) {
-            loc = sdlx_render_printf(0, y, "Services");
+        if (GET_Y2) {
+            loc = sdlx_render_printf(0, y2, "Services");
             sdlx_register_event(loc, EVID_SERVICES);
         }
 
         // display Record_Gain
-        if (GET_Y) {
+        if (GET_Y2) {
             sdlx_audio_get_params(&ap);
-            loc = sdlx_render_printf(0, y, "Record_Gain = %0.1f", ap.record_gain);
+            loc = sdlx_render_printf(0, y2, "Record_Gain = %0.1f", ap.record_gain);
             sdlx_register_event(loc, EVID_RECORD_GAIN);
         }
 
         // display Record_Silence
-        if (GET_Y) {
+        if (GET_Y2) {
             sdlx_audio_get_params(&ap);
-            loc = sdlx_render_printf(0, y, "Record_Silence = %0.0f", ap.record_silence);
+            loc = sdlx_render_printf(0, y2, "Record_Silence = %0.0f", ap.record_silence);
             sdlx_register_event(loc, EVID_RECORD_SILENCE);
         }
 
         // display Record_Test
-        if (GET_Y) {
-            sdlx_audio_state(&as);
+        if (GET_Y2) {
+            sdlx_audio_get_state(&as);
             if (record_test_state == IDLE) {
-                loc = sdlx_render_printf(0, y, "Record_Test");
+                loc = sdlx_render_printf(0, y2, "Record_Test");
                 sdlx_register_event(loc, EVID_RECORD_TEST);
             } else if (record_test_state == RECORDING) {
                 int bar_value_w =  sdlx_win_width * as.volume / 100;
-                int bar_height = sdlx_char_height;
-                sdlx_render_printf(sdlx_win_width-COL2X(2), y, "%2d", as.volume);
-                sdlx_render_fill_rect(0, y, bar_value_w, bar_height, COLOR_RED);
-                sdlx_render_rect(0, y, sdlx_win_width, bar_height, 2, COLOR_WHITE);
+                int bar_height = sdlx_char_height_dflt;
+                sdlx_render_printf(sdlx_win_width-COL2X(2), y2, "%2d", as.volume);
+                sdlx_render_fill_rect(0, y2, bar_value_w, bar_height, COLOR_RED);
+                sdlx_render_rect(0, y2, sdlx_win_width, bar_height, 2, COLOR_WHITE);
             } else if (record_test_state == PLAYBACK) {
                 int bar_value_w = (as.play_total_ms ? (sdlx_win_width * as.play_current_ms / as.play_total_ms) : 0);
-                int bar_height = sdlx_char_height;
-                sdlx_render_fill_rect(0, y, bar_value_w, bar_height, COLOR_GREEN);
-                sdlx_render_rect(0, y, sdlx_win_width, bar_height, 2, COLOR_WHITE);
+                int bar_height = sdlx_char_height_dflt;
+                sdlx_render_fill_rect(0, y2, bar_value_w, bar_height, COLOR_GREEN);
+                sdlx_render_rect(0, y2, sdlx_win_width, bar_height, 2, COLOR_WHITE);
             }
         }
 
 #ifdef ANDROID
         // display Reset_Apps_And_svcs
-        if (GET_Y) {
-            loc = sdlx_render_printf(0, y, "Reset_Apps_And_Svcs");
+        if (GET_Y2) {
+            loc = sdlx_render_printf(0, y2, "Reset_Apps_And_Svcs");
             sdlx_register_event(loc, EVID_RESET_APPS_AND_SVCS);
         }
 
-        // display Foreground
-        if (GET_Y) {
-            loc = sdlx_render_printf(0, y, "Foreground = %s", params.foreground_enabled ? "ENABLED" : "DISABLED");
+        // display Foreground xxx is this needed?
+        if (GET_Y2) {
+            loc = sdlx_render_printf(0, y2, "Foreground = %s", params.foreground_enabled ? "ENABLED" : "DISABLED");
             sdlx_register_event(loc, EVID_FOREGROUND);
         }
 #endif
 
         // change print color back to white
-        sdlx_print_init_color(COLOR_WHITE, BG_COLOR);
+        sdlx_print_set_default(FONT_NORMAL, COLOR_WHITE);
 
         // Record_Test processing
-        sdlx_audio_state(&as);
+        sdlx_audio_get_state(&as);
         if (record_test_state == RECORDING && as.state == AUDIO_STATE_IDLE) {
             sdlx_audio_play_file(".", RECORD_TEST_FILENAME);
             record_test_state = PLAYBACK;
@@ -754,9 +756,18 @@ static void settings(void)
             sdlx_render_printf(0, sdlx_win_height-300, "%s", msg);
         }
 
+        // display title line, version, and ipaddr
+        sdlx_render_fill_rect(0, 0, sdlx_win_width, 4*sdlx_char_height_dflt, BG_COLOR);
+        sdlx_render_printf_ex2(sdlx_win_width/2, ROW2Y(0),
+                               FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE,
+                               "%s", "Settings");
+        sdlx_render_printf(0, ROW2Y(1), "Version = %s", VERSION);
+        sdlx_render_printf(0, ROW2Y(2), "%s", BUILD_DATE);
+        sdlx_render_printf(0, ROW2Y(3), "%s:%d", ipaddr, params.devel_port);
+
         // register motion and control events
         sdlx_register_event(NULL, EVID_MOTION);
-        sdlx_register_control_events(NULL, NULL, "X", COLOR_WHITE, BG_COLOR, 0, 0, EVID_QUIT);
+        sdlx_register_control_events(0, NULL, 0, NULL, EVID_QUIT, "X", COLOR_WHITE, BG_COLOR);
 
         // present the display
         sdlx_display_present();
@@ -859,9 +870,9 @@ static void settings(void)
             break; }
 #endif
         case EVID_MOTION:
-            y_top += event.u.motion.yrel;
-            if (y_top >= y_display_begin) {
-                y_top = y_display_begin;
+            y += event.u.motion.yrel;
+            if (y >= y_top) {
+                y = y_top;
             }
             break;
         case EVID_QUIT:
@@ -900,40 +911,43 @@ static double get_number(char *prompt1, double min, double max)
 
 static void copyright(void)
 {
-    char       *buff;
-    int         y_display_begin, y_display_end, y_top;
+    double      y;
+    int         y_top, y_bottom;
     int         len;
     sdlx_event_t event;
     bool        done = false;
+    char       *lines[1];
 
     // read the copyright file
-    buff = util_read_file(".", "copyright", &len);
-    if (buff == NULL) {
+    lines[0] = util_read_file(".", "copyright", &len);
+    if (lines[0] == NULL) {
         ERROR("failed to read copyright file\n");
         return;
     }
 
-    // init vars
-    y_display_begin = 100;
-    y_display_end = sdlx_win_height - 200;
-    y_top = y_display_begin;
+    // use tiny font
+    sdlx_print_set_default(FONT_TINY, COLOR_WHITE);
 
-    // display copyright, support motion (for scrolling)
+    // init vars
+    y_top    = 0;
+    y_bottom = sdlx_win_height - CONTROL_EVENTS_DISPLAY_HEIGHT;
+    y        = y_top;
+
+    // display copyright
     while (true) {
         // display copyright and register for motion (scrolling) & exit events
         sdlx_display_init(BG_COLOR);
-        sdlx_print_init(SMALLEST_FONT, COLOR_WHITE, BG_COLOR);
+        sdlx_render_multiline_text(0, y, y_top, y_bottom, FONT_TINY, lines, NULL, 1);
+        sdlx_register_control_events(0, NULL, 0, NULL, EVID_QUIT, "X", COLOR_WHITE, BG_COLOR);
         sdlx_register_event(NULL, EVID_MOTION);
-        sdlx_render_multiline_text_from_buff(y_top, y_display_begin, y_display_end, buff);
-        sdlx_register_control_events(NULL, NULL, "X", COLOR_WHITE, BG_COLOR, 0, 0, EVID_QUIT);
         sdlx_display_present();
 
         sdlx_get_event(-1, &event);
         switch (event.event_id) {
         case EVID_MOTION:
-            y_top += event.u.motion.yrel;
-            if (y_top >= y_display_begin) {
-                y_top = y_display_begin;
+            y += event.u.motion.yrel;
+            if (y >= y_top) {
+                y = y_top;
             }
             break;
         case EVID_QUIT:
@@ -947,10 +961,10 @@ static void copyright(void)
     }
 
     // free allocated copyrght buffer
-    free(buff);
+    free(lines[0]);
 }
 
-// ----------------- DEVEL MODE SERVER  ----------------
+// ----------------- DEVELOPER MODE SERVER  ----------------
 
 #define MAX_PID_TBL 20
 

@@ -10,20 +10,20 @@ Test             OK
 Weather          OK
 Tilt             OK
 Memo             OK
-SVC Template     OK but needs to be tested in Linux-APP
+HexCalc          OK
 Reversi          OK
+SVC Template     OK but needs to be tested in Linux-APP
 SVC Location     OK but needs to be tested
 
-HexCalc          
+picoc
+sdlx_video.c  xxx,  and print section review
+build the linux dir, and test
 
 Location,  don't get every minute, and dont repeat same location
 - retest location
 
-sdlx_video.c  xxx,  and print section review
-
-build the linux dir, and test
-
 logging program , if script not used then delete it
+
 xxxxxxxxxxxxxxx
 
 Logical Presentation
