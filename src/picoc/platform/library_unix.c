@@ -799,12 +799,13 @@ void SdlSetupFunction(Picoc *pc)
                                       (union AnyValue *)&name, writeable); \
         } while (0)
         
-    PLATFORM_VAR(sdlx_win_width, &pc->IntType, false);
-    PLATFORM_VAR(sdlx_win_height, &pc->IntType, false);
-    PLATFORM_VAR(sdlx_char_width, &pc->IntType, false);
-    PLATFORM_VAR(sdlx_char_height, &pc->IntType, false);
+    PLATFORM_VAR(sdlx_win_width,        &pc->IntType, false);
+    PLATFORM_VAR(sdlx_win_height,       &pc->IntType, false);
+    PLATFORM_VAR(sdlx_char_width_dflt,  &pc->IntType, false);
+    PLATFORM_VAR(sdlx_char_height_dflt, &pc->IntType, false);
 }
 
+// xxx rename Sdl_ to Sdlx_
 struct LibraryFunction SdlFunctions[] = {
     // sdl initialization and termination, must be done once
     { Sdl_init,            "int sdlx_init(int subsys);" },
@@ -816,8 +817,8 @@ struct LibraryFunction SdlFunctions[] = {
 
     // event registration and query
     { Sdl_register_event,  "void sdlx_register_event(sdlx_loc_t *loc, int event_id);" },
-    { Sdl_register_control_events, 
-                           "void sdlx_register_control_events(char *evstr1, char *evstr2, char *evstr3, int fg_color, int bg_color, int evid1, int evid2, int evid3); " },
+xxx { Sdl_register_control_events, 
+                           "void sdlx_register_control_events(int evid1, char *evstr1, int evid2, char *evstr2, int evid3, char *evstr3, sdlx_color_t print_color, sdlx_color_t bg_color);" },
     { Sdl_get_event,       "void sdlx_get_event(long timeout_us, sdlx_event_t *event);" },
     { Sdl_get_input_str,   "char *sdlx_get_input_str(char *prompt1, char *prompt2, bool numeric_keybd, int bg_color);" },
 
@@ -827,54 +828,36 @@ struct LibraryFunction SdlFunctions[] = {
     { Sdl_set_color_alpha, "int sdlx_set_color_alpha(int color, int alpha);" },
     { Sdl_wavelength_to_color, "int sdlx_wavelength_to_color(int wavelength);" },
 
-    // render text
-    { Sdl_print_init,              "void sdlx_print_init(double numchars, int fg_color, int bg_color);" },
-    { Sdl_print_init_numchars,     "void sdlx_print_init_numchars(double numchars);" },
-    { Sdl_print_init_color,        "void sdlx_print_init_color(int fg_color, int bg_color);" },
-    { Sdl_print_save,              "void sdlx_print_save(sdlx_print_state_t *save);" },
-    { Sdl_print_restore,           "void sdlx_print_restore(sdlx_print_state_t *restore);" },
-    { Sdl_render_text,             "sdlx_loc_t *sdlx_render_text(int x, int y, char *str);" },
-    { Sdl_render_printf,           "sdlx_loc_t *sdlx_render_printf(int x, int y, char *fmt, ...);" },
-    { Sdl_render_text_xyctr,       "sdlx_loc_t *sdlx_render_text_xyctr(int x, int y, char *str);" },
-    { Sdl_render_printf_xyctr,     "sdlx_loc_t *sdlx_render_printf_xyctr(int x, int y, char *fmt, ...);" },
-    { Sdl_render_multiline_text_from_lines,   "void sdlx_render_multiline_text_from_lines(int y_top, int y_display_begin, int y_display_end, char **lines, int n);" },
-    { Sdl_render_multiline_text_from_buff,   "void sdlx_render_multiline_text_from_buff(int y_top, int y_display_begin, int y_display_end, char *buff);" },
+    // render text xxx  entire section
+    { Sdl_print_set_default,     "void sdlx_print_set_default(int fontid, sdlx_color_t color);" {,
+    { Sdl_char_width,            "int sdlx_char_width(int fontid);" {,
+    { Sdl_char_height,           "int sdlx_char_height(int fontid);" {,
+    { Sdl_render_printf          "sdlx_loc_t *sdlx_render_printf(int x, int y, char *fmt, ...)" {,
+    { Sdl_render_printf_ex1      "sdlx_loc_t *sdlx_render_printf_ex1(int x, int y, int fontid, sdlx_color_t color, char * fmt, ...);" {,
+    { Sdl_render_printf_ex2,     "sdlx_loc_t *sdlx_render_printf_ex2(int x, int y, int fontid, sdlx_color_t color, int flags, int wrap, char *fmt, ...);" {,
+    { Sdl_render_multiline_text, "void sdlx_render_multiline_text(int x, int y, int y_top, int y_bottom, int fontid, char **lines, sdlx_color_t *colors, int num_lines);" {,
 
     // render rectangle, lines, circles, points
-    { Sdl_render_rect,     "void sdlx_render_rect(int x, int y, int w, int h, int line_width, int color);" },
-    { Sdl_render_fill_rect,"void sdlx_render_fill_rect(int x, int y, int w, int h, int color);" },
-    { Sdl_render_line,     "void sdlx_render_line(int x1, int y1, int x2, int y2, int color);" },
-    { Sdl_render_lines,    "void sdlx_render_lines(sdlx_point_t *points, int count, int color);" },
-    { Sdl_render_circle,   "void sdlx_render_circle(int x_ctr, int y_ctr, int radius, int line_width, int color);" },
-    { Sdl_render_point,    "void sdlx_render_point(int x, int y, int color, int point_size);" },
-    { Sdl_render_points,   "void sdlx_render_points(sdlx_point_t *points, int count, int color, int point_size);" },
+    { Sdl_render_rect,        "void sdlx_render_rect(int x, int y, int w, int h, int line_width, int color);" },
+    { Sdl_render_fill_rect,   "void sdlx_render_fill_rect(int x, int y, int w, int h, int color);" },
+    { Sdl_render_line,        "void sdlx_render_line(int x1, int y1, int x2, int y2, int color);" },
+    { Sdl_render_lines,       "void sdlx_render_lines(sdlx_point_t *points, int count, int color);" },
+    { Sdl_render_circle,      "void sdlx_render_circle(int x_ctr, int y_ctr, int radius, int line_width, int color);" },
+xxx { Sdl_render_fill_circle, "void sdlx_render_fill_circle(int x_ctr, int y_ctr, int radius, sdlx_color_t color);" },
+    { Sdl_render_point,       "void sdlx_render_point(int x, int y, int color, int point_size);" },
+    { Sdl_render_points,      "void sdlx_render_points(sdlx_point_t *points, int count, int color, int point_size);" },
 
-    // render using textures
-    { Sdl_create_texture_from_pixels,   "sdlx_texture_t *sdlx_create_texture_from_pixels(unsigned char *pixels, int w, int h);" },
-    { Sdl_create_filled_circle_texture, "sdlx_texture_t *sdlx_create_filled_circle_texture(int radius, int color);" },
-    { Sdl_create_text_texture,          "sdlx_texture_t *sdlx_create_text_texture(char *str);" },
-    { Sdl_render_texture,               "sdlx_loc_t *sdlx_render_texture(int x, int y, int w, int h, sdlx_texture_t *texture);" },
-    { Sdl_render_texture_ex,            "void sdlx_render_texture_ex(int x, int y, int w, int h, double angle, sdlx_texture_t *texture);" },
-    { Sdl_render_texture_ex2,           "void sdlx_render_texture_ex2(int x, int y, int w, int h, double angle, int xctr, int yctr, sdlx_texture_t *texture);" },
-    { Sdl_destroy_texture,              "void sdlx_destroy_texture(sdlx_texture_t *texture);" },
-    { Sdl_query_texture,                "void sdlx_query_texture(sdlx_texture_t *texture, int *width, int *height);" },
-    { Sdl_read_display_pixels,          "void *sdlx_read_display_pixels(int x, int y, int w, int h, int *w_pixels, int *h_pixels);" },
-
-    // plotting
-    { Sdl_plot_create,                   "void *sdlx_plot_create("
-                                              "char *title, "
-                                              "int xleft, int xright, int ybottom, int ytop, "
-                                              "double xval_left, double xval_right, double yval_bottom, double yval_top, "
-                                              "double yval_of_x_axis);" },
-    { Sdl_plot_axis,                     "void sdlx_plot_axis("
-                                              "void *cx, "
-                                              "char *xmin_str, char *xmax_str, "
-                                              "char *ymin_str, char *ymax_str);" },
-    { Sdl_plot_points,                   "void sdlx_plot_points(void *cx, sdlx_plot_point_t *pts, int num_pts);" },
-    { Sdl_plot_bars,                     "void sdlx_plot_bars(void *cx,"
-                                              "sdlx_plot_point_t *pts_avg, sdlx_plot_point_t *pts_min, "
-                                              "sdlx_plot_point_t *pts_max, int num_pts, double bar_wval);" },
-    { Sdl_plot_free,                     "void sdlx_plot_free(void *cx);" },
+    // render using textures  xxx section
+    { Sdl_create_texture,     "sdlx_texture_t *sdlx_create_texture(int w, int h);" },
+    { Sdl_destroy_texture,    "void sdlx_destroy_texture(sdlx_texture_t *t);" },
+    { Sdl_query_texture,      "void sdlx_query_texture(sdlx_texture_t *t, int *w, int *h);" },
+    { Sdl_set_texture_pixels, "void sdlx_set_texture_pixels(sdlx_texture_t *t, unsigned int *pixels);" },
+    { Sdl_get_texture_pixels, "unsigned int *sdlx_get_texture_pixels(sdlx_texture_t *t, int *w, int *h);" },
+    { Sdl_render_texture,     "void sdlx_render_texture(sdlx_texture_t *t, int x, int y);" },
+    { Sdl_render_texture_ex1, "void sdlx_render_texture_ex1(sdlx_texture_t *t, int x, int y, int w, int h);" },
+    { Sdl_render_texture_ex2, "void sdlx_render_texture_ex2(sdlx_texture_t *t, int x, int y, int w, int h, double angle);" },
+    { Sdl_render_texture_ex3, "void sdlx_render_texture_ex3(sdlx_texture_t *texture, int x, int y, int w, int h, double angle, int xctr, int yctr);" },
+    { Sdl_set_render_target,  "void sdlx_set_render_target(sdlx_texture_t *t);" },
 
     // audio
     { SDL_audio_stop,                   "int sdlx_audio_stop(void);" },
@@ -908,25 +891,67 @@ struct LibraryFunction SdlFunctions[] = {
     { NULL, NULL } };
 
 const char SdlDefs[] = "\
+/* misc */ \n\
+#define INVALID_NUMBER 999999999 \n\
+\n\
+/* init/quit */ \n\
+#define SUBSYS_VIDEO  1 \n\
+#define SUBSYS_AUDIO  2 \n\
+#define SUBSYS_SENSOR 4 \n\
+\n\
+/* video typedefs  */ \n\
+typedef unsigned int sdlx_color_t; \n\
 typedef struct sdlx_texture sdlx_texture_t; \n\
 typedef struct { \n\
-    int x; \n\
-    int y; \n\
-    int w; \n\
-    int h; \n\
+    int x, y, w, h; \n\
 } sdlx_loc_t; \n\
 typedef struct { \n\
-    int x; \n\
-    int y; \n\
+    int x, y; \n\
 } sdlx_point_t; \n\
-typedef struct { \n\
-    int event_id; \n\
-    union { \n\
-        struct { \n\
-            double x; double y; double xrel; double yrel; \n\
-        } motion; \n\
-    } u; \n\
-} sdlx_event_t; \n\
+\n\
+/* video colors */ \n\
+#define BYTES_PER_PIXEL    4 \n\
+#define COLOR_BLACK        0xff000000   /* abgr */ \n\
+#define COLOR_WHITE        0xffffffff \n\
+#define COLOR_RED          0xff0000ff \n\
+#define COLOR_ORANGE       0xff0080ff \n\
+#define COLOR_YELLOW       0xff00ffff \n\
+#define COLOR_GREEN        0xff00ff00 \n\
+#define COLOR_BLUE         0xffff0000 \n\
+#define COLOR_INDIGO       0xff82004b \n\
+#define COLOR_VIOLET       0xffee82ee \n\
+#define COLOR_PURPLE       0xffff007f \n\
+#define COLOR_LIGHT_BLUE   0xffffff00 \n\
+#define COLOR_LIGHT_GREEN  0xff90ee90 \n\
+#define COLOR_PINK         0xffb469ff \n\
+#define COLOR_TEAL         0xff808000 \n\
+#define COLOR_LIGHT_GRAY   0xffc0c0c0 \n\
+#define COLOR_GRAY         0xff808080 \n\
+#define COLOR_DARK_GRAY    0xff404040 \n\
+\n\
+/* video fonts */ \n\
+#define FONT_TINY     40   /* 40 chars fit in display width */ \n\
+#define FONT_SMALL    30   /* 30 chars fit in display width */ \n\
+#define FONT_NORMAL   20   /* etc */ \n\
+#define FONT_LARGE    10 \n\
+#define ROW2Y(r)      ((r) * sdlx_char_height_dflt) \n\
+#define COL2X(c)      ((c) * sdlx_char_width_dflt) \n\
+#define FLAG_NONE     0 \n\
+#define FLAG_X_CTR    1 \n\
+#define FLAG_Y_CTR    2 \n\
+#define FLAG_XY_CTR   3 \n\
+#define WRAP_NONE    -1 \n\
+#define WRAP_NEWLINE  0 \n\
+\n\
+/* audio */ \n\
+#define AUDIO_STATE_IDLE                0 \n\
+#define AUDIO_STATE_STOPPING            1 \n\
+#define AUDIO_STATE_PAUSED              2 \n\
+#define AUDIO_STATE_PLAY_FILE           3 \n\
+#define AUDIO_STATE_PLAY_TONES          4 \n\
+#define AUDIO_STATE_PLAY_BUFF           5 \n\
+#define AUDIO_STATE_RECORD_FROM_MIC     6 \n\
+#define AUDIO_STATE_RECORD_FROM_DEVICE  7 \n\
 typedef struct { \n\
     short freq; \n\
     short intvl_ms; \n\
@@ -939,70 +964,8 @@ typedef struct { \n\
     int  volume; \n\
     char pathname[200]; \n\
 } sdlx_audio_state_t; \n\
-typedef struct { \n\
-    int   id; \n\
-    int   type; \n\
-    char *name; \n\
-} sdlx_sensor_info_t; \n\
-typedef struct { \n\
-    int ptsize; \n\
-    int char_width; \n\
-    int char_height; \n\
-    int bg_color; \n\
-    int fg_color; \n\
-} sdlx_print_state_t; \n\
-typedef struct { \n\
-    double xval; \n\
-    double yval; \n\
-} sdlx_plot_point_t; \n\
 \n\
-#define SUBSYS_VIDEO  1 \n\
-#define SUBSYS_AUDIO  2 \n\
-#define SUBSYS_SENSOR 4 \n\
-\n\
-#define BYTES_PER_PIXEL  4 \n\
-#define COLOR_BLACK       (   0  |    0<<8 |    0<<16 |  255<<24 ) \n\
-#define COLOR_WHITE       ( 255  |  255<<8 |  255<<16 |  255<<24 ) \n\
-#define COLOR_RED         ( 255  |    0<<8 |    0<<16 |  255<<24 ) \n\
-#define COLOR_ORANGE      ( 255  |  128<<8 |    0<<16 |  255<<24 ) \n\
-#define COLOR_YELLOW      ( 255  |  255<<8 |    0<<16 |  255<<24 ) \n\
-#define COLOR_GREEN       (   0  |  255<<8 |    0<<16 |  255<<24 ) \n\
-#define COLOR_BLUE        (   0  |    0<<8 |  255<<16 |  255<<24 ) \n\
-#define COLOR_INDIGO      (  75  |    0<<8 |  130<<16 |  255<<24 ) \n\
-#define COLOR_VIOLET      ( 238  |  130<<8 |  238<<16 |  255<<24 ) \n\
-#define COLOR_PURPLE      ( 127  |    0<<8 |  255<<16 |  255<<24 ) \n\
-#define COLOR_LIGHT_BLUE  (   0  |  255<<8 |  255<<16 |  255<<24 ) \n\
-#define COLOR_LIGHT_GREEN ( 144  |  238<<8 |  144<<16 |  255<<24 ) \n\
-#define COLOR_PINK        ( 255  |  105<<8 |  180<<16 |  255<<24 ) \n\
-#define COLOR_TEAL        (   0  |  128<<8 |  128<<16 |  255<<24 ) \n\
-#define COLOR_LIGHT_GRAY  ( 192  |  192<<8 |  192<<16 |  255<<24 ) \n\
-#define COLOR_GRAY        ( 128  |  128<<8 |  128<<16 |  255<<24 ) \n\
-#define COLOR_DARK_GRAY   (  64  |   64<<8 |   64<<16 |  255<<24 ) \n\
-\n\
-#define SMALLEST_FONT 40 \n\
-#define SMALL_FONT    30 \n\
-#define DEFAULT_FONT  20 \n\
-#define LARGE_FONT    10 \n\
- \n\
-#define ROW2Y(r) ((r) * sdlx_char_height) \n\
-#define COL2X(c) ((c) * sdlx_char_width) \n\
-\n\
-#define EVID_SWIPE_RIGHT       9990 \n\
-#define EVID_SWIPE_LEFT        9991 \n\
-#define EVID_MOTION            9992 \n\
-#define EVID_QUIT              9999 \n\
-\n\
-#define FRAMES_PER_SEC 48000 \n\
-\n\
-#define AUDIO_STATE_IDLE                0 \n\
-#define AUDIO_STATE_STOPPING            1 \n\
-#define AUDIO_STATE_PAUSED              2 \n\
-#define AUDIO_STATE_PLAY_FILE           3 \n\
-#define AUDIO_STATE_PLAY_TONES          4 \n\
-#define AUDIO_STATE_PLAY_BUFF           5 \n\
-#define AUDIO_STATE_RECORD_FROM_MIC     6 \n\
-#define AUDIO_STATE_RECORD_FROM_DEVICE  7 \n\
-\n\
+/* sensors */ \n\
 #define ASENSOR_TYPE_ACCELEROMETER       1 \n\
 #define ASENSOR_TYPE_MAGNETIC_FIELD      2 \n\
 #define ASENSOR_TYPE_GYROSCOPE           4 \n\
@@ -1037,8 +1000,27 @@ typedef struct { \n\
 #define ASENSOR_TYPE_ACCELEROMETER_LIMITED_AXES_UNCALIBRATED 40 \n\
 #define ASENSOR_TYPE_GYROSCOPE_LIMITED_AXES_UNCALIBRATED 41 \n\
 #define ASENSOR_TYPE_HEADING 42 \n\
+typedef struct { \n\
+    int   id; \n\
+    int   type;  /* ASENSOR_TYPE */ \n\
+    char *name; \n\
+} sdlx_sensor_info_t; \n\
 \n\
-#define INVALID_NUMBER 999999999 \n\
+/* events */ \n\
+#define EVID_MOTION  9990 \n\
+#define EVID_QUIT    9991 \n\
+#define CONTROL_EVENTS_DISPLAY_HEIGHT 150 \n\
+typedef struct { \n\
+    int event_id; \n\
+    union { \n\
+        struct { \n\
+            double x, y, xrel, yrel; \n\
+        } motion; \n\
+        struct { \n\
+            int ch; \n\
+        } keybd; \n\
+    } u; \n\
+} sdlx_event_t; \n\
 ";
 
 // -----------------  UTILS PLATFORM ROUTINES  --------------------------
