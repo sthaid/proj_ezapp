@@ -5,33 +5,39 @@
 
 void replace(char *s, char *pattern1, char *pattern2);
 char *picoc_type(char *type);
+void remove_newline(char *s);
 
 int main(int argc, char **argv)
 {
     char  prototype[1000];
     char  prototype_orig[1000];
-    char *token[200];
+    char *token[200], *p;
     int   n, idx, i;
 
     setlinebuf(stdout);
     setlinebuf(stderr);
 
 again:
-    // get prototype from stdin
+    // get prototype from stdin, and make some adjustments
     if (fgets(prototype_orig, sizeof(prototype_orig), stdin) == NULL) {
         return 0;
     }
+    remove_newline(prototype_orig);
+    p = strstr(prototype_orig, "__attribute__");
+    if (p) strcpy(p, ";");
+
+    // make working copy of prototype_orig; which will be changed by strtok
     strcpy(prototype, prototype_orig);
 
     // handle comment lines
     if (strncmp(prototype, "//", 2) == 0) {
         printf("//\n");
-        printf("%s", prototype);
+        printf("%s\n", prototype);
         printf("//\n");
         printf("\n");
 
         fprintf(stderr, "\n");
-        fprintf(stderr, "    %s", prototype);
+        fprintf(stderr, "    %s\n", prototype);
 
         goto again;
     }
@@ -111,7 +117,7 @@ again:
 
     // SdlFunction generator ...
 
-    // print line
+    // print prototype lines
     char new_routine_name[100];
     strcpy(new_routine_name, routine_name);
     new_routine_name[0] = toupper(new_routine_name[0]);
@@ -120,23 +126,36 @@ again:
     printf("{\n");
 
     // print param declarations
-    for (i = 0; i < n_args; i++) {
-        printf("    %-12s %-12s = (%s)Param[%d]->Val->%s;\n",
-             arg_type[i], arg_name[i], arg_type[i], i, picoc_type(arg_type[i]));
-    }
+    if (strcmp(arg_name[0], "void") != 0) {
+        int max_variable_name=0, max_type_name=0, len;
 
-    // print retval declaration
-    if (strcmp(routine_type, "void") != 0) {
-        printf("    %-12s retval;\n", routine_type);
-    }
+        // - determine longest type and variable names
+        for (i = 0; i < n_args; i++) {
+            if (strcmp(arg_name[i], "...") == 0) {
+                break;
+            }
+            len = strlen(arg_type[i]);
+            if (len > max_type_name) max_type_name = len;
+            len = strlen(arg_name[i]);
+            if (len > max_variable_name) max_variable_name = len;
+        }
 
-    // print blank line folowing arg declarations
-    if (n_args > 0 || strcmp(routine_type, "void") != 0) {
+        // - print the params
+        for (i = 0; i < n_args; i++) {
+            if (strcmp(arg_name[i], "...") == 0) {
+                break;
+            }
+            printf("    %-*s %-*s = (%s)Param[%d]->Val->%s;\n",
+                max_type_name, arg_type[i], max_variable_name,  arg_name[i], arg_type[i], i, picoc_type(arg_type[i]));
+        }
+
+        // - print blank line after args
         printf("\n");
     }
 
     // print call to real routine
     if (strcmp(routine_type, "void") != 0) {
+        printf("    %s retval;\n", routine_type);
         printf("    retval = %s(", routine_name);
     } else {
         printf("    %s(", routine_name);
@@ -149,14 +168,14 @@ again:
 
     // set return value
     if (strcmp(routine_type, "void") != 0) {
-        printf("\n");
-        printf("    ReturnValue->Val->%s = retval\n", picoc_type(routine_type));
+        printf("    ReturnValue->Val->%s = retval;\n", picoc_type(routine_type));
     }
 
     // print closing brace
     printf("}\n\n");
 
     // print SdlFunctions to stderr
+    strcat(new_routine_name, ",");
     fprintf(stderr, "    { %-30s \"%s\" },\n", new_routine_name, prototype_orig);
 
     goto again;
@@ -200,9 +219,20 @@ char *picoc_type(char *type)
         return "UnsignedLongInteger";
     } else if (strcmp(type, "double") == 0) {
         return "FP";
+    } else if (strcmp(type, "bool") == 0) {
+        return "Integer";
     } else if (strcmp(type, "sdlx_color_t") == 0) {
         return "UnsignedInteger";
     } else {
         return "UNKNOWN";
+    }
+}
+
+void remove_newline(char *s)
+{
+    int len=strlen(s);
+
+    if (len > 0 && s[len-1] == '\n') {
+        s[len-1] = '\0';
     }
 }

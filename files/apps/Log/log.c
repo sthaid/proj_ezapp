@@ -215,7 +215,7 @@ int log_load(void)
         colors[num_lines] = COLOR_WHITE;
         if (strncmp(s, "I ", 2) == 0) {
             colors[num_lines] = COLOR_GREEN;
-        } else if ((strncmp(s, "E ", 2) == 0) || (strcasestr(s, "error")) || (strcasestr(s, "fail"))) {
+        } else if ((strncmp(s, "E ", 2) == 0) || (strcasestr(s, "error") != NULL) || (strcasestr(s, "fail") != NULL)) {
             colors[num_lines] = COLOR_RED;
         }
 

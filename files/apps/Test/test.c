@@ -508,7 +508,7 @@ static void page_5_init(void)
     unsigned int *pixels;
     texture2 = sdlx_create_texture(200, 200);
     pixels = malloc(200*200*BYTES_PER_PIXEL);
-    for (int i = 0; i < 200*200; i++) {
+    for (i = 0; i < 200*200; i++) {
         pixels[i] = COLOR_BLUE;
     }
     sdlx_set_texture_pixels(texture2, pixels);

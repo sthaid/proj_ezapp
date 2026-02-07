@@ -52,23 +52,24 @@ int main(int argc, char **argv)
     time_t       time_last_get_loc_info = 0;
 
     char         loc_curr[MAX_SVC_REQ_DATA] = "Not Initialized";
+    char        *lines_loc_curr[1];
     char        *loc_hist_lines[MAX_LOC_HIST];
 
     bool         settings_changed = false;
 
     // save args
+    progname = argv[0];
     if (argc != 2) {
-        printf("ERROR: data_dir arg expected\n");
+        printf("E %s: data_dir arg expected\n", progname);
         return 1;
     }
-    progname = argv[0];
     data_dir = argv[1];
-    printf("INFO %s: starting, data_dir=%s\n", progname, data_dir);
+    printf("I %s: starting, data_dir=%s\n", progname, data_dir);
 
     // init sdl video subsystem
     rc = sdlx_init(SUBSYS_VIDEO);
     if (rc != 0) {
-        printf("ERROR %s: sdlx_init failed\n", progname);
+        printf("E %s: sdlx_init failed\n", progname);
         return 1;
     }
 
@@ -78,7 +79,7 @@ int main(int argc, char **argv)
     // - created (return flag) = NULL
     loc_hist = util_map_file("svcs/Location", LOC_HIST_FILENAME, sizeof(loc_hist_t), false, true, NULL);
     if (loc_hist == NULL) {
-        printf("ERROR: %s failed to map %s\n", progname, LOC_HIST_FILENAME);
+        printf("E: %s failed to map %s\n", progname, LOC_HIST_FILENAME);
         return 1; 
     }
 
@@ -107,40 +108,42 @@ int main(int argc, char **argv)
         // display current location
         // - display "Current"
         y = Y_TOP_OF_DISPLAY;
-        sdlx_render_text_xyctr(sdlx_win_width/2, y+sdlx_char_height/2, "Current");
-        y += sdlx_char_height;
+        sdlx_render_printf_ex2(sdlx_win_width/2, y, FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE, "%s", "Current");
+        y += sdlx_char_height_dflt;
         // - display the current location
-        sdlx_render_multiline_text_from_buff(y, y, y+4*sdlx_char_height, loc_curr);
-        y += 4.5 * sdlx_char_height;
+        lines_loc_curr[0] = loc_curr;
+        sdlx_render_multiline_text(0, y, y, y+4*sdlx_char_height_dflt, FONT_NORMAL, lines_loc_curr, NULL, 1);
+        y += 4.5 * sdlx_char_height_dflt;
 
         // display rectangle to separate the Current and History areas
         sdlx_render_fill_rect(0, y, sdlx_win_width, 10, COLOR_BLUE);
-        y += 0.5 * sdlx_char_height;
+        y += 0.5 * sdlx_char_height_dflt;
 
         // display the location history
         // - display "History"
-        sdlx_render_text_xyctr(sdlx_win_width/2, y+sdlx_char_height/2, "History");
-        y += sdlx_char_height;
+        sdlx_render_printf_ex2(sdlx_win_width/2, y, FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE, "History");
+        y += sdlx_char_height_dflt;
         // - init variables used to display and scroll the history display
         if (y_history_top_reset == 0) {
             y_history_top_reset     = y;
             y_history_top           = y_history_top_reset;
             y_history_display_begin = y_history_top_reset;
-            y_history_display_end   = sdlx_win_height-2*sdlx_char_height;  // need a define or routine for this ?
+            y_history_display_end   = sdlx_win_height-2*sdlx_char_height_dflt;  // need a define or routine for this ?
         }
         // - display the history, starting at most recent
         int count = loc_hist->count;
         for (int i = 0; i < count; i++) {
             loc_hist_lines[i] = loc_hist->loc[count-1-i].data_str;
         }
-        sdlx_render_multiline_text_from_lines(y_history_top, y_history_display_begin, y_history_display_end, 
-                                              loc_hist_lines, loc_hist->count);
+        sdlx_render_multiline_text(0, y_history_top, y_history_display_begin, y_history_display_end, 
+                                   FONT_NORMAL, loc_hist_lines, NULL, loc_hist->count);
 
         // register for events
         sdlx_register_event(NULL, EVID_MOTION);
-        sdlx_register_control_events("stg", "top", "X", 
-                                     COLOR_WHITE, COLOR_BLACK, 
-                                     EVID_SETTINGS, EVID_GOTO_TOP, EVID_QUIT);
+        sdlx_register_control_events(EVID_SETTINGS, "stg",
+                                     EVID_GOTO_TOP, "top",
+                                     EVID_QUIT, "X",
+                                     COLOR_WHITE, COLOR_BLACK);
 
         // present the display
         sdlx_display_present();
@@ -172,7 +175,7 @@ int main(int argc, char **argv)
 
     // cleanup and end program
     sdlx_quit(SUBSYS_VIDEO);
-    printf("INFO %s: terminating\n", progname);
+    printf("I %s: terminating\n", progname);
     return 0;
 }
 
@@ -204,7 +207,7 @@ void settings(void)
                       &query_enabled, sizeof(query_enabled),
                       2);  // 2 sec timeout
     if (rc != SVC_REQ_OK) {
-        printf("ERROR: SVC_LOCATION_REQ_QUERY_ENABLED failed, rc=%d\n", rc);
+        printf("E: SVC_LOCATION_REQ_QUERY_ENABLED failed, rc=%d\n", rc);
     }
 
     while (!done) {
@@ -215,7 +218,7 @@ void settings(void)
         get_countries();
 
         // print in LIGHT_BLUE
-        sdlx_print_init_color(COLOR_LIGHT_BLUE, COLOR_BLACK);
+        sdlx_print_set_default(FONT_NORMAL, COLOR_LIGHT_BLUE);
 
         // register for events:
         // - CLEAR_HISTORY
@@ -236,7 +239,7 @@ void settings(void)
         }
 
         // restore print color to WHITE
-        sdlx_print_init_color(COLOR_WHITE, COLOR_BLACK);
+        sdlx_print_set_default(FONT_NORMAL, COLOR_WHITE);
 
         // display list of countries, with DEL event for each
         for (int i = 0; i < max_countries; i++) {
@@ -244,16 +247,15 @@ void settings(void)
 
             sdlx_render_printf(0, y, "%s", countries[i]);
 
-            sdlx_print_init_color(COLOR_LIGHT_BLUE, COLOR_BLACK);
+            sdlx_print_set_default(FONT_NORMAL, COLOR_LIGHT_BLUE);
             loc = sdlx_render_printf(COL2X(10), y, "%s", "DEL");
             sdlx_register_event(loc, EVID_DEL_COUNTRY+i);
-            sdlx_print_init_color(COLOR_WHITE, COLOR_BLACK);
+            sdlx_print_set_default(FONT_NORMAL, COLOR_WHITE);
         }
 
         // register for quit event
-        sdlx_register_control_events(NULL, NULL, "X", 
-                                     COLOR_WHITE, COLOR_BLACK, 
-                                     0, 0, EVID_QUIT);
+        sdlx_register_control_events(0, NULL, 0, NULL, EVID_QUIT, "X", 
+                                     COLOR_WHITE, COLOR_BLACK);
 
         // present the display
         sdlx_display_present();
@@ -274,14 +276,14 @@ void settings(void)
             if (country_code == NULL) {
                 break;
             }
-            printf("INFO %s: country_code '%s'\n", progname, country_code);
+            printf("I %s: country_code '%s'\n", progname, country_code);
 
             rc = svc_make_req("Location",      
                               SVC_LOCATION_REQ_ADD_COUNTRY_INFO,
                               country_code, strlen(country_code)+1, 
                               20);  // 20 sec timeout
             if (rc != 0) {
-                printf("ERROR %s: SVC_LOCATION_REQ_ADD_COUNTRY_INFO '%s' failed, rc=%d\n", 
+                printf("E %s: SVC_LOCATION_REQ_ADD_COUNTRY_INFO '%s' failed, rc=%d\n", 
                        progname, country_code, rc);
             }
             break; }
@@ -293,26 +295,26 @@ void settings(void)
         case EVID_DEL_COUNTRY+4: {
             int idx = event.event_id - EVID_DEL_COUNTRY;
 
-            printf("INFO %s: deleteing %s\n", progname, countries[idx]);
+            printf("I %s: deleteing %s\n", progname, countries[idx]);
             rc = svc_make_req("Location",      
                               SVC_LOCATION_REQ_DEL_COUNTRY_INFO,
                               countries[idx], strlen(countries[idx])+1,
                               5);  // 5 sec timeout
             if (rc != 0) {
-                printf("ERROR %s: SVC_LOCATION_REQ_DEL_COUNTRY_INFO '%s' failed, rc=%d\n", 
+                printf("E %s: SVC_LOCATION_REQ_DEL_COUNTRY_INFO '%s' failed, rc=%d\n", 
                        progname, countries[idx], rc);
             }
             break; }
 
         case EVID_CLEAR_HISTORY: {
             // xxx add ack display message
-            printf("INFO %s: clearing history\n", progname);
+            printf("I %s: clearing history\n", progname);
             rc = svc_make_req("Location",      
                               SVC_LOCATION_REQ_CLEAR_HISTORY,
                               NULL, 0,
                               5);  // 5 sec timeout
             if (rc != 0) {
-                printf("ERROR %s: SVC_LOCATION_REQ_CLEAR_HISTORY failed, rc=%d\n", progname, rc);
+                printf("E %s: SVC_LOCATION_REQ_CLEAR_HISTORY failed, rc=%d\n", progname, rc);
             }
             break; }
         case EVID_ENABLE_HISTORY: 
@@ -346,7 +348,7 @@ void get_countries(void)
                       req_data, sizeof(req_data),
                       5);  // 5 sec timeout
     if (rc != 0) {
-        printf("ERROR %s: SVC_LOCATION_REQ_LIST_COUNTRY_INFO failed, rc=%d\n", progname, rc);
+        printf("E %s: SVC_LOCATION_REQ_LIST_COUNTRY_INFO failed, rc=%d\n", progname, rc);
     }
 
     p = req_data;

@@ -163,6 +163,14 @@ void StringStrstr(struct ParseState *Parser, struct Value *ReturnValue,
         Param[1]->Val->Pointer);
 }
 
+// EZAPP added strcasestr
+void StringStrcasestr(struct ParseState *Parser, struct Value *ReturnValue,
+    struct Value **Param, int NumArgs)
+{
+    ReturnValue->Val->Pointer = strcasestr(Param[0]->Val->Pointer,
+        Param[1]->Val->Pointer);
+}
+
 void StringStrtok(struct ParseState *Parser, struct Value *ReturnValue,
     struct Value **Param, int NumArgs)
 {
@@ -219,6 +227,7 @@ struct LibraryFunction StringFunctions[] =
     {StringStrcspn, "int strcspn(char *,char *);"},
     {StringStrpbrk, "char *strpbrk(char *,char *);"},
     {StringStrstr,  "char *strstr(char *,char *);"},
+    {StringStrcasestr,  "char *strcasestr(char *,char *);"},
     {StringStrtok,  "char *strtok(char *,char *);"},
     {StringStrxfrm, "int strxfrm(char *,char *,int);"},
 #ifndef WIN32

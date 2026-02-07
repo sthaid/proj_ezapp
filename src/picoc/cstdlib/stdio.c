@@ -817,6 +817,15 @@ void StdioPclose(struct ParseState *Parser, struct Value *ReturnValue,
     ReturnValue->Val->Integer = rc;
 }
 
+// EZAPP setlinebuf
+void StdioSetlinebuf(struct ParseState *Parser, struct Value *ReturnValue,
+    struct Value **Param, int NumArgs)
+{
+    FILE *fp = Param[0]->Val->Pointer;
+
+    setlinebuf(fp);
+}
+
 /* handy structure definitions */
 const char StdioDefs[] = "\
 typedef struct __va_listStruct va_list; \
@@ -875,6 +884,7 @@ struct LibraryFunction StdioFunctions[] =
     {StdioVsscanf, "int vsscanf(char *, char *, va_list);"},
     {StdioPopen, "FILE *popen(char *cmd, char *type);"},
     {StdioPclose, "int pclose(FILE *stream);"},
+    {StdioSetlinebuf, "void setlinebuf(FILE *fp);"},
     {NULL, NULL}
 };
 

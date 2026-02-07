@@ -15,781 +15,685 @@ int StdioBasePrintf(struct ParseState *Parser, FILE *Stream, char *StrOut,
 // -----------------  SDL PLATFORM ROUTINES  ----------------------------
 
 //
-// sdl initialization and termination, must be done once
+// init & quit
 //
 
-void Sdl_init (struct ParseState *Parser, struct Value *ReturnValue,
-	struct Value **Param, int NumArgs)
+void Sdlx_init(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
 {
-    int subsys = Param[0]->Val->Integer;
-    int ret;
+    int subsys = (int)Param[0]->Val->Integer;
 
-    ret = sdlx_init(subsys);
-
-    ReturnValue->Val->Integer = ret;
+    int retval;
+    retval = sdlx_init(subsys);
+    ReturnValue->Val->Integer = retval;
 }
 
-void Sdl_quit(struct ParseState *Parser, struct Value *ReturnValue,
-	struct Value **Param, int NumArgs)
+void Sdlx_quit(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
 {
-    int subsys = Param[0]->Val->Integer;
+    int subsys = (int)Param[0]->Val->Integer;
 
     sdlx_quit(subsys);
 }
 
 //
-// display init and present, must be done for every display update
+// video - display init and present
 //
 
-void Sdl_display_init (struct ParseState *Parser, struct Value *ReturnValue,
-	struct Value **Param, int NumArgs)
+void Sdlx_display_init(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
 {
-    int color = Param[0]->Val->Integer;
+    sdlx_color_t color = (sdlx_color_t)Param[0]->Val->UnsignedInteger;
 
     sdlx_display_init(color);
 }
 
-void Sdl_display_present (struct ParseState *Parser, struct Value *ReturnValue,
-	struct Value **Param, int NumArgs)
+void Sdlx_display_present(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
 {
     sdlx_display_present();
 }
 
 //
-// event registration and query
+// video - colors
 //
 
-void Sdl_register_event (struct ParseState *Parser, struct Value *ReturnValue,
-	struct Value **Param, int NumArgs)
+void Sdlx_create_color(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
 {
-    sdlx_loc_t *loc      = (sdlx_loc_t*)Param[0]->Val->Pointer;
-    int        event_id = Param[1]->Val->Integer;
+    int r = (int)Param[0]->Val->Integer;
+    int g = (int)Param[1]->Val->Integer;
+    int b = (int)Param[2]->Val->Integer;
+    int a = (int)Param[3]->Val->Integer;
 
-    sdlx_register_event(loc, event_id);
+    sdlx_color_t retval;
+    retval = sdlx_create_color(r, g, b, a);
+    ReturnValue->Val->UnsignedInteger = retval;
 }
 
-void Sdl_register_control_events (struct ParseState *Parser, struct Value *ReturnValue,
-	struct Value **Param, int NumArgs)
+void Sdlx_scale_color(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
 {
-    char *evstr1   = (char*)Param[0]->Val->Pointer;
-    char *evstr2   = (char*)Param[1]->Val->Pointer;
-    char *evstr3   = (char*)Param[2]->Val->Pointer;
-    int   fg_color = Param[3]->Val->Integer;
-    int   bg_color = Param[4]->Val->Integer;
-    int   evid1    = Param[5]->Val->Integer;
-    int   evid2    = Param[6]->Val->Integer;
-    int   evid3    = Param[7]->Val->Integer;
+    sdlx_color_t color = (sdlx_color_t)Param[0]->Val->UnsignedInteger;
+    double       inten = (double)Param[1]->Val->FP;
 
-    sdlx_register_control_events(evstr1, evstr2, evstr3, fg_color, bg_color, evid1, evid2, evid3);
+    sdlx_color_t retval;
+    retval = sdlx_scale_color(color, inten);
+    ReturnValue->Val->UnsignedInteger = retval;
 }
 
-void Sdl_get_event (struct ParseState *Parser, struct Value *ReturnValue,
-	struct Value **Param, int NumArgs)
+void Sdlx_set_color_alpha(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
 {
-    long         timeout_us = Param[0]->Val->LongInteger;
-    sdlx_event_t *event      = Param[1]->Val->Pointer;
+    sdlx_color_t color = (sdlx_color_t)Param[0]->Val->UnsignedInteger;
+    int          alpha = (int)Param[1]->Val->Integer;
 
-    sdlx_get_event(timeout_us, event);
+    sdlx_color_t retval;
+    retval = sdlx_set_color_alpha(color, alpha);
+    ReturnValue->Val->UnsignedInteger = retval;
 }
 
-void Sdl_get_input_str (struct ParseState *Parser, struct Value *ReturnValue,
-	struct Value **Param, int NumArgs)
+void Sdlx_wavelength_to_color(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
 {
-    char *prompt1       = Param[0]->Val->Pointer;
-    char *prompt2       = Param[1]->Val->Pointer;
-    bool  numeric_keybd = Param[2]->Val->Integer;
-    int   bg_color      = Param[3]->Val->Integer;
-    char *input_str;
+    int wavelength = (int)Param[0]->Val->Integer;
 
-    input_str = sdlx_get_input_str(prompt1, prompt2, numeric_keybd, bg_color);
-    ReturnValue->Val->Pointer = input_str;
+    sdlx_color_t retval;
+    retval = sdlx_wavelength_to_color(wavelength);
+    ReturnValue->Val->UnsignedInteger = retval;
 }
 
 //
-// create colors
+// video - render text
 //
 
-void Sdl_create_color (struct ParseState *Parser, struct Value *ReturnValue,
-	struct Value **Param, int NumArgs)
+void Sdlx_print_set_default(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
 {
-    int r = Param[0]->Val->Integer;
-    int g = Param[1]->Val->Integer;
-    int b = Param[2]->Val->Integer;
-    int a = Param[3]->Val->Integer;
-    int color;
+    int          fontid = (int)Param[0]->Val->Integer;
+    sdlx_color_t color  = (sdlx_color_t)Param[1]->Val->UnsignedInteger;
 
-    color = sdlx_create_color(r, g, b, a);
+    sdlx_print_set_default(fontid, color);
+}
+
+void Sdlx_render_printf(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
+{
+    int    x   = (int)Param[0]->Val->Integer;
+    int    y   = (int)Param[1]->Val->Integer;
+    char * fmt = (char *)Param[2]->Val->Pointer;
+
+    struct StdVararg PrintfArgs;
+    char             str[500] = "";
+    PrintfArgs.Param = Param + 2;
+    PrintfArgs.NumArgs = NumArgs - 3;
+    StdioBasePrintf(Parser, NULL, str, sizeof(str), fmt, &PrintfArgs);
     
-    ReturnValue->Val->Integer = color;
-}
-
-void Sdl_scale_color (struct ParseState *Parser, struct Value *ReturnValue,
-	struct Value **Param, int NumArgs)
-{
-    int color = Param[0]->Val->Integer;
-    double inten = Param[1]->Val->FP;
-    int scaled_color;
-
-    scaled_color = sdlx_scale_color(color, inten);
-
-    ReturnValue->Val->Integer = scaled_color;
-}
-
-void Sdl_set_color_alpha (struct ParseState *Parser, struct Value *ReturnValue,
-	struct Value **Param, int NumArgs)
-{
-    int color = Param[0]->Val->Integer;
-    int alpha = Param[1]->Val->Integer;
-    int ret_color;
-
-    ret_color = sdlx_set_color_alpha(color, alpha);
-
-    ReturnValue->Val->Integer = ret_color;
-}
-
-void Sdl_wavelength_to_color (struct ParseState *Parser, struct Value *ReturnValue,
-	struct Value **Param, int NumArgs)
-{
-    int wavelength = Param[0]->Val->Integer;
-    int color;
-
-    color = sdlx_wavelength_to_color(wavelength);
-
-    ReturnValue->Val->Integer = color;
-}
-
-//
-// render text
-//
-
-void Sdl_print_init (struct ParseState *Parser, struct Value *ReturnValue,
-	struct Value **Param, int NumArgs)
-{
-    double numchars = Param[0]->Val->FP;
-    int    fg_color = Param[1]->Val->Integer;
-    int    bg_color = Param[2]->Val->Integer;
-
-    sdlx_print_init(numchars, fg_color, bg_color);
-}
-
-void Sdl_print_init_numchars (struct ParseState *Parser, struct Value *ReturnValue,
-	struct Value **Param, int NumArgs)
-{
-    double numchars = Param[0]->Val->FP;
-
-    sdlx_print_init_numchars(numchars);
-}
-
-void Sdl_print_init_color (struct ParseState *Parser, struct Value *ReturnValue,
-	struct Value **Param, int NumArgs)
-{
-    int fg_color = Param[0]->Val->Integer;
-    int bg_color = Param[1]->Val->Integer;
-
-    sdlx_print_init_color(fg_color, bg_color);
-}
-
-void Sdl_print_save (struct ParseState *Parser, struct Value *ReturnValue,
-	struct Value **Param, int NumArgs)
-{
-    sdlx_print_state_t *print_state = (sdlx_print_state_t*)Param[0]->Val->Pointer;
-
-    sdlx_print_save(print_state);
-}
-
-void Sdl_print_restore (struct ParseState *Parser, struct Value *ReturnValue,
-	struct Value **Param, int NumArgs)
-{
-    sdlx_print_state_t *print_state = (sdlx_print_state_t*)Param[0]->Val->Pointer;
-
-    sdlx_print_restore(print_state);
-}
-
-void Sdl_render_text (struct ParseState *Parser, struct Value *ReturnValue,
-	struct Value **Param, int NumArgs)
-{
-    int         x   = Param[0]->Val->Integer;
-    int         y   = Param[1]->Val->Integer;
-    char       *str = Param[2]->Val->Pointer;
-    sdlx_loc_t  *loc;
-
-    loc = sdlx_render_text(x, y, str);
-
+    sdlx_loc_t *loc;
+    loc = sdlx_render_printf(x, y, "%s", str);
     ReturnValue->Val->Pointer = loc;
 }
 
-void Sdl_render_printf (struct ParseState *Parser, struct Value *ReturnValue,
-	struct Value **Param, int NumArgs)
+void Sdlx_char_width(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
 {
-    int   x   = Param[0]->Val->Integer;
-    int   y   = Param[1]->Val->Integer;
-    char *fmt = Param[2]->Val->Pointer;
+    int fontid = (int)Param[0]->Val->Integer;
+
+    int retval;
+    retval = sdlx_char_width(fontid);
+    ReturnValue->Val->Integer = retval;
+}
+
+void Sdlx_char_height(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
+{
+    int fontid = (int)Param[0]->Val->Integer;
+
+    int retval;
+    retval = sdlx_char_height(fontid);
+    ReturnValue->Val->Integer = retval;
+}
+
+void Sdlx_render_printf_ex1(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
+{
+    int          x      = (int)Param[0]->Val->Integer;
+    int          y      = (int)Param[1]->Val->Integer;
+    int          fontid = (int)Param[2]->Val->Integer;
+    sdlx_color_t color  = (sdlx_color_t)Param[3]->Val->UnsignedInteger;
+    char *       fmt    = (char *)Param[4]->Val->Pointer;
 
     struct StdVararg PrintfArgs;
-    char             str[200] = "";
-    sdlx_loc_t       *loc;
-
-    PrintfArgs.Param = Param + 2;
-    PrintfArgs.NumArgs = NumArgs - 3;
+    char             str[500] = "";
+    PrintfArgs.Param = Param + 4;
+    PrintfArgs.NumArgs = NumArgs - 5;
     StdioBasePrintf(Parser, NULL, str, sizeof(str), fmt, &PrintfArgs);
 
-    loc = sdlx_render_text(x, y, str);
-
+    sdlx_loc_t *loc;
+    loc = sdlx_render_printf_ex1(x, y, fontid, color, "%s", str);
     ReturnValue->Val->Pointer = loc;
 }
 
-void Sdl_render_text_xyctr (struct ParseState *Parser, struct Value *ReturnValue,
-	struct Value **Param, int NumArgs)
+void Sdlx_render_printf_ex2(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
 {
-    int         x   = Param[0]->Val->Integer;
-    int         y   = Param[1]->Val->Integer;
-    char       *str = Param[2]->Val->Pointer;
-    sdlx_loc_t  *loc;
-
-    loc = sdlx_render_text_xyctr(x, y, str);
-
-    ReturnValue->Val->Pointer = loc;
-}
-
-void Sdl_render_printf_xyctr (struct ParseState *Parser, struct Value *ReturnValue,
-	struct Value **Param, int NumArgs)
-{
-    int   x   = Param[0]->Val->Integer;
-    int   y   = Param[1]->Val->Integer;
-    char *fmt = Param[2]->Val->Pointer;
+    int          x      = (int)Param[0]->Val->Integer;
+    int          y      = (int)Param[1]->Val->Integer;
+    int          fontid = (int)Param[2]->Val->Integer;
+    sdlx_color_t color  = (sdlx_color_t)Param[3]->Val->UnsignedInteger;
+    int          flags  = (int)Param[4]->Val->Integer;
+    int          wrap   = (int)Param[5]->Val->Integer;
+    char *       fmt    = (char *)Param[6]->Val->Pointer;
 
     struct StdVararg PrintfArgs;
-    char             str[200] = "";
-    sdlx_loc_t       *loc;
-
-    PrintfArgs.Param = Param + 2;
-    PrintfArgs.NumArgs = NumArgs - 3;
+    char             str[500] = "";
+    PrintfArgs.Param = Param + 6;
+    PrintfArgs.NumArgs = NumArgs - 7;
     StdioBasePrintf(Parser, NULL, str, sizeof(str), fmt, &PrintfArgs);
 
-    loc = sdlx_render_text_xyctr(x, y, str);
-
+    sdlx_loc_t *loc;
+    loc = sdlx_render_printf_ex2(x, y, fontid, color, flags, wrap, "%s", str);
     ReturnValue->Val->Pointer = loc;
 }
 
-void Sdl_render_multiline_text_from_lines (struct ParseState *Parser, struct Value *ReturnValue,
-	struct Value **Param, int NumArgs)
+void Sdlx_render_multiline_text(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
 {
-    int    y_top           = Param[0]->Val->Integer;
-    int    y_display_begin = Param[1]->Val->Integer;
-    int    y_display_end   = Param[2]->Val->Integer;
-    char **lines           = Param[3]->Val->Pointer;
-    int    n               = Param[4]->Val->Integer;
+    int            x         = (int)Param[0]->Val->Integer;
+    int            y         = (int)Param[1]->Val->Integer;
+    int            y_top     = (int)Param[2]->Val->Integer;
+    int            y_bottom  = (int)Param[3]->Val->Integer;
+    int            fontid    = (int)Param[4]->Val->Integer;
+    char * *       lines     = (char * *)Param[5]->Val->Pointer;
+    sdlx_color_t * colors    = (sdlx_color_t *)Param[6]->Val->Pointer;
+    int            num_lines = (int)Param[7]->Val->Integer;
 
-    sdlx_render_multiline_text_from_lines(y_top, y_display_begin, y_display_end, lines, n);
-}
-
-void Sdl_render_multiline_text_from_buff (struct ParseState *Parser, struct Value *ReturnValue,
-	struct Value **Param, int NumArgs)
-{
-    int    y_top           = Param[0]->Val->Integer;
-    int    y_display_begin = Param[1]->Val->Integer;
-    int    y_display_end   = Param[2]->Val->Integer;
-    char  *buff            = Param[3]->Val->Pointer;
-
-    sdlx_render_multiline_text_from_buff(y_top, y_display_begin, y_display_end, buff);    
+    sdlx_render_multiline_text(x, y, y_top, y_bottom, fontid, lines, colors, num_lines);
 }
 
 //
-// render rectangle, lines, circles, points
+// video - render rectangle, lines, circles, points
 //
 
-void Sdl_render_rect (struct ParseState *Parser, struct Value *ReturnValue,
-	struct Value **Param, int NumArgs)
+void Sdlx_render_rect(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
 {
-    int   x          = Param[0]->Val->Integer;
-    int   y          = Param[1]->Val->Integer;
-    int   w          = Param[2]->Val->Integer;
-    int   h          = Param[3]->Val->Integer;
-    int   line_width = Param[4]->Val->Integer;
-    int   color      = Param[5]->Val->Integer;
+    int          x          = (int)Param[0]->Val->Integer;
+    int          y          = (int)Param[1]->Val->Integer;
+    int          w          = (int)Param[2]->Val->Integer;
+    int          h          = (int)Param[3]->Val->Integer;
+    int          line_width = (int)Param[4]->Val->Integer;
+    sdlx_color_t color      = (sdlx_color_t)Param[5]->Val->UnsignedInteger;
 
     sdlx_render_rect(x, y, w, h, line_width, color);
 }
 
-void Sdl_render_fill_rect (struct ParseState *Parser, struct Value *ReturnValue,
-	struct Value **Param, int NumArgs)
+void Sdlx_render_fill_rect(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
 {
-    int   x          = Param[0]->Val->Integer;
-    int   y          = Param[1]->Val->Integer;
-    int   w          = Param[2]->Val->Integer;
-    int   h          = Param[3]->Val->Integer;
-    int   color      = Param[4]->Val->Integer;
+    int          x     = (int)Param[0]->Val->Integer;
+    int          y     = (int)Param[1]->Val->Integer;
+    int          w     = (int)Param[2]->Val->Integer;
+    int          h     = (int)Param[3]->Val->Integer;
+    sdlx_color_t color = (sdlx_color_t)Param[4]->Val->UnsignedInteger;
 
     sdlx_render_fill_rect(x, y, w, h, color);
 }
 
-void Sdl_render_line (struct ParseState *Parser, struct Value *ReturnValue,
-	struct Value **Param, int NumArgs)
+void Sdlx_render_line(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
 {
-    int x1    = Param[0]->Val->Integer;
-    int y1    = Param[1]->Val->Integer;
-    int x2    = Param[2]->Val->Integer;
-    int y2    = Param[3]->Val->Integer;
-    int color = Param[4]->Val->Integer;
+    int          x1    = (int)Param[0]->Val->Integer;
+    int          y1    = (int)Param[1]->Val->Integer;
+    int          x2    = (int)Param[2]->Val->Integer;
+    int          y2    = (int)Param[3]->Val->Integer;
+    sdlx_color_t color = (sdlx_color_t)Param[4]->Val->UnsignedInteger;
 
     sdlx_render_line(x1, y1, x2, y2, color);
 }
 
-void Sdl_render_lines (struct ParseState *Parser, struct Value *ReturnValue,
-	struct Value **Param, int NumArgs)
+void Sdlx_render_lines(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
 {
-    sdlx_point_t *points = (sdlx_point_t*)Param[0]->Val->Pointer;
-    int count           = Param[1]->Val->Integer;
-    int color           = Param[2]->Val->Integer;
+    sdlx_point_t * points = (sdlx_point_t *)Param[0]->Val->Pointer;
+    int            count  = (int)Param[1]->Val->Integer;
+    sdlx_color_t   color  = (sdlx_color_t)Param[2]->Val->UnsignedInteger;
 
     sdlx_render_lines(points, count, color);
 }
 
-void Sdl_render_circle (struct ParseState *Parser, struct Value *ReturnValue,
-	struct Value **Param, int NumArgs)
+void Sdlx_render_circle(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
 {
-    int  x_ctr      = Param[0]->Val->Integer;
-    int  y_ctr      = Param[1]->Val->Integer;
-    int  radius     = Param[2]->Val->Integer;
-    int  line_width = Param[3]->Val->Integer;
-    int  color      = Param[4]->Val->Integer;
+    int          x_ctr      = (int)Param[0]->Val->Integer;
+    int          y_ctr      = (int)Param[1]->Val->Integer;
+    int          radius     = (int)Param[2]->Val->Integer;
+    int          line_width = (int)Param[3]->Val->Integer;
+    sdlx_color_t color      = (sdlx_color_t)Param[4]->Val->UnsignedInteger;
 
     sdlx_render_circle(x_ctr, y_ctr, radius, line_width, color);
 }
 
-void Sdl_render_point (struct ParseState *Parser, struct Value *ReturnValue,
-	struct Value **Param, int NumArgs)
+void Sdlx_render_fill_circle(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
 {
-    int x          = Param[0]->Val->Integer;
-    int y          = Param[1]->Val->Integer;
-    int color      = Param[2]->Val->Integer;
-    int point_size = Param[3]->Val->Integer;
+    int          x_ctr  = (int)Param[0]->Val->Integer;
+    int          y_ctr  = (int)Param[1]->Val->Integer;
+    int          radius = (int)Param[2]->Val->Integer;
+    sdlx_color_t color  = (sdlx_color_t)Param[3]->Val->UnsignedInteger;
+
+    sdlx_render_fill_circle(x_ctr, y_ctr, radius, color);
+}
+
+void Sdlx_render_point(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
+{
+    int          x          = (int)Param[0]->Val->Integer;
+    int          y          = (int)Param[1]->Val->Integer;
+    sdlx_color_t color      = (sdlx_color_t)Param[2]->Val->UnsignedInteger;
+    int          point_size = (int)Param[3]->Val->Integer;
 
     sdlx_render_point(x, y, color, point_size);
 }
 
-void Sdl_render_points (struct ParseState *Parser, struct Value *ReturnValue,
-	struct Value **Param, int NumArgs)
+void Sdlx_render_points(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
 {
-    sdlx_point_t *points = (sdlx_point_t*)Param[0]->Val->Pointer;
-    int count           = Param[1]->Val->Integer;
-    int color           = Param[2]->Val->Integer;
-    int point_size      = Param[3]->Val->Integer;
+    sdlx_point_t * points     = (sdlx_point_t *)Param[0]->Val->Pointer;
+    int            count      = (int)Param[1]->Val->Integer;
+    sdlx_color_t   color      = (sdlx_color_t)Param[2]->Val->UnsignedInteger;
+    int            point_size = (int)Param[3]->Val->Integer;
 
     sdlx_render_points(points, count, color, point_size);
 }
 
 //
-// render using textures
+// video - textures
 //
 
-void Sdl_create_texture_from_pixels (struct ParseState *Parser, struct Value *ReturnValue,
+void Sdlx_create_texture(struct ParseState *Parser, struct Value *ReturnValue,
         struct Value **Param, int NumArgs)
 {
-    unsigned char  *pixels = Param[0]->Val->Pointer;
-    int             w      = Param[1]->Val->Integer;
-    int             h      = Param[2]->Val->Integer;
-    sdlx_texture_t *texture;
+    int w = (int)Param[0]->Val->Integer;
+    int h = (int)Param[1]->Val->Integer;
 
-    texture = sdlx_create_texture_from_pixels(pixels, w, h);
-    ReturnValue->Val->Pointer = (char*)texture; 
+    sdlx_texture_t * retval;
+    retval = sdlx_create_texture(w, h);
+    ReturnValue->Val->Pointer = retval;
 }
 
-void Sdl_create_filled_circle_texture (struct ParseState *Parser, struct Value *ReturnValue,
-	struct Value **Param, int NumArgs)
+void Sdlx_destroy_texture(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
 {
-    int radius = Param[0]->Val->Integer;
-    int color  = Param[1]->Val->Integer;
-    sdlx_texture_t *texture;
+    sdlx_texture_t * t = (sdlx_texture_t *)Param[0]->Val->Pointer;
 
-    texture = sdlx_create_filled_circle_texture(radius, color);
-    ReturnValue->Val->Pointer = (char*)texture; 
+    sdlx_destroy_texture(t);
 }
 
-void Sdl_create_text_texture (struct ParseState *Parser, struct Value *ReturnValue,
-	struct Value **Param, int NumArgs)
+void Sdlx_query_texture(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
 {
-    char *str = (char*)Param[0]->Val->Pointer;
-    sdlx_texture_t *texture;
+    sdlx_texture_t * t = (sdlx_texture_t *)Param[0]->Val->Pointer;
+    int *            w = (int *)Param[1]->Val->Pointer;
+    int *            h = (int *)Param[2]->Val->Pointer;
 
-    texture = sdlx_create_text_texture(str);
-    ReturnValue->Val->Pointer = (char*)texture; 
+    sdlx_query_texture(t, w, h);
 }
 
-void Sdl_render_texture (struct ParseState *Parser, struct Value *ReturnValue,
-	struct Value **Param, int NumArgs)
+void Sdlx_set_texture_pixels(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
 {
-    int            x       = Param[0]->Val->Integer;
-    int            y       = Param[1]->Val->Integer;
-    int            w       = Param[2]->Val->Integer;
-    int            h       = Param[3]->Val->Integer;
-    sdlx_texture_t *texture = (sdlx_texture_t*)Param[4]->Val->Pointer;
-    sdlx_loc_t     *loc;
+    sdlx_texture_t * t      = (sdlx_texture_t *)Param[0]->Val->Pointer;
+    unsigned int *   pixels = (unsigned int *)Param[1]->Val->Pointer;
 
-    loc = sdlx_render_texture(x, y, w, h, texture);
-    ReturnValue->Val->Pointer = loc;
+    sdlx_set_texture_pixels(t, pixels);
 }
 
-void Sdl_render_texture_ex (struct ParseState *Parser, struct Value *ReturnValue,
-	struct Value **Param, int NumArgs)
+void Sdlx_get_texture_pixels(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
 {
-    int            x       = Param[0]->Val->Integer;
-    int            y       = Param[1]->Val->Integer;
-    int            w       = Param[2]->Val->Integer;
-    int            h       = Param[3]->Val->Integer;
-    double         angle   = Param[4]->Val->FP;
-    sdlx_texture_t *texture = (sdlx_texture_t*)Param[5]->Val->Pointer;
+    sdlx_texture_t * t = (sdlx_texture_t *)Param[0]->Val->Pointer;
+    int *            w = (int *)Param[1]->Val->Pointer;
+    int *            h = (int *)Param[2]->Val->Pointer;
 
-    sdlx_render_texture_ex(x, y, w, h, angle, texture);
+    unsigned int * retval;
+    retval = sdlx_get_texture_pixels(t, w, h);
+    ReturnValue->Val->Pointer = retval;
 }
 
-void Sdl_render_texture_ex2 (struct ParseState *Parser, struct Value *ReturnValue,
-	struct Value **Param, int NumArgs)
+void Sdlx_render_texture(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
 {
-    int            x       = Param[0]->Val->Integer;
-    int            y       = Param[1]->Val->Integer;
-    int            w       = Param[2]->Val->Integer;
-    int            h       = Param[3]->Val->Integer;
-    double         angle   = Param[4]->Val->FP;
-    int            xctr    = Param[5]->Val->Integer;
-    int            yctr    = Param[6]->Val->Integer;
-    sdlx_texture_t *texture = (sdlx_texture_t*)Param[7]->Val->Pointer;
+    sdlx_texture_t * t = (sdlx_texture_t *)Param[0]->Val->Pointer;
+    int              x = (int)Param[1]->Val->Integer;
+    int              y = (int)Param[2]->Val->Integer;
 
-    sdlx_render_texture_ex2(x, y, w, h, angle, xctr, yctr, texture);
+    sdlx_render_texture(t, x, y);
 }
 
-void Sdl_destroy_texture (struct ParseState *Parser, struct Value *ReturnValue,
-	struct Value **Param, int NumArgs)
+void Sdlx_render_texture_ex1(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
 {
-    sdlx_texture_t *texture = (sdlx_texture_t*)Param[0]->Val->Pointer;
+    sdlx_texture_t * t = (sdlx_texture_t *)Param[0]->Val->Pointer;
+    int              x = (int)Param[1]->Val->Integer;
+    int              y = (int)Param[2]->Val->Integer;
+    int              w = (int)Param[3]->Val->Integer;
+    int              h = (int)Param[4]->Val->Integer;
 
-    sdlx_destroy_texture(texture);
+    sdlx_render_texture_ex1(t, x, y, w, h);
 }
 
-void Sdl_query_texture (struct ParseState *Parser, struct Value *ReturnValue,
-	struct Value **Param, int NumArgs)
+void Sdlx_render_texture_ex2(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
 {
-    sdlx_texture_t *texture = (sdlx_texture_t*)Param[0]->Val->Pointer;
-    int           *width   = (int*)Param[1]->Val->Pointer;
-    int           *height  = (int*)Param[2]->Val->Pointer;
+    sdlx_texture_t * t     = (sdlx_texture_t *)Param[0]->Val->Pointer;
+    int              x     = (int)Param[1]->Val->Integer;
+    int              y     = (int)Param[2]->Val->Integer;
+    int              w     = (int)Param[3]->Val->Integer;
+    int              h     = (int)Param[4]->Val->Integer;
+    double           angle = (double)Param[5]->Val->FP;
 
-    sdlx_query_texture(texture, width, height);
+    sdlx_render_texture_ex2(t, x, y, w, h, angle);
 }
 
-void Sdl_read_display_pixels (struct ParseState *Parser, struct Value *ReturnValue,
-	struct Value **Param, int NumArgs)
+void Sdlx_render_texture_ex3(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
 {
-    int   x        = Param[0]->Val->Integer;
-    int   y        = Param[1]->Val->Integer;
-    int   w        = Param[2]->Val->Integer;
-    int   h        = Param[3]->Val->Integer;
-    int  *w_pixels = Param[4]->Val->Pointer;
-    int  *h_pixels = Param[5]->Val->Pointer;
-    unsigned char *pixels;
+    sdlx_texture_t * texture = (sdlx_texture_t *)Param[0]->Val->Pointer;
+    int              x       = (int)Param[1]->Val->Integer;
+    int              y       = (int)Param[2]->Val->Integer;
+    int              w       = (int)Param[3]->Val->Integer;
+    int              h       = (int)Param[4]->Val->Integer;
+    double           angle   = (double)Param[5]->Val->FP;
+    int              xctr    = (int)Param[6]->Val->Integer;
+    int              yctr    = (int)Param[7]->Val->Integer;
 
-    pixels = sdlx_read_display_pixels(x, y, w, h, w_pixels, h_pixels);
-    ReturnValue->Val->Pointer = pixels; 
+    sdlx_render_texture_ex3(texture, x, y, w, h, angle, xctr, yctr);
 }
 
-//
-// plot
-//
-
-void Sdl_plot_create (struct ParseState *Parser, struct Value *ReturnValue,
-	struct Value **Param, int NumArgs)
+void Sdlx_set_render_target(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
 {
-    char *title           = Param[0]->Val->Pointer;
-    int xleft             = Param[1]->Val->Integer;
-    int xright            = Param[2]->Val->Integer;
-    int ybottom           = Param[3]->Val->Integer;
-    int ytop              = Param[4]->Val->Integer;
-    double xval_left      = Param[5]->Val->FP;
-    double xval_right     = Param[6]->Val->FP;
-    double yval_bottom    = Param[7]->Val->FP;
-    double yval_top       = Param[8]->Val->FP;
-    double yval_of_x_axis = Param[9]->Val->FP;
+    sdlx_texture_t * t = (sdlx_texture_t *)Param[0]->Val->Pointer;
 
-    void *plot_cx;
-
-    plot_cx = sdlx_plot_create(title, 
-                              xleft, xright, ybottom, ytop, 
-                              xval_left, xval_right, yval_bottom, yval_top, 
-                              yval_of_x_axis);
-
-    ReturnValue->Val->Pointer = plot_cx;
-}
-
-void Sdl_plot_axis (struct ParseState *Parser, struct Value *ReturnValue,
-	struct Value **Param, int NumArgs)
-{
-    void *plot_cx  = Param[0]->Val->Pointer;
-    char *xmin_str = Param[1]->Val->Pointer;
-    char *xmax_str = Param[2]->Val->Pointer;
-    char *ymin_str = Param[3]->Val->Pointer;
-    char *ymax_str = Param[4]->Val->Pointer;
-
-    sdlx_plot_axis(plot_cx, xmin_str, xmax_str, ymin_str, ymax_str);
-}
-
-void Sdl_plot_points (struct ParseState *Parser, struct Value *ReturnValue,
-	struct Value **Param, int NumArgs)
-{
-    void *plot_cx         = Param[0]->Val->Pointer;
-    sdlx_plot_point_t *pts = Param[1]->Val->Pointer;
-    int num_pts           = Param[2]->Val->Integer;
-
-    sdlx_plot_points(plot_cx, pts, num_pts);
-}
-
-void Sdl_plot_bars (struct ParseState *Parser, struct Value *ReturnValue,
-	struct Value **Param, int NumArgs)
-{
-    void *plot_cx             = Param[0]->Val->Pointer;
-    sdlx_plot_point_t *pts_avg = Param[1]->Val->Pointer;
-    sdlx_plot_point_t *pts_min = Param[2]->Val->Pointer;;
-    sdlx_plot_point_t *pts_max = Param[3]->Val->Pointer;
-    int num_pts               = Param[4]->Val->Integer;
-    double bar_wval           = Param[5]->Val->FP;
-
-    sdlx_plot_bars(plot_cx, pts_avg, pts_min, pts_max, num_pts, bar_wval);
-}
-
-void Sdl_plot_free (struct ParseState *Parser, struct Value *ReturnValue,
-	struct Value **Param, int NumArgs)
-{
-    void *plot_cx = Param[0]->Val->Pointer;
-
-    sdlx_plot_free(plot_cx);
+    sdlx_set_render_target(t);
 }
 
 //
 // audio
 //
 
-void SDL_audio_stop (struct ParseState *Parser, struct Value *ReturnValue,
-	struct Value **Param, int NumArgs)
+void Sdlx_audio_stop(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
 {
-    int rc;
-
-    rc = sdlx_audio_stop();
-    ReturnValue->Val->Integer = rc;
+    int retval;
+    retval = sdlx_audio_stop();
+    ReturnValue->Val->Integer = retval;
 }
 
-void SDL_audio_pause (struct ParseState *Parser, struct Value *ReturnValue,
-	struct Value **Param, int NumArgs)
+void Sdlx_audio_pause(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
 {
     sdlx_audio_pause();
 }
 
-void SDL_audio_resume (struct ParseState *Parser, struct Value *ReturnValue,
-	struct Value **Param, int NumArgs)
+void Sdlx_audio_resume(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
 {
     sdlx_audio_resume();
 }
 
-void SDL_audio_state (struct ParseState *Parser, struct Value *ReturnValue,
-	struct Value **Param, int NumArgs)
+void Sdlx_audio_get_state(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
 {
-    sdlx_audio_state_t *state = Param[0]->Val->Pointer;
+    sdlx_audio_state_t * state = (sdlx_audio_state_t *)Param[0]->Val->Pointer;
 
-    sdlx_audio_state(state);
+    sdlx_audio_get_state(state);
 }
 
-void SDL_audio_file_duration_ms (struct ParseState *Parser, struct Value *ReturnValue,
-	struct Value **Param, int NumArgs)
+void Sdlx_audio_file_duration_ms(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
 {
-    char *dir      = Param[0]->Val->Pointer;
-    char *filename = Param[1]->Val->Pointer;
-    int   duration_ms;
+    char * dir      = (char *)Param[0]->Val->Pointer;
+    char * filename = (char *)Param[1]->Val->Pointer;
 
-    duration_ms = sdlx_audio_file_duration_ms(dir, filename);
-    ReturnValue->Val->Integer = duration_ms;
+    int retval;
+    retval = sdlx_audio_file_duration_ms(dir, filename);
+    ReturnValue->Val->Integer = retval;
 }
 
-void SDL_audio_record_from_mic (struct ParseState *Parser, struct Value *ReturnValue,
-	struct Value **Param, int NumArgs)
+void Sdlx_audio_play_file(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
 {
-    char *dir                = Param[0]->Val->Pointer;
-    char *filename           = Param[1]->Val->Pointer;
-    int   max_duration_secs  = Param[2]->Val->Integer;
-    int   auto_stop_secs     = Param[3]->Val->Integer;
-    bool  append             = Param[4]->Val->Integer;
-    int   rc;
+    char * dir      = (char *)Param[0]->Val->Pointer;
+    char * filename = (char *)Param[1]->Val->Pointer;
 
-    rc = sdlx_audio_record_from_mic(dir, filename, max_duration_secs, auto_stop_secs, append);
-    ReturnValue->Val->Integer = rc; 
+    int retval;
+    retval = sdlx_audio_play_file(dir, filename);
+    ReturnValue->Val->Integer = retval;
 }
 
-void SDL_audio_record_from_device (struct ParseState *Parser, struct Value *ReturnValue,
-	struct Value **Param, int NumArgs)
+void Sdlx_audio_play_tones(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
 {
-    char *dir                = Param[0]->Val->Pointer;
-    char *filename           = Param[1]->Val->Pointer;
-    int   rc;
+    sdlx_tone_t * tones = (sdlx_tone_t *)Param[0]->Val->Pointer;
 
-    rc = sdlx_audio_record_from_device(dir, filename);
-    ReturnValue->Val->Integer = rc; 
+    int retval;
+    retval = sdlx_audio_play_tones(tones);
+    ReturnValue->Val->Integer = retval;
 }
 
-void SDL_audio_play_tones (struct ParseState *Parser, struct Value *ReturnValue,
-	struct Value **Param, int NumArgs)
+void Sdlx_audio_play_buff(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
 {
-    sdlx_tone_t *tones = Param[0]->Val->Pointer;
-    int         rc;
+    short * samples                = (short *)Param[0]->Val->Pointer;
+    int     num_samples            = (int)Param[1]->Val->Integer;
+    int     num_channels           = (int)Param[2]->Val->Integer;
+    int     loops                  = (int)Param[3]->Val->Integer;
+    bool    free_samples_when_done = (bool)Param[4]->Val->Integer;
 
-    rc = sdlx_audio_play_tones(tones);
-    ReturnValue->Val->Integer = rc; 
+    int retval;
+    retval = sdlx_audio_play_buff(samples, num_samples, num_channels, loops, free_samples_when_done);
+    ReturnValue->Val->Integer = retval;
 }
 
-void SDL_audio_play_file (struct ParseState *Parser, struct Value *ReturnValue,
-	struct Value **Param, int NumArgs)
+void Sdlx_audio_record_from_mic(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
 {
-    char *dir      = Param[0]->Val->Pointer;
-    char *filename = Param[1]->Val->Pointer;
-    int   rc;
+    char * dir               = (char *)Param[0]->Val->Pointer;
+    char * filename          = (char *)Param[1]->Val->Pointer;
+    int    max_duration_secs = (int)Param[2]->Val->Integer;
+    int    auto_stop_secs    = (int)Param[3]->Val->Integer;
+    bool   append            = (bool)Param[4]->Val->Integer;
 
-    rc = sdlx_audio_play_file(dir, filename);
-    ReturnValue->Val->Integer = rc; 
+    int retval;
+    retval = sdlx_audio_record_from_mic(dir, filename, max_duration_secs, auto_stop_secs, append);
+    ReturnValue->Val->Integer = retval;
 }
 
-void SDL_audio_play_buff (struct ParseState *Parser, struct Value *ReturnValue,
-	struct Value **Param, int NumArgs)
+void Sdlx_audio_record_from_device(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
 {
-    short *samples                = Param[0]->Val->Pointer;
-    int    num_samples            = Param[1]->Val->Integer;
-    int    num_channels           = Param[2]->Val->Integer;
-    int    loops                  = Param[3]->Val->Integer;
-    bool   free_samples_when_done = Param[4]->Val->Integer;
-    int    rc;
+    char * dir      = (char *)Param[0]->Val->Pointer;
+    char * filename = (char *)Param[1]->Val->Pointer;
 
-    rc = sdlx_audio_play_buff(samples, num_samples, num_channels, loops, free_samples_when_done);
-    ReturnValue->Val->Integer = rc; 
+    int retval;
+    retval = sdlx_audio_record_from_device(dir, filename);
+    ReturnValue->Val->Integer = retval;
 }
 
 //
 // sensors
 //
 
-void Sdl_sensor_get_info_tbl (struct ParseState *Parser, struct Value *ReturnValue,
-	struct Value **Param, int NumArgs)
+void Sdlx_sensor_get_info_tbl(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
 {
-    int *num_sensors = Param[0]->Val->Pointer;
-    sdlx_sensor_info_t *sit;
+    int * max = (int *)Param[0]->Val->Pointer;
 
-    sit = sdlx_sensor_get_info_tbl(num_sensors);
-    ReturnValue->Val->Pointer = sit;
+    sdlx_sensor_info_t * retval;
+    retval = sdlx_sensor_get_info_tbl(max);
+    ReturnValue->Val->Pointer = retval;
 }
 
-void Sdl_sensor_find (struct ParseState *Parser, struct Value *ReturnValue,
-	struct Value **Param, int NumArgs)
+void Sdlx_sensor_find(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
 {
-    int type = Param[0]->Val->Integer;
-    int id;
+    int type = (int)Param[0]->Val->Integer;
 
-    id = sdlx_sensor_find(type);
-    ReturnValue->Val->Integer = id;
+    int retval;
+    retval = sdlx_sensor_find(type);
+    ReturnValue->Val->Integer = retval;
 }
 
-void Sdl_sensor_read_raw (struct ParseState *Parser, struct Value *ReturnValue,
-	struct Value **Param, int NumArgs)
+void Sdlx_sensor_read_raw(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
 {
-    int     id         = Param[0]->Val->Integer;
-    double *data       = Param[1]->Val->Pointer;
-    int     num_values = Param[2]->Val->Integer;
-    int     rc;
+    int      id         = (int)Param[0]->Val->Integer;
+    double * data       = (double *)Param[1]->Val->Pointer;
+    int      num_values = (int)Param[2]->Val->Integer;
 
-    rc = sdlx_sensor_read_raw(id, data, num_values);
-    ReturnValue->Val->Integer = rc;
+    int retval;
+    retval = sdlx_sensor_read_raw(id, data, num_values);
+    ReturnValue->Val->Integer = retval;
 }
 
-void Sdl_sensor_read_step_counter (struct ParseState *Parser, struct Value *ReturnValue,
-	struct Value **Param, int NumArgs)
+void Sdlx_sensor_read_step_counter(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
 {
-    double *step_count = Param[0]->Val->Pointer;
-    int     rc;
+    double * step_count = (double *)Param[0]->Val->Pointer;
 
-    rc = sdlx_sensor_read_step_counter(step_count);
-    ReturnValue->Val->Integer = rc;
+    int retval;
+    retval = sdlx_sensor_read_step_counter(step_count);
+    ReturnValue->Val->Integer = retval;
 }
 
-void Sdl_sensor_read_mag_heading (struct ParseState *Parser, struct Value *ReturnValue,
-	struct Value **Param, int NumArgs)
+void Sdlx_sensor_read_mag_heading(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
 {
-    double *mag_heading = Param[0]->Val->Pointer;
-    int     rc;
+    double * mag_heading = (double *)Param[0]->Val->Pointer;
 
-    rc = sdlx_sensor_read_mag_heading(mag_heading);
-    ReturnValue->Val->Integer = rc;
+    int retval;
+    retval = sdlx_sensor_read_mag_heading(mag_heading);
+    ReturnValue->Val->Integer = retval;
 }
 
-void Sdl_sensor_read_accelerometer (struct ParseState *Parser, struct Value *ReturnValue,
-	struct Value **Param, int NumArgs)
+void Sdlx_sensor_read_accelerometer(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
 {
-    double *ax = Param[0]->Val->Pointer;
-    double *ay = Param[1]->Val->Pointer;
-    double *az = Param[2]->Val->Pointer;
-    int     rc;
+    double * ax = (double *)Param[0]->Val->Pointer;
+    double * ay = (double *)Param[1]->Val->Pointer;
+    double * az = (double *)Param[2]->Val->Pointer;
 
-    rc = sdlx_sensor_read_accelerometer(ax, ay, az);
-    ReturnValue->Val->Integer = rc;
+    int retval;
+    retval = sdlx_sensor_read_accelerometer(ax, ay, az);
+    ReturnValue->Val->Integer = retval;
 }
 
-void Sdl_sensor_read_roll_pitch (struct ParseState *Parser, struct Value *ReturnValue,
-	struct Value **Param, int NumArgs)
+void Sdlx_sensor_read_roll_pitch(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
 {
-    double *roll = Param[0]->Val->Pointer;
-    double *pitch = Param[1]->Val->Pointer;
-    int     rc;
+    double * roll  = (double *)Param[0]->Val->Pointer;
+    double * pitch = (double *)Param[1]->Val->Pointer;
 
-    rc = sdlx_sensor_read_roll_pitch(roll, pitch);
-    ReturnValue->Val->Integer = rc;
+    int retval;
+    retval = sdlx_sensor_read_roll_pitch(roll, pitch);
+    ReturnValue->Val->Integer = retval;
 }
 
-void Sdl_sensor_read_pressure (struct ParseState *Parser, struct Value *ReturnValue,
-	struct Value **Param, int NumArgs)
+void Sdlx_sensor_read_pressure(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
 {
-    double *millibars = Param[0]->Val->Pointer;
-    int     rc;
+    double * millibars = (double *)Param[0]->Val->Pointer;
 
-    rc = sdlx_sensor_read_pressure(millibars);
-    ReturnValue->Val->Integer = rc;
+    int retval;
+    retval = sdlx_sensor_read_pressure(millibars);
+    ReturnValue->Val->Integer = retval;
 }
 
-void Sdl_sensor_read_temperature (struct ParseState *Parser, struct Value *ReturnValue,
-	struct Value **Param, int NumArgs)
+void Sdlx_sensor_read_temperature(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
 {
-    double *degrees_c = Param[0]->Val->Pointer;
-    int     rc;
+    double * degrees_c = (double *)Param[0]->Val->Pointer;
 
-    rc = sdlx_sensor_read_temperature(degrees_c);
-    ReturnValue->Val->Integer = rc;
+    int retval;
+    retval = sdlx_sensor_read_temperature(degrees_c);
+    ReturnValue->Val->Integer = retval;
 }
 
-// xxx use Sdlx
-void Sdl_sensor_read_humidity (struct ParseState *Parser, struct Value *ReturnValue,
-	struct Value **Param, int NumArgs)
+void Sdlx_sensor_read_humidity(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
 {
-    double *percent = Param[0]->Val->Pointer;
-    int     rc;
+    double * percent = (double *)Param[0]->Val->Pointer;
 
-    rc = sdlx_sensor_read_humidity(percent);
-    ReturnValue->Val->Integer = rc;
+    int retval;
+    retval = sdlx_sensor_read_humidity(percent);
+    ReturnValue->Val->Integer = retval;
+}
+
+//
+// events
+//
+
+void Sdlx_register_event(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
+{
+    sdlx_loc_t * loc      = (sdlx_loc_t *)Param[0]->Val->Pointer;
+    int          event_id = (int)Param[1]->Val->Integer;
+
+    sdlx_register_event(loc, event_id);
+}
+
+void Sdlx_register_control_events(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
+{
+    int          evid1       = (int)Param[0]->Val->Integer;
+    char *       evstr1      = (char *)Param[1]->Val->Pointer;
+    int          evid2       = (int)Param[2]->Val->Integer;
+    char *       evstr2      = (char *)Param[3]->Val->Pointer;
+    int          evid3       = (int)Param[4]->Val->Integer;
+    char *       evstr3      = (char *)Param[5]->Val->Pointer;
+    sdlx_color_t print_color = (sdlx_color_t)Param[6]->Val->UnsignedInteger;
+    sdlx_color_t bg_color    = (sdlx_color_t)Param[7]->Val->UnsignedInteger;
+
+    sdlx_register_control_events(evid1, evstr1, evid2, evstr2, evid3, evstr3, print_color, bg_color);
+}
+
+void Sdlx_get_event(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
+{
+    long           timeout_us = (long)Param[0]->Val->LongInteger;
+    sdlx_event_t * event      = (sdlx_event_t *)Param[1]->Val->Pointer;
+
+    sdlx_get_event(timeout_us, event);
 }
 
 //
 // misc
 //
 
-void Sdl_show_toast (struct ParseState *Parser, struct Value *ReturnValue,
-	struct Value **Param, int NumArgs)
+void Sdlx_show_toast(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
 {
-    char *msg = Param[0]->Val->Pointer;
-    sdlx_show_toast(msg);
+    char * message = (char *)Param[0]->Val->Pointer;
+
+    sdlx_show_toast(message);
 }
 
-//
-// SDL REGISTRATION
-//
+void Sdlx_get_input_str(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
+{
+    char *       prompt1       = (char *)Param[0]->Val->Pointer;
+    char *       prompt2       = (char *)Param[1]->Val->Pointer;
+    bool         numeric_keybd = (bool)Param[2]->Val->Integer;
+    sdlx_color_t bg_color      = (sdlx_color_t)Param[3]->Val->UnsignedInteger;
+
+    char * retval;
+    retval = sdlx_get_input_str(prompt1, prompt2, numeric_keybd, bg_color);
+    ReturnValue->Val->Pointer = retval;
+}
+
+// -----------------  SDL REGISTRATION  ---------------------------------
 
 void SdlSetupFunction(Picoc *pc)
 {
@@ -805,88 +709,84 @@ void SdlSetupFunction(Picoc *pc)
     PLATFORM_VAR(sdlx_char_height_dflt, &pc->IntType, false);
 }
 
-// xxx rename Sdl_ to Sdlx_
 struct LibraryFunction SdlFunctions[] = {
-    // sdl initialization and termination, must be done once
-    { Sdl_init,            "int sdlx_init(int subsys);" },
-    { Sdl_quit,            "void sdlx_quit(int subsys);" },
+    // init & quit
+    { Sdlx_init,                     "int sdlx_init(int subsys);" },
+    { Sdlx_quit,                     "void sdlx_quit(int subsys);" },
 
-    // display init and present, must be done for every display update
-    { Sdl_display_init,    "void sdlx_display_init(int color);" },
-    { Sdl_display_present, "void sdlx_display_present(void);" },
+    // video - display init and present
+    { Sdlx_display_init,             "void sdlx_display_init(sdlx_color_t color);" },
+    { Sdlx_display_present,          "void sdlx_display_present(void);" },
 
-    // event registration and query
-    { Sdl_register_event,  "void sdlx_register_event(sdlx_loc_t *loc, int event_id);" },
-xxx { Sdl_register_control_events, 
-                           "void sdlx_register_control_events(int evid1, char *evstr1, int evid2, char *evstr2, int evid3, char *evstr3, sdlx_color_t print_color, sdlx_color_t bg_color);" },
-    { Sdl_get_event,       "void sdlx_get_event(long timeout_us, sdlx_event_t *event);" },
-    { Sdl_get_input_str,   "char *sdlx_get_input_str(char *prompt1, char *prompt2, bool numeric_keybd, int bg_color);" },
+    // video - colors
+    { Sdlx_create_color,             "sdlx_color_t sdlx_create_color(int r, int g, int b, int a);" },
+    { Sdlx_scale_color,              "sdlx_color_t sdlx_scale_color(sdlx_color_t color, double inten);" },
+    { Sdlx_set_color_alpha,          "sdlx_color_t sdlx_set_color_alpha(sdlx_color_t color, int alpha);" },
+    { Sdlx_wavelength_to_color,      "sdlx_color_t sdlx_wavelength_to_color(int wavelength);" },
 
-    // create colors
-    { Sdl_create_color,    "int sdlx_create_color(int r, int g, int b, int a);" },
-    { Sdl_scale_color,     "int sdlx_scale_color(int color, double inten);" },
-    { Sdl_set_color_alpha, "int sdlx_set_color_alpha(int color, int alpha);" },
-    { Sdl_wavelength_to_color, "int sdlx_wavelength_to_color(int wavelength);" },
+    // video - render text
+    { Sdlx_print_set_default,        "void sdlx_print_set_default(int fontid, sdlx_color_t color);" },
+    { Sdlx_render_printf,            "sdlx_loc_t *sdlx_render_printf(int x, int y, char *fmt, ...) ;" },
+    { Sdlx_char_width,               "int sdlx_char_width(int fontid);" },
+    { Sdlx_char_height,              "int sdlx_char_height(int fontid);" },
+    { Sdlx_render_printf_ex1,        "sdlx_loc_t *sdlx_render_printf_ex1(int x, int y, int fontid, sdlx_color_t color, char * fmt, ...);" },
+    { Sdlx_render_printf_ex2,        "sdlx_loc_t *sdlx_render_printf_ex2(int x, int y, int fontid, sdlx_color_t color, int flags, int wrap, char *fmt, ...);" },
+    { Sdlx_render_multiline_text,    "void sdlx_render_multiline_text(int x, int y, int y_top, int y_bottom, int fontid, char **lines, sdlx_color_t *colors, int num_lines);" },
 
-    // render text xxx  entire section
-    { Sdl_print_set_default,     "void sdlx_print_set_default(int fontid, sdlx_color_t color);" {,
-    { Sdl_char_width,            "int sdlx_char_width(int fontid);" {,
-    { Sdl_char_height,           "int sdlx_char_height(int fontid);" {,
-    { Sdl_render_printf          "sdlx_loc_t *sdlx_render_printf(int x, int y, char *fmt, ...)" {,
-    { Sdl_render_printf_ex1      "sdlx_loc_t *sdlx_render_printf_ex1(int x, int y, int fontid, sdlx_color_t color, char * fmt, ...);" {,
-    { Sdl_render_printf_ex2,     "sdlx_loc_t *sdlx_render_printf_ex2(int x, int y, int fontid, sdlx_color_t color, int flags, int wrap, char *fmt, ...);" {,
-    { Sdl_render_multiline_text, "void sdlx_render_multiline_text(int x, int y, int y_top, int y_bottom, int fontid, char **lines, sdlx_color_t *colors, int num_lines);" {,
+    // video - render rectangle, lines, circles, points
+    { Sdlx_render_rect,              "void sdlx_render_rect(int x, int y, int w, int h, int line_width, sdlx_color_t color);" },
+    { Sdlx_render_fill_rect,         "void sdlx_render_fill_rect(int x, int y, int w, int h, sdlx_color_t color);" },
+    { Sdlx_render_line,              "void sdlx_render_line(int x1, int y1, int x2, int y2, sdlx_color_t color);" },
+    { Sdlx_render_lines,             "void sdlx_render_lines(sdlx_point_t *points, int count, sdlx_color_t color);" },
+    { Sdlx_render_circle,            "void sdlx_render_circle(int x_ctr, int y_ctr, int radius, int line_width, sdlx_color_t color);" },
+    { Sdlx_render_fill_circle,       "void sdlx_render_fill_circle(int x_ctr, int y_ctr, int radius, sdlx_color_t color);" },
+    { Sdlx_render_point,             "void sdlx_render_point(int x, int y, sdlx_color_t color, int point_size);" },
+    { Sdlx_render_points,            "void sdlx_render_points(sdlx_point_t *points, int count, sdlx_color_t color, int point_size);" },
 
-    // render rectangle, lines, circles, points
-    { Sdl_render_rect,        "void sdlx_render_rect(int x, int y, int w, int h, int line_width, int color);" },
-    { Sdl_render_fill_rect,   "void sdlx_render_fill_rect(int x, int y, int w, int h, int color);" },
-    { Sdl_render_line,        "void sdlx_render_line(int x1, int y1, int x2, int y2, int color);" },
-    { Sdl_render_lines,       "void sdlx_render_lines(sdlx_point_t *points, int count, int color);" },
-    { Sdl_render_circle,      "void sdlx_render_circle(int x_ctr, int y_ctr, int radius, int line_width, int color);" },
-xxx { Sdl_render_fill_circle, "void sdlx_render_fill_circle(int x_ctr, int y_ctr, int radius, sdlx_color_t color);" },
-    { Sdl_render_point,       "void sdlx_render_point(int x, int y, int color, int point_size);" },
-    { Sdl_render_points,      "void sdlx_render_points(sdlx_point_t *points, int count, int color, int point_size);" },
-
-    // render using textures  xxx section
-    { Sdl_create_texture,     "sdlx_texture_t *sdlx_create_texture(int w, int h);" },
-    { Sdl_destroy_texture,    "void sdlx_destroy_texture(sdlx_texture_t *t);" },
-    { Sdl_query_texture,      "void sdlx_query_texture(sdlx_texture_t *t, int *w, int *h);" },
-    { Sdl_set_texture_pixels, "void sdlx_set_texture_pixels(sdlx_texture_t *t, unsigned int *pixels);" },
-    { Sdl_get_texture_pixels, "unsigned int *sdlx_get_texture_pixels(sdlx_texture_t *t, int *w, int *h);" },
-    { Sdl_render_texture,     "void sdlx_render_texture(sdlx_texture_t *t, int x, int y);" },
-    { Sdl_render_texture_ex1, "void sdlx_render_texture_ex1(sdlx_texture_t *t, int x, int y, int w, int h);" },
-    { Sdl_render_texture_ex2, "void sdlx_render_texture_ex2(sdlx_texture_t *t, int x, int y, int w, int h, double angle);" },
-    { Sdl_render_texture_ex3, "void sdlx_render_texture_ex3(sdlx_texture_t *texture, int x, int y, int w, int h, double angle, int xctr, int yctr);" },
-    { Sdl_set_render_target,  "void sdlx_set_render_target(sdlx_texture_t *t);" },
+    // video - textures
+    { Sdlx_create_texture,           "sdlx_texture_t *sdlx_create_texture(int w, int h);" },
+    { Sdlx_destroy_texture,          "void sdlx_destroy_texture(sdlx_texture_t *t);" },
+    { Sdlx_query_texture,            "void sdlx_query_texture(sdlx_texture_t *t, int *w, int *h);" },
+    { Sdlx_set_texture_pixels,       "void sdlx_set_texture_pixels(sdlx_texture_t *t, unsigned int *pixels);" },
+    { Sdlx_get_texture_pixels,       "unsigned int *sdlx_get_texture_pixels(sdlx_texture_t *t, int *w, int *h);" },
+    { Sdlx_render_texture,           "void sdlx_render_texture(sdlx_texture_t *t, int x, int y);" },
+    { Sdlx_render_texture_ex1,       "void sdlx_render_texture_ex1(sdlx_texture_t *t, int x, int y, int w, int h);" },
+    { Sdlx_render_texture_ex2,       "void sdlx_render_texture_ex2(sdlx_texture_t *t, int x, int y, int w, int h, double angle);" },
+    { Sdlx_render_texture_ex3,       "void sdlx_render_texture_ex3(sdlx_texture_t *texture, int x, int y, int w, int h, double angle, int xctr, int yctr);" },
+    { Sdlx_set_render_target,        "void sdlx_set_render_target(sdlx_texture_t *t);" },
 
     // audio
-    { SDL_audio_stop,                   "int sdlx_audio_stop(void);" },
-    { SDL_audio_pause,                  "void sdlx_audio_pause(void);" },
-    { SDL_audio_resume,                 "void sdlx_audio_resume(void);" },
-    { SDL_audio_state,                  "void sdlx_audio_state(sdlx_audio_state_t * state);" },
-    { SDL_audio_file_duration_ms,       "int sdlx_audio_file_duration_ms(char *dir, char *filename);" },
-    { SDL_audio_record_from_mic,        "int sdlx_audio_record_from_mic(char *dir, char *filename, "
-                                             "int max_duration_secs, int auto_stop_secs, bool append);" },
-    { SDL_audio_record_from_device,     "int sdlx_audio_record_from_device(char *dir, char *filename);" },
-    { SDL_audio_play_tones,             "int sdlx_audio_play_tones(sdlx_tone_t *tones);" },
-    { SDL_audio_play_file,              "int sdlx_audio_play_file(char *dir, char *filename);" },
-    { SDL_audio_play_buff,              "int sdlx_audio_play_buff(short *samples, int num_samples, "
-                                            "int num_channels, int loops, bool free_samples_when_done);" },
+    { Sdlx_audio_stop,               "int sdlx_audio_stop(void);" },
+    { Sdlx_audio_pause,              "void sdlx_audio_pause(void);" },
+    { Sdlx_audio_resume,             "void sdlx_audio_resume(void);" },
+    { Sdlx_audio_get_state,          "void sdlx_audio_get_state(sdlx_audio_state_t * state);" },
+    { Sdlx_audio_file_duration_ms,   "int sdlx_audio_file_duration_ms(char *dir, char *filename);" },
+    { Sdlx_audio_play_file,          "int sdlx_audio_play_file(char *dir, char *filename);" },
+    { Sdlx_audio_play_tones,         "int sdlx_audio_play_tones(sdlx_tone_t *tones);" },
+    { Sdlx_audio_play_buff,          "int sdlx_audio_play_buff(short *samples, int num_samples, int num_channels, int loops, bool free_samples_when_done);" },
+    { Sdlx_audio_record_from_mic,    "int sdlx_audio_record_from_mic(char *dir, char *filename, int max_duration_secs, int auto_stop_secs, bool append);" },
+    { Sdlx_audio_record_from_device, "int sdlx_audio_record_from_device(char *dir, char *filename);" },
 
     // sensors
-    { Sdl_sensor_get_info_tbl,          "sdlx_sensor_info_t *sdlx_sensor_get_info_tbl(int *num_sensors);" },
-    { Sdl_sensor_find,                  "int sdlx_sensor_find(int type);" },
-    { Sdl_sensor_read_raw,              "int sdlx_sensor_read_raw(int id, double *data, int num_values);" },
-    { Sdl_sensor_read_step_counter,     "int sdlx_sensor_read_step_counter(double *step_count);" },
-    { Sdl_sensor_read_mag_heading,      "int sdlx_sensor_read_mag_heading(double *mag_heading);" },
-    { Sdl_sensor_read_accelerometer,    "int sdlx_sensor_read_accelerometer(double *ax, double *ay, double *az);" },
-    { Sdl_sensor_read_roll_pitch,       "int sdlx_sensor_read_roll_pitch(double *roll, double *pitch);" },
-    { Sdl_sensor_read_pressure,         "int sdlx_sensor_read_pressure(double *millibars);" },
-    { Sdl_sensor_read_temperature,      "int sdlx_sensor_read_temperature(double *degrees_c);" },
-    { Sdl_sensor_read_humidity,         "int sdlx_sensor_read_humidity(double *percent);" },
+    { Sdlx_sensor_get_info_tbl,      "sdlx_sensor_info_t *sdlx_sensor_get_info_tbl(int *max);" },
+    { Sdlx_sensor_find,              "int sdlx_sensor_find(int type);" },
+    { Sdlx_sensor_read_raw,          "int sdlx_sensor_read_raw(int id, double *data, int num_values);" },
+    { Sdlx_sensor_read_step_counter, "int sdlx_sensor_read_step_counter(double *step_count);" },
+    { Sdlx_sensor_read_mag_heading,  "int sdlx_sensor_read_mag_heading(double *mag_heading);" },
+    { Sdlx_sensor_read_accelerometer,"int sdlx_sensor_read_accelerometer(double *ax, double *ay, double *az);" },
+    { Sdlx_sensor_read_roll_pitch,   "int sdlx_sensor_read_roll_pitch(double *roll, double *pitch);" },
+    { Sdlx_sensor_read_pressure,     "int sdlx_sensor_read_pressure(double *millibars);" },
+    { Sdlx_sensor_read_temperature,  "int sdlx_sensor_read_temperature(double *degrees_c);" },
+    { Sdlx_sensor_read_humidity,     "int sdlx_sensor_read_humidity(double *percent);" },
+
+    // events
+    { Sdlx_register_event,           "void sdlx_register_event(sdlx_loc_t *loc, int event_id);" },
+    { Sdlx_register_control_events,  "void sdlx_register_control_events(int evid1, char *evstr1, int evid2, char *evstr2, int evid3, char *evstr3, sdlx_color_t print_color, sdlx_color_t bg_color);" },
+    { Sdlx_get_event,                "void sdlx_get_event(long timeout_us, sdlx_event_t *event);" },
 
     // misc
-    { Sdl_show_toast,                   "void sdlx_show_toast(char *msg);" },
+    { Sdlx_show_toast,               "void sdlx_show_toast(char *message);" },
+    { Sdlx_get_input_str,            "char *sdlx_get_input_str(char *prompt1, char *prompt2, bool numeric_keybd, sdlx_color_t bg_color);" },
 
     { NULL, NULL } };
 
@@ -903,10 +803,14 @@ const char SdlDefs[] = "\
 typedef unsigned int sdlx_color_t; \n\
 typedef struct sdlx_texture sdlx_texture_t; \n\
 typedef struct { \n\
-    int x, y, w, h; \n\
+    int x; \n\
+    int y; \n\
+    int w; \n\
+    int h; \n\
 } sdlx_loc_t; \n\
 typedef struct { \n\
-    int x, y; \n\
+    int x; \n\
+    int y; \n\
 } sdlx_point_t; \n\
 \n\
 /* video colors */ \n\
@@ -944,6 +848,7 @@ typedef struct { \n\
 #define WRAP_NEWLINE  0 \n\
 \n\
 /* audio */ \n\
+#define FRAMES_PER_SEC 48000 \n\
 #define AUDIO_STATE_IDLE                0 \n\
 #define AUDIO_STATE_STOPPING            1 \n\
 #define AUDIO_STATE_PAUSED              2 \n\
@@ -1014,7 +919,10 @@ typedef struct { \n\
     int event_id; \n\
     union { \n\
         struct { \n\
-            double x, y, xrel, yrel; \n\
+            double x; \n\
+            double y; \n\
+            double xrel; \n\
+            double yrel; \n\
         } motion; \n\
         struct { \n\
             int ch; \n\
@@ -1429,9 +1337,7 @@ void Util_get_playbackcapture_audio(struct ParseState *Parser, struct Value *Ret
     util_get_playbackcapture_audio(array, num_elements);
 }
 
-//
-// UTILS REGISTRATION
-//
+// -----------------  UTILS REGISTRATION  -------------------------------
 
 void UtilsSetupFunction(Picoc *pc)
 {
@@ -1556,9 +1462,7 @@ void Svc_req_completed(struct ParseState *Parser, struct Value *ReturnValue,
     svc_req_completed(req, comp_status);
 }
 
-//
-// SVCS REGISTRATION
-//
+// -----------------  SVCS REGISTRATION  -------------------------------
 
 void SvcsSetupFunction(Picoc *pc)
 {
