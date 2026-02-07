@@ -273,7 +273,7 @@ static void update_display_init(void)
     prompt_black_circle  = create_filled_circle_texture(prompt_circle_radius, COLOR_BLACK);
     prompt_white_circle  = create_filled_circle_texture(prompt_circle_radius, COLOR_WHITE);
 
-    info_circle_radius = nearbyint(0.3*sq_wh);
+    info_circle_radius = nearbyint(0.4*sq_wh);
     info_black_circle  = create_filled_circle_texture(info_circle_radius, COLOR_BLACK);
     info_white_circle  = create_filled_circle_texture(info_circle_radius, COLOR_WHITE);
 }
@@ -331,12 +331,12 @@ static void update_display_and_register_events(board_t *b, int game_state, char 
     // display player info, and register for events to change the players
     int y_origin = 1200;
     for (int i = 0; i < 2; i++) {
-        int player                 = (i == 0 ? b->player_black : b->player_white);
-        int evid                   = (i == 0 ? EVID_PLAYER_BLACK_SELECT : EVID_PLAYER_WHITE_SELECT);
+        int player                  = (i == 0 ? b->player_black : b->player_white);
+        int evid                    = (i == 0 ? EVID_PLAYER_BLACK_SELECT : EVID_PLAYER_WHITE_SELECT);
         sdlx_texture_t *info_circle = (i == 0 ? info_black_circle : info_white_circle);
-        int x_origin               = (i == 0 ? 0 : 500);
-        int piece_cnt              = (i == 0 ? b->black_cnt : b->white_cnt);
-        bool is_turn               = (i == 0 ? b->whose_turn == BLACK : b->whose_turn == WHITE);
+        int x_origin                = (i == 0 ? 0 : 500);
+        int piece_cnt               = (i == 0 ? b->black_cnt : b->white_cnt);
+        bool is_turn                = (i == 0 ? b->whose_turn == BLACK : b->whose_turn == WHITE);
 
         sdlx_render_fill_rect(x_origin, y_origin, info_circle_radius*2, info_circle_radius*2, COLOR_GREEN);
         sdlx_render_texture(info_circle, x_origin, y_origin);
@@ -352,7 +352,7 @@ static void update_display_and_register_events(board_t *b, int game_state, char 
 
         if (game_state == GAME_STATE_ACTIVE || game_state == GAME_STATE_OVER) {
             if (game_state == GAME_STATE_OVER) is_turn = false;
-            sdlx_render_printf(x_origin+100, y_origin, "%c %d", is_turn ? '*' : ' ', piece_cnt);
+            sdlx_render_printf(x_origin+2*info_circle_radius+10, y_origin, "%c %d", is_turn ? '*' : ' ', piece_cnt);
         }
     }
 

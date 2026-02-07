@@ -186,12 +186,14 @@ static int init(void)
     // print type sizes
     print_type_sizes();
 
+#if 0  //xxx temp
     // start/stop foreground mode based on the foreground_enabled param
     if (params.foreground_enabled) {
         util_start_foreground();
     } else {
         util_stop_foreground();
     }
+#endif
 
     // success
     return 0;
@@ -862,11 +864,13 @@ static void settings(void)
         case EVID_FOREGROUND: {
             params.foreground_enabled = (params.foreground_enabled ? false : true);
             util_set_numeric_param(".", "foreground_enabled", params.foreground_enabled);
+#if 0  //xxx temp
             if (params.foreground_enabled) {
                 util_start_foreground();
             } else {
                 util_stop_foreground();
             }
+#endif
             break; }
 #endif
         case EVID_MOTION:

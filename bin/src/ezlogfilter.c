@@ -19,11 +19,11 @@ int main(int argc, char **argv)
     sigaction(SIGINT, &act, NULL);
 
     while (fgets(s, sizeof(s), stdin) != NULL) {
-        if (strncmp(s, "I ", 2) == 0) { 
+        if (s[0] == 'I' && (s[1] == ' ' || s[1] == '/')) {
             color = GREEN;
-        } else if ((strncmp(s, "E ", 2) == 0) ||
-                   (strcasestr(s, "error")) ||
-                   (strcasestr(s, "fail")))
+        } else if ((s[0] == 'E' && (s[1] == ' ' || s[1] == '/')) ||
+                   (strcasestr(s, "error") != NULL) ||
+                   (strcasestr(s, "fail") != NULL))
         {
             color = RED;
         } else {

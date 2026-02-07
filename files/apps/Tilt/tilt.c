@@ -98,7 +98,7 @@ int main(int argc, char **argv)
     return 0;
 }
 
-#define SMOOTH_K 0.9
+#define SMOOTH_K 0.99
 void smooth(double newval, double *smoothed)
 {
     if (*smoothed == INVALID_NUMBER) {
