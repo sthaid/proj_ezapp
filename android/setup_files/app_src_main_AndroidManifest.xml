@@ -62,11 +62,6 @@
     <!--Post Notification Permission-->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
-    <!--Foreground Service Permissions-->
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
-
     <!-- Flashlight support -->
     <uses-permission android:name="android.permission.CAMERA"/>
     <uses-feature android:name="android.hardware.camera" android:required="false"/>
@@ -77,6 +72,14 @@
     <uses-feature
         android:name="android.hardware.microphone"
         android:required="false" />
+
+    <!--Foreground Service Permissions-->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+
+    <!-- xxx needed ? -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
+    <uses-permission android:name="android.permission.CAPTURE_VIDEO_OUTPUT" />
 
     <!-- EZAPP ^^^^^^ -->
 
@@ -128,10 +131,15 @@
         <!-- EZAPP Service -->
         <!-- <service android:name=".ezapp_fgsvc" /> -->
         <service
-            android:name="org.libsdl.app.ezapp_fgsvc"
+            android:name="org.libsdl.app.ezapp_loc_fgsvc"
             android:enabled="true"
             android:exported="false" 
-            android:foregroundServiceType="location|mediaProjection" />
+            android:foregroundServiceType="location" />
+        <service
+            android:name="org.libsdl.app.ezapp_media_fgsvc"
+            android:enabled="true"
+            android:exported="false" 
+            android:foregroundServiceType="mediaProjection" />
  
     </application>
 

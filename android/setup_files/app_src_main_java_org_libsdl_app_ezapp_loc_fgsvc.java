@@ -1,9 +1,3 @@
-// References
-// https://developer.android.com/develop/background-work/services/fgs/launch
-//  import android.widget.Toast;
-
-// ------------------------------------------
-
 package org.libsdl.app;
 
 import android.app.Service;
@@ -20,30 +14,32 @@ import android.content.pm.ServiceInfo;
 
 import org.sthaid.ezApp.R;  // needed to access R.drawable.ic_notifcation_icon
 
-public class ezapp_fgsvc extends Service {
+public class ezapp_loc_fgsvc extends Service {
 
     private static final String TAG = "EZAPP";
     private final        IBinder mBinder = new InnerBinder();
-    private static int   running_count;
+    private int          start_id;
 
     public class InnerBinder extends Binder {
-        ezapp_fgsvc getService() {
-            return ezapp_fgsvc.this;
+        ezapp_loc_fgsvc getService() {
+            return ezapp_loc_fgsvc.this;
         }
     }
 
     @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
-        String CHANNEL_ID          = "my_channel_id";
-        String CHANNEL_NAME        = "My Channel";
-        String CHANNEL_DESCRIPTION = "Description for My Channel";
+    public int onStartCommand(Intent intent, int flags, int start_id_arg) {
+        String CHANNEL_ID          = "ezapp_channel";
+        String CHANNEL_NAME        = "ezapp";
+        String CHANNEL_DESCRIPTION = "description";
+        int    NOTIFICATION_ID     = 100;
 
-        running_count = running_count + 1;
-        Log.i(TAG, "starting fgsvc, running_count=" + running_count);
-
-        NotificationManager notificationManager = (NotificationManager) this.getSystemService(this.NOTIFICATION_SERVICE);
+        // print starting msg, and save start_id to be used when stopping this service
+        Log.i(TAG, "starting loc_fgsvc, start_id = " + start_id_arg);
+        start_id = start_id_arg;
 
         // Create a Notification Channel
+        NotificationManager notificationManager = 
+            (NotificationManager) this.getSystemService(this.NOTIFICATION_SERVICE);
         NotificationChannel channel = 
             new NotificationChannel(CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_DEFAULT);
         channel.setDescription(CHANNEL_DESCRIPTION);
@@ -64,14 +60,12 @@ public class ezapp_fgsvc extends Service {
                 .setVisibility(Notification.VISIBILITY_PUBLIC)
                 .build();
 
-        // startForeground, '100' is the notification id  xxx review
-        this.startForeground(100, notification, 
-                  ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION |
-                  ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION
-                                            );
+        // startForeground
+        this.startForeground(NOTIFICATION_ID, notification, 
+                  ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION);
 
-        // Service will be restarted if killed by the system
-        return START_STICKY;
+        // do not restart service if killed by system
+        return START_NOT_STICKY;
     }
 
     @Override
@@ -81,10 +75,7 @@ public class ezapp_fgsvc extends Service {
 
     @Override
     public void onDestroy() {
-        running_count = running_count - 1;
-        Log.i(TAG, "stopping fgsvc, running_count=" + running_count);
-
-        stopForeground(true);
-        stopSelf();
+        Log.i(TAG, "stopping loc fgsvc");
+        stopSelf(start_id);
     }
 }

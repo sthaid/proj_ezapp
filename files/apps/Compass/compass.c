@@ -90,7 +90,7 @@ int main(int argc, char **argv)
             }
 
             // draw the compass rotated by heading
-            sdlx_render_texture_ex2(compass, 50, 150, 900, 900, heading);
+            sdlx_render_texture_ex2(compass, 50, 150, 900, 900, -heading);
 
             // print the heading and the heading abbreviation below 
             // the area where the compass is displayed

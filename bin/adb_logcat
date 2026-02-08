@@ -1,6 +1,6 @@
 #!/bin/bash
 
-c# suggested fmt options: time, tag
+# suggested fmt options: time, tag
 fmt=time
 
 # enable script logging
