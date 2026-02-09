@@ -928,6 +928,7 @@ int sdlx_audio_record_from_device(char *dir, char *filename)
 {
     record_dev_cx_t *cx;
     void *mp3_cx;
+    int rc;
 
     // stop audio
     if (sdlx_audio_stop() != 0) {
@@ -939,6 +940,13 @@ int sdlx_audio_record_from_device(char *dir, char *filename)
     mp3_cx = mp3_file_open(dir, filename, false);
     if (mp3_cx == NULL) {
         ERROR("failed to create %s\n", filename);
+        return -1;
+    }
+
+    // call java to start playback capture
+    rc = util_start_playbackcapture();
+    if (rc != 0) {
+        ERROR("util_start_playbackcapture failed\n");
         return -1;
     }
 
@@ -966,9 +974,6 @@ static int record_dev_thread(void *cx_arg)
     record_dev_cx_t *cx = cx_arg;
     short samples[MAX_SAMPLES];
 
-    // call java to start playback capture
-    util_start_playbackcapture();
-
     while (true) {
         // if in STOPPING state then goto done;
         if (state.state == AUDIO_STATE_STOPPING) {
@@ -979,7 +984,7 @@ static int record_dev_thread(void *cx_arg)
         // the samples are interleaved left/right channel
         util_get_playbackcapture_audio(samples, MAX_SAMPLES);
 
-        // write/encode the samples to the mp3 file
+        // encode and write the samples to the mp3 file
         if (state.state == AUDIO_STATE_RECORD_FROM_DEVICE) {
             mp3_file_write(cx->mp3_cx, samples, MAX_SAMPLES);
 

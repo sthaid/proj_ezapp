@@ -1,3 +1,31 @@
+../android/setup
+  ok
+../android/setup_files/app_src_main_AndroidManifest.xml
+  k
+../android/setup_files/app_src_main_java_org_libsdl_app_SDLActivity.java
+  917
+../android/setup_files/app_src_main_java_org_libsdl_app_ezapp_loc_fgsvc.java
+  k
+../android/setup_files/app_src_main_java_org_libsdl_app_ezapp_media_fgsvc.java
+  127  and xxx
+ezapp/main.c
+  k
+ezapp_lib/include/utils.h
+  k
+ezapp_lib/sdlx_audio.c
+  k
+ezapp_lib/utils_android.cpp
+  k
+
+xxxxxxxxxxxxxxxxxxxxxx
+
+Location has lat/long location from jan21 at 1 minute intervals
+
+Location  lat/long/alt not working
+put a delay in the test1 lat/long code
+Page 0/1 title not centered, and dont display anyway
+xxxxxxxx
+
 Log              OK
 Template         OK
 Compass          OK

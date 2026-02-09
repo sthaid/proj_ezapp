@@ -57,7 +57,6 @@
     <!--Location Permissions-->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
 
     <!--Post Notification Permission-->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
@@ -69,15 +68,11 @@
 
     <!-- Audio recording support -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
-    <uses-feature
-        android:name="android.hardware.microphone"
-        android:required="false" />
+    <uses-feature android:name="android.hardware.microphone" android:required="false" />
 
     <!--Foreground Service Permissions-->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
-
-    <!-- xxx needed ? -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
     <uses-permission android:name="android.permission.CAPTURE_VIDEO_OUTPUT" />
 

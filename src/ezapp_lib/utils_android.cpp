@@ -89,8 +89,8 @@ bool util_is_flashlight_on(void) {
 }
 
 // playbackcapture
-void util_start_playbackcapture(void) {
-    call_java1("start_playbackcapture");
+int util_start_playbackcapture(void) {
+    return call_java1("start_playbackcapture");
 }
 void util_stop_playbackcapture(void) {
     call_java1("stop_playbackcapture");

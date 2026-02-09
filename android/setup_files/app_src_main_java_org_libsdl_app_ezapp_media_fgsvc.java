@@ -1,5 +1,6 @@
 package org.libsdl.app;
 
+import android.app.Activity;
 import android.app.Service;
 import android.content.Intent;
 import android.os.Binder;
@@ -7,7 +8,7 @@ import android.os.IBinder;
 import android.util.Log;
 import android.content.Context;
 import android.os.SystemClock;
-import android.content.pm.ServiceInfo;  // xxx are these all needed
+import android.content.pm.ServiceInfo;
 
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -24,18 +25,15 @@ import android.media.projection.MediaProjectionManager;
 
 public class ezapp_media_fgsvc extends Service {
 
-    private static final     String TAG      = "EZAPP";
-    private final            IBinder mBinder = new InnerBinder();
-    private int              start_id;      
- 
-    private MediaProjection  mediaProjection = null;
-    static  AudioRecord      audioRecord     = null;        // xxx static
-
-    private static final int STATE_IDLE         = 0;
-    private static final int STATE_INITIALIZING = 1;
-    private static final int STATE_RECORDING    = 2;
-    private static final int STATE_FAILED       = 3;
-    static  int              state              = STATE_IDLE;  // xxx static  private?
+    private static final String    TAG = "EZAPP";
+    private static final int       STATE_IDLE         = 0;
+    private static final int       STATE_INITIALIZING = 1;
+    private static final int       STATE_RECORDING    = 2;
+    private static final int       STATE_FAILED       = 3;
+    private static int             state              = STATE_IDLE;
+    private static AudioRecord     audioRecord        = null;
+    private static MediaProjection mediaProjection    = null;
+    private IBinder                mBinder = new InnerBinder();
 
     public class InnerBinder extends Binder {
         ezapp_media_fgsvc getService() {
@@ -44,7 +42,7 @@ public class ezapp_media_fgsvc extends Service {
     }
 
     @Override
-    public int onStartCommand(Intent intent, int flags, int start_id_arg) {
+    public int onStartCommand(Intent intent, int flags, int start_id) {
         String CHANNEL_ID          = "ezapp_channel";
         String CHANNEL_NAME        = "ezapp";
         String CHANNEL_DESCRIPTION = "description";
@@ -56,12 +54,11 @@ public class ezapp_media_fgsvc extends Service {
         int bufferSizeInBytes;
         MediaProjectionManager projectionManager;
 
-        int    resultCode = intent.getIntExtra("resultCode", 0);  // xxx RESULT_CANCELED);
+        int    resultCode = intent.getIntExtra("resultCode", Activity.RESULT_CANCELED);
         Intent data       = intent.getParcelableExtra("data");
 
-        // print starting msg, and save start_id to be used when stopping this service
-        Log.i(TAG, "starting media fgsvc, start_id = " + start_id_arg);
-        start_id = start_id_arg;
+        // print starting msg
+        Log.i(TAG, "starting media fgsvc");
 
         // if recording then print message and return
         if (state == STATE_RECORDING) {
@@ -115,7 +112,7 @@ public class ezapp_media_fgsvc extends Service {
         AudioPlaybackCaptureConfiguration captureConfig =
             new AudioPlaybackCaptureConfiguration.Builder(mediaProjection)
                 .addMatchingUsage(AudioAttributes.USAGE_MEDIA) // Capture media playback audio
-                //.addMatchingUsage(AudioAttributes.USAGE_GAME)  // Capture game audio   xxx why not ?
+                .addMatchingUsage(AudioAttributes.USAGE_GAME)  // Capture game audio 
                 .build();
 
         // Configure the AudioFormat
@@ -127,7 +124,7 @@ public class ezapp_media_fgsvc extends Service {
 
         // Initialize AudioRecord with the configuration
         audioRecord = new AudioRecord.Builder()
-            //.setAudioSource(MediaRecorder.AudioSource.DEFAULT) // Default source is fine for playback capture
+            //.setAudioSource(MediaRecorder.AudioSource.DEFAULT) // default source is fine for playback capture
             .setAudioFormat(format)
             .setBufferSizeInBytes(bufferSizeInBytes)
             .setAudioPlaybackCaptureConfig(captureConfig) // key step
@@ -142,7 +139,9 @@ public class ezapp_media_fgsvc extends Service {
         return START_NOT_STICKY;
     }
 
-    static public short[] get_playbackcapture_audio(int num_array_elements) {
+    // xxx why does this have to be static
+    // xxx needs more work, regarding state and dont loop foever waiting
+    public static short[] get_playbackcapture_audio(int num_array_elements) {
         short[] array = new short[num_array_elements];
         int shorts_read = 0;
 
@@ -183,6 +182,6 @@ public class ezapp_media_fgsvc extends Service {
 
         state = STATE_IDLE;
 
-        stopSelf(start_id);
+        stopSelf();
     }
 }

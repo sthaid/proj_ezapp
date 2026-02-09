@@ -80,8 +80,10 @@ update_build_file app_jni_src_Android.mk           app/jni/src/Android.mk
 update_build_file app_src_main_AndroidManifest.xml app/src/main/AndroidManifest.xml
 update_build_file app_src_main_java_org_libsdl_app_SDLActivity.java \
                                                    app/src/main/java/org/libsdl/app/SDLActivity.java
-update_build_file app_src_main_java_org_libsdl_app_ezapp_fgsvc.java \
-                                                   app/src/main/java/org/libsdl/app/ezapp_fgsvc.java
+update_build_file app_src_main_java_org_libsdl_app_ezapp_loc_fgsvc.java \
+                                                   app/src/main/java/org/libsdl/app/ezapp_loc_fgsvc.java
+update_build_file app_src_main_java_org_libsdl_app_ezapp_media_fgsvc.java \
+                                                   app/src/main/java/org/libsdl/app/ezapp_media_fgsvc.java
 update_build_file app_src_main_java_org_libsdl_app_ezapp_utils.java \
                                                    app/src/main/java/org/libsdl/app/ezapp_utils.java
 update_build_file app_src_main_java_org_libsdl_app_ezapp_playbackcapture.java \

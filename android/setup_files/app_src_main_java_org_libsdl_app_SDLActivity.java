@@ -62,6 +62,7 @@ import android.media.projection.MediaProjectionManager;
 import org.libsdl.app.ezapp_loc_fgsvc;
 import org.libsdl.app.ezapp_media_fgsvc;
 import org.libsdl.app.ezapp_utils;
+import android.os.SystemClock;
 
 /**
     SDL Activity
@@ -240,11 +241,14 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
     protected static boolean mDispatchingKeyEvent = false;
 
     // EZAPP variables
-    private static ezapp_utils mezapp_utils;
-    private static ezapp_loc_fgsvc mezapp_loc_fgsvc;
-    private static boolean mezapp_loc_fgsvc_isbound = false;
+    private static ezapp_utils       mezapp_utils;
+    private static ezapp_loc_fgsvc   mezapp_loc_fgsvc;
+    private static boolean           mezapp_loc_fgsvc_isbound = false;
     private static ezapp_media_fgsvc mezapp_media_fgsvc;
-    private static boolean mezapp_media_fgsvc_isbound = false;
+    private static boolean           mezapp_media_fgsvc_isbound = false;
+    private static int               mezapp_media_start_result;
+    private static final int         MEDIA_RECORD_REQUEST_CODE = 1234;
+    private static final int         RESULT_NOT_SET = Activity.RESULT_FIRST_USER;
 
     public static SDLGenericMotionListener_API14 getMotionListener() {
         if (mMotionListener == null) {
@@ -523,10 +527,16 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
     // EZAPP playback capture
     public double start_playbackcapture() {
         Log.i(EZAPP_TAG, "start_playbackcapture called");
+
+        mezapp_media_start_result = RESULT_NOT_SET;
         MediaProjectionManager manager = 
             (MediaProjectionManager) getSystemService(MEDIA_PROJECTION_SERVICE);
-        startActivityForResult(manager.createScreenCaptureIntent(), 1234);  // xxx REQUEST_CODE
-        return 0;
+        startActivityForResult(manager.createScreenCaptureIntent(), MEDIA_RECORD_REQUEST_CODE);
+
+        while (mezapp_media_start_result == RESULT_NOT_SET) {
+            SystemClock.sleep(100);
+        }
+        return (mezapp_media_start_result == RESULT_OK ? 0 : -1);
     }
 
     public double stop_playbackcapture() {
@@ -903,14 +913,19 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
-        // xxxx
-        if (requestCode == 1234) {
-            Intent x = new Intent(this, ezapp_media_fgsvc.class);
-            x.putExtra("resultCode", resultCode);
-            x.putExtra("data", data);
-            startForegroundService(x);
-            bindService(x, ezapp_media_fgsvc_connection, Context.BIND_AUTO_CREATE);
-            return;
+        // if request is for EZAPP device recording then start the ezapp_media_fgsvc
+        if (requestCode == MEDIA_RECORD_REQUEST_CODE) {
+            Log.i(EZAPP_TAG, "xxxx resultCode = " + resultCode);
+            if (resultCode == Activity.RESULT_OK) {
+                Intent x = new Intent(this, ezapp_media_fgsvc.class);
+                x.putExtra("resultCode", resultCode);
+                x.putExtra("data", data);
+                startForegroundService(x);
+                bindService(x, ezapp_media_fgsvc_connection, Context.BIND_AUTO_CREATE);
+                mezapp_media_start_result = RESULT_OK;
+            } else {
+                mezapp_media_start_result = RESULT_CANCELED;
+            }
         }
 
         if (mFileDialogState != null && mFileDialogState.requestCode == requestCode) {

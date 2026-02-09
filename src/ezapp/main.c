@@ -162,29 +162,22 @@ static int init(void)
 
 #ifdef ANDROID
     // get permissions when running on Android
-    if (sdlx_get_permission("android.permission.POST_NOTIFICATIONS") != 0) {
-        ERROR("failed to get permission POST_NOTIFICATION\n");
-    }
-    if (sdlx_get_permission("android.permission.ACCESS_COARSE_LOCATION") != 0) {
-        ERROR("failed to get permission ACCESS_COARSE_LOCATION\n");
-    }
-//  xxx needed?
-//  if (sdlx_get_permission("android.permission.ACCESS_FINE_LOCATION") != 0) {
-//      ERROR("failed to get permission ACCESS_FINE_LOCATION\n");
-//  }
-    if (sdlx_get_permission("android.permission.ACTIVITY_RECOGNITION") != 0) {
-        ERROR("failed to get permission ACTIVITY_RECOGNITION\n");
-    }
-    if (sdlx_get_permission("android.permission.RECORD_AUDIO") != 0) {
-        ERROR("failed to get permission RECORD_AUDIO\n");
-    }
-    // xxx needed?
-    if (sdlx_get_permission("android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION") != 0) {
-        ERROR("failed to get permission FOREGROUND_SERVICE_MEDIA_PROJECTION\n");
-    }
-    if (sdlx_get_permission("android.permission.CAPTURE_VIDEO_OUTPUT") != 0) {
-        ERROR("failed to get permission CAPTURE_VIDEO_OUTPUT\n");
-    }
+    #define GET_PERMISSION(str) \
+        do { \
+            if (sdlx_get_permission("android.permission." str) != 0) { \
+                ERROR("failed to get permission %s\n", str); \
+            } \
+        } while (0)
+
+    GET_PERMISSION("POST_NOTIFICATIONS");
+    GET_PERMISSION("ACCESS_COARSE_LOCATION");
+    GET_PERMISSION("ACCESS_FINE_LOCATION");
+    GET_PERMISSION("ACTIVITY_RECOGNITION");
+    GET_PERMISSION("RECORD_AUDIO");
+
+    // xxx probably not needed, delete later
+    //GET_PERMISSION("FOREGROUND_SERVICE_MEDIA_PROJECTION");
+    //GET_PERMISSION("CAPTURE_VIDEO_OUTPUT");
 #endif
 
     // init services, this will xxx

@@ -17,8 +17,7 @@ import org.sthaid.ezApp.R;  // needed to access R.drawable.ic_notifcation_icon
 public class ezapp_loc_fgsvc extends Service {
 
     private static final String TAG = "EZAPP";
-    private final        IBinder mBinder = new InnerBinder();
-    private int          start_id;
+    private IBinder             mBinder = new InnerBinder();
 
     public class InnerBinder extends Binder {
         ezapp_loc_fgsvc getService() {
@@ -27,15 +26,14 @@ public class ezapp_loc_fgsvc extends Service {
     }
 
     @Override
-    public int onStartCommand(Intent intent, int flags, int start_id_arg) {
+    public int onStartCommand(Intent intent, int flags, int start_id) {
         String CHANNEL_ID          = "ezapp_channel";
         String CHANNEL_NAME        = "ezapp";
         String CHANNEL_DESCRIPTION = "description";
         int    NOTIFICATION_ID     = 100;
 
-        // print starting msg, and save start_id to be used when stopping this service
-        Log.i(TAG, "starting loc_fgsvc, start_id = " + start_id_arg);
-        start_id = start_id_arg;
+        // print starting msg
+        Log.i(TAG, "starting loc_fgsvc");
 
         // Create a Notification Channel
         NotificationManager notificationManager = 
@@ -76,6 +74,6 @@ public class ezapp_loc_fgsvc extends Service {
     @Override
     public void onDestroy() {
         Log.i(TAG, "stopping loc fgsvc");
-        stopSelf(start_id);
+        stopSelf();
     }
 }
