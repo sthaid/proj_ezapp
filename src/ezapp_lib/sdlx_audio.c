@@ -973,6 +973,7 @@ static int record_dev_thread(void *cx_arg)
 
     record_dev_cx_t *cx = cx_arg;
     short samples[MAX_SAMPLES];
+    int rc;
 
     while (true) {
         // if in STOPPING state then goto done;
@@ -982,7 +983,11 @@ static int record_dev_thread(void *cx_arg)
 
         // get playback capture audio samples,
         // the samples are interleaved left/right channel
-        util_get_playbackcapture_audio(samples, MAX_SAMPLES);
+        rc = util_get_playbackcapture_audio(samples, MAX_SAMPLES);
+        if (rc != 0) {
+            ERROR("util_get_playbackcapture_audio failed\n");
+            goto done;
+        }
 
         // encode and write the samples to the mp3 file
         if (state.state == AUDIO_STATE_RECORD_FROM_DEVICE) {

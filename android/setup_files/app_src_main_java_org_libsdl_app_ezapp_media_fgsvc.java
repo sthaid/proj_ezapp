@@ -20,19 +20,20 @@ import android.media.AudioAttributes;
 import android.media.AudioFormat;
 import android.media.AudioPlaybackCaptureConfiguration;
 import android.media.AudioRecord;
+import android.media.MediaRecorder;
 import android.media.projection.MediaProjection;
 import android.media.projection.MediaProjectionManager;
 
 public class ezapp_media_fgsvc extends Service {
 
     private static final String    TAG = "EZAPP";
-    private static final int       STATE_IDLE         = 0;
     private static final int       STATE_INITIALIZING = 1;
     private static final int       STATE_RECORDING    = 2;
     private static final int       STATE_FAILED       = 3;
-    private static int             state              = STATE_IDLE;
-    private static AudioRecord     audioRecord        = null;
-    private static MediaProjection mediaProjection    = null;
+    private static final int       STATE_STOPPED      = 4;
+    private static int             state;
+    private static AudioRecord     audioRecord;
+    private static MediaProjection mediaProjection;
     private IBinder                mBinder = new InnerBinder();
 
     public class InnerBinder extends Binder {
@@ -57,17 +58,11 @@ public class ezapp_media_fgsvc extends Service {
         int    resultCode = intent.getIntExtra("resultCode", Activity.RESULT_CANCELED);
         Intent data       = intent.getParcelableExtra("data");
 
-        // print starting msg
+        // print starting msg< and init variables
         Log.i(TAG, "starting media fgsvc");
-
-        // if recording then print message and return
-        if (state == STATE_RECORDING) {
-            Log.e(TAG, "recording in progress");
-            return START_NOT_STICKY;
-        }
-
-        // set state to initializing
-        state = STATE_INITIALIZING;
+        state           = STATE_INITIALIZING;
+        audioRecord     = null;
+        mediaProjection = null;
 
         // Create a Notification Channel
         NotificationManager notificationManager =
@@ -124,7 +119,8 @@ public class ezapp_media_fgsvc extends Service {
 
         // Initialize AudioRecord with the configuration
         audioRecord = new AudioRecord.Builder()
-            //.setAudioSource(MediaRecorder.AudioSource.DEFAULT) // default source is fine for playback capture
+            // "Cannot both set audio source and set playback capture config"
+            //.setAudioSource(MediaRecorder.AudioSource.DEFAULT)
             .setAudioFormat(format)
             .setBufferSizeInBytes(bufferSizeInBytes)
             .setAudioPlaybackCaptureConfig(captureConfig) // key step
@@ -140,24 +136,39 @@ public class ezapp_media_fgsvc extends Service {
     }
 
     // xxx why does this have to be static
-    // xxx needs more work, regarding state and dont loop foever waiting
     public static short[] get_playbackcapture_audio(int num_array_elements) {
-        short[] array = new short[num_array_elements];
         int shorts_read = 0;
+        int millisecs = 0;
 
+        // wait for up to 5 seconds for STATE_RECORDING
         while (true) {
             if (state == STATE_RECORDING) {
                 break;
             }
-            if (state == STATE_FAILED) {
-                Log.e(TAG, "recording has failed");
-                return array;  // xxx return an error
+            if (millisecs > 5000 || state == STATE_FAILED) {
+                if (millisecs > 5000) {
+                    Log.e(TAG, "get_playbackcapture_audio timedout");
+                } else {
+                    Log.e(TAG, "get_playbackcapture_audio STATE_FAILED");
+                }
+                short[] error = new short[0];
+                return error;
             }
-            SystemClock.sleep(1000);
+            SystemClock.sleep(100);
+            millisecs += 100;
+        }
+            
+        // read audio data
+        short[] audio_data = new short[num_array_elements];
+        shorts_read = audioRecord.read(audio_data, 0, num_array_elements);
+        if (shorts_read != num_array_elements ) {
+            short[] error = new short[0];
+            Log.e(TAG, "get_playbackcapture_audio short_read = " + shorts_read);
+            return error;
         }
 
-        shorts_read = audioRecord.read(array, 0, num_array_elements);
-        return array;  // xxx how to return an error
+        // return audio data
+        return audio_data;
     }
 
     @Override
@@ -180,7 +191,7 @@ public class ezapp_media_fgsvc extends Service {
             mediaProjection = null;
         }
 
-        state = STATE_IDLE;
+        state = STATE_STOPPED;
 
         stopSelf();
     }

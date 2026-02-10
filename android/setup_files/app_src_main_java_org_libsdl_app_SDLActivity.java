@@ -915,8 +915,8 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
 
         // if request is for EZAPP device recording then start the ezapp_media_fgsvc
         if (requestCode == MEDIA_RECORD_REQUEST_CODE) {
-            Log.i(EZAPP_TAG, "xxxx resultCode = " + resultCode);
             if (resultCode == Activity.RESULT_OK) {
+                Log.i(EZAPP_TAG, "start media record permission granted, starting ezapp_media_fgsvc");
                 Intent x = new Intent(this, ezapp_media_fgsvc.class);
                 x.putExtra("resultCode", resultCode);
                 x.putExtra("data", data);
@@ -924,6 +924,7 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
                 bindService(x, ezapp_media_fgsvc_connection, Context.BIND_AUTO_CREATE);
                 mezapp_media_start_result = RESULT_OK;
             } else {
+                Log.e(EZAPP_TAG, "start media record permission failed, resultCode = " + resultCode);
                 mezapp_media_start_result = RESULT_CANCELED;
             }
         }

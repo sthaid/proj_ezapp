@@ -39,7 +39,7 @@
 // prototype of common routine to call java method
 static double call_java1(const char *method_name);
 static double call_java2(const char *method_name, char *str);
-static void call_java3(const char *method_name, short *array, int num_array_elements);
+static double call_java3(const char *method_name, short *array, int num_array_elements);
 
 // location
 void util_get_location(double *latitude, double *longitude, double *altitude) {
@@ -95,8 +95,8 @@ int util_start_playbackcapture(void) {
 void util_stop_playbackcapture(void) {
     call_java1("stop_playbackcapture");
 }
-void util_get_playbackcapture_audio(short *array, int num_array_elements) {
-    call_java3("get_playbackcapture_audio", array, num_array_elements);
+int util_get_playbackcapture_audio(short *array, int num_array_elements) {
+    return call_java3("get_playbackcapture_audio", array, num_array_elements);
 }
 
 // -----------------  COMMON ROUTINES TO CALL JAVA METHOD  -------------------------
@@ -187,8 +187,7 @@ static double call_java2(const char *method_name, char *arg_str)
     return method_ret_double;
 }
 
-// xxx return status, and review how status are retunered throught this file
-void call_java3(const char *method_name, short *caller_array, int num_array_elements)
+double call_java3(const char *method_name, short *caller_array, int num_array_elements)
 {
     jmethodID method_id = 0;
 
@@ -205,7 +204,7 @@ void call_java3(const char *method_name, short *caller_array, int num_array_elem
         ERROR("failed to get method_id for %s\n", method_name);
         env->DeleteLocalRef(activity);
         env->DeleteLocalRef(clazz);
-        return;
+        return -1;
     }
 
     // call the java method, which will return the array of short elements
@@ -214,7 +213,7 @@ void call_java3(const char *method_name, short *caller_array, int num_array_elem
         ERROR("%s method failed\n", method_name);
         env->DeleteLocalRef(activity);
         env->DeleteLocalRef(clazz);
-        return;
+        return -1;
     }
 
     // extract array length and elements from the method returned jshortArray
@@ -223,9 +222,10 @@ void call_java3(const char *method_name, short *caller_array, int num_array_elem
     if (length != num_array_elements) {
         ERROR("%s method returned unexpected length=%d, expected=%d\n", 
               method_name, length, num_array_elements);
+        env->ReleaseShortArrayElements(array, array_elements, JNI_ABORT);
         env->DeleteLocalRef(activity);
         env->DeleteLocalRef(clazz);
-        return;
+        return -1;
     }
 
     // return array_elements to caller
@@ -241,6 +241,9 @@ void call_java3(const char *method_name, short *caller_array, int num_array_elem
     // clean up
     env->DeleteLocalRef(activity);
     env->DeleteLocalRef(clazz);
+
+    // return success
+    return 0;
 }
 
 #else
