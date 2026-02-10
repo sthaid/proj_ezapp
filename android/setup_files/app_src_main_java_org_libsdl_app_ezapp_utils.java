@@ -22,11 +22,11 @@ import android.hardware.camera2.CameraManager;
 import android.view.Gravity;
 
 public class ezapp_utils {
-    private static final String TAG = "EZAPP";
-    private static final int INVALID_NUMBER = 999999999;
+    private static final String                TAG = "EZAPP";
+    private static final int                   INVALID_NUMBER = 999999999;
 
-    private static TextToSpeech mTts;
-    private static boolean      isTtsInitialized = false;
+    private static TextToSpeech                mTts;
+    private static boolean                     isTtsInitialized = false;
 
     private static FusedLocationProviderClient fusedLocationClient;
     private static LocationCallback            locationCallback;
@@ -34,9 +34,9 @@ public class ezapp_utils {
     private static double                      longitude = INVALID_NUMBER;
     private static double                      altitude  = INVALID_NUMBER;
 
-    private static CameraManager cameraManager;
-    private static String        cameraId;
-    private static boolean       flashlight_is_on = false;
+    private static CameraManager               cameraManager;
+    private static String                      cameraId;
+    private static boolean                     flashlight_is_on = false;
 
     //
     // constructor
@@ -45,7 +45,10 @@ public class ezapp_utils {
     public ezapp_utils(Context cx) {
         Log.i(TAG, "utils init");
 
+        //
         // Initialize TextToSpeech support
+        //
+
         mTts = new TextToSpeech(cx, new TextToSpeech.OnInitListener() {
             @Override
             public void onInit(int status) { 
@@ -60,7 +63,10 @@ public class ezapp_utils {
             } 
         });
 
+        //
         // Initialize Location support
+        //
+
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(cx);
 
         locationCallback = new LocationCallback() {
@@ -77,13 +83,16 @@ public class ezapp_utils {
                 }
             }
         };
-        // - start location updates using 180 second interval
+
         LocationRequest locationRequest = LocationRequest.create();
-        locationRequest.setInterval(180*1000);
+        locationRequest.setInterval(180*1000);  // 3 minute update interval
         locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
         fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper());
 
+        //
         // Initialize flashlight support
+        //
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             cameraManager = (CameraManager) cx.getSystemService(Context.CAMERA_SERVICE);
             try {
@@ -106,6 +115,8 @@ public class ezapp_utils {
             mTts.shutdown();
             mTts = null;
         }
+
+        // xxx other stuff to do here?
     }
 
     //
@@ -115,6 +126,7 @@ public class ezapp_utils {
     // return 0 on success, INVALID_NUMBER on failure
     public int text_to_speech(String message) {
         int status;
+
         if (isTtsInitialized && mTts != null) {
             if (message.length() > 0) {
                 Log.i(TAG, "tts speaking: " + message);

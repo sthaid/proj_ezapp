@@ -1,25 +1,59 @@
-../android/setup
-  ok
-../android/setup_files/app_src_main_AndroidManifest.xml
-  k
-../android/setup_files/app_src_main_java_org_libsdl_app_SDLActivity.java
-  k   
-../android/setup_files/app_src_main_java_org_libsdl_app_ezapp_loc_fgsvc.java
-  k
-../android/setup_files/app_src_main_java_org_libsdl_app_ezapp_media_fgsvc.java
-  127  and xxx
-ezapp/main.c
-  k
-ezapp_lib/include/utils.h
-  k
-ezapp_lib/sdlx_audio.c
-  k
-ezapp_lib/utils_android.cpp
-  k
+after fresh install
+02-10 08:32:22.998 I/EZAPP   (17298): sdlx_sensor_init: num_sensors =42
+02-10 08:32:22.998 I/EZAPP   (17298): sdlx_sensor_init:  3  1 lsm6dso LSM6DSO Accelerometer Non-wakeup
+02-10 08:32:22.998 I/EZAPP   (17298): sdlx_sensor_init:  4  2 AK09918 Magnetometer
+02-10 08:32:22.998 I/EZAPP   (17298): sdlx_sensor_init:  5  4 lsm6dso LSM6DSO Gyroscope Non-wakeup
+02-10 08:32:22.998 I/EZAPP   (17298): sdlx_sensor_init:  6  5 STK33911 Light  Non-wakeup
+02-10 08:32:22.998 I/EZAPP   (17298): sdlx_sensor_init:  7  6 lps22hh Pressure Sensor Non-wakeup
+02-10 08:32:22.998 I/EZAPP   (17298): sdlx_sensor_init:  8  9 gravity  Non-wakeup
+02-10 08:32:22.998 I/EZAPP   (17298): sdlx_sensor_init:  9 10 linear_acceleration
+02-10 08:32:22.998 I/EZAPP   (17298): sdlx_sensor_init: 10 11 Rotation Vector  Non-wakeup
+02-10 08:32:22.998 I/EZAPP   (17298): sdlx_sensor_init: 11 14 AK09918 Magnetometer-Uncalibrated
+02-10 08:32:22.998 I/EZAPP   (17298): sdlx_sensor_init: 12 15 Game Rotation Vector  Non-wakeup
+02-10 08:32:22.998 I/EZAPP   (17298): sdlx_sensor_init: 13 16 lsm6dso LSM6DSO Gyroscope-Uncalibrated Non-wakeup
+02-10 08:32:22.998 I/EZAPP   (17298): sdlx_sensor_init: 14 17 smd  Wakeup
+02-10 08:32:22.998 I/EZAPP   (17298): sdlx_sensor_init: 15 18 step_detector  Non-wakeup
+02-10 08:32:22.998 I/EZAPP   (17298): sdlx_sensor_init: 16 19 step_counter  Non-wakeup
+02-10 08:32:22.998 I/EZAPP   (17298): sdlx_sensor_init: 17 22 Tilt Detector  Wakeup
+02-10 08:32:22.998 I/EZAPP   (17298): sdlx_sensor_init: 18 25 Pick Up Gesture  Wakeup
+02-10 08:32:22.998 I/EZAPP   (17298): sdlx_sensor_init: 19 27 auto_rotation Screen Orientation Sensor Non-wakeup
+02-10 08:32:22.998 I/EZAPP   (17298): sdlx_sensor_init: 20 30 motion_detect
+02-10 08:32:22.998 I/EZAPP   (17298): sdlx_sensor_init: 21 35 lsm6dso LSM6DSO Accelerometer-Uncalibrated Non-wakeup
+02-10 08:32:22.998 I/EZAPP   (17298): sdlx_sensor_init: 42  8 Palm Proximity Sensor version 2
+02-10 08:32:22.998 I/EZAPP   (17298): sdlx_sensor_init: 44  3 Orientation Sensor
+02-10 08:32:22.998 E/EZAPP   (17298): sdlx_sensor_find: no sensor found with type 13
+02-10 08:32:22.998 E/EZAPP   (17298): sdlx_sensor_find: no sensor found with type 12
+02-10 08:32:23.005 E/EZAPP   (17298): sdlx_sensor_read_raw: failed to open sensor id 16, Couldn't enable sensor
+02-10 08:32:23.257 E/EZAPP   (17298): sdlx_sensor_read_raw: failed to open sensor id 16, Couldn't enable sensor
+
+
+
+hangs here on first run after install
+02-10 08:31:34.238 I/EZAPP   (16962): init: ========== STARTING: 1.0 02/10/26 08:31:13  ==========
+02-10 08:31:34.238 I/EZAPP   (16962): init: storage_path = /data/data/org.sthaid.ezApp/files
+02-10 08:31:34.238 I/EZAPP   (16962): read_params_file: reading params file in dir '.'
+02-10 08:31:34.238 I/EZAPP   (16962): read_params_file: max_params=7
+02-10 08:31:34.238 I/EZAPP   (16962): read_params_file:   devel_mode = 1
+02-10 08:31:34.238 I/EZAPP   (16962): read_params_file:   devel_port = 9000
+02-10 08:31:34.238 I/EZAPP   (16962): read_params_file:   devel_password = secret
+02-10 08:31:34.238 I/EZAPP   (16962): read_params_file:   foreground_enabled = 1
+02-10 08:31:34.238 I/EZAPP   (16962): read_params_file:   record_scale = 100
+02-10 08:31:34.238 I/EZAPP   (16962): read_params_file:   record_silence = 10
+02-10 08:31:34.238 I/EZAPP   (16962): read_params_file:   record_gain = 100
+02-10 08:31:34.252 I/EZAPP   (16962): util_write_file: writing file ./files.tar
+
 
 xxxxxxxxxxxxxxxxxxxxxx
 
+ezsh
+- display propt in green
+- don't exit so readily
+
+
 Location has lat/long location from jan21 at 1 minute intervals
+- clear history ack
+- spread out stg lines
+- don't allow US country to be downloaded
 
 Location  lat/long/alt not working
 put a delay in the test1 lat/long code

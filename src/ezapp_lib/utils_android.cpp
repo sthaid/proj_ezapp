@@ -41,6 +41,17 @@ static double call_java1(const char *method_name);
 static double call_java2(const char *method_name, char *str);
 static double call_java3(const char *method_name, short *array, int num_array_elements);
 
+// android utils init & destroy
+void util_android_utils_init(void)
+{
+    call_java1("android_utils_init");
+}
+
+void util_android_utils_destroy(void)
+{
+    call_java1("android_utils_destroy");
+}
+
 // location
 void util_get_location(double *latitude, double *longitude, double *altitude) {
     if (latitude) {
@@ -145,6 +156,8 @@ static double call_java1(const char *method_name)
     return method_ret_double;
 }
 
+xxx
+// xxx comment
 static double call_java2(const char *method_name, char *arg_str)
 {
     jmethodID method_id = 0;
@@ -168,7 +181,7 @@ static double call_java2(const char *method_name, char *arg_str)
         //        and its memory management is handled by the JVM's garbage collector.
         jstring java_string = env->NewStringUTF(arg_str);
 
-        // call text_to_speech method
+        // call method
         method_ret_double = env->CallDoubleMethod(activity, method_id, java_string);
     }
 
@@ -252,12 +265,16 @@ double call_java3(const char *method_name, short *caller_array, int num_array_el
 
 #include <utils.h>
 
-#define BOLTON_MASS_LATITUDE     42.4334
-#define BOLTON_MASS_LONGITUDE   -71.6078
-#define BOLTON_MASS_ELEVATION    100    // range is 63 to 201 meters
+void util_android_utils_init(void) { }
+
+void util_android_utils_destroy(void) { }
 
 void util_get_location(double *latitude, double *longitude, double *altitude)
 {
+    #define BOLTON_MASS_LATITUDE     42.4334
+    #define BOLTON_MASS_LONGITUDE   -71.6078
+    #define BOLTON_MASS_ELEVATION    100    // Bolton elevation range is 63 to 201 meters
+
     if (latitude) {
         *latitude = BOLTON_MASS_LATITUDE;
     }
@@ -281,8 +298,8 @@ void util_turn_flashlight_off(void) { }
 void util_toggle_flashlight(void) { }
 bool util_is_flashlight_on(void) { return false; }
 
-void util_start_playbackcapture(void) { }
+int util_start_playbackcapture(void) { }
 void util_stop_playbackcapture(void) { }
-void util_get_playbackcapture_audio(short *array, int num_array_elements) { }
+int util_get_playbackcapture_audio(short *array, int num_array_elements) { }
 
 #endif

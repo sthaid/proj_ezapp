@@ -519,9 +519,6 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
                 SDLActivity.onNativeDropFile(filename);
             }
         }
-
-        // EZAPP onCreate: Initialize Utils: Location, TextToSpeech, Flashlight
-        mezapp_utils = new ezapp_utils(getContext());
     }
 
     // EZAPP playback capture
@@ -620,7 +617,20 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
         }
     };
 
-    // EZAPP get location
+    // EZAPP utils init and destroy
+    public double android_utils_init() {
+        mezapp_utils = new ezapp_utils(getContext());
+        return 0;
+    }
+
+    public double android_utils_destroy() {
+        if (mezapp_utils != null) {
+            mezapp_utils.destroy();
+        }
+        return 0;
+    }
+
+    // EZAPP utils get location
     public double get_latitude() {
         return mezapp_utils.get_latitude();
     }
@@ -633,12 +643,12 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
         return mezapp_utils.get_altitude();
     }
 
-    // EZAPP text to speech
+    // EZAPP utils text to speech
     public double text_to_speech(String message) {
         return mezapp_utils.text_to_speech(message);
     }
 
-    // EZAPP flashlight
+    // EZAPP utils flashlight
     public double turn_flashlight_on() {
         mezapp_utils.turn_flashlight_on();
         return 0;
@@ -853,6 +863,7 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
             mezapp_media_fgsvc_isbound = false;
         }
 
+xxxx
         // EZAPP onDestroy: utils cleanup
         mezapp_utils.destroy();
 
@@ -913,7 +924,7 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
-        // if request is for EZAPP device recording then start the ezapp_media_fgsvc
+        // EZAPP if request is for device recording then start the ezapp_media_fgsvc
         if (requestCode == MEDIA_RECORD_REQUEST_CODE) {
             if (resultCode == Activity.RESULT_OK) {
                 Log.i(EZAPP_TAG, "start media record permission granted, starting ezapp_media_fgsvc");

@@ -25,17 +25,12 @@
 #define MAIN main
 #endif
 
-#define DEFAULT_DEVEL_PORT 9000   // IANA registered port range 1024 - 49151
+#define DEFAULT_DEVEL_PORT     9000   // IANA registered port range 1024 - 49151
 #define DEFAULT_DEVEL_PASSWORD "secret"
 
 #define LAST_PAGE ((max_apps - 1) / 18)
 
 #define BG_COLOR (!params.devel_mode ? COLOR_TEAL : COLOR_VIOLET)
-
-#define SMALLEST_FONT 40
-#define SMALL_FONT    30
-#define DEFAULT_FONT  20
-#define LARGE_FONT    10
 
 #define EVID_PAGE_DECREMENT  900
 #define EVID_PAGE_INCREMENT  901
@@ -46,6 +41,8 @@
 
 #define CREATE_FILES_INIT  1
 #define CREATE_FILES_RESET 2
+
+//#define PRINT_TYPE_SIZES
 
 //
 // typedefs
@@ -80,7 +77,7 @@ static int devel_mode_server_thread(void *cx);
 static int init(void);
 static void cleanup(void);
 static void sigusr2_hndlr(int signum);
-static void print_type_sizes(void);
+static void print_type_sizes(void) __attribute__ ((unused));
 #ifdef ANDROID  // xxx get rid of some ifdefs
 static void create_files(int action);
 #endif
@@ -121,6 +118,11 @@ static int init(void)
     INFO("========== STARTING: %s %s  ==========\n", VERSION, BUILD_DATE);
     INFO("storage_path = %s\n", storage_path);
 
+#ifdef PRINT_TYPE_SIZES
+    // print type sizes
+    print_type_sizes();
+#endif
+
     // get params, if they don't exist, set to default value
     params.devel_mode = util_get_numeric_param(".", "devel_mode", 0);
     params.devel_port = util_get_numeric_param(".", "devel_port", DEFAULT_DEVEL_PORT);
@@ -156,6 +158,7 @@ static int init(void)
     sdlx_create_detached_thread(devel_mode_server_thread, NULL);
 
     // init sdl xxx move
+    // xxx need to init sensors and possibly audio, after permissions
     sdlx_init(SUBSYS_VIDEO | SUBSYS_AUDIO | SUBSYS_SENSOR);
     INFO("sdlx_win_width,height = %d %d  sdlx_char_width,height=%d %d\n",
          sdlx_win_width, sdlx_win_height, sdlx_char_width_dflt, sdlx_char_height_dflt);
@@ -169,22 +172,19 @@ static int init(void)
             } \
         } while (0)
 
+    // xxx test without some of these granted
     GET_PERMISSION("POST_NOTIFICATIONS");
     GET_PERMISSION("ACCESS_COARSE_LOCATION");
     GET_PERMISSION("ACCESS_FINE_LOCATION");
     GET_PERMISSION("ACTIVITY_RECOGNITION");
     GET_PERMISSION("RECORD_AUDIO");
 
-    // xxx probably not needed, delete later
-    //GET_PERMISSION("FOREGROUND_SERVICE_MEDIA_PROJECTION");
-    //GET_PERMISSION("CAPTURE_VIDEO_OUTPUT");
+    // xxx comment = after permissions
+    util_android_utils_init();
+
+    // xxx wait, with timeout,  for lat/long available if that perm is granted
+    //    OR do that in util_android_utils_init
 #endif
-
-    // init services, this will xxx
-    svcs_init(run);
-
-    // print type sizes
-    print_type_sizes();
 
     // start/stop foreground mode based on the foreground_enabled param
     if (params.foreground_enabled) {
@@ -192,6 +192,9 @@ static int init(void)
     } else {
         util_stop_foreground();
     }
+
+    // init services, this will xxx
+    svcs_init(run);
 
     // success
     return 0;
@@ -207,6 +210,10 @@ static void cleanup(void)
     // xxx free svc_call allocations ?
 
     // xxx are other cleanup routines called?
+
+#ifdef ANDROID
+    util_android_utils_destroy();
+#endif
 
     sdlx_quit(SUBSYS_VIDEO | SUBSYS_AUDIO | SUBSYS_SENSOR);
 }
@@ -403,11 +410,13 @@ static void display_menu(void)
     first = page * 18;
     last  = first + 17;
 
+#if 0 //xxx del
     if (LAST_PAGE > 0) { // xxx test multiple pages
         sdlx_render_printf_ex1(sdlx_win_width/2, sdlx_char_height_dflt/2, 
                                FONT_SMALL, COLOR_WHITE, 
                                "Page %d", page);
     }
+#endif
 
     for (int i = first; i <= last; i++) {
         char     *name = apps[i];

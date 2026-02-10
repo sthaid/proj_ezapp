@@ -76,6 +76,9 @@ int util_write_png_file(char *dir, char *filename, unsigned char *pixels, int w,
 
 // -----------------  CALL ANDROID JAVA  ---------------------
 
+void util_android_utils_init(void);
+void util_android_utils_destroy(void);
+
 void util_get_location(double *latitude, double *longitude, double *altitude);
 
 void util_text_to_speech(char *text);
