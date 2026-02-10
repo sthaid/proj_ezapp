@@ -2,8 +2,7 @@
 
 #ifdef ANDROID
 
-#define INVALID_NUMBER 999999999  // xxx get this from sdlx.h; or fix picoc so NAN/isnan works
-
+#include <sdlx.h>
 #include <utils.h>
 #include <logging.h>
 
@@ -112,7 +111,6 @@ int util_get_playbackcapture_audio(short *array, int num_array_elements) {
 
 // -----------------  COMMON ROUTINES TO CALL JAVA METHOD  -------------------------
 
-// xxx move this comment
 // returns:
 // - INVALID_NUMBER, when failed, or
 // - method specific result value, such as:
@@ -120,7 +118,7 @@ int util_get_playbackcapture_audio(short *array, int num_array_elements) {
 //   - 0 or 1 for boolean
 //   - 0 for success
 
-
+// call method 'double proc()'
 static double call_java1(const char *method_name)
 {
     jmethodID method_id = 0;
@@ -156,8 +154,7 @@ static double call_java1(const char *method_name)
     return method_ret_double;
 }
 
-xxx
-// xxx comment
+// call method 'double proc(String s)'
 static double call_java2(const char *method_name, char *arg_str)
 {
     jmethodID method_id = 0;
@@ -200,6 +197,7 @@ static double call_java2(const char *method_name, char *arg_str)
     return method_ret_double;
 }
 
+// call method 'short[] proc(int num_array_elements)' 
 double call_java3(const char *method_name, short *caller_array, int num_array_elements)
 {
     jmethodID method_id = 0;
@@ -217,7 +215,7 @@ double call_java3(const char *method_name, short *caller_array, int num_array_el
         ERROR("failed to get method_id for %s\n", method_name);
         env->DeleteLocalRef(activity);
         env->DeleteLocalRef(clazz);
-        return -1;
+        return INVALID_NUMBER;
     }
 
     // call the java method, which will return the array of short elements
@@ -226,19 +224,19 @@ double call_java3(const char *method_name, short *caller_array, int num_array_el
         ERROR("%s method failed\n", method_name);
         env->DeleteLocalRef(activity);
         env->DeleteLocalRef(clazz);
-        return -1;
+        return INVALID_NUMBER;
     }
 
     // extract array length and elements from the method returned jshortArray
     jsize length = env->GetArrayLength(array);
-    jshort* array_elements = env->GetShortArrayElements(array, nullptr);  // xxx nullptr?
+    jshort* array_elements = env->GetShortArrayElements(array, nullptr);
     if (length != num_array_elements) {
         ERROR("%s method returned unexpected length=%d, expected=%d\n", 
               method_name, length, num_array_elements);
         env->ReleaseShortArrayElements(array, array_elements, JNI_ABORT);
         env->DeleteLocalRef(activity);
         env->DeleteLocalRef(clazz);
-        return -1;
+        return INVALID_NUMBER;
     }
 
     // return array_elements to caller
@@ -247,8 +245,7 @@ double call_java3(const char *method_name, short *caller_array, int num_array_el
     // Release the array elements
     // - JNI_ABORT means changes made to array_elements are not copied back to the Java array.
     // - JNI_COMMIT would copy changes back.
-    // - 0 means copy back changes and free the buffer (if a copy was made). xxx?
-    // - xxx ^^^^ check this comment
+    // - 0 means copy back changes and free the buffer (if a copy was made)
     env->ReleaseShortArrayElements(array, array_elements, JNI_ABORT);
 
     // clean up

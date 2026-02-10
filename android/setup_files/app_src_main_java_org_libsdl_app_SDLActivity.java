@@ -626,6 +626,7 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
     public double android_utils_destroy() {
         if (mezapp_utils != null) {
             mezapp_utils.destroy();
+            mezapp_utils = null;
         }
         return 0;
     }
@@ -863,9 +864,11 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
             mezapp_media_fgsvc_isbound = false;
         }
 
-xxxx
         // EZAPP onDestroy: utils cleanup
-        mezapp_utils.destroy();
+        if (mezapp_utils != null) {
+            mezapp_utils.destroy();
+            mezapp_utils = null;
+        }
 
         if (mHIDDeviceManager != null) {
             HIDDeviceManager.release(mHIDDeviceManager);
