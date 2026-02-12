@@ -50,8 +50,7 @@ SRCS=$(echo $PARENT_DIR/$APP_NAME/*.c)
 # libraries which would need to be manually built (if changed) are:
 # cJSON lodepng mp3lame SDL SDL_mixer SDL_ttf
 set -x
-#xxx restore this: make -C ../linux ezapp_lib picoc
-make -C ../linux ezapp_lib
+make -C ../linux ezapp_lib picoc
 if [ $? -ne 0 ]; then
     echo ABORT
     exit 1

@@ -944,7 +944,7 @@ static void page_10_draw(void)
 
     sdlx_render_printf(0, ROW2Y(row++), "Lat  = %s", num2str(lat,"%9.4f",s));
     sdlx_render_printf(0, ROW2Y(row++), "Long = %s", num2str(lng,"%9.4f",s));
-    sdlx_render_printf(0, ROW2Y(row++), "Alt  = %s", num2str(alt,"%9.4f",s));
+    sdlx_render_printf(0, ROW2Y(row++), "Alt  = %s m", num2str(alt,"%9.4f",s));
 }
 
 static char *num2str(double num, char *fmt, char *s)

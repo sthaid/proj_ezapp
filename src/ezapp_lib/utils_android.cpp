@@ -22,8 +22,7 @@
 //  "GPS altitude is a height above the WGS84 reference ellipsoid,
 //   which is an approximation of the Earth's surface. This value is
 //   not the same as height above mean sea level and may require a
-//   correction, according to Stack Overflow"
-//   https://stackoverflow.com/questions/11168306/is-androids-gps-altitude-incorrect-due-to-not-including-geoid-height
+//   correction"
 
 // JNI based mehtod signatures:
 // References:
@@ -52,15 +51,50 @@ void util_android_utils_destroy(void)
 }
 
 // location
-void util_get_location(double *latitude, double *longitude, double *altitude) {
-    if (latitude) {
-        *latitude = call_java1("get_latitude");
-    }
-    if (longitude) {
-        *longitude = call_java1("get_longitude");
-    }
-    if (altitude) {
-        *altitude = call_java1("get_altitude");
+// note: altitude is in meters above the WGS84 ellipsoid; 
+//       which can be more than 100 meters different than mean sea level
+//       in some places
+void util_get_location(double *latitude, double *longitude, double *altitude) 
+{
+    int         ms = 0;
+    bool        failed, retries_allowd;
+    static bool first_call = true;
+
+    // retries are allowd only on the first call
+    retries_allowd = first_call;
+    first_call = false;
+
+    // loop, allowing retries on the first call
+    while (true) {
+        // call android java code to get lat/long/alt
+        failed = false;
+        if (latitude) {
+            *latitude = call_java1("get_latitude");
+            if (*latitude == INVALID_NUMBER) failed = true;
+        }
+        if (longitude) {
+            *longitude = call_java1("get_longitude");
+            if (*longitude == INVALID_NUMBER) failed = true;
+        }
+        if (altitude) {
+            *altitude = call_java1("get_altitude");
+            if (*altitude == INVALID_NUMBER) failed = true;
+        }
+
+        // if retries are not allowed (this is not the first call) OR
+        //    if the lat/long/alt values are valid
+        // then return
+        if (retries_allowd == false || failed == false) {
+            return;
+        }
+
+        // delay and try again, with 2 sec timeout
+        if (ms > 2000) {
+            ERROR("timedout\n");
+            return;
+        }
+        usleep(10000);
+        ms += 10;
     }
 }
 

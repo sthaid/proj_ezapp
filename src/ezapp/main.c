@@ -123,6 +123,29 @@ static int init(void)
     print_type_sizes();
 #endif
 
+#ifdef ANDROID
+    // get permissions when running on Android
+    #define GET_PERMISSION(str) \
+        do { \
+            if (sdlx_get_permission("android.permission." str) != 0) { \
+                ERROR("failed to get permission %s\n", str); \
+            } \
+        } while (0)
+
+    // xxx test without these granted
+    GET_PERMISSION("POST_NOTIFICATIONS");
+    GET_PERMISSION("ACCESS_COARSE_LOCATION");
+    GET_PERMISSION("ACCESS_FINE_LOCATION");
+    GET_PERMISSION("ACTIVITY_RECOGNITION");
+    GET_PERMISSION("RECORD_AUDIO");
+
+    // init android utils, which provide support for:
+    // - text to speech
+    // - location
+    // - flashlight
+    util_android_utils_init();
+#endif
+
     // get params, if they don't exist, set to default value
     params.devel_mode = util_get_numeric_param(".", "devel_mode", 0);
     params.devel_port = util_get_numeric_param(".", "devel_port", DEFAULT_DEVEL_PORT);
@@ -162,29 +185,6 @@ static int init(void)
     sdlx_init(SUBSYS_VIDEO | SUBSYS_AUDIO | SUBSYS_SENSOR);
     INFO("sdlx_win_width,height = %d %d  sdlx_char_width,height=%d %d\n",
          sdlx_win_width, sdlx_win_height, sdlx_char_width_dflt, sdlx_char_height_dflt);
-
-#ifdef ANDROID
-    // get permissions when running on Android
-    #define GET_PERMISSION(str) \
-        do { \
-            if (sdlx_get_permission("android.permission." str) != 0) { \
-                ERROR("failed to get permission %s\n", str); \
-            } \
-        } while (0)
-
-    // xxx test without some of these granted
-    GET_PERMISSION("POST_NOTIFICATIONS");
-    GET_PERMISSION("ACCESS_COARSE_LOCATION");
-    GET_PERMISSION("ACCESS_FINE_LOCATION");
-    GET_PERMISSION("ACTIVITY_RECOGNITION");
-    GET_PERMISSION("RECORD_AUDIO");
-
-    // xxx comment = after permissions
-    util_android_utils_init();
-
-    // xxx wait, with timeout,  for lat/long available if that perm is granted
-    //    OR do that in util_android_utils_init
-#endif
 
     // start/stop foreground mode based on the foreground_enabled param
     if (params.foreground_enabled) {

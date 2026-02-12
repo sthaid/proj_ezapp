@@ -78,6 +78,11 @@ public class ezapp_utils {
                 for (Location location : locationResult.getLocations()) {
                     latitude = location.getLatitude();
                     longitude = location.getLongitude();
+                    // altitude notes:
+                    // - units: meters
+                    // - if fine location permission is not granted, then value is 0
+                    // - relative to WGS84 reference ellipsoid, not necessarily mean sea level;
+                    // - WGS84 can differ by over 100 meters from mean sea level in some places
                     altitude = location.getAltitude();
                     Log.i(TAG, "lat/long/alt = " + latitude + " " + longitude + " " + altitude);
                 }
