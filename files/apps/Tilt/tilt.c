@@ -123,7 +123,7 @@ int main(int argc, char **argv)
     return 0;
 }
 
-#define SMOOTH_K 0.98
+#define SMOOTH_K 0.985
 void smooth(double newval, double *smoothed)
 {
     if (*smoothed == INVALID_NUMBER) {
