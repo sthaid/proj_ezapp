@@ -444,7 +444,7 @@ static void page_4_draw(void)
 
     // draw points with varying size, y = 1000
     color = sdlx_create_color(0, 255, 0, 255);
-    for (int pointsize = 0; pointsize <= 9; pointsize++) {
+    for (int pointsize = 0; pointsize <= MAX_POINT_SIZE; pointsize++) {
         sdlx_render_point(pointsize*100+50, 1000, color, pointsize);
     }
 

@@ -113,6 +113,7 @@ void sdlx_render_line(int x1, int y1, int x2, int y2, sdlx_color_t color);
 void sdlx_render_lines(sdlx_point_t *points, int count, sdlx_color_t color);
 void sdlx_render_circle(int x_ctr, int y_ctr, int radius, int line_width, sdlx_color_t color);
 void sdlx_render_fill_circle(int x_ctr, int y_ctr, int radius, sdlx_color_t color);
+#define MAX_POINT_SIZE 9
 void sdlx_render_point(int x, int y, sdlx_color_t color, int point_size);
 void sdlx_render_points(sdlx_point_t *points, int count, sdlx_color_t color, int point_size);
 
@@ -124,6 +125,7 @@ typedef struct sdlx_texture sdlx_texture_t;
 sdlx_texture_t *sdlx_create_texture(int w, int h);
 void sdlx_destroy_texture(sdlx_texture_t *t);
 void sdlx_query_texture(sdlx_texture_t *t, int *w, int *h);
+void sdlx_clear_texture(sdlx_texture_t *t, sdlx_color_t color);
 
 void sdlx_set_texture_pixels(sdlx_texture_t *t, unsigned int *pixels);
 unsigned int *sdlx_get_texture_pixels(sdlx_texture_t *t, int *w, int *h);

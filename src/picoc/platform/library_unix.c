@@ -340,6 +340,15 @@ void Sdlx_query_texture(struct ParseState *Parser, struct Value *ReturnValue,
     sdlx_query_texture(t, w, h);
 }
 
+void Sdlx_clear_texture(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
+{
+    sdlx_texture_t * t     = (sdlx_texture_t *)Param[0]->Val->Pointer;
+    sdlx_color_t     color = (sdlx_color_t)Param[1]->Val->UnsignedInteger;
+
+    sdlx_clear_texture(t, color);
+}
+
 void Sdlx_set_texture_pixels(struct ParseState *Parser, struct Value *ReturnValue,
         struct Value **Param, int NumArgs)
 {
@@ -747,6 +756,7 @@ struct LibraryFunction SdlFunctions[] = {
     { Sdlx_create_texture,           "sdlx_texture_t *sdlx_create_texture(int w, int h);" },
     { Sdlx_destroy_texture,          "void sdlx_destroy_texture(sdlx_texture_t *t);" },
     { Sdlx_query_texture,            "void sdlx_query_texture(sdlx_texture_t *t, int *w, int *h);" },
+    { Sdlx_clear_texture,            "void sdlx_clear_texture(sdlx_texture_t *t, sdlx_color_t color);" },
     { Sdlx_set_texture_pixels,       "void sdlx_set_texture_pixels(sdlx_texture_t *t, unsigned int *pixels);" },
     { Sdlx_get_texture_pixels,       "unsigned int *sdlx_get_texture_pixels(sdlx_texture_t *t, int *w, int *h);" },
     { Sdlx_render_texture,           "void sdlx_render_texture(sdlx_texture_t *t, int x, int y);" },
@@ -846,6 +856,8 @@ typedef struct { \n\
 #define FLAG_XY_CTR   3 \n\
 #define WRAP_NONE    -1 \n\
 #define WRAP_NEWLINE  0 \n\
+/* video misc */ \n\
+#define MAX_POINT_SIZE 9 \n\
 \n\
 /* audio */ \n\
 #define FRAMES_PER_SEC 48000 \n\

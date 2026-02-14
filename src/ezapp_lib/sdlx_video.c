@@ -742,7 +742,7 @@ void sdlx_render_line(int x1, int y1, int x2, int y2, sdlx_color_t color)
 
 void sdlx_render_lines(sdlx_point_t *points, int count, sdlx_color_t color)
 {
-    static SDL_FPoint scaled_points[120];  // xxx malloc this
+    static SDL_FPoint scaled_points[120];  // xxxxxx malloc this
 
     if (count <= 1) {
         return;
@@ -847,14 +847,15 @@ void sdlx_render_point(int x, int y, sdlx_color_t color, int point_size)
 
 void sdlx_render_points(sdlx_point_t *points, int count, sdlx_color_t color, int point_size)
 {
-    #define MAX_SDL_POINTS 1000
+    #define MAX_SDL_POINTS 1000  // xxx malloc
 
+    // xxx use static assert on the '10' vs MAX_POINT_SIZE
     static struct point_extend_s {
         int max;
         struct point_extend_offset_s {
             int x;
             int y;
-        } offset[300];
+        } offset[300];  // xxx not efficient
     } point_extend[10] = {
     { 1, {
         {0,0}, 
@@ -984,8 +985,8 @@ void sdlx_render_points(sdlx_point_t *points, int count, sdlx_color_t color, int
     if (point_size < 0) {
         point_size = 0;
     }
-    if (point_size > 9) {
-        point_size = 9;
+    if (point_size > MAX_POINT_SIZE) {
+        point_size = MAX_POINT_SIZE;
     }
 
     int i, j, x, y;
@@ -1019,7 +1020,7 @@ void sdlx_render_points(sdlx_point_t *points, int count, sdlx_color_t color, int
 
 // -----------------  RENDER USING TEXTURES  ---------------------------- 
 
-// - - - - - - create/destroy/query texture  - - - - - - - 
+// - - - - - - create/destroy/query/clear texture  - - - - - - - 
 
 sdlx_texture_t *sdlx_create_texture(int width, int height)
 {
@@ -1060,6 +1061,22 @@ void sdlx_query_texture(sdlx_texture_t *texture, int * width, int * height)
     SDL_GetTextureSize((SDL_Texture *)texture, &w_float, &h_float);
     *width  = nearbyint(w_float);
     *height = nearbyint(h_float);
+}
+
+void sdlx_clear_texture(sdlx_texture_t *t_arg, sdlx_color_t color)
+{
+    SDL_Texture *initial_render_target = SDL_GetRenderTarget(renderer);
+    SDL_Texture *t = (SDL_Texture *)t_arg;
+
+    if (t != initial_render_target) {
+        SDL_SetRenderTarget(renderer, t);
+        set_render_draw_color(color);
+        SDL_RenderClear(renderer);
+        SDL_SetRenderTarget(renderer, initial_render_target);
+    } else {
+        set_render_draw_color(color);
+        SDL_RenderClear(renderer);
+    }
 }
 
 // - - - - - - set/get pixels from texture - - - - - - - - 

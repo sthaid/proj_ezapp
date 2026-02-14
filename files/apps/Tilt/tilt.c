@@ -9,11 +9,14 @@
 // defines
 #define RAD_TO_DEG (180 / M_PI)
 #define DEG_TO_RAD (M_PI / 180)
+#define TWO_PI     (2 * M_PI)
 
 #define SMALL_CIRCLE_RADIUS 25
 #define LARGE_CIRCLE_RADIUS 500
 
 #define VERT_TEXTURE_WH 1000
+
+#define TILT_CLOSE_TO_ZERO 0.2
 
 // variables
 char *progname;
@@ -120,7 +123,7 @@ int main(int argc, char **argv)
     return 0;
 }
 
-#define SMOOTH_K 0.99
+#define SMOOTH_K 0.98
 void smooth(double newval, double *smoothed)
 {
     if (*smoothed == INVALID_NUMBER) {
@@ -235,9 +238,9 @@ void display_tilt_horizontal(double ax, double ay, double az)
     x = nearbyint(xctr  + dx);
     y = nearbyint(yctr - dy);
 
-    t = ((fabs(tilt_amount) < 0.2)            ? green_circle :
-         ((fabs(tilt_amount) < max_bulls_eye) ? blue_circle :
-                                                red_circle));
+    t = ((fabs(tilt_amount) < TILT_CLOSE_TO_ZERO) ? green_circle :
+        ((fabs(tilt_amount) < max_bulls_eye)      ? blue_circle :
+                                                    red_circle));
 
     sdlx_render_texture(t, x-SMALL_CIRCLE_RADIUS, y-SMALL_CIRCLE_RADIUS);
 
@@ -279,21 +282,14 @@ void display_tilt_horizontal(double ax, double ay, double az)
 }
 
 // -----------------  DISPLAY TILT - VERTICAL ORIENTATION  -------------------
-// xxx
-// - make 0.2 less lenient,  use 0.1
-// - adjust smooth constant
-// - print 2 digits when angle is <= 1
-// - adjust theta
-// - improve angle calc
-// - sanitize angle when less than 0
 
 #define EVID_MINUS 11
 #define EVID_PLUS  12
 
-#define Y_OFFSET 30
-#define CHORD_LEN 850
-
-#define MAX_ARC 100
+#define Y_OFFSET             30
+#define CHORD_LEN            850
+#define MAX_ARC              100
+#define ARC_SPAN_DEG_DEFAULT 20
 
 void display_tilt_vertical(double ax, double ay, double az)
 {
@@ -311,18 +307,21 @@ void display_tilt_vertical(double ax, double ay, double az)
     static sdlx_point_t arc[MAX_ARC];
     static int          max_arc;
 
-    // xxx 
-    if (arc_span_deg == 0) arc_span_deg = 40;
-    arc_span_rad = arc_span_deg * DEG_TO_RAD;
+    // if arc_span_deg param has not been read, then do so
+    if (arc_span_deg == 0) {
+        arc_span_deg = util_get_numeric_param(data_dir, "arc_span_deg", ARC_SPAN_DEG_DEFAULT);
+        arc_span_rad = arc_span_deg * DEG_TO_RAD;
+    }
 
     // init the backbuffer
     sdlx_display_init(COLOR_BLACK);
 
-    // set render target to the rendering texture
+    // set render target to the rendering texture, and
+    // clear the rendering texture
     sdlx_set_render_target(vert);
-    sdlx_render_fill_rect(0,0,VERT_TEXTURE_WH,VERT_TEXTURE_WH,COLOR_BLACK);  // xxx need a routineto clear
+    sdlx_clear_texture(vert, COLOR_BLACK);
 
-    // xxx
+    // determine the rotation needed for the device orientation
     if (fabs(ay) > fabs(ax)) {
         rotate_deg = (ay > 0 ? 0 : 180);
     } else {
@@ -330,8 +329,12 @@ void display_tilt_vertical(double ax, double ay, double az)
     }
     rotate_rad = rotate_deg * DEG_TO_RAD;
 
-    // xxx
+    // determine the tilt angle
+    // xxx may need improvement
     angle_rad = atan2(ax, ay) - rotate_rad;
+    while (angle_rad < -M_PI) {
+        angle_rad += TWO_PI;
+    }
     angle_deg = angle_rad * RAD_TO_DEG;
 
     // initialize arc points for the current selected arc_span
@@ -354,7 +357,7 @@ void display_tilt_vertical(double ax, double ay, double az)
         arc_initialized = arc_span_rad;
     }
 
-    // draw arc, made up of 5 arcs for better display appearance
+    // draw arc, made up of 5 arc lines for a better display appearance
     for (i = -2; i <= 2; i++) {
         for (j = 0; j < max_arc; j++) {
             points[j].x = arc[j].x;
@@ -392,11 +395,11 @@ void display_tilt_vertical(double ax, double ay, double az)
 
         x = arc_radius * sin(tick_rad) + CHORD_LEN / 2 + x_offset;
         y = arc_radius - arc_radius * cos(tick_rad);
-        sdlx_render_point(x, y+Y_OFFSET, COLOR_PINK, 9);  // xxx define for max
+        sdlx_render_point(x, y+Y_OFFSET, COLOR_PINK, MAX_POINT_SIZE);
 
         x = arc_radius * sin(-tick_rad) + CHORD_LEN / 2 + x_offset;
         y = arc_radius - arc_radius * cos(tick_rad);
-        sdlx_render_point(x, y+Y_OFFSET, COLOR_PINK, 9);  // xxx define for max
+        sdlx_render_point(x, y+Y_OFFSET, COLOR_PINK, MAX_POINT_SIZE);
     }
 
     // print the tilt angle at the center of the rendering texture
@@ -429,12 +432,13 @@ void display_tilt_vertical(double ax, double ay, double az)
         arc_span_deg -= 5;
         if (arc_span_deg < 5) arc_span_deg = 5;
         arc_span_rad = arc_span_deg * DEG_TO_RAD;
-        // xxx save to params, and init from params
+        util_set_numeric_param(data_dir, "arc_span_deg", arc_span_deg);
         break;
     case EVID_PLUS:
         arc_span_deg += 5;
         if (arc_span_deg > 90) arc_span_deg = 90;
         arc_span_rad = arc_span_deg * DEG_TO_RAD;
+        util_set_numeric_param(data_dir, "arc_span_deg", arc_span_deg);
         break;
     case EVID_QUIT:
         end_program = true;
