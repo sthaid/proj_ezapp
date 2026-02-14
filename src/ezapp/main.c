@@ -164,8 +164,7 @@ static int init(void)
 
     // if apps dir doesn't exist then 
     // extract all from files.tar
-    // xxx true is temporary
-    if (true || !util_file_exists(".", "apps")) { 
+    if (!util_file_exists(".", "apps")) { 
         create_files(CREATE_FILES_INIT);
     }
 #endif

@@ -742,7 +742,7 @@ void sdlx_render_line(int x1, int y1, int x2, int y2, sdlx_color_t color)
 
 void sdlx_render_lines(sdlx_point_t *points, int count, sdlx_color_t color)
 {
-    SDL_FPoint scaled_points[100];  // xxx malloc this
+    static SDL_FPoint scaled_points[120];  // xxx malloc this
 
     if (count <= 1) {
         return;
@@ -978,12 +978,6 @@ void sdlx_render_points(sdlx_point_t *points, int count, sdlx_color_t color, int
             } },
                 };
 
-    int i, j, x, y;
-    SDL_FPoint sdlx_points[MAX_SDL_POINTS];
-    int sdlx_points_count = 0;
-    struct point_extend_s * pe = &point_extend[point_size];
-    struct point_extend_offset_s * peo = pe->offset;
-
     if (count < 0) {
         return;
     }
@@ -993,6 +987,12 @@ void sdlx_render_points(sdlx_point_t *points, int count, sdlx_color_t color, int
     if (point_size > 9) {
         point_size = 9;
     }
+
+    int i, j, x, y;
+    SDL_FPoint sdlx_points[MAX_SDL_POINTS];
+    int sdlx_points_count = 0;
+    struct point_extend_s * pe = &point_extend[point_size];
+    struct point_extend_offset_s * peo = pe->offset;
 
     set_render_draw_color(color);
 

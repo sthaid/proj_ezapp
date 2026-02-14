@@ -96,8 +96,8 @@ sdlx_loc_t *sdlx_render_printf(int x, int y, char *fmt, ...) __attribute__ ((for
 #define WRAP_NEWLINE  0
 int sdlx_char_width(int fontid);
 int sdlx_char_height(int fontid);
-sdlx_loc_t *sdlx_render_printf_ex1(int x, int y, int fontid, sdlx_color_t color, char * fmt, ...);
-sdlx_loc_t *sdlx_render_printf_ex2(int x, int y, int fontid, sdlx_color_t color, int flags, int wrap, char *fmt, ...);
+sdlx_loc_t *sdlx_render_printf_ex1(int x, int y, int fontid, sdlx_color_t color, char * fmt, ...) __attribute__ ((format (printf, 5, 6)));
+sdlx_loc_t *sdlx_render_printf_ex2(int x, int y, int fontid, sdlx_color_t color, int flags, int wrap, char *fmt, ...) __attribute__ ((format (printf, 7, 8)));
 void sdlx_render_multiline_text(int x, int y, int y_top, int y_bottom, int fontid, char **lines, sdlx_color_t *colors, int num_lines);
 
 // - - - - - - - - - - - - - - - - - - - - -

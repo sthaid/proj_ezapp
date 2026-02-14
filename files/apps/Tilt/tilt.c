@@ -13,6 +13,8 @@
 #define SMALL_CIRCLE_RADIUS 25
 #define LARGE_CIRCLE_RADIUS 500
 
+#define VERT_TEXTURE_WH 1000
+
 // variables
 char *progname;
 char *data_dir;
@@ -24,8 +26,7 @@ sdlx_texture_t *blue_circle;
 sdlx_texture_t *red_circle;
 sdlx_texture_t *gray_circle;
 sdlx_texture_t *light_gray_circle;
-
-sdlx_texture_t *t;
+sdlx_texture_t *vert;
     
 // prototypes
 void smooth(double newval, double *smoothed);
@@ -61,20 +62,23 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    // create textures
+    // create textures for horizontal display
     green_circle      = create_filled_circle_texture(SMALL_CIRCLE_RADIUS, COLOR_GREEN);
     blue_circle       = create_filled_circle_texture(SMALL_CIRCLE_RADIUS, COLOR_BLUE);
     red_circle        = create_filled_circle_texture(SMALL_CIRCLE_RADIUS, COLOR_RED);
     gray_circle       = create_filled_circle_texture(LARGE_CIRCLE_RADIUS, COLOR_GRAY);
     light_gray_circle = create_filled_circle_texture(LARGE_CIRCLE_RADIUS, COLOR_LIGHT_GRAY);
 
-    // use normal font size and color white
+    // create texture for vertical display
+    vert = sdlx_create_texture(VERT_TEXTURE_WH, VERT_TEXTURE_WH);
+
+    // set default font size and color
     sdlx_print_set_default(FONT_NORMAL, COLOR_WHITE);
 
 #ifndef ANDROID
+    // for testing on Linux
     while (!end_program) {
         display_tilt_vertical(3,9,0);
-        //display_tilt_vertical(0,9,0);
     }
     return 1;
 #endif
@@ -108,7 +112,7 @@ int main(int argc, char **argv)
     sdlx_destroy_texture(red_circle);
     sdlx_destroy_texture(gray_circle);
     sdlx_destroy_texture(light_gray_circle);
-    sdlx_destroy_texture(t);
+    sdlx_destroy_texture(vert);
 
     // quit sdl subsystems and end program
     sdlx_quit(SUBSYS_VIDEO|SUBSYS_SENSOR);
@@ -287,120 +291,127 @@ void display_tilt_horizontal(double ax, double ay, double az)
 #define EVID_PLUS  12
 
 #define Y_OFFSET 30
-#define X_OFFSET 50
+#define CHORD_LEN 850
 
-int max_theta_deg = 40;
+#define MAX_ARC 100
 
 void display_tilt_vertical(double ax, double ay, double az)
 {
-    sdlx_event_t event;
-    double       angle;
-    sdlx_point_t points[200];
-    int max=0;
-    double rotate;
+    double          rotate_deg, rotate_rad;
+    double          angle_deg, angle_rad;
+    sdlx_event_t    event;
+    sdlx_point_t    points[MAX_ARC];
+    int             i, j, x, y, x_offset;
+    int             tick_deg, tick_delta_deg;
+    sdlx_texture_t *vert_loc;
 
-    if (fabs(ay) > fabs(ax)) {
-        rotate = (ay > 0 ? 0 : 180);
-    } else {
-        rotate = (ax > 0 ? 90 : 270);
-    }
+    // statics
+    static double       arc_span_deg, arc_span_rad, arc_radius, arc_radius_squared;
+    static double       arc_initialized;
+    static sdlx_point_t arc[MAX_ARC];
+    static int          max_arc;
+
+    // xxx 
+    if (arc_span_deg == 0) arc_span_deg = 40;
+    arc_span_rad = arc_span_deg * DEG_TO_RAD;
 
     // init the backbuffer
     sdlx_display_init(COLOR_BLACK);
 
-    // xxx factor in az
-    angle = atan2(ax, ay);
-    //angle = 5 * DEG_TO_RAD;
-    //printf("I %s: angle = %0.1f\n", progname, angle*RAD_TO_DEG);
+    // set render target to the rendering texture
+    sdlx_set_render_target(vert);
+    sdlx_render_fill_rect(0,0,VERT_TEXTURE_WH,VERT_TEXTURE_WH,COLOR_BLACK);  // xxx need a routineto clear
 
-    if (t == NULL) 
-        t = sdlx_create_texture(1000,1000);
-    sdlx_set_render_target(t);
-    sdlx_render_fill_rect(0,0,1000,1000,COLOR_BLACK);  // xxx need a routineto clear
-
-    int width = sdlx_win_width - 100;
-
-    // draw circle arc
-    double theta;
-    int radius, x, y, y_max;
-    theta = max_theta_deg * DEG_TO_RAD;
-    radius = (width/2) / sin(theta/2);
-    y_max = radius;
-    for (x = -width/2; x <= width/2; x+= 10) {
-        y = sqrt(radius*radius - x*x);
-        points[max].x = x + width/2 + X_OFFSET;
-        points[max].y = y_max - y + Y_OFFSET;
-        max++;
-    }
-
-    for (int j = 0; j < max; j++) points[j].y -= 2;
-    for (int i = 0; i < 5; i++) { // xxx fix this
-        sdlx_render_lines(points, max, COLOR_WHITE);
-        for (int j = 0; j < max; j++) points[j].y++;
-    }
-
-    // draw dot on circle representing vertical
-    double rotate_rad = rotate * DEG_TO_RAD;
-    sdlx_texture_t *k = (fabs((angle-rotate_rad)*RAD_TO_DEG) < 0.2) ? green_circle : blue_circle;
-    //sdlx_texture_t *k;
-    //if (angle*RAD_TO_DEG < 0.2) 
-    //    k = green_circle;
-    //else
-    //    k = blue_circle;
-
-    x = radius * sin(angle-rotate_rad) + width / 2 + X_OFFSET;
-    y = y_max - radius * cos(angle-rotate_rad) + Y_OFFSET;
-    //sdlx_render_point(x, y+Y_OFFSET, COLOR_RED, 10);
-    sdlx_render_texture(k, x-SMALL_CIRCLE_RADIUS, y-SMALL_CIRCLE_RADIUS);
-    //sdlx_render_point(x, y, COLOR_RED, 10);
-
-    // add tic marks
-    int delta_tick;
-    if (max_theta_deg <= 5) {
-        delta_tick = 1;
-    } else if (max_theta_deg <= 20) {
-        delta_tick = 5;
+    // xxx
+    if (fabs(ay) > fabs(ax)) {
+        rotate_deg = (ay > 0 ? 0 : 180);
     } else {
-        delta_tick = 10;
+        rotate_deg = (ax > 0 ? 90 : 270);
+    }
+    rotate_rad = rotate_deg * DEG_TO_RAD;
+
+    // xxx
+    angle_rad = atan2(ax, ay) - rotate_rad;
+    angle_deg = angle_rad * RAD_TO_DEG;
+
+    // initialize arc points for the current selected arc_span
+    x_offset = (sdlx_win_width - CHORD_LEN) / 2;
+    if (arc_initialized != arc_span_rad) {
+        printf("I %s: initializing arc points for span %0.0f\n", progname, arc_span_deg);
+        arc_radius = (CHORD_LEN/2) / sin(arc_span_rad/2);
+        arc_radius_squared = arc_radius * arc_radius;
+        max_arc = 0;
+        for (x = -CHORD_LEN/2; x <= CHORD_LEN/2; x+= 10) {
+            y = sqrt(arc_radius_squared - x*x);
+            arc[max_arc].x = x + CHORD_LEN/2 + x_offset;
+            arc[max_arc].y = arc_radius - y + Y_OFFSET;
+            max_arc++;
+            if (max_arc == MAX_ARC) {
+                printf("E %s: too many arc points\n", progname);
+                break;
+            }
+        }
+        arc_initialized = arc_span_rad;
     }
 
-//xxx
-    // xxx ctr the ticks
-    for (int tick = -max_theta_deg/2; tick <= max_theta_deg/2; tick+=delta_tick) {
-        double tick_rad = tick * DEG_TO_RAD;
-        sdlx_color_t color = (tick == 0 ? COLOR_PINK : COLOR_PINK);
-        //x = radius * sin(tick_rad-rotate_rad) + width / 2 + X_OFFSET;
-        //y = y_max - radius * cos(tick_rad-rotate_rad);
-        x = radius * sin(tick_rad) + width / 2 + X_OFFSET;
-        y = y_max - radius * cos(tick_rad);
-        sdlx_render_point(x, y+Y_OFFSET, color, 9);  // xxx define for max
+    // draw arc, made up of 5 arcs for better display appearance
+    for (i = -2; i <= 2; i++) {
+        for (j = 0; j < max_arc; j++) {
+            points[j].x = arc[j].x;
+            points[j].y = arc[j].y + i;
+        }
+        sdlx_render_lines(points, max_arc, COLOR_WHITE);
     }
 
+    // draw small cirle on the arc, at the vertical location;
+    // use green circle when within 0.2 degrees of arc center
+    vert_loc = (fabs(angle_deg) < 0.2) ? green_circle : blue_circle;
+    x = arc_radius * sin(angle_rad) + CHORD_LEN / 2 + x_offset;
+    y = arc_radius - arc_radius * cos(angle_rad) + Y_OFFSET;
+    sdlx_render_texture(vert_loc, x-SMALL_CIRCLE_RADIUS, y-SMALL_CIRCLE_RADIUS);
 
-    //sleep(1);
+    // print tilt angle at both ends of the arc, and at arc center
+    x = arc_radius * sin(-arc_span_rad/2) + CHORD_LEN / 2 + x_offset;
+    y = arc_radius - arc_radius * cos(-arc_span_rad/2) + sdlx_char_height(FONT_SMALL);
+    sdlx_render_printf_ex2(x, y, FONT_SMALL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE, "%g", -arc_span_deg/2);
 
-    // print angle 
-    sdlx_render_printf_ex2(500, 500, FONT_LARGE, COLOR_WHITE, FLAG_XY_CTR, WRAP_NONE, "%0.1f", 
-                        angle * RAD_TO_DEG - rotate);
-    //if (angle * RAD_TO_DEG >= 1) {
-        //sdlx_render_printf_ex2(500, 500, FONT_LARGE, COLOR_WHITE, FLAG_XY_CTR, WRAP_NONE, "%0.1f", 
-                            //angle * RAD_TO_DEG - rotate);
-    //} else {
-        //sdlx_render_printf_ex2(500, 500, FONT_LARGE, COLOR_WHITE, FLAG_XY_CTR, WRAP_NONE, "%0.2f", 
-                            //angle * RAD_TO_DEG - rotate);
-    //}
+    x = arc_radius * sin(arc_span_rad/2) + CHORD_LEN / 2 + x_offset;
+    y = arc_radius - arc_radius * cos(arc_span_rad/2) + sdlx_char_height(FONT_SMALL);
+    sdlx_render_printf_ex2(x, y, FONT_SMALL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE, "%g", arc_span_deg/2);
 
+    x = arc_radius * sin(0) + CHORD_LEN / 2 + x_offset;
+    y = arc_radius - arc_radius * cos(0) + sdlx_char_height(FONT_SMALL);
+    sdlx_render_printf_ex2(x, y, FONT_SMALL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE, "0");
 
+    // add interval marks on the arc
+    tick_delta_deg = (arc_span_deg <= 5  ? 1 :
+                     (arc_span_deg <= 20 ? 5   
+                                         : 10));
+    for (tick_deg = 0; tick_deg <= arc_span_deg/2; tick_deg += tick_delta_deg) {
+        double tick_rad = tick_deg * DEG_TO_RAD;
+
+        x = arc_radius * sin(tick_rad) + CHORD_LEN / 2 + x_offset;
+        y = arc_radius - arc_radius * cos(tick_rad);
+        sdlx_render_point(x, y+Y_OFFSET, COLOR_PINK, 9);  // xxx define for max
+
+        x = arc_radius * sin(-tick_rad) + CHORD_LEN / 2 + x_offset;
+        y = arc_radius - arc_radius * cos(tick_rad);
+        sdlx_render_point(x, y+Y_OFFSET, COLOR_PINK, 9);  // xxx define for max
+    }
+
+    // print the tilt angle at the center of the rendering texture
+    sdlx_render_printf_ex2(VERT_TEXTURE_WH/2, VERT_TEXTURE_WH/2, FONT_LARGE, COLOR_WHITE,
+                           FLAG_XY_CTR, WRAP_NONE, "%0.1f", angle_deg);
+
+    // set render target back to the display
     sdlx_set_render_target(NULL);
 
-    int X,Y;
-    X = 0;
-    Y = (sdlx_win_height - CONTROL_EVENTS_DISPLAY_HEIGHT - 1000) / 2;
-    sdlx_render_texture_ex2(t, X, Y, 1000, 1000, rotate);
+    // render the rendering texture to the display, centered and rotated
+    x = 0;
+    y = (sdlx_win_height - CONTROL_EVENTS_DISPLAY_HEIGHT - VERT_TEXTURE_WH) / 2;
+    sdlx_render_texture_ex2(vert, x, y, VERT_TEXTURE_WH, VERT_TEXTURE_WH, rotate_deg);
 
-
-    // register control event to
-    // - end program
+    // register control event to adjust the arc span and end-program
     sdlx_register_control_events(EVID_MINUS, "-",
                                  EVID_PLUS, "+",
                                  EVID_QUIT, "X",
@@ -415,12 +426,15 @@ void display_tilt_vertical(double ax, double ay, double az)
     // process events
     switch (event.event_id) {
     case EVID_MINUS:
-        max_theta_deg -= 5;
-        if (max_theta_deg < 5) max_theta_deg = 5;
+        arc_span_deg -= 5;
+        if (arc_span_deg < 5) arc_span_deg = 5;
+        arc_span_rad = arc_span_deg * DEG_TO_RAD;
+        // xxx save to params, and init from params
         break;
     case EVID_PLUS:
-        max_theta_deg += 5;
-        if (max_theta_deg > 90) max_theta_deg = 90;
+        arc_span_deg += 5;
+        if (arc_span_deg > 90) arc_span_deg = 90;
+        arc_span_rad = arc_span_deg * DEG_TO_RAD;
         break;
     case EVID_QUIT:
         end_program = true;
