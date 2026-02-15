@@ -21,10 +21,13 @@ gen_version:
 	../bin/build_tools/gen_version
 
 gen_assets:
+	# create files.tar
 	cd ../files; \
 	git ls-files > /tmp/files.txt; \
 	tar -cf ../android/assets/files.tar --files-from /tmp/files.txt; \
 	rm -f /tmp/files.txt
+	# create files.tar.sig
+	date > assets/files.tar.sig
 
 # -----------------------------
 

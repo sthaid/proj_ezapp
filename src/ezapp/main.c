@@ -39,8 +39,8 @@
 #define MS  1000
 #define SEC 1000000
 
-#define CREATE_FILES_INIT  1
-#define CREATE_FILES_RESET 2
+#define CREATE_FILES_INIT                1
+#define CREATE_FILES_RESET_APPS_AND_SVCS 2
 
 //#define PRINT_TYPE_SIZES
 
@@ -78,9 +78,7 @@ static int init(void);
 static void cleanup(void);
 static void sigusr2_hndlr(int signum);
 static void print_type_sizes(void) __attribute__ ((unused));
-#ifdef ANDROID  // xxx get rid of some ifdefs
 static void create_files(int action);
-#endif
 static int run(char *name, bool is_svc);
 
 int MAIN(int argc, char **argv)
@@ -123,16 +121,15 @@ static int init(void)
     print_type_sizes();
 #endif
 
-#ifdef ANDROID
-    // get permissions when running on Android
+    // get permissions when running on Android;
+    // this is noop when running on Linux
+    // xxx test without these granted
     #define GET_PERMISSION(str) \
         do { \
             if (sdlx_get_permission("android.permission." str) != 0) { \
                 ERROR("failed to get permission %s\n", str); \
             } \
         } while (0)
-
-    // xxx test without these granted
     GET_PERMISSION("POST_NOTIFICATIONS");
     GET_PERMISSION("ACCESS_COARSE_LOCATION");
     GET_PERMISSION("ACCESS_FINE_LOCATION");
@@ -143,14 +140,14 @@ static int init(void)
     // - text to speech
     // - location
     // - flashlight
+    // this is noop when running on Linux
     util_android_utils_init();
-#endif
 
     // get params, if they don't exist, set to default value
     params.devel_mode = util_get_numeric_param(".", "devel_mode", 0);
     params.devel_port = util_get_numeric_param(".", "devel_port", DEFAULT_DEVEL_PORT);
     strcpy(params.devel_password, util_get_str_param(".", "devel_password", DEFAULT_DEVEL_PASSWORD));
-    params.foreground_enabled = util_get_numeric_param(".", "foreground_enabled", 0);
+    params.foreground_enabled = util_get_numeric_param(".", "foreground_enabled", 1);
     params.record_gain = util_get_numeric_param(".", "record_gain", DEFAULT_RECORD_GAIN);
     params.record_silence = util_get_numeric_param(".", "record_silence", DEFAULT_RECORD_SILENCE);
 
@@ -158,16 +155,8 @@ static int init(void)
     sdlx_audio_params_t ap = { params.record_gain, params.record_silence };
     sdlx_audio_set_params(&ap);
 
-#ifdef ANDROID
-    // copy asset files to the working directory
-    sdlx_copy_asset_file("files.tar", ".");
-
-    // if apps dir doesn't exist then 
-    // extract all from files.tar
-    if (!util_file_exists(".", "apps")) { 
-        create_files(CREATE_FILES_INIT);
-    }
-#endif
+    // extract files.tar, if needed
+    create_files(CREATE_FILES_INIT);
 
     // allocate SIGUSR2, this signal is sent to the devel_mode_server_thread
     // when developer mode is disabled or developer mode port is changed
@@ -200,39 +189,71 @@ static int init(void)
 }
 
 // xxx is this ever called
+// xxx are other cleanup routines called?
+// xxx free svc_call allocations ?
 static void cleanup(void)
 {
     INFO("TERMINATING\n");
 
     svcs_stop_all();
 
-    // xxx free svc_call allocations ?
-
-    // xxx are other cleanup routines called?
-
-#ifdef ANDROID
     util_android_utils_destroy();
-#endif
 
     sdlx_quit(SUBSYS_VIDEO | SUBSYS_AUDIO | SUBSYS_SENSOR);
 }
 
-#ifdef ANDROID
 static void create_files(int action)
 {
-    switch (action) {
-    case CREATE_FILES_INIT:
-        system("tar -xvf files.tar");
-        break;
-    case CREATE_FILES_RESET:
+#ifndef ANDROID
+    INFO("this routine is only executed when on Android\n");
+    return;
+#endif
+
+    if (action == CREATE_FILES_INIT) {
+        bool extract_needed = false;
+        int  rc;
+        do {
+            if (!util_file_exists(".", "apps")) { 
+                INFO("extracting because no apps dir\n");
+                extract_needed = true;
+                break;
+            }
+
+            if (!util_file_exists(".", "files.tar")) { 
+                INFO("extracting because no files.tar\n");
+                extract_needed = true;
+                break;
+            }
+
+            sdlx_copy_asset_file("files.tar.sig", ".");
+            rc = system("cmp --quiet files.tar.sig files.tar.sig.save");
+            rc = WEXITSTATUS(rc);
+            util_delete_file(".", "files.tar.sig");
+            if (rc != 0) {
+                INFO("extracting because files.tar.sig different\n");
+                extract_needed = true;
+                break;
+            }
+        } while (0);
+
+        if (extract_needed) {
+            sdlx_copy_asset_file("files.tar", ".");
+            sdlx_copy_asset_file("files.tar.sig", ".");
+            system("tar -xvf files.tar");
+            system("mv files.tar.sig files.tar.sig.save");  // xxx add util for this
+        } else {
+            INFO("not extracting\n");
+        }
+            
+    } else if (action ==  CREATE_FILES_RESET_APPS_AND_SVCS) {
         svcs_stop_all();
         system("rm -rf apps svcs");
         system("tar -xvf files.tar apps svcs");
         svcs_init(run);
-        break;
+    } else {
+        ERROR("invalid arg, action %d\n", action);
     }
 }
-#endif
 
 static void sigusr2_hndlr(int signum)
 {
@@ -629,10 +650,8 @@ static void settings(void)
     #define EVID_RECORD_GAIN          1006
     #define EVID_RECORD_SILENCE       1007
     #define EVID_RECORD_TEST          1008
-#ifdef ANDROID
     #define EVID_RESET_APPS_AND_SVCS  1020
     #define EVID_FOREGROUND           1021
-#endif
 
     #define GET_Y2 ({ y2 += 2*sdlx_char_height_dflt; \
                       y2 >= y_top - 1.5 * sdlx_char_height_dflt && y2 <= y_bottom; })
@@ -731,19 +750,17 @@ static void settings(void)
             }
         }
 
-#ifdef ANDROID
         // display Reset_Apps_And_svcs
         if (GET_Y2) {
             loc = sdlx_render_printf(0, y2, "Reset_Apps_And_Svcs");
             sdlx_register_event(loc, EVID_RESET_APPS_AND_SVCS);
         }
 
-        // display Foreground xxx is this needed?
+        // display Foreground
         if (GET_Y2) {
             loc = sdlx_render_printf(0, y2, "Foreground = %s", params.foreground_enabled ? "ENABLED" : "DISABLED");
             sdlx_register_event(loc, EVID_FOREGROUND);
         }
-#endif
 
         // change print color back to white
         sdlx_print_set_default(FONT_NORMAL, COLOR_WHITE);
@@ -855,15 +872,13 @@ static void settings(void)
             sdlx_audio_record_from_mic(".", RECORD_TEST_FILENAME, 5, 2, false);
             record_test_state = RECORDING;
             break; }
-#ifdef ANDROID
         case EVID_RESET_APPS_AND_SVCS: {
             char *str; 
             str = sdlx_get_input_str("Reset y/n", "", false, BG_COLOR);
             if (strcasecmp(str, "y") != 0) {
                 break;
             }
-            // xxx this did not work, maybe issue with log_fifo?
-            create_files(CREATE_FILES_RESET);
+            create_files(CREATE_FILES_RESET_APPS_AND_SVCS);
             msg = "Apps/Svcs are reset";
             msg_time = util_microsec_timer();
             break; }
@@ -876,7 +891,6 @@ static void settings(void)
                 util_stop_foreground();
             }
             break; }
-#endif
         case EVID_MOTION:
             y += event.u.motion.yrel;
             if (y >= y_top) {
