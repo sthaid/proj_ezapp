@@ -36,7 +36,7 @@ void smooth(double newval, double *smoothed);
 void no_accelerometer(void);
 sdlx_texture_t *create_filled_circle_texture(int radius, sdlx_color_t color);
 void display_tilt_horizontal(double ax, double ay, double az);
-void display_tilt_vertical(double ax, double ay, double az);
+void display_tilt_vertical(double ax, double ay, double az, double roll, double pitch);
 
 // -----------------  MAIN  ------------------------------------------
     
@@ -45,6 +45,8 @@ int main(int argc, char **argv)
     int    rc;
     double ax_raw, ay_raw, az_raw;
     double ax=INVALID_NUMBER, ay=INVALID_NUMBER, az=INVALID_NUMBER;
+    double roll_raw, pitch_raw;
+    double roll=INVALID_NUMBER, pitch=INVALID_NUMBER;
 
     // set line buffering
     setlinebuf(stdout);
@@ -88,24 +90,26 @@ int main(int argc, char **argv)
 
     // runtime loop
     while (!end_program) {
-        // read accelerometer values
+        // obtain smoothed accelerometer values
         rc = sdlx_sensor_read_accelerometer(&ax_raw, &ay_raw, &az_raw);
         if (rc != 0) {
             no_accelerometer();
             continue;
         }
-
-        // smooth accelerometer values
         smooth(ax_raw, &ax);
         smooth(ay_raw, &ay);
         smooth(az_raw, &az);
-        //printf("I %s: axyz = %0.1f %0.1f %0.1f\n", progname, ax, ay, az);
+
+        // obtain smoothed roll/pitch values, units=degrees
+        sdlx_sensor_read_roll_pitch(&roll_raw, &pitch_raw);
+        smooth(roll_raw, &roll);
+        smooth(pitch_raw, &pitch);
 
         // display the tilt, using the accelerometer values
         if (az > 7) {
             display_tilt_horizontal(ax, ay, az);
         } else {
-            display_tilt_vertical(ax, ay, az);
+            display_tilt_vertical(ax, ay, az, roll, pitch);
         }
     }
 
@@ -291,9 +295,9 @@ void display_tilt_horizontal(double ax, double ay, double az)
 #define MAX_ARC              100
 #define ARC_SPAN_DEG_DEFAULT 20
 
-void display_tilt_vertical(double ax, double ay, double az)
+void display_tilt_vertical(double ax, double ay, double az, double roll, double pitch)
 {
-    double          rotate_deg, rotate_rad;
+    int             rotate_deg;
     double          angle_deg, angle_rad;
     sdlx_event_t    event;
     sdlx_point_t    points[MAX_ARC];
@@ -327,15 +331,17 @@ void display_tilt_vertical(double ax, double ay, double az)
     } else {
         rotate_deg = (ax > 0 ? 90 : 270);
     }
-    rotate_rad = rotate_deg * DEG_TO_RAD;
 
-    // determine the tilt angle
-    // xxx may need improvement
-    angle_rad = atan2(ax, ay) - rotate_rad;
-    while (angle_rad < -M_PI) {
-        angle_rad += TWO_PI;
+    // determine the tilt angle;
+    // the roll/pitch values give good results even when the device 
+    // orientation deviates from vertical
+    switch (rotate_deg) {
+    case 0:   angle_deg = -roll;  break;
+    case 90:  angle_deg = -pitch; break;
+    case 180: angle_deg =  roll;  break;
+    case 270: angle_deg =  pitch; break;
     }
-    angle_deg = angle_rad * RAD_TO_DEG;
+    angle_rad = angle_deg * DEG_TO_RAD;
 
     // initialize arc points for the current selected arc_span
     x_offset = (sdlx_win_width - CHORD_LEN) / 2;
