@@ -15,6 +15,7 @@
 #include <signal.h>
 #include <math.h>
 #include <pthread.h>
+#include <assert.h>
 
 #include <sys/types.h>
 #include <sys/socket.h>

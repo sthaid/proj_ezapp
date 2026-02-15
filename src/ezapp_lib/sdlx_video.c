@@ -8,8 +8,6 @@
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
 
-// xxx todo?
-// - try SDL_SetRenderLogicalPresentation
 // xxx review sdl3 port
 // - routines now return succ
 // - and use of floats instead of ints
@@ -66,12 +64,6 @@ static SDL_Renderer   * renderer;
 
 static font_t           font[MAX_FONT_PTSIZE];
 
-static int              max_event;
-static bool             evid_swipe_right_registered;
-static bool             evid_swipe_left_registered;
-static bool             evid_motion_registered;
-static bool             evid_keybd_registered;
-
 //
 // prototypes
 //
@@ -82,7 +74,8 @@ static void set_render_draw_color(sdlx_color_t color);
 // inline routines
 //
 
-// xxx [-Werror=strict-aliasing]  comment needed
+// this routine is used, instead of type punning, 
+// to prevent strict-aliasing warnings
 static inline SDL_Color sdlx_color(sdlx_color_t color)
 {
     SDL_Color val;
@@ -92,48 +85,7 @@ static inline SDL_Color sdlx_color(sdlx_color_t color)
 
 // ----------------- INIT / EXIT --------------------------
 
-// xxx temp for testing 
-bool event_watcher(void* userdata, SDL_Event* event)
-{
-    static SDL_Renderer * save_renderer;
-
-    switch (event->type) {
-        case SDL_EVENT_WILL_ENTER_BACKGROUND:
-            save_renderer = renderer;
-            renderer = NULL;
-            sleep(1);
-            // Pause your game loop and background tasks
-            INFO("App is about to be backgrounded\n");
-            break;
-        case SDL_EVENT_DID_ENTER_BACKGROUND:
-            INFO("App is now in the background\n");
-            break;
-        case SDL_EVENT_WILL_ENTER_FOREGROUND:
-            INFO("App is about to be foregrounded\n");
-            break;
-        case SDL_EVENT_DID_ENTER_FOREGROUND:
-            renderer = save_renderer;
-            // Resume your game loop and tasks
-            INFO("App is now in the foreground\n");
-            break;
-        default:
-            break;
-    }
-    return 0;
-}
-
-#if 0 // xxx del later
-    // set hints
-    bool succ;
-    succ = SDL_SetHint(SDL_HINT_ANDROID_BLOCK_ON_PAUSE, "0");
-    if (!succ) {
-        ERROR("failed to set SDL_HINT_ANDROID_BLOCK_ON_PAUSE\n");
-    }
-    succ = SDL_SetHint(SDL_HINT_ENABLE_SCREEN_KEYBOARD, "1");  //xxx temp
-    if (!succ) {
-        ERROR("failed to set SDL_HINT_ENABLE_SCREEN_KEYBOARD\n");
-    }
-#endif
+static bool event_watcher(void* userdata, SDL_Event* event);
 
 int sdlx_video_init(void)
 {
@@ -169,7 +121,7 @@ int sdlx_video_init(void)
     }
 #endif
 
-    // add the event watcher  xxx tbd
+    // add the event watcher
     SDL_AddEventWatch(event_watcher, NULL);
 
     // get real windows size and aspect ratio
@@ -193,8 +145,6 @@ int sdlx_video_init(void)
 #endif
     INFO("logical sdlx_win_width x height = %d %d  scale = %f %f\n", 
          sdlx_win_width, sdlx_win_height, scale_render, scale_events);
-
-    // xxx test
     int w, h;
     SDL_GetCurrentRenderOutputSize(renderer, &w, &h);
     INFO("GetCurrentRenderOutputSize = %d %d\n", w, h);
@@ -253,18 +203,54 @@ void sdlx_minimize_window(void)
     SDL_MinimizeWindow(window);
 }
 
+// xxx will this be needed
+static bool event_watcher(void* userdata, SDL_Event* event)
+{
+    static SDL_Renderer * save_renderer;
+
+    switch (event->type) {
+    case SDL_EVENT_WILL_ENTER_BACKGROUND:
+        save_renderer = renderer;
+        renderer = NULL;
+        sleep(1);
+        // pause app here
+        INFO("App is about to be backgrounded\n");
+        break;
+    case SDL_EVENT_DID_ENTER_BACKGROUND:
+        INFO("App is now in the background\n");
+        break;
+    case SDL_EVENT_WILL_ENTER_FOREGROUND:
+        INFO("App is about to be foregrounded\n");
+        break;
+    case SDL_EVENT_DID_ENTER_FOREGROUND:
+        renderer = save_renderer;
+        // resume app here
+        INFO("App is now in the foreground\n");
+        break;
+    default:
+        break;
+    }
+    return 0;
+}
+
+#if 0 // xxx del later
+    // set hints
+    bool succ;
+    succ = SDL_SetHint(SDL_HINT_ANDROID_BLOCK_ON_PAUSE, "0");
+    if (!succ) {
+        ERROR("failed to set SDL_HINT_ANDROID_BLOCK_ON_PAUSE\n");
+    }
+    succ = SDL_SetHint(SDL_HINT_ENABLE_SCREEN_KEYBOARD, "1");
+    if (!succ) {
+        ERROR("failed to set SDL_HINT_ENABLE_SCREEN_KEYBOARD\n");
+    }
+#endif
+
 // ----------------- DISPLAY INIT / PRESENT ---------------
 
 void sdlx_display_init(sdlx_color_t color)
 {
     sdlx_reset_events();
-
-    // xxx should have a routine in sdlx_event
-    max_event = 0;
-    evid_swipe_right_registered = false;
-    evid_swipe_left_registered = false;
-    evid_motion_registered = false;
-    evid_keybd_registered = false;
 
     set_render_draw_color(color);
     SDL_RenderClear(renderer);
@@ -742,10 +728,17 @@ void sdlx_render_line(int x1, int y1, int x2, int y2, sdlx_color_t color)
 
 void sdlx_render_lines(sdlx_point_t *points, int count, sdlx_color_t color)
 {
-    static SDL_FPoint scaled_points[120];  // xxxxxx malloc this
+    SDL_FPoint stack_scaled_points[100];
+    SDL_FPoint *scaled_points;
 
     if (count <= 1) {
         return;
+    }
+
+    if (count > 100) {
+        scaled_points = malloc(count * sizeof(SDL_FPoint));
+    } else {
+        scaled_points = stack_scaled_points;
     }
 
     for (int i = 0; i < count; i++) {
@@ -754,8 +747,11 @@ void sdlx_render_lines(sdlx_point_t *points, int count, sdlx_color_t color)
     }
 
     set_render_draw_color(color);
-
     SDL_RenderLines(renderer, scaled_points, count);
+
+    if (count > 100) {
+        free(scaled_points);
+    }
 }
 
 void sdlx_render_circle(int x_ctr, int y_ctr, int radius, int line_width, sdlx_color_t color)
@@ -847,15 +843,12 @@ void sdlx_render_point(int x, int y, sdlx_color_t color, int point_size)
 
 void sdlx_render_points(sdlx_point_t *points, int count, sdlx_color_t color, int point_size)
 {
-    #define MAX_SDL_POINTS 1000  // xxx malloc
-
-    // xxx use static assert on the '10' vs MAX_POINT_SIZE
     static struct point_extend_s {
         int max;
         struct point_extend_offset_s {
             int x;
             int y;
-        } offset[300];  // xxx not efficient
+        } offset[280];
     } point_extend[10] = {
     { 1, {
         {0,0}, 
@@ -979,7 +972,9 @@ void sdlx_render_points(sdlx_point_t *points, int count, sdlx_color_t color, int
             } },
                 };
 
-    if (count < 0) {
+    static_assert(sizeof(point_extend)/sizeof(point_extend[0]) == MAX_POINT_SIZE+1, "static assert failed");
+
+    if (count <= 0) {
         return;
     }
     if (point_size < 0) {
@@ -989,6 +984,7 @@ void sdlx_render_points(sdlx_point_t *points, int count, sdlx_color_t color, int
         point_size = MAX_POINT_SIZE;
     }
 
+    #define MAX_SDL_POINTS 1000
     int i, j, x, y;
     SDL_FPoint sdlx_points[MAX_SDL_POINTS];
     int sdlx_points_count = 0;
