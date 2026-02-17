@@ -1,3 +1,24 @@
+should 'X' just minimize and not kill the app
+
+tilt
+- calibration
+- use roll pitch for horizontal too
+
+new apps
+- Magnify
+- Recorder
+
+test reinstall
+- are files expanded before SDL_Init
+
+research audio band volume
+
+
+monitor:
+- maybe foreground did not start after app was re-instaled
+
+-----------
+
 Tilt, sideway orientation
 
 Location

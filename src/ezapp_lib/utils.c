@@ -536,7 +536,7 @@ double util_get_numeric_param(char *dir, char *name, double dflt_val)
 
     // create the default value string, and
     // call util_get_str_param to get the value_str
-    sprintf(dflt_val_str, "%G", dflt_val);
+    sprintf(dflt_val_str, "%15.3f", dflt_val);
     value_str = util_get_str_param(dir, name, dflt_val_str);
 
     // convert value_str, returned by util_get_str_param, to 'value'
@@ -560,7 +560,7 @@ void util_set_numeric_param(char *dir, char *name, double value)
 
     // create value string, and
     // call util_set_str_param to set it
-    sprintf(value_str, "%0.3f", value);
+    sprintf(value_str, "%15.3f", value);
     util_set_str_param(dir, name, value_str);
 }    
 

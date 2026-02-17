@@ -6,19 +6,44 @@
 #include <sdlx.h>
 #include <utils.h>
 
+//
 // defines
+//
+
+// misc constants
 #define RAD_TO_DEG (180 / M_PI)
 #define DEG_TO_RAD (M_PI / 180)
 #define TWO_PI     (2 * M_PI)
 
+// texture circle radius
 #define SMALL_CIRCLE_RADIUS 25
 #define LARGE_CIRCLE_RADIUS 500
 
+// vertical display orientation texture width/height
 #define VERT_TEXTURE_WH 1000
 
+// when to display indication that the tilt is near to 0
 #define TILT_CLOSE_TO_ZERO 0.2
 
+// events used by display_tilt_horizontal
+#define EVID_HORIZ_INCR_MAX_BULLS_EYE 1
+#define EVID_HORIZ_DECR_MAX_BULLS_EYE 2
+#define EVID_HORIZ_CALIBRATE          3
+
+// events used by display_tilt_vertical
+#define EVID_VERT_MINUS      11
+#define EVID_VERT_PLUS       12
+#define EVID_VERT_CALIBRATE  13
+
+// events used by cal_query
+#define EVID_CAL_SAVE        21
+#define EVID_CAL_UNCALIBRATE 22
+#define EVID_CAL_CANCEL      23
+
+//
 // variables
+//
+
 char *progname;
 char *data_dir;
 
@@ -31,11 +56,15 @@ sdlx_texture_t *gray_circle;
 sdlx_texture_t *light_gray_circle;
 sdlx_texture_t *vert;
     
+//
 // prototypes
+//
+
 void smooth(double newval, double *smoothed);
 void no_accelerometer(void);
 sdlx_texture_t *create_filled_circle_texture(int radius, sdlx_color_t color);
-void display_tilt_horizontal(double ax, double ay, double az);
+int cal_query(void);
+void display_tilt_horizontal(double ax, double ay, double az, double roll, double pitch);
 void display_tilt_vertical(double ax, double ay, double az, double roll, double pitch);
 
 // -----------------  MAIN  ------------------------------------------
@@ -60,6 +89,8 @@ int main(int argc, char **argv)
     data_dir = argv[1];
     printf("I %s: starting, data_dir=%s\n", progname, data_dir);
 
+    // get params
+
     // init sdl video subsystem
     rc = sdlx_init(SUBSYS_VIDEO|SUBSYS_SENSOR);
     if (rc != 0) {
@@ -81,11 +112,13 @@ int main(int argc, char **argv)
     sdlx_print_set_default(FONT_NORMAL, COLOR_WHITE);
 
 #ifndef ANDROID
-    // for testing on Linux
+    // unit test on Linux
     while (!end_program) {
-        display_tilt_vertical(3,9,0);
+        //display_tilt_vertical(0, 9.8, 0,  2, 90);
+        display_tilt_horizontal(0, 0, 9.8,  2, 1);
     }
-    return 1;
+    sdlx_quit(SUBSYS_VIDEO|SUBSYS_SENSOR);
+    return 0;
 #endif
 
     // runtime loop
@@ -105,9 +138,9 @@ int main(int argc, char **argv)
         smooth(roll_raw, &roll);
         smooth(pitch_raw, &pitch);
 
-        // display the tilt, using the accelerometer values
+        // display the tilt
         if (az > 7) {
-            display_tilt_horizontal(ax, ay, az);
+            display_tilt_horizontal(ax, ay, az, roll, pitch);
         } else {
             display_tilt_vertical(ax, ay, az, roll, pitch);
         }
@@ -127,7 +160,7 @@ int main(int argc, char **argv)
     return 0;
 }
 
-#define SMOOTH_K 0.985
+#define SMOOTH_K 0.95
 void smooth(double newval, double *smoothed)
 {
     if (*smoothed == INVALID_NUMBER) {
@@ -175,33 +208,79 @@ sdlx_texture_t *create_filled_circle_texture(int radius, sdlx_color_t color)
     return t;
 }
 
-// -----------------  DISPLAY TILT - HORIZONTAL ORIENTATION  -------------------
+int cal_query(void)
+{
+    sdlx_loc_t *loc;
+    sdlx_event_t event;
 
-#define EVID_INCR_MAX_BULLS_EYE 1
-#define EVID_DECR_MAX_BULLS_EYE 2
+    sdlx_display_init(COLOR_BLACK);
+
+    loc = sdlx_render_printf_ex1(0, ROW2Y(3), FONT_NORMAL, COLOR_LIGHT_BLUE, "%s", "Save");
+    sdlx_register_event(loc, EVID_CAL_SAVE);
+    loc = sdlx_render_printf_ex1(0, ROW2Y(6), FONT_NORMAL, COLOR_LIGHT_BLUE, "%s", "Uncalibrate");
+    sdlx_register_event(loc, EVID_CAL_UNCALIBRATE);
+    loc = sdlx_render_printf_ex1(0, ROW2Y(9), FONT_NORMAL, COLOR_LIGHT_BLUE, "%s", "Cancel");
+    sdlx_register_event(loc, EVID_CAL_CANCEL);
+
+    sdlx_display_present();
+
+    sdlx_get_event(-1, &event);
+    if (event.event_id == EVID_CAL_SAVE || 
+        event.event_id == EVID_CAL_UNCALIBRATE || 
+        event.event_id == EVID_CAL_CANCEL) 
+    {
+        return event.event_id;
+    } else {
+        printf("E %s: cal_query geceived unexpected event_id %d\n", progname, event.event_id);
+        return EVID_CAL_CANCEL;
+    }
+}
+
+// -----------------  DISPLAY TILT - HORIZONTAL ORIENTATION  -------------------
 
 #define MAX_BULLS_EYE_DEFAULT 5
 
-void display_tilt_horizontal(double ax, double ay, double az)
+void display_tilt_horizontal(double ax, double ay, double az, double roll_raw, double pitch_raw)
 {
-    int                 diameter, xctr, yctr, deg;
+    int                 diameter, xctr, yctr, deg, x, y, rc;
     sdlx_texture_t     *t;
+    double              roll, pitch;
     double              tilt_dir, tilt_amount;
     sdlx_event_t        event;
+    sdlx_loc_t         *loc;
 
-    static int          max_bulls_eye = -1;
+    static bool         params_initialized;
+    static int          max_bulls_eye = MAX_BULLS_EYE_DEFAULT;
+    static double       cal_horiz_roll;
+    static double       cal_horiz_pitch;
 
-    // if max_bulls_eye param has not been read, then do so
-    if (max_bulls_eye == -1) {
+    // on first call, read params for the vertical orientation
+    if (!params_initialized) {
         max_bulls_eye = util_get_numeric_param(data_dir, "max_bulls_eye", MAX_BULLS_EYE_DEFAULT);
+        cal_horiz_roll = util_get_numeric_param(data_dir, "cal_horiz_roll", INVALID_NUMBER);
+        cal_horiz_pitch = util_get_numeric_param(data_dir, "cal_horiz_pitch", INVALID_NUMBER);
+        params_initialized = true;
     }
 
     // init the backbuffer
     sdlx_display_init(COLOR_BLACK);
 
+    // compenstate raw roll/pitch values using calibration values
+    if (cal_horiz_roll != INVALID_NUMBER && cal_horiz_pitch != INVALID_NUMBER) {
+        roll  = roll_raw - cal_horiz_roll;
+        pitch = pitch_raw - cal_horiz_pitch;
+    } else {
+        roll  = roll_raw;
+        pitch = pitch_raw;
+    }
+
+    // compute tilt direction and amount
+    tilt_dir    = atan2(pitch, roll) * RAD_TO_DEG - 90;
+    tilt_amount = sqrt(roll*roll + pitch*pitch);
+
     // init center location of the bulls-eye
     xctr = sdlx_win_width/2;
-    yctr = sdlx_win_height/2;
+    yctr = 200 + sdlx_win_width / 2;
 
     // draw bulls-eye
     t = gray_circle;
@@ -211,21 +290,17 @@ void display_tilt_horizontal(double ax, double ay, double az)
         sdlx_render_texture_ex1(t, xctr-diameter/2, yctr-diameter/2, diameter, diameter);
     }
 
-    // calculate tilt amount and direction
-    tilt_dir    = atan2(ax, ay) * RAD_TO_DEG;
-    tilt_amount = atan( sqrt(ax*ax + ay*ay) / az ) * RAD_TO_DEG;
-    //printf("I %s: tilt dir = %0.1f amount = %0.1f\n", progname, tilt_dir, tilt_amount);
-    
-    // display ...
-    // - tilt_amount
-    diameter = sdlx_win_width;
-    sdlx_render_printf_ex2(xctr, yctr - diameter/2 - 1.5 * sdlx_char_height(FONT_LARGE),
-                           FONT_LARGE, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE,
-                           "%0.1f", tilt_amount);
-    // - max_bulls_eye (degrees)
-    sdlx_render_printf_ex2(sdlx_win_width/2, sdlx_win_height-CONTROL_EVENTS_DISPLAY_HEIGHT-2*sdlx_char_height(FONT_NORMAL),
+    // display max_bulls_eye radius, in degrees
+    y = yctr + sdlx_win_width / 2 + 0.5 * sdlx_char_height_dflt;
+    sdlx_render_printf_ex2(sdlx_win_width/2, y,
                            FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE,
                            "max %d deg", max_bulls_eye);
+
+    // display tilt_amount
+    y = yctr + sdlx_win_width / 2 + 3 * sdlx_char_height_dflt;
+    sdlx_render_printf_ex2(xctr, y,
+                           FONT_LARGE, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE,
+                           "%0.1f", tilt_amount);
 
     // limit tilt amount to the max that can be displayed on the bulls-eye
     if (tilt_amount > max_bulls_eye) {
@@ -234,13 +309,8 @@ void display_tilt_horizontal(double ax, double ay, double az)
 
     // display small circle on the bulls-eye pattern, 
     // at location indicating the tilt direction and amount
-    double dx, dy;
-    int x, y;
-
-    dx = tilt_amount * sin(tilt_dir*DEG_TO_RAD) * ((double)(sdlx_win_width/2) / max_bulls_eye);
-    dy = tilt_amount * cos(tilt_dir*DEG_TO_RAD) * ((double)(sdlx_win_width/2) / max_bulls_eye);
-    x = nearbyint(xctr  + dx);
-    y = nearbyint(yctr - dy);
+    x = xctr + tilt_amount * sin(tilt_dir*DEG_TO_RAD) * ((double)(sdlx_win_width/2) / max_bulls_eye);
+    y = yctr + tilt_amount * cos(tilt_dir*DEG_TO_RAD) * ((double)(sdlx_win_width/2) / max_bulls_eye);
 
     t = ((fabs(tilt_amount) < TILT_CLOSE_TO_ZERO) ? green_circle :
         ((fabs(tilt_amount) < max_bulls_eye)      ? blue_circle :
@@ -251,11 +321,18 @@ void display_tilt_horizontal(double ax, double ay, double az)
     // display dot at center of bulls_eye
     sdlx_render_point(xctr, yctr, COLOR_BLACK, 9);
 
+    // register EVID_CALIBRATE
+    loc = sdlx_render_printf_ex2(
+                sdlx_win_width/2, sdlx_win_height - CONTROL_EVENTS_DISPLAY_HEIGHT - 2 * sdlx_char_height_dflt,
+                FONT_NORMAL, COLOR_LIGHT_BLUE, FLAG_X_CTR, WRAP_NONE,
+                "%s", "CALIBRATE");
+    sdlx_register_event(loc, EVID_HORIZ_CALIBRATE);
+
     // register control event to
     // - end program
     // - adjust max_bulls_eye
-    sdlx_register_control_events(EVID_DECR_MAX_BULLS_EYE, "-",
-                                 EVID_INCR_MAX_BULLS_EYE, "+",
+    sdlx_register_control_events(EVID_HORIZ_DECR_MAX_BULLS_EYE, "-",
+                                 EVID_HORIZ_INCR_MAX_BULLS_EYE, "+",
                                  EVID_QUIT, "X",
                                  COLOR_WHITE, COLOR_BLACK);
 
@@ -267,13 +344,26 @@ void display_tilt_horizontal(double ax, double ay, double az)
 
     // process events
     switch (event.event_id) {
-    case EVID_INCR_MAX_BULLS_EYE:
+    case EVID_HORIZ_CALIBRATE:
+        rc = cal_query();
+        if (rc == EVID_CAL_CANCEL) break;
+        if (rc == EVID_CAL_SAVE) {
+            cal_horiz_roll  = roll_raw;
+            cal_horiz_pitch = pitch_raw;
+        } else {
+            cal_horiz_roll  = INVALID_NUMBER;
+            cal_horiz_pitch = INVALID_NUMBER;
+        }
+        util_set_numeric_param(data_dir, "cal_horiz_roll", cal_horiz_roll);
+        util_set_numeric_param(data_dir, "cal_horiz_pitch", cal_horiz_pitch);
+        break;
+    case EVID_HORIZ_INCR_MAX_BULLS_EYE:
         if (max_bulls_eye < 20) {
             max_bulls_eye++;
             util_set_numeric_param(data_dir, "max_bulls_eye", max_bulls_eye);
         }
         break;
-    case EVID_DECR_MAX_BULLS_EYE:
+    case EVID_HORIZ_DECR_MAX_BULLS_EYE:
         if (max_bulls_eye > 1) {
             max_bulls_eye--;
             util_set_numeric_param(data_dir, "max_bulls_eye", max_bulls_eye);
@@ -287,9 +377,6 @@ void display_tilt_horizontal(double ax, double ay, double az)
 
 // -----------------  DISPLAY TILT - VERTICAL ORIENTATION  -------------------
 
-#define EVID_MINUS 11
-#define EVID_PLUS  12
-
 #define Y_OFFSET             30
 #define CHORD_LEN            850
 #define MAX_ARC              100
@@ -298,23 +385,36 @@ void display_tilt_horizontal(double ax, double ay, double az)
 void display_tilt_vertical(double ax, double ay, double az, double roll, double pitch)
 {
     int             rotate_deg;
-    double          angle_deg, angle_rad;
+    double          angle_deg, angle_rad, angle_uncal_deg;
     sdlx_event_t    event;
     sdlx_point_t    points[MAX_ARC];
-    int             i, j, x, y, x_offset;
+    int             i, j, x, y, x_offset, rc;
     int             tick_deg, tick_delta_deg;
-    sdlx_texture_t *vert_loc;
+    sdlx_texture_t *vert_circle_texture;
+    char            cal_param_name[50];
+    sdlx_loc_t     *loc;
 
     // statics
     static double       arc_span_deg, arc_span_rad, arc_radius, arc_radius_squared;
     static double       arc_initialized;
     static sdlx_point_t arc[MAX_ARC];
     static int          max_arc;
+    static double       cal[4];
+    static bool         params_initialized;
 
-    // if arc_span_deg param has not been read, then do so
-    if (arc_span_deg == 0) {
+    // on first call, read params for the vertical orientation
+    if (!params_initialized) {
+        printf("I %s: reading vertical orientation params\n", progname);
+
         arc_span_deg = util_get_numeric_param(data_dir, "arc_span_deg", ARC_SPAN_DEG_DEFAULT);
         arc_span_rad = arc_span_deg * DEG_TO_RAD;
+
+        for (i = 0; i < 4; i++) {
+            sprintf(cal_param_name, "cal_vertical_%d", 90*i);
+            cal[i] = util_get_numeric_param(data_dir, cal_param_name, INVALID_NUMBER);
+        }
+
+        params_initialized = true;
     }
 
     // init the backbuffer
@@ -336,11 +436,12 @@ void display_tilt_vertical(double ax, double ay, double az, double roll, double 
     // the roll/pitch values give good results even when the device 
     // orientation deviates from vertical
     switch (rotate_deg) {
-    case 0:   angle_deg = -roll;  break;
-    case 90:  angle_deg = -pitch; break;
-    case 180: angle_deg =  roll;  break;
-    case 270: angle_deg =  pitch; break;
+    case 0:   angle_uncal_deg = -roll;  break;
+    case 90:  angle_uncal_deg = -pitch; break;
+    case 180: angle_uncal_deg =  roll;  break;
+    case 270: angle_uncal_deg =  pitch; break;
     }
+    angle_deg = angle_uncal_deg - ((cal[rotate_deg/90] != INVALID_NUMBER) ? cal[rotate_deg/90] : 0);
     angle_rad = angle_deg * DEG_TO_RAD;
 
     // initialize arc points for the current selected arc_span
@@ -374,10 +475,10 @@ void display_tilt_vertical(double ax, double ay, double az, double roll, double 
 
     // draw small cirle on the arc, at the vertical location;
     // use green circle when within 0.2 degrees of arc center
-    vert_loc = (fabs(angle_deg) < 0.2) ? green_circle : blue_circle;
+    vert_circle_texture = (fabs(angle_deg) < 0.2) ? green_circle : blue_circle;
     x = arc_radius * sin(angle_rad) + CHORD_LEN / 2 + x_offset;
     y = arc_radius - arc_radius * cos(angle_rad) + Y_OFFSET;
-    sdlx_render_texture(vert_loc, x-SMALL_CIRCLE_RADIUS, y-SMALL_CIRCLE_RADIUS);
+    sdlx_render_texture(vert_circle_texture, x-SMALL_CIRCLE_RADIUS, y-SMALL_CIRCLE_RADIUS);
 
     // print tilt angle at both ends of the arc, and at arc center
     x = arc_radius * sin(-arc_span_rad/2) + CHORD_LEN / 2 + x_offset;
@@ -409,8 +510,14 @@ void display_tilt_vertical(double ax, double ay, double az, double roll, double 
     }
 
     // print the tilt angle at the center of the rendering texture
-    sdlx_render_printf_ex2(VERT_TEXTURE_WH/2, VERT_TEXTURE_WH/2, FONT_LARGE, COLOR_WHITE,
-                           FLAG_XY_CTR, WRAP_NONE, "%0.1f", angle_deg);
+    sdlx_render_printf_ex2(VERT_TEXTURE_WH/2, VERT_TEXTURE_WH/2, 
+                           FONT_LARGE, COLOR_WHITE,
+                           FLAG_X_CTR, WRAP_NONE, "%0.1f", angle_deg);
+    if (cal[rotate_deg/90] == INVALID_NUMBER) {
+        sdlx_render_printf_ex2(VERT_TEXTURE_WH/2, VERT_TEXTURE_WH/2+1.5*sdlx_char_height(FONT_LARGE),
+                               FONT_NORMAL, COLOR_RED,
+                               FLAG_XY_CTR, WRAP_NONE, "uncalibrated");
+    }
 
     // set render target back to the display
     sdlx_set_render_target(NULL);
@@ -420,9 +527,16 @@ void display_tilt_vertical(double ax, double ay, double az, double roll, double 
     y = (sdlx_win_height - CONTROL_EVENTS_DISPLAY_HEIGHT - VERT_TEXTURE_WH) / 2;
     sdlx_render_texture_ex2(vert, x, y, VERT_TEXTURE_WH, VERT_TEXTURE_WH, rotate_deg);
 
+    // register EVID_CALIBRATE
+    loc = sdlx_render_printf_ex2(
+                sdlx_win_width/2, sdlx_win_height - CONTROL_EVENTS_DISPLAY_HEIGHT - 2 * sdlx_char_height_dflt,
+                FONT_NORMAL, COLOR_LIGHT_BLUE, FLAG_X_CTR, WRAP_NONE,
+                "%s", "CALIBRATE");
+    sdlx_register_event(loc, EVID_VERT_CALIBRATE);
+
     // register control event to adjust the arc span and end-program
-    sdlx_register_control_events(EVID_MINUS, "-",
-                                 EVID_PLUS, "+",
+    sdlx_register_control_events(EVID_VERT_MINUS, "-",
+                                 EVID_VERT_PLUS, "+",
                                  EVID_QUIT, "X",
                                  COLOR_WHITE, COLOR_BLACK);
 
@@ -434,13 +548,20 @@ void display_tilt_vertical(double ax, double ay, double az, double roll, double 
 
     // process events
     switch (event.event_id) {
-    case EVID_MINUS:
+    case EVID_VERT_CALIBRATE:
+        rc = cal_query();
+        if (rc == EVID_CAL_CANCEL) break;
+        cal[rotate_deg/90] = (rc == EVID_CAL_SAVE ? angle_uncal_deg : INVALID_NUMBER);
+        sprintf(cal_param_name, "cal_vertical_%d", rotate_deg);
+        util_set_numeric_param(data_dir, cal_param_name, cal[rotate_deg/90]);
+        break;
+    case EVID_VERT_MINUS:
         arc_span_deg -= 5;
         if (arc_span_deg < 5) arc_span_deg = 5;
         arc_span_rad = arc_span_deg * DEG_TO_RAD;
         util_set_numeric_param(data_dir, "arc_span_deg", arc_span_deg);
         break;
-    case EVID_PLUS:
+    case EVID_VERT_PLUS:
         arc_span_deg += 5;
         if (arc_span_deg > 90) arc_span_deg = 90;
         arc_span_rad = arc_span_deg * DEG_TO_RAD;
