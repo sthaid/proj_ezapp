@@ -280,7 +280,7 @@ void display_tilt_horizontal(double ax, double ay, double az, double roll_raw, d
 
     // init center location of the bulls-eye
     xctr = sdlx_win_width/2;
-    yctr = 200 + sdlx_win_width / 2;
+    yctr = 100 + sdlx_win_width / 2;
 
     // draw bulls-eye
     t = gray_circle;
@@ -301,6 +301,11 @@ void display_tilt_horizontal(double ax, double ay, double az, double roll_raw, d
     sdlx_render_printf_ex2(xctr, y,
                            FONT_LARGE, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE,
                            "%0.1f", tilt_amount);
+    if (cal_horiz_roll == INVALID_NUMBER || cal_horiz_pitch == INVALID_NUMBER) {
+        sdlx_render_printf_ex2(sdlx_win_width / 2, y + 1.25 * sdlx_char_height(FONT_LARGE),
+                               FONT_NORMAL, COLOR_RED,
+                               FLAG_XY_CTR, WRAP_NONE, "uncalibrated");
+    }
 
     // limit tilt amount to the max that can be displayed on the bulls-eye
     if (tilt_amount > max_bulls_eye) {
