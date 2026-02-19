@@ -93,8 +93,7 @@ void svcs_init(int (*run_proc)(char *name, bool is_svc))
         first_call = false;
     }
 
-    // stop all svcs
-    // xxx what if this doesnt stop them all?
+    // ensure that all svcs are stopped
     svcs_stop_all();
 
     // get svc names and autostart indicator from the svcs file

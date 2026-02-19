@@ -1,25 +1,35 @@
-should 'X' just minimize and not kill the app
+02-17 08:31:39.000 E/EZAPP   ( 2283): call_java1: get_longitude method returned failure
+02-17 08:31:39.010 E/EZAPP   ( 2283): call_java1: get_latitude method returned failure
+02-17 08:31:39.011 E/EZAPP   ( 2283): call_java1: get_longitude method returned failure
+02-17 08:31:39.021 E/EZAPP   ( 2283): call_java1: get_latitude method returned failure
+02-17 08:31:39.021 E/EZAPP   ( 2283): call_java1: get_longitude method returned failure
+02-17 08:31:39.031 E/EZAPP   ( 2283): call_java1: get_latitude method returned failure
+02-17 08:31:39.031 E/EZAPP   ( 2283): call_java1: get_longitude method returned failure
 
-tilt
-- calibration
-- use roll pitch for horizontal too
+02-17 08:34:09.304 I/EZAPP   ( 2283): cleanup: quitting SDL subsystems
+02-17 08:34:09.304 I/EZAPP   ( 2283): sdlx_video_quit: quitting
+02-17 08:34:09.307 I/EZAPP   ( 2283): sdlx_audio_quit: quitting
+02-17 08:34:09.472 I/EZAPP   ( 2283): sdlx_sensor_quit: quitting
+02-17 08:34:09.479 E/SDL     ( 2283): SDLActivity thread ends (error=Try to release egl_surface with context probably still active)
+02-17 08:34:09.479 I/EZAPP   ( 2283): cleanup: cleanup completed
+02-17 08:34:09.483 I/EZAPP   ( 2283): stopping loc fgsvc
+
+test ezsh on a 10.xxx.xxx network
+- make a secure password 
+
+
+should 'X' just minimize and not kill the app          IN PROGRESS
 
 new apps
 - Magnify
 - Recorder
 
-test reinstall
-- are files expanded before SDL_Init
+research audio low, mid high  volume
 
-research audio band volume
-
-
-monitor:
+issues to monitor:
 - maybe foreground did not start after app was re-instaled
 
 -----------
-
-Tilt, sideway orientation
 
 Location
 - clear history acknowledgement
@@ -78,9 +88,7 @@ color organ APP
      . optional display color organ during playback
 - close encounters tone seq APP;  and combine with visual representation
 
-SDL Video updates
-- rotate the display
-- API to print rotated text, is this really needed?
+SDL updates
 - sdl return codes are now boolean
 
 full review of xxx issues

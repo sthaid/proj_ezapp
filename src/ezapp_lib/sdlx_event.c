@@ -35,6 +35,8 @@ static int          max_event;
 static bool         evid_motion_registered;
 static bool         evid_keybd_registered;
 
+static int          sdlx_event_quit_rcvd;
+
 //
 // prototypes
 //
@@ -134,8 +136,6 @@ void sdlx_register_control_events(int evid1, char *evstr1,
     }
 }
 
-static int sdlx_event_quit_rcvd;  //xxx cleanup
-
 // arg timeout_us:
 //   -1:     wait forever
 //    0:     don't wait
@@ -150,9 +150,9 @@ void sdlx_get_event(long timeout_us, sdlx_event_t *event)
     memset(event, 0, sizeof(*event));
     event->event_id = -1;
 
-    // xxx comment
+    // if SDL_QUIT has been received then
+    // repeat returning EVID_QUIT
     if (sdlx_event_quit_rcvd > 0) {
-        INFO("XXXXX quit pending, %d\n", sdlx_event_quit_rcvd);
         sdlx_event_quit_rcvd--;
         event->event_id = EVID_QUIT;
         return;
@@ -295,9 +295,14 @@ static void process_sdlx_event(SDL_Event *ev, sdlx_event_t *event)
     case SDL_EVENT_FINGER_DOWN:
     case SDL_EVENT_FINGER_UP:
     case SDL_EVENT_FINGER_MOTION: {
+        // xxx maybe support pinch
         // not used
         break; }
-    case SDL_EVENT_QUIT: {
+    case SDL_EVENT_QUIT: { //xxx
+        // the sdlx_event_quit_rcvd variable is set so that 
+        // this routine will repeat returning EVID_QUIT, so that
+        // a running app will first process the EVID_QUIT, and 
+        // finally main will process EVID_QUIT
         sdlx_event_quit_rcvd = 10;
         event->event_id = EVID_QUIT;
         break; }

@@ -195,11 +195,16 @@ static void cleanup(void)
 {
     INFO("TERMINATING\n");
 
+    INFO("stopping services\n");
     svcs_stop_all();
 
+    INFO("destroying android utils\n");
     util_android_utils_destroy();
 
+    INFO("quitting SDL subsystems\n");
     sdlx_quit(SUBSYS_VIDEO | SUBSYS_AUDIO | SUBSYS_SENSOR);
+
+    INFO("cleanup completed\n");
 }
 
 static void create_files(int action)
@@ -307,12 +312,12 @@ static void processing(void)
         if (LAST_PAGE > 0) {
             sdlx_register_control_events(EVID_PAGE_DECREMENT, "<",
                                          EVID_PAGE_INCREMENT, ">",
-                                         EVID_QUIT, "X",
+                                         EVID_MINIMIZE, "X",
                                          COLOR_WHITE, BG_COLOR);
         } else {
             sdlx_register_control_events(0, NULL, 
                                          0, NULL, 
-                                         EVID_QUIT, "X",
+                                         EVID_MINIMIZE, "X",
                                          COLOR_WHITE, BG_COLOR);
         }
 
@@ -328,8 +333,10 @@ static void processing(void)
         // process the event
         INFO("proc event_id %d\n", event.event_id);
         if (event.event_id == EVID_QUIT) {
+            INFO("got EVID_QUIT\n");
             break;
         } else if (event.event_id == EVID_MINIMIZE) {
+            INFO("got EVID_MINIMIZE\n");
             sdlx_minimize_window();
         } else if (event.event_id == EVID_PAGE_DECREMENT) {
             if (--page < 0) {
@@ -1107,9 +1114,9 @@ char *get_str(FILE *fp, char *s, int s_len)
 
     p = fgets(s, s_len, fp);
     if (p == NULL) {
-        if (!feof(fp)) {
-            printf("ERROR: get failed - error=%d\n", ferror(fp));
-        }
+        //if (!feof(fp)) {
+        //    printf("ERROR: get failed - error=%d\n", ferror(fp));
+        //}
         return NULL;
     }
 
