@@ -1,5 +1,3 @@
-// xxx 'local' without args fails
-
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -19,9 +17,6 @@
 
 #include <readline/readline.h>
 #include <readline/history.h>
-
-// NOTES:
-// - status returns xxx
 
 //
 // defines
@@ -63,6 +58,7 @@ FILE   *sockfp;
 //
 
 // main
+void help(void);
 void read_ezsh_cfg(void);
 void connect_to_android(void);
 void substitue_alias(char *cmdline);
@@ -79,7 +75,9 @@ int special_cmd_vi(char *android_path);
 int special_cmd_local(char *cmdline);
 
 // run cmd on android
-int run_cmd_on_android(char *cmdline, char *data_out, int data_out_len, char **data_in, int *data_in_len);
+int run_cmd_on_android(char *cmdline, char *short_cmdline,
+                       char *data_out, int data_out_len,
+                       char **data_in, int *data_in_len);
 
 // utils
 void sanitize(char *s);
@@ -95,11 +93,10 @@ int main(int argc, char **argv)
     char *cmdline;
     int   status;
 
-    // validate args, print usage
-    if (argc > 2) {
-        printf("Usage: ezsh [<cmdline>]\n");
-        // xxx more details
-        exit(1);
+    // if '-h' option then display help and exit
+    if (argc == 2 && strcmp(argv[1], "-h") == 0) {
+        help();
+        return 0;
     }
 
     // read ezsh.cfg file, to get ipaddr, port, password, and cmd aliases
@@ -108,9 +105,15 @@ int main(int argc, char **argv)
     // connect to android: also validates password and gets curr-working-dir (cwd)
     connect_to_android();
 
-    // if argv[1] provided then use it for cmdline, and then end program
-    if (argc == 2) {
-        status = run_cmd(argv[1]);
+    // if args provided then use them for cmdline, and end program
+    if (argc >= 2) {
+        char cmd[1000];
+        char *p = cmd;
+        for (int i = 1; i < argc; i++) {
+            p += sprintf(p, "%s ", argv[i]);
+        }
+        substitue_alias(cmd);
+        status = run_cmd(cmd);
         return status != 0 ? 1 : 0;
     }
 
@@ -150,6 +153,44 @@ int main(int argc, char **argv)
         // free cmdline
         free(cmdline);
     }
+}
+
+void help(void)
+{
+    char help_text[] = "\
+Ezsh runs on the Linux host, simulating a shell running on the Android device.\n\
+\n\
+The ezsh.cfg file, found in the same directory as the ezsh executable, provides the\n\
+Android device IP address, ezapp developer mode TCP/IP port, and password.\n\
+The ezsh.cfg may also contain optional cmd aliases.\n\
+\n\
+To use ezsh, the ezapp must have Settings Devel_Mode = ON. Also the Devel_Port and\n\
+Devel_Password must be set in ezapp, matching the values supplied in ezsh.cfg.\n\
+The password provides minimal security. It is recommended to enable ezapp Devel_Mode\n\
+on a trusted network.\n\
+\n\
+Commands entered to ezsh are first checked if they require special processing;\n\
+if not then the command is passed to ezapp, which will run the command on the \n\
+Android device.\n\
+\n\
+Commands that require special processing are:\n\
+- cd    : Ezsh maintains the Android current working directory (cwd) path.\n\
+          When a command is executed on Android, the Android directory is\n\
+          first set to the cwd.\n\
+          Example: cd apps/Clock\n\
+- pwd   : Prints the cwd\n\
+- get   : Copy file from Android.\n\
+          Example: get apps/Clock/clock.c\n\
+- put   : Copy file to Android.\n\
+          Example: put clock.c apps/Clock\n\
+- vi    : Edit a file on Android. The file is fist copied to the host tmp dir,\n\
+          edited there, and finally copied back to the Android.\n\
+          Example: vi apps/Clock/clock.c\n\
+- alias : Print the command aliases which are provided in the ezsh.cfg file.\n\
+- local : Execute a command on the host.\n\
+";
+
+    printf("%s", help_text);
 }
 
 void read_ezsh_cfg(void)
@@ -314,7 +355,7 @@ int run_cmd(char *cmdline)
 
     if (status == NOT_A_SPECIAL_CMD) {
         sprintf(cd_plus_cmdline, "cd %s; %s", cwd, cmdline);
-        status = run_cmd_on_android(cd_plus_cmdline, NULL, 0, NULL, 0);
+        status = run_cmd_on_android(cd_plus_cmdline, cmdline, NULL, 0, NULL, 0);
     }
 
     return status;
@@ -399,7 +440,7 @@ int special_cmd_put(char *src, char *dest)
 
     // run 'put <dest_path> <src_filename>' on android
     sprintf(cmdline, "put %s %s", dest_path, src_filename);
-    status = run_cmd_on_android(cmdline, data, data_len, NULL, 0);
+    status = run_cmd_on_android(cmdline, cmdline, data, data_len, NULL, 0);
 
     // free data
     free(data);
@@ -459,7 +500,7 @@ int special_cmd_get(char *src, char *dest)
 
     // run 'get <src_path>' on android
     sprintf(cmdline, "get %s", src_path);
-    status = run_cmd_on_android(cmdline, NULL, 0, &data, &data_len);
+    status = run_cmd_on_android(cmdline, cmdline, NULL, 0, &data, &data_len);
     if (status != 0) {
         free(data);
         return status;
@@ -537,7 +578,7 @@ int special_cmd_cd(char *path)
     char cmd[300];
     int  status;
     sprintf(cmd, "if [ ! -d %s ]; then exit 1; else exit 0; fi", new_cwd);
-    status = run_cmd_on_android(cmd, NULL, 0, NULL, 0);
+    status = run_cmd_on_android(cmd, cmd, NULL, 0, NULL, 0);
     if (status == 0) {
         strcpy(cwd, new_cwd);
     }
@@ -580,7 +621,11 @@ int special_cmd_vi(char *android_path)
     // copy android file to tmp
     status = special_cmd_get(android_path, tmp_path);
     if (status != 0) {
-        return status;
+        if (status == -ENOENT) {
+            unlink(tmp_path);
+        } else {
+            return status;
+        }
     }
 
     // edit tmp_path file
@@ -605,6 +650,7 @@ int special_cmd_local(char *cmdline)
 
     p = strchr(cmdline, ' ');
     if (p == NULL) {
+        printf("ezsh: executing bash ...\n");
         system("bash");
         return 0;
     } 
@@ -635,7 +681,8 @@ int special_cmd_local(char *cmdline)
 
 // -----------------  RUN CMD ON ANDROID  -----------------------------------
 
-int run_cmd_on_android(char *cmdline, char *data_out, int data_out_len,
+int run_cmd_on_android(char *cmdline, char *short_cmdline,
+                       char *data_out, int data_out_len,
                        char **data_in, int *data_in_len)
 {
     char  s[200];
@@ -726,8 +773,11 @@ int run_cmd_on_android(char *cmdline, char *data_out, int data_out_len,
     // print status
     // - status == 0 : success
     // - status > 0  : is an exitcode from the cmdline executed on android
+    //                 - 127 : cmd not found
     // - status < 0  : is an errno
-    if (status > 0) {
+    if (status == 127) {
+        printf("ezsh: Command '%s' not found.\n", short_cmdline);
+    } else if (status > 0) {
         printf("ERROR: exit_status %d\n", status);
     } else if (status < 0) {
         printf("ERROR: %s\n", strerror(-status));
@@ -784,7 +834,7 @@ void put_fmt(FILE *fp, char *fmt, ...)
 
     rc = fflush(fp);
     if (rc == EOF) {
-        printf("ERROR: fflush failed\n");
+        printf("ERROR: lost connection to android, ezsh terminating\n");
         exit(1);
     }
 
