@@ -1010,6 +1010,12 @@ done:
     free(cx);
     state.state = AUDIO_STATE_IDLE;
     state.volume = 0;
+
+    // xxx fixme
+    INFO("XXXXXXXX REINIT-SDL-AUDIO XXXXXXXXXXX\n");
+    sdlx_audio_quit();
+    sdlx_audio_init();
+
     return 0;
 }
 

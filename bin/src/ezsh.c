@@ -828,7 +828,7 @@ void put_fmt(FILE *fp, char *fmt, ...)
 
     rc = vfprintf(fp, fmt, ap);
     if (rc < 0) {
-        printf("ERROR: vfprintf failed\n");
+        printf("ERROR: lost connection to android, ezsh terminating\n");
         exit(1);
     }
 
@@ -850,7 +850,7 @@ char *get_str(FILE *fp, char *s, int s_len)
 
     p = fgets(s, s_len, fp);
     if (p == NULL) {
-        printf("ERROR: get failed\n");
+        printf("ERROR: lost connection to android, ezsh terminating\n");
         exit(1);
     }
 

@@ -537,7 +537,7 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
     }
 
     public double stop_playbackcapture() {
-        Log.i(EZAPP_TAG, "stop_playbackcapture called, isbounc = " + mezapp_media_fgsvc_isbound);
+        Log.i(EZAPP_TAG, "stop_playbackcapture called, isbound = " + mezapp_media_fgsvc_isbound);
         if (mezapp_media_fgsvc_isbound) {
             Intent serviceIntent = new Intent(this, ezapp_media_fgsvc.class);
             stopService(serviceIntent);

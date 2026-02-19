@@ -1,30 +1,17 @@
-02-17 08:31:39.000 E/EZAPP   ( 2283): call_java1: get_longitude method returned failure
-02-17 08:31:39.010 E/EZAPP   ( 2283): call_java1: get_latitude method returned failure
-02-17 08:31:39.011 E/EZAPP   ( 2283): call_java1: get_longitude method returned failure
-02-17 08:31:39.021 E/EZAPP   ( 2283): call_java1: get_latitude method returned failure
-02-17 08:31:39.021 E/EZAPP   ( 2283): call_java1: get_longitude method returned failure
-02-17 08:31:39.031 E/EZAPP   ( 2283): call_java1: get_latitude method returned failure
-02-17 08:31:39.031 E/EZAPP   ( 2283): call_java1: get_longitude method returned failure
-
-02-17 08:34:09.304 I/EZAPP   ( 2283): cleanup: quitting SDL subsystems
-02-17 08:34:09.304 I/EZAPP   ( 2283): sdlx_video_quit: quitting
-02-17 08:34:09.307 I/EZAPP   ( 2283): sdlx_audio_quit: quitting
-02-17 08:34:09.472 I/EZAPP   ( 2283): sdlx_sensor_quit: quitting
-02-17 08:34:09.479 E/SDL     ( 2283): SDLActivity thread ends (error=Try to release egl_surface with context probably still active)
-02-17 08:34:09.479 I/EZAPP   ( 2283): cleanup: cleanup completed
-02-17 08:34:09.483 I/EZAPP   ( 2283): stopping loc fgsvc
-
-test ezsh on a 10.xxx.xxx network
-- make a secure password 
+recording from dev:
+- problem stopping playback capture, and then try to play audio hangs
+   - workaround added  FIXME
+- when recording from dev, don't record blocks of zero
 
 
-should 'X' just minimize and not kill the app          IN PROGRESS
+Recorder APP
+- test KissFFT standalone
+- KissFFT
+  - research audio low, mid high  volume
 
 new apps
-- Magnify
 - Recorder
-
-research audio low, mid high  volume
+- Magnify
 
 issues to monitor:
 - maybe foreground did not start after app was re-instaled
@@ -51,6 +38,26 @@ xxx issue review
 -------------
 2nd priority 
 -------------
+
+startup issue
+02-17 08:31:39.000 E/EZAPP   ( 2283): call_java1: get_longitude method returned failure
+02-17 08:31:39.010 E/EZAPP   ( 2283): call_java1: get_latitude method returned failure
+02-17 08:31:39.011 E/EZAPP   ( 2283): call_java1: get_longitude method returned failure
+02-17 08:31:39.021 E/EZAPP   ( 2283): call_java1: get_latitude method returned failure
+02-17 08:31:39.021 E/EZAPP   ( 2283): call_java1: get_longitude method returned failure
+02-17 08:31:39.031 E/EZAPP   ( 2283): call_java1: get_latitude method returned failure
+02-17 08:31:39.031 E/EZAPP   ( 2283): call_java1: get_longitude method returned failure
+
+shutdown issue
+02-17 08:34:09.304 I/EZAPP   ( 2283): cleanup: quitting SDL subsystems
+02-17 08:34:09.304 I/EZAPP   ( 2283): sdlx_video_quit: quitting
+02-17 08:34:09.307 I/EZAPP   ( 2283): sdlx_audio_quit: quitting
+02-17 08:34:09.472 I/EZAPP   ( 2283): sdlx_sensor_quit: quitting
+02-17 08:34:09.479 E/SDL     ( 2283): SDLActivity thread ends (error=Try to release egl_surface with context probably still active)
+02-17 08:34:09.479 I/EZAPP   ( 2283): cleanup: cleanup completed
+02-17 08:34:09.483 I/EZAPP   ( 2283): stopping loc fgsvc
+
+make a more secure password 
 
 add SDL version to Setup, and print when starting
 
