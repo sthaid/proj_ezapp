@@ -7,20 +7,18 @@
 #include <SDL3/SDL.h>
 #include <SDL3_mixer/SDL_mixer.h>
 
-// yyy document capabilities
+// xxx document capabilities
 // - record from mic
 // - record from device
 // - play file
 // - play tones
 // - play buff
 
-// yyy
+// xxx
 // - why is so much record gain needed
-// - is sdlx_audio_quit called
 // - test mp3 file playback debug prints
 // - util_start_playbackcapture should return status
 // - wav_file_stereo_test ?
-// - sdlx_audio_file_duration() needed
 
 //
 // defines
@@ -64,6 +62,10 @@ static sdlx_audio_params_t audio_params = { DEFAULT_RECORD_GAIN, DEFAULT_RECORD_
 // syntax note: __attribute__((unused))
 //
 
+static int audio_cleanup(void);
+static int audio_reset(void);
+static void audio_print_list_of_devices(void);
+
 static int calc_volume_s16(short *samples, int n);
 static int calc_volume_float(float *samples, int n);
 
@@ -88,17 +90,115 @@ int sdlx_audio_init(void)
 {
     INFO("initializing\n");
 
+    // initialize lame mp3 encoder
+    gfp = lame_init();
+    if (gfp == NULL) {
+        ERROR("lame_init failed\n");
+        return -1;
+    }
+
+    lame_set_num_channels(gfp,2);
+    lame_set_in_samplerate(gfp,FRAMES_PER_SEC);
+    lame_set_brate(gfp,MP3_LAME_KBRATE);
+    lame_set_mode(gfp,MP3_LAME_MODE);
+    lame_set_quality(gfp,2);   // 2=high  5 = medium  7=low
+
+    if (lame_init_params(gfp) == -1) {
+        ERROR("lame_init_params failed\n");
+        return -1;
+    }
+
+    // success
+    return 0;
+}
+
+void sdlx_audio_quit(void)
+{
+    INFO("quitting\n");
+
+    // stop audio
+    sdlx_audio_stop();
+
+    // cleanup lame mp3 encoder
+    if (gfp) {
+        lame_close(gfp);
+        gfp = NULL;
+    }
+
+    // cleanup SDL Mixer and SDL Audio subsystem
+    audio_cleanup();
+}
+
+static int audio_cleanup(void)
+{
+    int rc;
+
+    // stop audio
+    rc = sdlx_audio_stop();
+    if (rc != 0) {
+        ERROR("failed to stop audio\n");
+        return -1;
+    }
+
+    // cleanup SDL_mixer
+    if (audio) {
+        MIX_DestroyAudio(audio);
+        audio = NULL;
+    }
+    if (track) {
+        MIX_DestroyTrack(track);
+        track = NULL;
+    }
+    if (mixer) {
+        MIX_DestroyMixer(mixer);
+        mixer = NULL;
+    }
+    MIX_Quit();
+
+    // cleanup SDL audio
+    if (audio_stream != NULL) {
+        SDL_DestroyAudioStream(audio_stream);
+        audio_stream = NULL;
+    }
+    SDL_QuitSubSystem(SDL_INIT_AUDIO);
+
+    // success
+    return 0;
+}
+
+static int audio_reset(void)
+{
+    int rc;
+    static bool first_call = true;
+
+    // -----------------
+    // stop audio
+    // -----------------
+
+    rc = sdlx_audio_stop();
+    if (rc != 0) {
+        ERROR("failed to stop audio\n");
+        return -1;
+    }
+
+    // -----------------
+    // cleanup
+    // -----------------
+
+    // cleanup SDL Mixer and SDL Audio subsystem
+    audio_cleanup();
+
     // --------------------------
+    // re-initialize
+    // --------------------------
+
     // initialize SDL audio
-    // --------------------------
     if (!SDL_InitSubSystem(SDL_INIT_AUDIO)) {
         ERROR("SDL_Init AUDIO failed, %s\n", SDL_GetError());
         return -1;
     }
 
-    // --------------------------
     // initializing SDL_mixer
-    // --------------------------
     const SDL_AudioSpec playback_request_spec = { SDL_AUDIO_S16, 2, FRAMES_PER_SEC };
     SDL_AudioSpec playback_actual_spec;
 
@@ -126,29 +226,21 @@ int sdlx_audio_init(void)
     MIX_SetTrackRawCallback(track, mixer_track_raw_callback, NULL);
     MIX_SetTrackStoppedCallback(track, mixer_track_stopped_callback, NULL);
 
-    // --------------------------
-    // initialize lame mp3 encoder
-    // --------------------------
-    gfp = lame_init();
-    if (gfp == NULL) {
-        ERROR("lame_init failed\n");
-        return -1;
+    // ----------------------------------------
+    // on first call print list of audio devices
+    // ----------------------------------------
+
+    if (first_call) {
+        audio_print_list_of_devices();
+        first_call = false;
     }
 
-    lame_set_num_channels(gfp,2);
-    lame_set_in_samplerate(gfp,FRAMES_PER_SEC);
-    lame_set_brate(gfp,MP3_LAME_KBRATE);
-    lame_set_mode(gfp,MP3_LAME_MODE);
-    lame_set_quality(gfp,2);   // 2=high  5 = medium  7=low
+    // success
+    return 0;
+}
 
-    if (lame_init_params(gfp) == -1) {
-        ERROR("lame_init_params failed\n");
-        return -1;
-    }
-
-    // --------------------------
-    // debug print list of SDL audio devices
-    // --------------------------
+static void audio_print_list_of_devices(void)
+{
     SDL_AudioDeviceID *devid;
     int i, count;
     const char *name;
@@ -159,6 +251,7 @@ int sdlx_audio_init(void)
         name = SDL_GetAudioDeviceName(devid[i]);
         INFO("  playback dev %d = %s\n", devid[i], name);
     }
+    SDL_free(devid);
 
     devid = SDL_GetAudioRecordingDevices(&count);
     INFO("num recording devices = %d\n", count);
@@ -166,45 +259,7 @@ int sdlx_audio_init(void)
         name = SDL_GetAudioDeviceName(devid[i]);
         INFO("  recording dev %d = %s\n", devid[i], name);
     }
-
-    // success
-    return 0;
-}
-
-void sdlx_audio_quit(void)
-{
-    INFO("quitting\n");
-
-    // stop audio
-    sdlx_audio_stop();
-
-    // cleanup lame mp3 encoder
-    if (gfp) {
-        lame_close(gfp);
-        gfp = NULL;
-    }
-
-    // cleanup SDL_mixer
-    if (audio) {
-        MIX_DestroyAudio(audio);
-        audio = NULL;
-    }
-    if (track) {
-        MIX_DestroyTrack(track);
-        track = NULL;
-    }
-    if (mixer) {
-        MIX_DestroyMixer(mixer);
-        mixer = NULL;
-    }
-    MIX_Quit();
-
-    // cleanup SDL audio
-    if (audio_stream != NULL) {
-        SDL_DestroyAudioStream(audio_stream);
-        audio_stream = NULL;
-    }
-    SDL_QuitSubSystem(SDL_INIT_AUDIO);
+    SDL_free(devid);
 }
 
 // -----------------  CONTROL / STATE / PARAMS  -------------------
@@ -780,9 +835,9 @@ int sdlx_audio_record_from_mic(char *dir, char *filename, int max_duration_secs,
     void               *wav_file_cx=NULL;
     const SDL_AudioSpec record_spec = { SDL_AUDIO_S16, 1, FRAMES_PER_SEC };
 
-    // stop audio
-    if (sdlx_audio_stop() != 0) {
-        ERROR("failed to stop audio\n");
+    // reset audio
+    if (audio_reset() != 0) {
+        ERROR("failed to reset audio\n");
         return -1;
     }
 
@@ -930,9 +985,11 @@ int sdlx_audio_record_from_device(char *dir, char *filename)
     void *mp3_cx;
     int rc;
 
-    // stop audio
-    if (sdlx_audio_stop() != 0) {
-        ERROR("failed to stop audio\n");
+    // cleanup SDL Mixer and SDL Audio subsystem;
+    // note that audio_init() is not called here because SDL is not
+    //      used when capturing audio from the Android device
+    if (audio_cleanup() != 0) {
+        ERROR("audio_cleanup failed\n");
         return -1;
     }
 
@@ -1010,12 +1067,6 @@ done:
     free(cx);
     state.state = AUDIO_STATE_IDLE;
     state.volume = 0;
-
-    // xxx fixme
-    INFO("XXXXXXXX REINIT-SDL-AUDIO XXXXXXXXXXX\n");
-    sdlx_audio_quit();
-    sdlx_audio_init();
-
     return 0;
 }
 
@@ -1050,9 +1101,9 @@ int sdlx_audio_play_tones(sdlx_tone_t *tones)
     play_tones_cx_t *cx;
     const SDL_AudioSpec playback_spec = { SDL_AUDIO_S16, 1, FRAMES_PER_SEC };
 
-    // stop audio
-    if (sdlx_audio_stop() != 0) {
-        ERROR("failed to stop audio\n");
+    // reset audio
+    if (audio_reset() != 0) {
+        ERROR("failed to reset audio\n");
         return -1;
     }
 
@@ -1287,9 +1338,9 @@ int sdlx_audio_play_buff(short *samples, int num_samples, int num_channels, int 
     int duration_ms;
     play_buff_cx_t *cx;
 
-    // stop audio
-    if (sdlx_audio_stop() != 0) {
-        ERROR("failed to stop audio\n");
+    // reset audio
+    if (audio_reset() != 0) {
+        ERROR("failed to reset audio\n");
         return -1;
     }
 
@@ -1368,9 +1419,9 @@ int sdlx_audio_play_file(char *dir, char *filename)
     long frames;
     SDL_AudioSpec spec;
 
-    // stop audio
-    if (sdlx_audio_stop() != 0) {
-        ERROR("failed to stop audio\n");
+    // reset audio
+    if (audio_reset() != 0) {
+        ERROR("failed to reset audio\n");
         return -1;
     }
 
