@@ -191,6 +191,7 @@ int main(int argc, char **argv)
 
 char countries[MAX_COUNTRIES][3];
 int  max_countries;
+long clear_history_ack_time;
 
 void get_countries(void);
 
@@ -210,31 +211,35 @@ void settings(void)
         printf("E: SVC_LOCATION_REQ_QUERY_ENABLED failed, rc=%d\n", rc);
     }
 
+    // get list of countries
+    get_countries();
+
     while (!done) {
         // init the backbuffer
         sdlx_display_init(COLOR_BLACK);
 
-        // get list of countries
-        get_countries();
-
         // print in LIGHT_BLUE
         sdlx_print_set_default(FONT_NORMAL, COLOR_LIGHT_BLUE);
 
-        // register for events:
+        // register for events ...
         // - CLEAR_HISTORY
         loc = sdlx_render_printf(0, ROW2Y(1), "%s", "Clear History");
         sdlx_register_event(loc, EVID_CLEAR_HISTORY);
+        if (util_microsec_timer() < clear_history_ack_time+3*SEC) {
+            sdlx_render_printf_ex1(sdlx_win_width-4*sdlx_char_width_dflt, ROW2Y(1),
+                                   FONT_NORMAL, COLOR_GREEN, "%s", "DONE");
+        }
         // - DISABLE/ENABLE_HISTORY
         if (query_enabled) {
-            loc = sdlx_render_printf(0, ROW2Y(3), "%s", "History is Enabled");
+            loc = sdlx_render_printf(0, ROW2Y(4), "%s", "History is Enabled");
             sdlx_register_event(loc, EVID_DISABLE_HISTORY);
         } else {
-            loc = sdlx_render_printf(0, ROW2Y(3), "%s", "History is Disabled");
+            loc = sdlx_render_printf(0, ROW2Y(4), "%s", "History is Disabled");
             sdlx_register_event(loc, EVID_ENABLE_HISTORY);
         }
         // - ADD_COUNTRY
         if (max_countries < 5) {
-            loc = sdlx_render_printf(0, ROW2Y(5), "%s", "Download Country");
+            loc = sdlx_render_printf(0, ROW2Y(7), "%s", "Download Country");
             sdlx_register_event(loc, EVID_ADD_COUNTRY);
         }
 
@@ -243,7 +248,7 @@ void settings(void)
 
         // display list of countries, with DEL event for each
         for (int i = 0; i < max_countries; i++) {
-            int y = ROW2Y(7+2*i);
+            int y = ROW2Y(10+3*i);
 
             sdlx_render_printf(0, y, "%s", countries[i]);
 
@@ -260,8 +265,8 @@ void settings(void)
         // present the display
         sdlx_display_present();
 
-        // wait for event, infinite timeout
-        sdlx_get_event(-1, &event);
+        // wait for event, 100 ms timeout
+        sdlx_get_event(100000, &event);
 
         // process events
         switch (event.event_id) {
@@ -286,6 +291,8 @@ void settings(void)
                 printf("E %s: SVC_LOCATION_REQ_ADD_COUNTRY_INFO '%s' failed, rc=%d\n", 
                        progname, country_code, rc);
             }
+
+            get_countries();
             break; }
 
         case EVID_DEL_COUNTRY+0:
@@ -294,6 +301,14 @@ void settings(void)
         case EVID_DEL_COUNTRY+3:
         case EVID_DEL_COUNTRY+4: {
             int idx = event.event_id - EVID_DEL_COUNTRY;
+            char prompt[50], *yn;
+
+            sprintf(prompt, "Delete %s", countries[idx]);
+            yn = sdlx_get_input_str(prompt, "", false, COLOR_BLACK);
+            if (yn[0] != 'y' && yn[0] != 'Y') {
+                printf("I %s: cancel delete %s\n", progname, countries[idx]);
+                break;
+            }
 
             printf("I %s: deleteing %s\n", progname, countries[idx]);
             rc = svc_make_req("Location",      
@@ -304,6 +319,8 @@ void settings(void)
                 printf("E %s: SVC_LOCATION_REQ_DEL_COUNTRY_INFO '%s' failed, rc=%d\n", 
                        progname, countries[idx], rc);
             }
+
+            get_countries();
             break; }
 
         case EVID_CLEAR_HISTORY: {
@@ -315,7 +332,9 @@ void settings(void)
                               5);  // 5 sec timeout
             if (rc != 0) {
                 printf("E %s: SVC_LOCATION_REQ_CLEAR_HISTORY failed, rc=%d\n", progname, rc);
+                break;
             }
+            clear_history_ack_time = util_microsec_timer();
             break; }
         case EVID_ENABLE_HISTORY: 
         case EVID_DISABLE_HISTORY: {
