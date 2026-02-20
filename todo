@@ -1,6 +1,9 @@
-Location
-- clear history acknowledgement
-- spread out stg lines
+cleanup home dir 
+cleanup ez dir
+
+temp fix for hex calc issue
+
+bring forward picoc compare and test pgms
 
 recording from dev:
 - problem stopping playback capture, and then try to play audio hangs

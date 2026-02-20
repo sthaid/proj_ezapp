@@ -621,8 +621,9 @@ static void alpha_test(int idx, char *test_name, sdlx_color_t bg_color, sdlx_col
 #define EVID_AUDIO_PLAY_MIC_FILE           17
 #define EVID_AUDIO_PLAY_DEV_FILE           18
 #define EVID_AUDIO_PLAY_TEST_WAV           19
-#define EVID_AUDIO_PLAY_MONO_BUFF          20
-#define EVID_AUDIO_PLAY_STEREO_BUFF        21
+#define EVID_AUDIO_PLAY_TEST_MP3           20
+#define EVID_AUDIO_PLAY_MONO_BUFF          21
+#define EVID_AUDIO_PLAY_STEREO_BUFF        22
 
 static char *audio_state_str(int x)
 {
@@ -719,6 +720,8 @@ static void page_7_draw(void)
     sdlx_render_printf(0, ROW2Y(row), "PLAY");
     loc = sdlx_render_printf_ex1(COL2X(5), ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "TEST.WAV");
     sdlx_register_event(loc, EVID_AUDIO_PLAY_TEST_WAV);
+    loc = sdlx_render_printf_ex1(COL2X(15), ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "MP3");
+    sdlx_register_event(loc, EVID_AUDIO_PLAY_TEST_MP3);
     row += 3;
 }
 
@@ -763,6 +766,9 @@ static void page_7_process_event(sdlx_event_t *ev)
         break;
     case EVID_AUDIO_PLAY_TEST_WAV:
         sdlx_audio_play_file(data_dir, "test.wav");
+        break;
+    case EVID_AUDIO_PLAY_TEST_MP3:
+        sdlx_audio_play_file(data_dir, "test.mp3");
         break;
     case EVID_AUDIO_PLAY_MONO_BUFF: {
         int    secs = 4;
