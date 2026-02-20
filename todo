@@ -1,32 +1,27 @@
+Location
+- clear history acknowledgement
+- spread out stg lines
+
 recording from dev:
 - problem stopping playback capture, and then try to play audio hangs
-   - workaround added  FIXME
-- when recording from dev, don't record blocks of zero
+   - validate this is fixed
+   - comment the fix
+- when recording from dev, don't record initial blocks of zero
 
+KissFFT
+- download
+- test with simulated sine wave data
 
-Recorder APP
-- test KissFFT standalone
-- KissFFT
-  - research audio low, mid high  volume
+New Recorder APP
+- design user intrc
 
-new apps
-- Recorder
-- Magnify
+New Magnify APP
+- test using camera from SDL
 
 issues to monitor:
 - maybe foreground did not start after app was re-instaled
 
 -----------
-
-Location
-- clear history acknowledgement
-- spread out stg lines
-
-FFT support, and app
-
-ezsh
-- display propt in green
-- don't exit so readily
 
 Hex Calc
 - 64bit >> problem
@@ -75,7 +70,6 @@ start picoc list of issues
 
 monitor these issues:
 - hangs on first run after install, hang at tar -xvf files.tar
-- Location has lat/long location from jan21 at 1 minute intervals
 - layout file is not preserved when reloading ??
 
 Logical Presentation
@@ -84,7 +78,6 @@ Logical Presentation
 
 color organ APP
 - add fft
-- add butterworth filter
 - option to play files
 - or option to run color organ using playbackcapture
 - new Audio App 

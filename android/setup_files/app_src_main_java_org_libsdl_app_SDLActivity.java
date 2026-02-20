@@ -547,9 +547,9 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
         return 0;
     }
 
-    public short[] get_playbackcapture_audio(int num_array_elements) {
+    public short[] get_playbackcapture_audio(int arg_unused) {
         //Log.i(EZAPP_TAG, "get_playbackcapture_audio, num = " + num_array_elements);
-        return ezapp_media_fgsvc.get_playbackcapture_audio(num_array_elements);
+        return ezapp_media_fgsvc.get_playbackcapture_audio();
     }
 
     private ServiceConnection ezapp_media_fgsvc_connection = new ServiceConnection() {

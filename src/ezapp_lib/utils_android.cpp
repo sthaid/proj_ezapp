@@ -231,10 +231,11 @@ static double call_java2(const char *method_name, char *arg_str)
     return method_ret_double;
 }
 
-// call method 'short[] proc(int num_array_elements)' 
+// call method 'short[] proc(int arg_unused)' 
 double call_java3(const char *method_name, short *caller_array, int num_array_elements)
 {
     jmethodID method_id = 0;
+    int arg_unused = 0;
 
     // retrieve the JNI environment.,
     // retrieve the Java instance of the SDLActivity,
@@ -253,7 +254,7 @@ double call_java3(const char *method_name, short *caller_array, int num_array_el
     }
 
     // call the java method, which will return the array of short elements
-    jshortArray array = (jshortArray) env->CallObjectMethod(activity, method_id, num_array_elements);
+    jshortArray array = (jshortArray) env->CallObjectMethod(activity, method_id, arg_unused);
     if (array == nullptr) {
         ERROR("%s method failed\n", method_name);
         env->DeleteLocalRef(activity);

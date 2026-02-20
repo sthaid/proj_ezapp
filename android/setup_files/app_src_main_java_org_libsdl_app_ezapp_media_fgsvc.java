@@ -31,9 +31,12 @@ public class ezapp_media_fgsvc extends Service {
     private static final int       STATE_RECORDING    = 2;
     private static final int       STATE_FAILED       = 3;
     private static final int       STATE_STOPPED      = 4;
+    private static final int       MAX_SAMPLES        = 8192;
     private static int             state;
     private static AudioRecord     audioRecord;
     private static MediaProjection mediaProjection;
+    private static short[]         audio_data = new short[MAX_SAMPLES];
+    private static short[]         error_data = new short[0];
     private IBinder                mBinder = new InnerBinder();
 
     public class InnerBinder extends Binder {
@@ -136,7 +139,7 @@ public class ezapp_media_fgsvc extends Service {
     }
 
     // xxx why does this have to be static
-    public static short[] get_playbackcapture_audio(int num_array_elements) {
+    public static short[] get_playbackcapture_audio() {
         int shorts_read = 0;
         int millisecs = 0;
 
@@ -159,12 +162,10 @@ public class ezapp_media_fgsvc extends Service {
         }
             
         // read audio data
-        short[] audio_data = new short[num_array_elements];
-        shorts_read = audioRecord.read(audio_data, 0, num_array_elements);
-        if (shorts_read != num_array_elements ) {
-            short[] error = new short[0];
+        shorts_read = audioRecord.read(audio_data, 0, MAX_SAMPLES);
+        if (shorts_read != MAX_SAMPLES ) {
             Log.e(TAG, "get_playbackcapture_audio short_read = " + shorts_read);
-            return error;
+            return error_data;
         }
 
         // return audio data
