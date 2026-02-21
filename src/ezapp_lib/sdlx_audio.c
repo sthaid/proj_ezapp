@@ -55,6 +55,7 @@ lame_global_flags *gfp;
 
 static sdlx_audio_state_t  state;
 static int                 state_resume;
+static bool                audio_is_initialized;
 static sdlx_audio_params_t audio_params = { DEFAULT_RECORD_GAIN, DEFAULT_RECORD_SILENCE };
 
 //
@@ -62,9 +63,12 @@ static sdlx_audio_params_t audio_params = { DEFAULT_RECORD_GAIN, DEFAULT_RECORD_
 // syntax note: __attribute__((unused))
 //
 
-static int audio_cleanup(void);
-static int audio_reset(void);
 static void audio_print_list_of_devices(void);
+
+static int audio_init(void);
+static void audio_cleanup(void);
+static int audio_reset(void);
+static int audio_stop(void);
 
 static int calc_volume_s16(short *samples, int n);
 static int calc_volume_float(float *samples, int n);
@@ -108,6 +112,15 @@ int sdlx_audio_init(void)
         return -1;
     }
 
+    // init SDL audio subsys and SDL Mixer
+    if (audio_init() != 0) {
+        ERROR("audio_init failed\n");
+        return -1;
+    }
+
+    // print list of audio devices
+    audio_print_list_of_devices();
+
     // success
     return 0;
 }
@@ -117,80 +130,50 @@ void sdlx_audio_quit(void)
     INFO("quitting\n");
 
     // stop audio
-    sdlx_audio_stop();
+    audio_stop();
+
+    // cleanup SDL Mixer and SDL Audio subsystem
+    audio_cleanup();
 
     // cleanup lame mp3 encoder
     if (gfp) {
         lame_close(gfp);
         gfp = NULL;
     }
-
-    // cleanup SDL Mixer and SDL Audio subsystem
-    audio_cleanup();
 }
 
-static int audio_cleanup(void)
+static void audio_print_list_of_devices(void)
 {
-    int rc;
+    SDL_AudioDeviceID *devid;
+    int i, count;
+    const char *name;
 
-    // stop audio
-    rc = sdlx_audio_stop();
-    if (rc != 0) {
-        ERROR("failed to stop audio\n");
-        return -1;
+    devid = SDL_GetAudioPlaybackDevices(&count);
+    INFO("num playback devices = %d\n", count);
+    for (i = 0; i < count; i++) {
+        name = SDL_GetAudioDeviceName(devid[i]);
+        INFO("  playback dev %d = %s\n", devid[i], name);
     }
+    SDL_free(devid);
 
-    // cleanup SDL_mixer
-    if (audio) {
-        MIX_DestroyAudio(audio);
-        audio = NULL;
+    devid = SDL_GetAudioRecordingDevices(&count);
+    INFO("num recording devices = %d\n", count);
+    for (i = 0; i < count; i++) {
+        name = SDL_GetAudioDeviceName(devid[i]);
+        INFO("  recording dev %d = %s\n", devid[i], name);
     }
-    if (track) {
-        MIX_DestroyTrack(track);
-        track = NULL;
-    }
-    if (mixer) {
-        MIX_DestroyMixer(mixer);
-        mixer = NULL;
-    }
-    MIX_Quit();
-
-    // cleanup SDL audio
-    if (audio_stream != NULL) {
-        SDL_DestroyAudioStream(audio_stream);
-        audio_stream = NULL;
-    }
-    SDL_QuitSubSystem(SDL_INIT_AUDIO);
-
-    // success
-    return 0;
+    SDL_free(devid);
 }
 
-static int audio_reset(void)
+// - - - - - - - - - - - - 
+
+static int audio_init(void)
 {
-    int rc;
-    static bool first_call = true;
-
-    // -----------------
-    // stop audio
-    // -----------------
-
-    rc = sdlx_audio_stop();
-    if (rc != 0) {
-        ERROR("failed to stop audio\n");
+    // return error if audio is already initialized
+    if (audio_is_initialized) {
+        ERROR("audio is already initialized\n");
         return -1;
     }
-
-    // -----------------
-    // cleanup
-    // -----------------
-
-    // cleanup SDL Mixer and SDL Audio subsystem
-    audio_cleanup();
-
-    // --------------------------
-    // re-initialize
-    // --------------------------
 
     // initialize SDL audio
     if (!SDL_InitSubSystem(SDL_INIT_AUDIO)) {
@@ -226,48 +209,41 @@ static int audio_reset(void)
     MIX_SetTrackRawCallback(track, mixer_track_raw_callback, NULL);
     MIX_SetTrackStoppedCallback(track, mixer_track_stopped_callback, NULL);
 
-    // ----------------------------------------
-    // on first call print list of audio devices
-    // ----------------------------------------
-
-    if (first_call) {
-        audio_print_list_of_devices();
-        first_call = false;
-    }
-
     // success
+    audio_is_initialized = true;
     return 0;
 }
 
-static void audio_print_list_of_devices(void)
+static void audio_cleanup(void)
 {
-    SDL_AudioDeviceID *devid;
-    int i, count;
-    const char *name;
-
-    devid = SDL_GetAudioPlaybackDevices(&count);
-    INFO("num playback devices = %d\n", count);
-    for (i = 0; i < count; i++) {
-        name = SDL_GetAudioDeviceName(devid[i]);
-        INFO("  playback dev %d = %s\n", devid[i], name);
+    // cleanup SDL_mixer
+    if (audio) {
+        MIX_DestroyAudio(audio);
+        audio = NULL;
     }
-    SDL_free(devid);
-
-    devid = SDL_GetAudioRecordingDevices(&count);
-    INFO("num recording devices = %d\n", count);
-    for (i = 0; i < count; i++) {
-        name = SDL_GetAudioDeviceName(devid[i]);
-        INFO("  recording dev %d = %s\n", devid[i], name);
+    if (track) {
+        MIX_DestroyTrack(track);
+        track = NULL;
     }
-    SDL_free(devid);
+    if (mixer) {
+        MIX_DestroyMixer(mixer);
+        mixer = NULL;
+    }
+    MIX_Quit();
+
+    // cleanup SDL audio
+    if (audio_stream != NULL) {
+        SDL_DestroyAudioStream(audio_stream);
+        audio_stream = NULL;
+    }
+    SDL_QuitSubSystem(SDL_INIT_AUDIO);
+
+    // success
+    audio_is_initialized = false;
 }
 
-// -----------------  CONTROL / STATE / PARAMS  -------------------
-
-int sdlx_audio_stop(void)
+static int audio_stop(void)
 {
-    int ms = 0;
-
     if (state.state == AUDIO_STATE_IDLE) {
         return 0;
     }
@@ -279,6 +255,7 @@ int sdlx_audio_stop(void)
         MIX_StopTrack(track, fade_out_frames);
     }
 
+    int ms = 0;
     while (state.state != AUDIO_STATE_IDLE) {
         usleep(TEN_MS);
         ms += 10;
@@ -288,6 +265,34 @@ int sdlx_audio_stop(void)
             return -1;
         }
     }
+
+    return 0;
+}
+
+static int audio_reset(void)
+{
+    if (audio_stop() != 0) {
+        ERROR("failed to stop audio\n");
+        return -1;
+    }
+
+    if (audio_is_initialized) {
+        return 0;
+    }
+
+    return audio_init();
+}
+
+// -----------------  CONTROL / STATE / PARAMS  -------------------
+
+int sdlx_audio_stop(void)
+{
+    if (audio_stop() != 0) {
+        ERROR("audio_stop failed\n");
+        return -1;
+    }
+
+    audio_cleanup();
 
     return 0;
 }
@@ -985,11 +990,12 @@ int sdlx_audio_record_from_device(char *dir, char *filename)
     void *mp3_cx;
     int rc;
 
-    // cleanup SDL Mixer and SDL Audio subsystem;
-    // note that audio_init() is not called here because SDL is not
-    //      used when capturing audio from the Android device
-    if (audio_cleanup() != 0) {
-        ERROR("audio_cleanup failed\n");
+    // call sdlx_audio_stop, which will:
+    // - stop a currently running record or playback
+    // - uninitialize SDL audio and SDL Mixer, because SDL audio is
+    //   not used when recording from device
+    if (sdlx_audio_stop() != 0) {
+        ERROR("sdlx_audio_stop failed\n");
         return -1;
     }
 

@@ -44,7 +44,7 @@ void sdlx_display_present(void);
 // - - - - - 
 // https://www.w3schools.com/colors/colors_converter.asp
 // these colors are opaque (alpha equals 255)
-//                          red      green       blue      alpha
+//                                         red      green       blue      alpha
 #define COLOR_BLACK       ((sdlx_color_t)(   0  |    0<<8 |    0<<16 |  255<<24 ))
 #define COLOR_WHITE       ((sdlx_color_t)( 255  |  255<<8 |  255<<16 |  255<<24 ))
 #define COLOR_RED         ((sdlx_color_t)( 255  |    0<<8 |    0<<16 |  255<<24 ))

@@ -1022,6 +1022,7 @@ sdlx_texture_t *sdlx_create_texture(int width, int height)
 {
     sdlx_texture_t *texture;
 
+    // create texture
     texture = (sdlx_texture_t*)
               SDL_CreateTexture(renderer,
                                 SDL_PIXELFORMAT_ABGR8888,
@@ -1032,6 +1033,10 @@ sdlx_texture_t *sdlx_create_texture(int width, int height)
         return NULL;
     }
 
+    // init texture pixels to transparent black (alpha=0)
+    sdlx_clear_texture(texture, 0);
+
+    // return the created texture
     return texture;
 }
 

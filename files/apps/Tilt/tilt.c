@@ -254,7 +254,7 @@ void display_tilt_horizontal(double ax, double ay, double az, double roll_raw, d
     static double       cal_horiz_roll;
     static double       cal_horiz_pitch;
 
-    // on first call, read params for the vertical orientation
+    // on first call, read params for the horizontal orientation
     if (!params_initialized) {
         max_bulls_eye = util_get_numeric_param(data_dir, "max_bulls_eye", MAX_BULLS_EYE_DEFAULT);
         cal_horiz_roll = util_get_numeric_param(data_dir, "cal_horiz_roll", INVALID_NUMBER);
