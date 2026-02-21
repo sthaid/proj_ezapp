@@ -66,11 +66,6 @@ static void page_10_draw(void);
 
 int main(int argc, char **argv)
 {
-    int rc;
-
-    // set line buffering
-    setlinebuf(stdout);
-
     // save args
     progname = argv[0];
     if (argc != 2) {
@@ -79,13 +74,6 @@ int main(int argc, char **argv)
     }
     data_dir = argv[1];
     printf("I %s: starting, data_dir=%s\n", progname, data_dir);
-
-    // init sdl
-    rc = sdlx_init(SUBSYS_VIDEO | SUBSYS_AUDIO | SUBSYS_SENSOR);
-    if (rc != 0) {
-        printf("E %s: sdlx_init failed\n", progname);
-        return 1;
-    }
 
     // print window and char sized, these are global variables from sdl.c;
     // the initial char size provides 20 chars across the display width
@@ -114,9 +102,6 @@ int main(int argc, char **argv)
             break;
         }
     }
-
-    // exit sdl
-    sdlx_quit(SUBSYS_VIDEO | SUBSYS_AUDIO | SUBSYS_SENSOR);
 
     // return success
     printf("I %s: terminating\n", progname);

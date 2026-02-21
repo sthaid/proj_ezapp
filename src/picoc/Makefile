@@ -12,7 +12,7 @@ LIBS = -lm -lreadline \
        -Wl,-rpath,$(PWD)/../../linux/local/lib
 
 picoc:
-	gcc -o picoc -Wall -Werror -O2 -DUNIX_HOST -I../../linux/local/include $(SRCS) $(LIBS)
+	gcc -o picoc -Wall -Werror -O2 -g -DUNIX_HOST -I../../linux/local/include $(SRCS) $(LIBS)
 
 clean:
 	rm -f picoc

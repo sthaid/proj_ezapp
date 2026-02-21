@@ -31,7 +31,10 @@ int main(int argc, char **argv)
                "Format:\n\n"
                "> picoc [-n <progname>] <file1.c>... [- <arg1>...]\n"
                "                                      : run a program, calls main() as the entry point\n"
-               "> picoc -s <file1.c>... [- <arg1>...] : run a script, runs the program without calling main()\n"
+               "> picoc -s <file1.c>... [- <arg1>...] : run a script, runs the program without calling main(),\n"
+               "                                        automatically includes all system header files\n"
+               "> picoc -S <file1.c>... [- <arg1>...] : run a script, runs the program without calling main(),\n"
+               "                                        does not include system header files\n"
                "> picoc -i                            : interactive mode, Ctrl+d to exit\n"
                "> picoc -c                            : copyright info\n"
                "> picoc -h                            : this help message\n");
@@ -55,6 +58,11 @@ int main(int argc, char **argv)
     if (strcmp(argv[ParamCount], "-s") == 0) {
         DontRunMain = true;
         PicocIncludeAllSystemHeaders(&pc);
+        ParamCount++;
+    }
+
+    if (strcmp(argv[ParamCount], "-S") == 0) {
+        DontRunMain = true;
         ParamCount++;
     }
 

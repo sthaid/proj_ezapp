@@ -47,9 +47,6 @@ int main(int argc, char **argv)
     sdlx_tone_t        tones[2000];
     char               random_words[200] = "";
 
-    // set line buffering
-    setlinebuf(stdout);
-
     // save args
     progname = argv[0];
     if (argc != 2) {
@@ -59,7 +56,7 @@ int main(int argc, char **argv)
     data_dir = argv[1];
     printf("I %s: starting, data_dir=%s\n", progname, data_dir);
 
-    // seen random number generator so that different random words are 
+    // seed random number generator so that different random words are 
     // chosen on repeated runs of this program
     srandom(time(NULL));
 
@@ -70,14 +67,6 @@ int main(int argc, char **argv)
     rc = read_word_list();
     if (rc != 0) {
         printf("E %s: read_word_list failed\n", progname);
-        return 1;
-    }
-
-    // init sdl video subsystem
-    rc = sdlx_init(SUBSYS_VIDEO | SUBSYS_AUDIO);
-    if (rc != 0) {
-        printf("E %s: sdlx_init failed\n", progname);
-        free_word_list();
         return 1;
     }
 
@@ -179,7 +168,6 @@ int main(int argc, char **argv)
 
     // cleanup and end program
     sdlx_audio_stop();
-    sdlx_quit(SUBSYS_VIDEO | SUBSYS_AUDIO);
     free_word_list();
     printf("I %s: terminating\n", progname);
     return 0;
