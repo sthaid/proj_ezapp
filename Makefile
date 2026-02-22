@@ -20,6 +20,8 @@ svcs:
 
 clean:
 	for d in $(SUBDIRS) ; do echo "\n======== CLEAN $$d ========\n"; make -C $$d clean || exit 1; done
-	rm -f cscope.out cscope.files tags
+
+install_on_android:
+	make -C android install_debug
 
 .PHONY: build clean

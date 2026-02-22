@@ -90,14 +90,10 @@ void clip(double *val, double min, double max);
     
 int main(int argc, char **argv)
 {
-    int          rc;
     int          serving_delay = 0;
     sdlx_event_t event;
     long         start_us, timeout_us;
     bool         end_program = false;
-
-    // set line buffering
-    setlinebuf(stdout);
 
     // save args
     progname = argv[0];
@@ -107,13 +103,6 @@ int main(int argc, char **argv)
     }
     data_dir = argv[1];
     printf("I %s: starting, data_dir=%s\n", progname, data_dir);
-
-    // init sdl video subsystem
-    rc = sdlx_init(SUBSYS_VIDEO|SUBSYS_AUDIO);
-    if (rc != 0) {
-        printf("E %s: sdlx_init failed\n", progname);
-        return 1;
-    }
 
     // initialization:
     // - settings
@@ -285,7 +274,6 @@ int main(int argc, char **argv)
 
     // cleanup and end program
     sdlx_destroy_texture(ball);
-    sdlx_quit(SUBSYS_VIDEO|SUBSYS_AUDIO);
     printf("I %s: terminating\n", progname);
     return 0;
 }

@@ -1277,28 +1277,6 @@ void Util_text_to_speech_stop(struct ParseState *Parser, struct Value *ReturnVal
     util_text_to_speech_stop();
 }
 
-// foreground control 
-void Util_start_foreground(struct ParseState *Parser, struct Value *ReturnValue,
-        struct Value **Param, int NumArgs)
-{
-    util_start_foreground();
-}
-
-void Util_stop_foreground(struct ParseState *Parser, struct Value *ReturnValue,
-        struct Value **Param, int NumArgs)
-{
-    util_stop_foreground();
-}
-
-void Util_is_foreground_enabled(struct ParseState *Parser, struct Value *ReturnValue,
-        struct Value **Param, int NumArgs)
-{
-    bool is_enabled;
-
-    is_enabled = util_is_foreground_enabled();
-    ReturnValue->Val->Integer = is_enabled;
-}
-
 // flashlight
 void Util_turn_flashlight_on(struct ParseState *Parser, struct Value *ReturnValue,
         struct Value **Param, int NumArgs)
@@ -1393,10 +1371,6 @@ struct LibraryFunction UtilsFunctions[] = {
     // call java: text to speech
     { Util_text_to_speech,      "void util_text_to_speech(char *text);" },
     { Util_text_to_speech_stop, "void util_text_to_speech_stop(void);" },
-    // call java: start / stop foreground
-    { Util_start_foreground,      "void util_start_foreground(void);" },
-    { Util_stop_foreground,       "void util_stop_foreground(void);" },
-    { Util_is_foreground_enabled, "bool util_is_foreground_enabled(void);" },
     // call java: flashlight
     { Util_turn_flashlight_on,  "void util_turn_flashlight_on(void);" },
     { Util_turn_flashlight_off, "void util_turn_flashlight_off(void);" },

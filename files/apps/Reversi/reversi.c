@@ -50,9 +50,6 @@ int main(int argc, char **argv)
     board_t board;
     char    eval_str[100];
 
-    // set line buffering
-    setlinebuf(stdout);
-
     // save args
     progname = argv[0];
     if (argc != 2) {
@@ -70,9 +67,6 @@ int main(int argc, char **argv)
     // seed random number generator
     // xxx commented out to compare picoc and linux versions
     //srandom(util_microsec_timer());
-
-    // init sdl
-    sdlx_init(SUBSYS_VIDEO);
 
     // xxx
     update_display_init();
@@ -153,9 +147,6 @@ int main(int argc, char **argv)
 
     // xxx
     update_display_unload();
-
-    // exit sdl
-    sdlx_quit(SUBSYS_VIDEO);
 
     // return success
     printf("I %s: terminating\n", progname);

@@ -27,14 +27,11 @@ static void cleanup_analog_clock(void);
 int main(int argc, char **argv)
 {
     sdlx_event_t    event;
-    int             rc, y;
+    int             y;
     bool            quit = false;
     time_t          t;
     struct tm       tm;
     char            sunrise_calc[50], sunset_calc[50], midday_calc[50];
-
-    // set line buffering
-    setlinebuf(stdout);
 
     // save args
     progname = argv[0];
@@ -48,13 +45,6 @@ int main(int argc, char **argv)
     // get the sunrise, sunset, and midday (solar noon) times
     sunrise_sunset_calc(sunrise_calc, sunset_calc, midday_calc);
     printf("I %s: CALC  %s %s %s\n", progname, sunrise_calc, midday_calc, sunset_calc);
-
-    // init sdl video subsystem
-    rc = sdlx_init(SUBSYS_VIDEO);
-    if (rc != 0) {
-        printf("E %s: sdlx_init failed\n", progname);
-        return 1;
-    }
 
     // set default font
     sdlx_print_set_default(FONT_NORMAL, COLOR_WHITE);
@@ -126,7 +116,6 @@ int main(int argc, char **argv)
 
     // cleanup and end program
     cleanup_analog_clock();
-    sdlx_quit(SUBSYS_VIDEO);
     printf("I %s: terminating\n", progname);
     return 0;
 }

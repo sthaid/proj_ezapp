@@ -6,21 +6,8 @@ extern "C" {
 #endif
 
 // --------------------
-// INIT / QUIT
-// --------------------
-
-#define SUBSYS_VIDEO  1
-#define SUBSYS_AUDIO  2
-#define SUBSYS_SENSOR 4
-
-int sdlx_init(int subsys);
-void sdlx_quit(int subsys);
-
-// --------------------
 // VIDEO    
 // --------------------
-
-#define BYTES_PER_PIXEL   4
 
 typedef unsigned int sdlx_color_t;
 
@@ -28,23 +15,30 @@ typedef struct {
     int x, y, w, h;
 } sdlx_loc_t;
 
-extern int    sdlx_win_width;
-extern int    sdlx_win_height;
-extern double scale_render;
-extern double scale_events;
+typedef struct {
+    int x, y;
+} sdlx_point_t;
+
+typedef struct sdlx_texture sdlx_texture_t;
+
+extern int sdlx_win_width;
+extern int sdlx_win_height;
 
 // - - - - - - - - - - - - - 
 // display init and present
 // - - - - - - - - - - - - - 
+
 void sdlx_display_init(sdlx_color_t color);
 void sdlx_display_present(void);
 
 // - - - - - 
 // colors
 // - - - - - 
-// https://www.w3schools.com/colors/colors_converter.asp
+
+#define BYTES_PER_PIXEL   4
+
+// reference: https://www.w3schools.com/colors/colors_converter.asp
 // these colors are opaque (alpha equals 255)
-//                                         red      green       blue      alpha
 #define COLOR_BLACK       ((sdlx_color_t)(   0  |    0<<8 |    0<<16 |  255<<24 ))
 #define COLOR_WHITE       ((sdlx_color_t)( 255  |  255<<8 |  255<<16 |  255<<24 ))
 #define COLOR_RED         ((sdlx_color_t)( 255  |    0<<8 |    0<<16 |  255<<24 ))
@@ -96,16 +90,20 @@ sdlx_loc_t *sdlx_render_printf(int x, int y, char *fmt, ...) __attribute__ ((for
 #define WRAP_NEWLINE  0
 int sdlx_char_width(int fontid);
 int sdlx_char_height(int fontid);
-sdlx_loc_t *sdlx_render_printf_ex1(int x, int y, int fontid, sdlx_color_t color, char * fmt, ...) __attribute__ ((format (printf, 5, 6)));
-sdlx_loc_t *sdlx_render_printf_ex2(int x, int y, int fontid, sdlx_color_t color, int flags, int wrap, char *fmt, ...) __attribute__ ((format (printf, 7, 8)));
-void sdlx_render_multiline_text(int x, int y, int y_top, int y_bottom, int fontid, char **lines, sdlx_color_t *colors, int num_lines);
+sdlx_loc_t *sdlx_render_printf_ex1(int x, int y, int fontid, sdlx_color_t color, 
+                                   char * fmt, ...)
+                                   __attribute__ ((format (printf, 5, 6)));
+sdlx_loc_t *sdlx_render_printf_ex2(int x, int y, int fontid, sdlx_color_t color,
+                                   int flags, int wrap, 
+                                   char *fmt, ...) 
+                                   __attribute__ ((format (printf, 7, 8)));
+void sdlx_render_multiline_text(int x, int y, int y_top, int y_bottom, 
+                                int fontid, char **lines, sdlx_color_t *colors, int num_lines);
 
 // - - - - - - - - - - - - - - - - - - - - -
 // render rectangle, lines, circles, points
 // - - - - - - - - - - - - - - - - - - - - -
-typedef struct {
-    int x, y;
-} sdlx_point_t;
+
 
 void sdlx_render_rect(int x, int y, int w, int h, int line_width, sdlx_color_t color);
 void sdlx_render_fill_rect(int x, int y, int w, int h, sdlx_color_t color);
@@ -120,7 +118,6 @@ void sdlx_render_points(sdlx_point_t *points, int count, sdlx_color_t color, int
 // - - - - - 
 // textures
 // - - - - - 
-typedef struct sdlx_texture sdlx_texture_t;
 
 sdlx_texture_t *sdlx_create_texture(int w, int h);
 void sdlx_destroy_texture(sdlx_texture_t *t);
@@ -169,6 +166,7 @@ typedef struct {
 // - - - - - -
 // control
 // - - - - - -
+
 int sdlx_audio_stop(void);
 void sdlx_audio_pause(void);
 void sdlx_audio_resume(void);
@@ -178,6 +176,7 @@ int sdlx_audio_file_duration_ms(char *dir, char *filename);
 // - - - - - -
 // playback
 // - - - - - -
+
 int sdlx_audio_play_file(char *dir, char *filename);
 int sdlx_audio_play_tones(sdlx_tone_t *tones);
 int sdlx_audio_play_buff(short *samples, int num_samples, int num_channels,
@@ -186,6 +185,7 @@ int sdlx_audio_play_buff(short *samples, int num_samples, int num_channels,
 // - - - - - -
 // record
 // - - - - - -
+
 int sdlx_audio_record_from_mic(char *dir, char *filename, int max_duration_secs, int auto_stop_secs, bool append);
 int sdlx_audio_record_from_device(char *dir, char *filename);
 
@@ -269,6 +269,7 @@ typedef struct {
 // - - - - - - - - - - 
 // event registration
 // - - - - - - - - - - 
+
 #define CONTROL_EVENTS_DISPLAY_HEIGHT 150
 
 void sdlx_register_event(sdlx_loc_t *loc, int event_id);
@@ -280,6 +281,7 @@ void sdlx_register_control_events(int evid1, char *evstr1,
 // - - - - - - - - 
 // wait for event
 // - - - - - - - - 
+
 void sdlx_get_event(long timeout_us, sdlx_event_t *event);
 
 // --------------------
@@ -291,7 +293,7 @@ void sdlx_get_event(long timeout_us, sdlx_event_t *event);
 // android show toast
 void sdlx_show_toast(char *message);
 
-// get string, using virtual keyboard when on Android
+// get string, uses virtual keyboard on Android
 char *sdlx_get_input_str(char *prompt1, char *prompt2, bool numeric_keybd, sdlx_color_t bg_color);
 
 // --------------------
@@ -299,6 +301,9 @@ char *sdlx_get_input_str(char *prompt1, char *prompt2, bool numeric_keybd, sdlx_
 // --------------------
 
 // sdlx_video.c
+extern double scale_render;
+extern double scale_events;
+
 int sdlx_video_init(void);
 void sdlx_video_quit(void);
 void sdlx_minimize_window(void);
@@ -329,6 +334,12 @@ void sdlx_sensor_quit(void);
 void sdlx_reset_events(void);
 
 // sdlx_misc.c
+#define SUBSYS_VIDEO  1
+#define SUBSYS_AUDIO  2
+#define SUBSYS_SENSOR 4
+
+int sdlx_init(int subsys);
+void sdlx_quit(int subsys);
 char *sdlx_get_storage_path(void);
 void sdlx_copy_asset_file(char *asset_filename, char *dest_dir);
 int sdlx_get_permission(char *name);

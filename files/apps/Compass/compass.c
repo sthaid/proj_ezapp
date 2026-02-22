@@ -25,9 +25,6 @@ int main(int argc, char **argv)
     double          heading = 0;
     bool            quit = false;
 
-    // set line buffering
-    setlinebuf(stdout);
-
     // save args
     progname = argv[0];
     if (argc != 2) {
@@ -36,13 +33,6 @@ int main(int argc, char **argv)
     }
     data_dir = argv[1];
     printf("I %s: starting, data_dir=%s\n", progname, data_dir);
-
-    // init sdl
-    rc = sdlx_init(SUBSYS_VIDEO | SUBSYS_SENSOR);
-    if (rc != 0) {
-        printf("E %s: sdlx_init failed\n", progname);
-        return 1;
-    }
 
     // read the compass image pixels from file, and
     // create compass image texture
@@ -141,7 +131,6 @@ cleanup_and_return:
     if (compass) {
         sdlx_destroy_texture(compass);
     }
-    sdlx_quit(SUBSYS_VIDEO | SUBSYS_SENSOR);
 
     // return success
     printf("I %s: terminating\n", progname);

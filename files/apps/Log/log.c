@@ -58,9 +58,6 @@ int main(int argc, char **argv)
     sdlx_event_t event;
     bool         done = false;
 
-    // set line buffering
-    setlinebuf(stdout);
-
     // save args
     progname = argv[0];
     if (argc != 2) {
@@ -69,13 +66,6 @@ int main(int argc, char **argv)
     }
     data_dir = argv[1];
     printf("I %s: starting, data_dir=%s\n", progname, data_dir);
-
-    // init sdl video subsystem
-    rc = sdlx_init(SUBSYS_VIDEO);
-    if (rc != 0) {
-        printf("E %s: sdlx_init failed\n", progname);
-        return 1;
-    }
 
     // init display location of captured log prints
     y_top    = 0;
@@ -152,7 +142,6 @@ int main(int argc, char **argv)
     }
 
     // cleanup and end program
-    sdlx_quit(SUBSYS_VIDEO);
     log_cleanup();
     printf("I %s: terminating\n", progname);
     return 0;

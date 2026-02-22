@@ -24,9 +24,6 @@ int main(int argc, char **argv)
     long abstime;
     int rc;
 
-    // set line buffering
-    setlinebuf(stdout);
-
     // save args
     progname = argv[0];
     if (argc != 2) {

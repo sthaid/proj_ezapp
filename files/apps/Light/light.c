@@ -19,10 +19,6 @@ int main(int argc, char **argv)
     bool done = false;
     sdlx_color_t color;
     sdlx_event_t event;
-    int rc;
-
-    // set line buffering
-    setlinebuf(stdout);
 
     // save args
     progname = argv[0];
@@ -32,13 +28,6 @@ int main(int argc, char **argv)
     }
     data_dir = argv[1];
     printf("I %s: starting, data_dir=%s\n", progname, data_dir);
-
-    // init sdl video subsystem
-    rc = sdlx_init(SUBSYS_VIDEO);
-    if (rc != 0) {
-        printf("E %s: sdlx_init failed\n", progname);
-        return 1;
-    }
 
     // get color from param store; set to COLOR_WHITE if not in params
     color = util_get_numeric_param(data_dir, "color", COLOR_WHITE);
@@ -79,7 +68,6 @@ int main(int argc, char **argv)
     }
 
     // cleanup and end program
-    sdlx_quit(SUBSYS_VIDEO);
     printf("I %s: terminating\n", progname);
     return 0;
 }

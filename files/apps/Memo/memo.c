@@ -49,7 +49,6 @@ void substring(char *s, int start, int len, char *substring);
     
 int main(int argc, char **argv)
 {
-    int                rc;
     sdlx_event_t       event;
     bool               end_program = false;
     int                y_top;
@@ -57,9 +56,6 @@ int main(int argc, char **argv)
     double             y;
     int                y2;
     sdlx_audio_state_t audio_state;
-
-    // set line buffering
-    setlinebuf(stdout);
 
     // save args
     progname = argv[0];
@@ -69,13 +65,6 @@ int main(int argc, char **argv)
     }
     data_dir = argv[1];
     printf("I %s: starting, data_dir=%s\n", progname, data_dir);
-
-    // init sdl video and audio subsystems
-    rc = sdlx_init(SUBSYS_VIDEO|SUBSYS_AUDIO);
-    if (rc != 0) {
-        printf("E %s: sdlx_init failed\n", progname);
-        return 1;
-    }
 
     // init variables which define the vertical region of the display
     // being used for the filename list
@@ -219,7 +208,6 @@ int main(int argc, char **argv)
 
     // cleanup and end program
     cleanup_filename_allocations();
-    sdlx_quit(SUBSYS_VIDEO|SUBSYS_AUDIO);
     printf("I %s: terminating\n", progname);
     return 0;
 }

@@ -77,9 +77,6 @@ int main(int argc, char **argv)
     double roll_raw, pitch_raw;
     double roll=INVALID_NUMBER, pitch=INVALID_NUMBER;
 
-    // set line buffering
-    setlinebuf(stdout);
-
     // save args
     progname = argv[0];
     if (argc != 2) {
@@ -88,15 +85,6 @@ int main(int argc, char **argv)
     }
     data_dir = argv[1];
     printf("I %s: starting, data_dir=%s\n", progname, data_dir);
-
-    // get params
-
-    // init sdl video subsystem
-    rc = sdlx_init(SUBSYS_VIDEO|SUBSYS_SENSOR);
-    if (rc != 0) {
-        printf("E %s: sdlx_init failed\n", progname);
-        return 1;
-    }
 
     // create textures for horizontal display
     green_circle      = create_filled_circle_texture(SMALL_CIRCLE_RADIUS, COLOR_GREEN);
@@ -117,7 +105,6 @@ int main(int argc, char **argv)
         //display_tilt_vertical(0, 9.8, 0,  2, 90);
         display_tilt_horizontal(0, 0, 9.8,  2, 1);
     }
-    sdlx_quit(SUBSYS_VIDEO|SUBSYS_SENSOR);
     return 0;
 #endif
 
@@ -155,7 +142,6 @@ int main(int argc, char **argv)
     sdlx_destroy_texture(vert);
 
     // quit sdl subsystems and end program
-    sdlx_quit(SUBSYS_VIDEO|SUBSYS_SENSOR);
     printf("I %s: terminating\n", progname);
     return 0;
 }

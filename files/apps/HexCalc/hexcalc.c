@@ -71,7 +71,6 @@ void cleanup(void);
 
 int main(int argc, char **argv)
 {
-    int           rc;
     sdlx_event_t  event;
     int           highlight_button_row = -1;
     int           highlight_button_col = -1;
@@ -84,9 +83,6 @@ int main(int argc, char **argv)
     unsigned long operand_value = 0;
     bool          error         = false;
 
-    // set line buffering
-    setlinebuf(stdout);
-
     // save args
     progname = argv[0];
     if (argc != 2) {
@@ -95,13 +91,6 @@ int main(int argc, char **argv)
     }
     data_dir = argv[1];
     printf("I %s: starting, data_dir=%s\n", progname, data_dir);
-
-    // init sdl video subsystem
-    rc = sdlx_init(SUBSYS_VIDEO);
-    if (rc != 0) {
-        printf("E %s: sdlx_init failed\n", progname);
-        return 1;
-    }
 
     // runtime loop
     while (true) {
@@ -262,7 +251,6 @@ int main(int argc, char **argv)
 
     // cleanup and end program
     cleanup();
-    sdlx_quit(SUBSYS_VIDEO);
     printf("I %s: terminating\n", progname);
     return 0;
 }

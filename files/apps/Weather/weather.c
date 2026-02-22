@@ -93,7 +93,6 @@ char *get_day_name(char * str, bool unabbreviated);
     
 int main(int argc, char **argv)
 {
-    int           rc;
     sdlx_event_t  event;
     bool          done = false;
     char          cmd[200];
@@ -102,9 +101,6 @@ int main(int argc, char **argv)
     bool          daily_forecast_parsed = false;
     bool          hourly_forecast_parsed = false;
     char         *download_status = "";
-
-    // set line buffering
-    setlinebuf(stdout);
 
     // save args
     progname = argv[0];
@@ -119,13 +115,6 @@ int main(int argc, char **argv)
     sprintf(icon_dir, "%s/%s", data_dir, "icon");
     sprintf(cmd, "mkdir -p %s", icon_dir);
     system(cmd);
-
-    // init sdl video subsystem
-    rc = sdlx_init(SUBSYS_VIDEO);
-    if (rc != 0) {
-        printf("E %s: sdlx_init failed\n", progname);
-        return 1;
-    }
 
     // init variables that define the display region
     y_top    = 100;
@@ -222,7 +211,6 @@ int main(int argc, char **argv)
 
     // cleanup and end program
     cleanup_all();
-    sdlx_quit(SUBSYS_VIDEO);
     printf("I %s: terminating\n", progname);
     return 0;
 }

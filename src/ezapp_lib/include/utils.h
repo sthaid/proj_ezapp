@@ -5,13 +5,17 @@
 extern "C" {
 #endif
 
-// -----------------  TIME  ----------------------------------
+// --------------------
+// TIME UTILS
+// --------------------
 
 long util_microsec_timer(void);
 long util_get_real_time_microsec(void);
 char *util_time2str(char * str, long us, int gmt, int display_ms, int display_date);
 
-// -----------------  FILE UTILS  ----------------------------
+// --------------------
+// FILE UTILS
+// --------------------
 
 int util_write_file(char *dir, char *fn, void *data, int len);
 void *util_read_file(char *dir, char *fn, int *len);
@@ -20,19 +24,25 @@ bool util_file_exists(char *dir, char *fn);
 long util_file_mtime(char *dir, char *fn);
 long util_file_size(char *dir, char *fn);
 
-// -----------------  DIRECTORY UTILS  -----------------------
+// --------------------
+// DIRECTORY UTILS
+// --------------------
 
 // "rm -rf <dir>/<dir_to_delete>"
 void util_delete_dir(char *dir, char *dir_to_delete);
 
-// -----------------  FILE MAP -------------------------------
+// --------------------
+// MAP FILE UTILS
+// --------------------
 
 void *util_map_file(char *dir, char *file, int len, bool create_if_needed, 
                     bool read_only, int *created_flag);
 void util_unmap_file(void *addr, int len);
 void util_sync_file(void *addr, int len);
 
-// -----------------  GET / SET PARAMS  ----------------------
+// --------------------
+// GET/SET PARAMS UTILS
+// --------------------
 
 char *util_get_str_param(char *dir, char *name, char *default_value);
 void util_set_str_param(char *dir, char *name, char *value);
@@ -40,11 +50,15 @@ double util_get_numeric_param(char *dir, char *name, double default_value);
 void util_set_numeric_param(char *dir, char *name, double value);
 void util_print_params(char *dir);
 
-// -----------------  NETWORK  -------------------------------
+// --------------------
+// NETWORK UTILS    
+// --------------------
 
 char *util_get_ipaddr(void);
 
-// -----------------  JSON  ----------------------------------
+// --------------------
+// JSON FILE UTILS   
+// --------------------
 
 #define JSON_TYPE_UNDEFINED 0
 #define JSON_TYPE_FLAG      1
@@ -68,25 +82,22 @@ void *util_json_parse(char *str, char **end_ptr);
 void util_json_free(void *json_root);
 json_value_t *util_json_get_value(void *json_item, ...);
 
-// ----------------- PNG  --------------------
+// --------------------
+// PNG FILE UTILS   
+// --------------------
 
 // these routines read/write 32-bit RGBA png files
 int util_read_png_file(char *dir, char *filename, unsigned char **pixels, int *w, int *h);
 int util_write_png_file(char *dir, char *filename, unsigned char *pixels, int w, int h);
 
-// -----------------  CALL ANDROID JAVA  ---------------------
-
-void util_android_utils_init(void);
-void util_android_utils_destroy(void);
+// --------------------
+// CALL ANDROID JAVA CODE
+// --------------------
 
 void util_get_location(double *latitude, double *longitude, double *altitude_wgs84_meters);
 
 void util_text_to_speech(char *text);
 void util_text_to_speech_stop(void);
-
-void util_start_foreground(void);
-void util_stop_foreground(void);
-bool util_is_foreground_enabled(void);
 
 void util_turn_flashlight_on(void);
 void util_turn_flashlight_off(void);
@@ -96,6 +107,17 @@ void util_toggle_flashlight(void);
 int util_start_playbackcapture(void);
 void util_stop_playbackcapture(void);
 int util_get_playbackcapture_audio(short *array, int num_array_elements);
+
+// --------------------
+// NOT AVAILABLE IN PICOC
+// --------------------
+
+void util_android_utils_init(void);
+void util_android_utils_destroy(void);
+
+void util_start_foreground(void);
+void util_stop_foreground(void);
+bool util_is_foreground_enabled(void);
 
 #ifdef __cplusplus
 }

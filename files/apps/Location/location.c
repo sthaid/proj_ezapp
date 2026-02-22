@@ -66,13 +66,6 @@ int main(int argc, char **argv)
     data_dir = argv[1];
     printf("I %s: starting, data_dir=%s\n", progname, data_dir);
 
-    // init sdl video subsystem
-    rc = sdlx_init(SUBSYS_VIDEO);
-    if (rc != 0) {
-        printf("E %s: sdlx_init failed\n", progname);
-        return 1;
-    }
-
     // map location history file
     // - create_if_needed = false
     // - read_only = true 
@@ -174,7 +167,6 @@ int main(int argc, char **argv)
     }
 
     // cleanup and end program
-    sdlx_quit(SUBSYS_VIDEO);
     printf("I %s: terminating\n", progname);
     return 0;
 }
