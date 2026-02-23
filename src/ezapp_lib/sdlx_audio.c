@@ -1501,7 +1501,8 @@ static void mixer_track_raw_callback(void *userdata, MIX_Track *track, const SDL
     state.volume = calc_volume_float(samples, num_samples);
     state.play_current_ms = MIX_TrackFramesToMS(track, frames);
 
-    //INFO("volume = %d  play_current = %0.1f secs\n", state.volume, state.play_current_ms/1000.0);
+    INFO("num_samples = %d  volume = %d  play_current = %0.1f secs\n", 
+         num_samples, state.volume, state.play_current_ms/1000.0);
 }
 
 static void mixer_track_stopped_callback(void *userdata, MIX_Track *track)

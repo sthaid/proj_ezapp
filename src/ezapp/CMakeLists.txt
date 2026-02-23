@@ -23,6 +23,7 @@ target_link_libraries(ezapp PRIVATE
     ${LIB_PATH}/libSDL3_mixer.so
     ${LIB_PATH}/libpicoc.a
     ${LIB_PATH}/libmp3lame.a
+    ${LIB_PATH}/libkissfft-float.a
     ${LIB_PATH}/libcJSON.a
     ${LIB_PATH}/liblodepng.a
     m)

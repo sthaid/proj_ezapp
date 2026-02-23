@@ -1,6 +1,10 @@
 cleanup home dir 
 cleanup ez dir
 
+tilt has a prblem in the horiztal orientation
+
+when an ezapp, running an ap, is brought back to foreground, the display is not updated
+
 temp fix for hex calc issue
 
 bring forward picoc compare and test pgms
