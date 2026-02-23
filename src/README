@@ -38,8 +38,19 @@ lodepng
 ================
 
 https://github.com/lvandeve/lodepng
+
 commit c572511174ce6864574acda70cb0cbe9ec39e23b
 Author: Lode <lvandeve@gmail.com>
 Date:   Fri Jan 2 13:51:19 2026 +0100
     fix double-frees with clearing and setting itext, iccp and other chunks
 
+================
+kissfft
+================
+
+https://github.com/mborgerding/kissfft
+
+commit 39c9781711ac53fab6d2034ace6c3aedadae6599
+Author: nia <29542929+alarixnia@users.noreply.github.com>
+Date:   Fri Nov 28 20:58:39 2025 +0100
+    Allow building on BSD/Solaris/etc with CMake (#64)
