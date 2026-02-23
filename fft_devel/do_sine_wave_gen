@@ -1,0 +1,21 @@
+#!/bin/bash
+
+freq=$1
+if [ "$freq" = "" ]; then
+  echo ERROR freq required
+  exit 1
+fi
+
+gcc -o sine_wave_gen -Wall sine_wave_gen.c -lm
+if [ $? -ne 0 ]; then
+  echo ABORT
+  exit 1
+fi
+
+./sine_wave_gen $freq
+if [ $? -ne 0 ]; then
+  echo ABORT
+  exit 1
+fi
+
+aplay -t raw -c 1 -f FLOAT -r 48000 sine_$freq.raw

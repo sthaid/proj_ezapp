@@ -1,0 +1,10 @@
+#!/bin/bash
+
+gcc -o tester -I local/include/kissfft tester.c -L local/lib -lkissfft-float -lm
+if [ $? -ne 0 ]; then
+  echo ABORT
+  exit 1
+fi
+
+./tester
+

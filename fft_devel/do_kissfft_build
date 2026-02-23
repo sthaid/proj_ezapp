@@ -1,0 +1,19 @@
+#!/bin/bash
+
+rm -rf local
+mkdir local
+
+cd kissfft
+rm -rf build
+mkdir build
+cd build
+cmake .. -DCMAKE_INSTALL_PREFIX=/home/haid/ez/fft/local \
+         -DKISSFFT_STATIC=ON \
+         -DKISSFFT_TEST=OFF \
+         -DKISSFFT_TOOLS=OFF 
+cmake --build .
+cmake --install .
+
+exit 1
+
+# -DKISSFFT_DATATYPE=int16_t
