@@ -261,7 +261,7 @@ void display_tilt_horizontal(double ax, double ay, double az, double roll_raw, d
     }
 
     // compute tilt direction and amount
-    tilt_dir    = atan2(pitch, roll) * RAD_TO_DEG - 90;
+    tilt_dir    = atan2(-pitch, roll) * RAD_TO_DEG - 90;
     tilt_amount = sqrt(roll*roll + pitch*pitch);
 
     // init center location of the bulls-eye
