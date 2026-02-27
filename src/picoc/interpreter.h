@@ -741,4 +741,7 @@ extern const char UnistdDefs[];
 extern struct LibraryFunction UnistdFunctions[];
 extern void UnistdSetupFunc(Picoc *pc);
 
+/* libgen.c EZAPP */
+extern struct LibraryFunction LibgenFunctions[];
+
 #endif /* INTERPRETER_H */

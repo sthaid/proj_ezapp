@@ -56,7 +56,7 @@ if [ "$CMD" = build ]; then
     CFLAGS="-Wall -Werror -Wno-unused-result -Wno-format-truncation -fcommon -g -I. "
     gcc -DLINUX -o /tmp/$APP_NAME $CFLAGS $SRCS \
         -I ../linux/local/include \
-        -L ../linux/local/lib -lezapp_lib -lmp3lame -llodepng -lcJSON -lSDL3 -lSDL3_ttf -lSDL3_mixer -lm
+        -L ../linux/local/lib -lezapp_lib -lmp3lame -llodepng -lcJSON -lkissfft-float -lSDL3 -lSDL3_ttf -lSDL3_mixer -lm
     if [ $? -ne 0 ]; then
         echo ABORT
         exit 1
@@ -64,7 +64,7 @@ if [ "$CMD" = build ]; then
 elif [ "$CMD" = run ]; then
     LIB_PATH=$(pwd)/../linux/local/lib
     gcc -o /tmp/picoc -D UNIX_HOST -O2 -g -Wall ../src/picoc/picoc.c \
-        -L $LIB_PATH -lpicoc -lezapp_lib -lmp3lame -lcJSON -llodepng -lSDL3 -lSDL3_mixer -lSDL3_ttf -lm \
+        -L $LIB_PATH -lpicoc -lezapp_lib -lmp3lame -lcJSON -llodepng -lkissfft-float -lSDL3 -lSDL3_mixer -lSDL3_ttf -lm \
         -Wl,-rpath,$LIB_PATH
     cp ../bin/eztest_script.c /tmp
     sed -i -e "s=PROGNAME=$APP_NAME=" -e "s=DATA_DIR=$PARENT_DIR/$APP_NAME=" /tmp/eztest_script.c

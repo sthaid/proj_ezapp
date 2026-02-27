@@ -200,6 +200,7 @@ void read_ezsh_cfg(void)
     int   line_num=0;
 
     // get path to ezsh.cfg file
+    memset(self_path, 0, sizeof(self_path));
     readlink("/proc/self/exe", self_path, sizeof(self_path));
     self_dir = dirname(self_path);
     sprintf(ezsh_cfg_path, "%s/ezsh.cfg", self_dir);

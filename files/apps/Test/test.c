@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <math.h>
+#include <libgen.h>
 
 #include <sdlx.h>
 #include <utils.h>
@@ -125,7 +126,7 @@ char *page_title[] = {     // Page
         "Sensor Values",   //   9
         "Location",        //  10
             };
-static int pagenum = 0;
+static int pagenum = 7; //xxx
 
 #define LAST_PAGE 10
 
@@ -603,24 +604,24 @@ static void alpha_test(int idx, char *test_name, sdlx_color_t bg_color, sdlx_col
 #define EVID_AUDIO_RECORD_FROM_MIC_APPEND  14
 #define EVID_AUDIO_RECORD_FROM_DEV         15
 #define EVID_AUDIO_PLAY_TONES              16
-#define EVID_AUDIO_PLAY_MIC_FILE           17
-#define EVID_AUDIO_PLAY_DEV_FILE           18
-#define EVID_AUDIO_PLAY_TEST_WAV           19
-#define EVID_AUDIO_PLAY_TEST_MP3           20
-#define EVID_AUDIO_PLAY_MONO_BUFF          21
-#define EVID_AUDIO_PLAY_STEREO_BUFF        22
+#define EVID_AUDIO_PLAY_MONO_BUFF          17
+#define EVID_AUDIO_PLAY_STEREO_BUFF        18
+#define EVID_AUDIO_PLAY_MIC_WAV            19
+#define EVID_AUDIO_PLAY_DEV_MP3            20
+#define EVID_AUDIO_PLAY_BLUESKY_WAV        21
+#define EVID_AUDIO_PLAY_SAMPLE_9S_MP3      22
 
 static char *audio_state_str(int x)
 {
-    if (x == AUDIO_STATE_IDLE)               return "IDLE";
-    if (x == AUDIO_STATE_STOPPING)           return "STOPPING";
+    if (x == AUDIO_STATE_IDLE)               return "IDLE";  // use 6 chars max
+    if (x == AUDIO_STATE_STOPPING)           return "STOPED";
     if (x == AUDIO_STATE_PAUSED)             return "PAUSED";
-    if (x == AUDIO_STATE_PLAY_FILE)          return "PLAY_FILE";
-    if (x == AUDIO_STATE_PLAY_TONES)         return "PLAY_TONES";
-    if (x == AUDIO_STATE_PLAY_BUFF)          return "PLAY_BUFF";
-    if (x == AUDIO_STATE_RECORD_FROM_MIC)    return "RECORD_FROM_MIC";
-    if (x == AUDIO_STATE_RECORD_FROM_DEVICE) return "RECORD_FROM_DEV";
-    return "INVLD_STATE";
+    if (x == AUDIO_STATE_PLAY_FILE)          return "P-FILE";
+    if (x == AUDIO_STATE_PLAY_TONES)         return "P-TONE";
+    if (x == AUDIO_STATE_PLAY_BUFF)          return "P-BUFF";
+    if (x == AUDIO_STATE_RECORD_FROM_MIC)    return "R-MIC";
+    if (x == AUDIO_STATE_RECORD_FROM_DEVICE) return "R-DEV";
+    return "INVLD";
 }
 
 static void add_tone(sdlx_tone_t **t, int freq, int intvl_ms)
@@ -652,17 +653,36 @@ static void page_7_draw(void)
 {
     sdlx_audio_state_t state;
     sdlx_loc_t *loc;
-    int row=1;
+    double row=2;
+    char pathname_copy[100];
 
     // display state
     sdlx_audio_get_state(&state);
-    sdlx_render_printf(0, ROW2Y(row++), "%s",    audio_state_str(state.state));
-    sdlx_render_printf(0, ROW2Y(row++), "play_curr  %0.3f", state.play_current_ms/1000.);
-    sdlx_render_printf(0, ROW2Y(row++), "play_total %0.3f", state.play_total_ms/1000.);
-    sdlx_render_printf(0, ROW2Y(row++), "record     %0.3f", state.record_ms/1000.);
-    sdlx_render_printf(0, ROW2Y(row++), "volume     %d", state.volume);
-    sdlx_render_printf(0, ROW2Y(row++), "%s", state.pathname);
+    if (state.play_current_ms != 0 || state.play_total_ms != 0) {
+        sdlx_render_printf(0, ROW2Y(row), "%-6s %4d %4d %3d",
+                           audio_state_str(state.state),
+                           (int)nearbyint(state.play_current_ms/1000),
+                           (int)nearbyint(state.play_total_ms/1000),
+                           state.volume);
+    } else if (state.record_ms != 0) {
+        sdlx_render_printf(0, ROW2Y(row), "%-6s %4d %4s %3d",
+                           audio_state_str(state.state),
+                           (int)nearbyint(state.record_ms/1000),
+                           "",
+                           state.volume);
+    } else {
+        sdlx_render_printf(0, ROW2Y(row), "%-6s %4s %4s %3d",
+                           audio_state_str(state.state),
+                           "",
+                           "",
+                           state.volume);
+    }
     row++;
+    if (state.pathname[0] != '\0') {
+        strcpy(pathname_copy, state.pathname);
+        sdlx_render_printf(0, ROW2Y(row), "%s", basename(pathname_copy));
+    }
+    row += 2.0;
 
     // stop, pause, resume
     loc = sdlx_render_printf_ex1(0, ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "STOP");
@@ -671,9 +691,9 @@ static void page_7_draw(void)
     sdlx_register_event(loc, EVID_AUDIO_PAUSE);
     loc = sdlx_render_printf_ex1(COL2X(13), ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "RESUME");
     sdlx_register_event(loc, EVID_AUDIO_RESUME);
-    row += 3;
+    row += 2.5;
 
-    // record mic, device
+    // record from mic and device
     sdlx_render_printf(0, ROW2Y(row), "REC");
     loc = sdlx_render_printf_ex1(COL2X(5), ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "MIC");
     sdlx_register_event(loc, EVID_AUDIO_RECORD_FROM_MIC);
@@ -681,33 +701,30 @@ static void page_7_draw(void)
     sdlx_register_event(loc, EVID_AUDIO_RECORD_FROM_DEV);
     loc = sdlx_render_printf_ex1(COL2X(15), ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "MICAP");
     sdlx_register_event(loc, EVID_AUDIO_RECORD_FROM_MIC_APPEND);
-    row += 3;
+    row += 2.5;
 
-    // play mic file, device file, tones
+    // play from buff and play tones
     sdlx_render_printf(0, ROW2Y(row), "PLAY");
-    loc = sdlx_render_printf_ex1(COL2X(5), ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "MIC");
-    sdlx_register_event(loc, EVID_AUDIO_PLAY_MIC_FILE);
-    loc = sdlx_render_printf_ex1(COL2X(10), ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "DEV");
-    sdlx_register_event(loc, EVID_AUDIO_PLAY_DEV_FILE);
+    loc = sdlx_render_printf_ex1(COL2X(5), ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "MONO");
+    sdlx_register_event(loc, EVID_AUDIO_PLAY_MONO_BUFF);
+    loc = sdlx_render_printf_ex1(COL2X(10), ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "STER");
+    sdlx_register_event(loc, EVID_AUDIO_PLAY_STEREO_BUFF);
     loc = sdlx_render_printf_ex1(COL2X(15), ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "TONES");
     sdlx_register_event(loc, EVID_AUDIO_PLAY_TONES);
-    row += 3;
+    row += 2.5;      
 
-    // play buff mone, stereo
-    sdlx_render_printf(0, ROW2Y(row), "PLAY-BUFF");
-    loc = sdlx_render_printf_ex1(COL2X(10), ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "MONO");
-    sdlx_register_event(loc, EVID_AUDIO_PLAY_MONO_BUFF);
-    loc = sdlx_render_printf_ex1(COL2X(15), ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "STEREO");
-    sdlx_register_event(loc, EVID_AUDIO_PLAY_STEREO_BUFF);
-    row += 3;
-
-    // play test file
-    sdlx_render_printf(0, ROW2Y(row), "PLAY");
-    loc = sdlx_render_printf_ex1(COL2X(5), ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "TEST.WAV");
-    sdlx_register_event(loc, EVID_AUDIO_PLAY_TEST_WAV);
-    loc = sdlx_render_printf_ex1(COL2X(15), ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "MP3");
-    sdlx_register_event(loc, EVID_AUDIO_PLAY_TEST_MP3);
-    row += 3;
+    // play files xxx use lower case
+    loc = sdlx_render_printf_ex1(0, ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "mic.wav");
+    sdlx_register_event(loc, EVID_AUDIO_PLAY_MIC_WAV);
+    loc = sdlx_render_printf_ex1(COL2X(10), ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "dev.mp3");
+    sdlx_register_event(loc, EVID_AUDIO_PLAY_DEV_MP3);
+    row += 2;      
+    loc = sdlx_render_printf_ex1(0, ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "bluesky.wav");
+    sdlx_register_event(loc, EVID_AUDIO_PLAY_BLUESKY_WAV);
+    row += 2;      
+    loc = sdlx_render_printf_ex1(0, ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "sample-9s.mp3");
+    sdlx_register_event(loc, EVID_AUDIO_PLAY_SAMPLE_9S_MP3);
+    row += 2;      
 }
 
 static void page_7_process_event(sdlx_event_t *ev)
@@ -732,28 +749,6 @@ static void page_7_process_event(sdlx_event_t *ev)
         break;
     case EVID_AUDIO_RECORD_FROM_DEV:
         sdlx_audio_record_from_device(data_dir, "dev.mp3");
-        break;
-    case EVID_AUDIO_PLAY_TONES: {
-        sdlx_tone_t tones[50], *t;
-        t = tones;
-        for (int i = 0; i < 10; i++) {
-            add_tone(&t, 500, 500);  // freq=500 dur=500ms
-            add_gap(&t, 500);        // dur=500ms
-        }
-        add_terminator(&t);
-        sdlx_audio_play_tones(tones);
-        break; }
-    case EVID_AUDIO_PLAY_MIC_FILE:
-        sdlx_audio_play_file(data_dir, "mic.wav");
-        break;
-    case EVID_AUDIO_PLAY_DEV_FILE:
-        sdlx_audio_play_file(data_dir, "dev.mp3");
-        break;
-    case EVID_AUDIO_PLAY_TEST_WAV:
-        sdlx_audio_play_file(data_dir, "test.wav");
-        break;
-    case EVID_AUDIO_PLAY_TEST_MP3:
-        sdlx_audio_play_file(data_dir, "test.mp3");
         break;
     case EVID_AUDIO_PLAY_MONO_BUFF: {
         int    secs = 4;
@@ -785,6 +780,28 @@ static void page_7_process_event(sdlx_event_t *ev)
         }
         sdlx_audio_play_buff(samples, num_samples, num_channels, 2, true);
         break; }
+    case EVID_AUDIO_PLAY_TONES: {
+        sdlx_tone_t tones[50], *t;
+        t = tones;
+        for (int i = 0; i < 10; i++) {
+            add_tone(&t, 500, 500);  // freq=500 dur=500ms
+            add_gap(&t, 500);        // dur=500ms
+        }
+        add_terminator(&t);
+        sdlx_audio_play_tones(tones);
+        break; }
+    case EVID_AUDIO_PLAY_MIC_WAV:
+        sdlx_audio_play_file(data_dir, "mic.wav");
+        break;
+    case EVID_AUDIO_PLAY_DEV_MP3:
+        sdlx_audio_play_file(data_dir, "dev.mp3");
+        break;
+    case EVID_AUDIO_PLAY_BLUESKY_WAV:
+        sdlx_audio_play_file(data_dir, "bluesky.wav");
+        break;
+    case EVID_AUDIO_PLAY_SAMPLE_9S_MP3:
+        sdlx_audio_play_file(data_dir, "sample-9s.mp3");
+        break;
     }
 }
 

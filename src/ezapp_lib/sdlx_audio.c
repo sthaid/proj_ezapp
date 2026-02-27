@@ -4,7 +4,7 @@
 #include <utils.h>
 #include <logging.h>
 #include <lame.h>
-#include <kissfft/kiss_fftr.h>
+#include <kiss_fftr.h>
 #include <SDL3/SDL.h>
 #include <SDL3_mixer/SDL_mixer.h>
 

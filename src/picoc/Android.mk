@@ -26,6 +26,7 @@ LOCAL_SRC_FILES := \
     cstdlib/string.c \
     cstdlib/time.c \
     cstdlib/unistd.c \
+    cstdlib/libgen.c \
     platform/library_unix.c \
     platform/platform_unix.c
 

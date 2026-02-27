@@ -111,7 +111,7 @@ include(GNUInstallDirs)
 # Declare PKGINCLUDEDIR for kissfft include path
 #
 
-set(PKGINCLUDEDIR "${CMAKE_INSTALL_INCLUDEDIR}/kissfft")
+set(PKGINCLUDEDIR "${CMAKE_INSTALL_INCLUDEDIR}")
 message(STATUS "PKGINCLUDEDIR is ${PKGINCLUDEDIR}")
 
 #
@@ -320,7 +320,7 @@ foreach(_def ${KISSFFT_COMPILE_DEFINITIONS})
 endforeach()
 if (KISSFFT_PKGCONFIG)
     include(JoinPaths)
-    set(PKGCONFIG_KISSFFT_PKGINCLUDEDIR "\${includedir}/kissfft")
+    set(PKGCONFIG_KISSFFT_PKGINCLUDEDIR "\${includedir}")
     set(PKGCONFIG_KISSFFT_PREFIX "${CMAKE_INSTALL_PREFIX}")
     set(PKGCONFIG_KISSFFT_VERSION "${kissfft_VERSION}")
     join_paths(PKGCONFIG_KISSFFT_LIBDIR "\${prefix}" "${CMAKE_INSTALL_LIBDIR}")
