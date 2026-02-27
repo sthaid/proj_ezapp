@@ -144,7 +144,7 @@ void sdlx_set_render_target(sdlx_texture_t *t);
 #define AUDIO_STATE_STOPPING            1
 #define AUDIO_STATE_PAUSED              2
 #define AUDIO_STATE_PLAY_FILE           3
-#define AUDIO_STATE_PLAY_TONES          4
+#define AUDIO_STATE_PLAY_TONES_SEQUENCE 4
 #define AUDIO_STATE_PLAY_BUFF           5
 #define AUDIO_STATE_RECORD_FROM_MIC     6
 #define AUDIO_STATE_RECORD_FROM_DEVICE  7

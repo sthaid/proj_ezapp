@@ -865,7 +865,7 @@ typedef struct { \n\
 #define AUDIO_STATE_STOPPING            1 \n\
 #define AUDIO_STATE_PAUSED              2 \n\
 #define AUDIO_STATE_PLAY_FILE           3 \n\
-#define AUDIO_STATE_PLAY_TONES          4 \n\
+#define AUDIO_STATE_PLAY_TONES_SEQUENCE 4 \n\
 #define AUDIO_STATE_PLAY_BUFF           5 \n\
 #define AUDIO_STATE_RECORD_FROM_MIC     6 \n\
 #define AUDIO_STATE_RECORD_FROM_DEVICE  7 \n\

@@ -1091,8 +1091,8 @@ done:
 // -----------------  PLAY TONES --------------------------
 
 // defines
-#define MIN_TONE_FREQ 100   // inclusive range
-#define MAX_TONE_FREQ 3000 
+#define MIN_TONE_FREQ  50   // inclusive range
+#define MAX_TONE_FREQ 6000 
 
 // typedefs
 typedef struct {
@@ -1143,7 +1143,7 @@ int sdlx_audio_play_tones(sdlx_tone_t *tones)
 
     // init state for playing tones
     memset(&state, 0, sizeof(state));
-    state.state           = AUDIO_STATE_PLAY_TONES; 
+    state.state           = AUDIO_STATE_PLAY_TONES_SEQUENCE; 
     state.play_current_ms = 0;
     state.play_total_ms   = duration_ms;
     state.volume          = 0;
@@ -1324,6 +1324,7 @@ static void play_buff(short *samples, int num_samples, int num_channels, int *to
 
 //xxx play buff   MONO/STEREO(num_channels) S16 48000
 //  num_xfer_samples
+        fft(samples, num_xfer_samples, num_channels, FRAMES_PER_SEC, FFT_FMT_S16);
 
         // sleep while there is more than 200 ms queued;
         // break out of this sleep loop if audio state has become STOPPING or PAUSED
@@ -1403,7 +1404,7 @@ static int play_buff_thread(void *cx_arg)
     SDL_ResumeAudioStreamDevice(audio_stream);  
 
     // call play_buff for the specified number of loops
-    for (int i = 0; i < cx->loops; i++) {
+    for (int i = 0; cx->loops == 0 || i < cx->loops; i++) {
         play_buff(cx->samples, cx->num_samples, cx->num_channels, &total_queued_samples);
         if (state.state == AUDIO_STATE_STOPPING) {
             break;
@@ -1617,7 +1618,7 @@ static void analyze_fft_output(float *low, float *mid, float *high);
 static void fft(void *samples, int num_samples, int num_channels, int fps, int fmt)
 {
     float *samples_float = (float*)samples;
-    //short *samples_s16   = (short*)samples;
+    short *samples_s16   = (short*)samples;
     float low_lc, mid_lc, high_lc, low_rc, mid_rc, high_rc;
 
     int i, samples_used=0;
@@ -1679,6 +1680,20 @@ static void fft(void *samples, int num_samples, int num_channels, int fps, int f
             for (i = 0; i < num_samples; i += 2*fft_downsample) {
                 fft_input_lc[fft_num_input_gathered] = samples_float[i];
                 fft_input_rc[fft_num_input_gathered] = samples_float[i+1];
+                fft_num_input_gathered++;
+                if (fft_num_input_gathered == fft_num_input) break;
+            }
+        }
+    } else if (fmt == FFT_FMT_S16) {
+        if (num_channels == 1) {
+            for (i = 0; i < num_samples; i += fft_downsample) {
+                fft_input_lc[fft_num_input_gathered++] = samples_s16[i];
+                if (fft_num_input_gathered == fft_num_input) break;
+            }
+        } else {  // num_channels == 2
+            for (i = 0; i < num_samples; i += 2*fft_downsample) {
+                fft_input_lc[fft_num_input_gathered] = samples_s16[i];
+                fft_input_rc[fft_num_input_gathered] = samples_s16[i+1];
                 fft_num_input_gathered++;
                 if (fft_num_input_gathered == fft_num_input) break;
             }
@@ -1754,14 +1769,18 @@ static void analyze_fft_output(float *low_arg, float *mid_arg, float *high_arg)
             n_high++;
         }
     }
-    low = sqrtf(low / n_low);
-    mid = sqrtf(mid / n_mid);
-    high = sqrtf(high / n_high);
+    //low = sqrtf(low / n_low);  //xxx cleanup and scaling
+    //mid = sqrtf(mid / n_mid);
+    //high = sqrtf(high / n_high);
+    low = sqrtf(low);
+    mid = sqrtf(mid);
+    high = sqrtf(high);
     printf("duration = %ld us\n", util_microsec_timer() - start_us);
 
     // print sum of input, which should be same as output_magnitude[0]
+    // xxx comment out
     float sum = 0;
-    for (int i = 0; i < fft_num_output; i++) {
+    for (int i = 0; i < fft_num_input; i++) {
         sum += fft_input_lc[i];  // xxx or _rc;  temp
     }
     printf("sum_of_input=%8.3f  output_magnitude[0]=%0.3f\n", 

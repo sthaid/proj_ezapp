@@ -600,16 +600,33 @@ static void alpha_test(int idx, char *test_name, sdlx_color_t bg_color, sdlx_col
 #define EVID_AUDIO_STOP                    10
 #define EVID_AUDIO_PAUSE                   11
 #define EVID_AUDIO_RESUME                  12
-#define EVID_AUDIO_RECORD_FROM_MIC         13
-#define EVID_AUDIO_RECORD_FROM_MIC_APPEND  14
-#define EVID_AUDIO_RECORD_FROM_DEV         15
-#define EVID_AUDIO_PLAY_TONES              16
-#define EVID_AUDIO_PLAY_MONO_BUFF          17
-#define EVID_AUDIO_PLAY_STEREO_BUFF        18
-#define EVID_AUDIO_PLAY_MIC_WAV            19
-#define EVID_AUDIO_PLAY_DEV_MP3            20
-#define EVID_AUDIO_PLAY_BLUESKY_WAV        21
-#define EVID_AUDIO_PLAY_SAMPLE_9S_MP3      22
+#define EVID_AUDIO_PLAY_TONE_GO            13
+#define EVID_AUDIO_PLAY_TONE_GET_FREQ      14
+#define EVID_AUDIO_PLAY_TONE_FREQ_UP       15
+#define EVID_AUDIO_PLAY_TONE_FREQ_DOWN     16
+#define EVID_AUDIO_PLAY_TONE_CHAN_LRB      17
+#define EVID_AUDIO_RECORD_FROM_MIC         18
+#define EVID_AUDIO_RECORD_FROM_MIC_APPEND  19
+#define EVID_AUDIO_RECORD_FROM_DEV         20
+#define EVID_AUDIO_PLAY_TONES_SEQUENCE     21
+#define EVID_AUDIO_PLAY_MONO_BUFF          22
+#define EVID_AUDIO_PLAY_STEREO_BUFF        23
+#define EVID_AUDIO_PLAY_MIC_WAV            24
+#define EVID_AUDIO_PLAY_DEV_MP3            25
+#define EVID_AUDIO_PLAY_BLUESKY_WAV        26
+#define EVID_AUDIO_PLAY_SAMPLE_9S_MP3      27
+
+#define BOTH_CHANNELS 0
+#define LEFT_CHANNEL  1
+#define RIGHT_CHANNEL 2
+
+#define MIN_TONE_FREQ  50
+#define MAX_TONE_FREQ  6000
+
+#define TWO_PI  (2.0 * M_PI)
+
+static int tone_freq = 1000;
+static int tone_lrb = BOTH_CHANNELS;
 
 static char *audio_state_str(int x)
 {
@@ -617,7 +634,7 @@ static char *audio_state_str(int x)
     if (x == AUDIO_STATE_STOPPING)           return "STOPED";
     if (x == AUDIO_STATE_PAUSED)             return "PAUSED";
     if (x == AUDIO_STATE_PLAY_FILE)          return "P-FILE";
-    if (x == AUDIO_STATE_PLAY_TONES)         return "P-TONE";
+    if (x == AUDIO_STATE_PLAY_TONES_SEQUENCE)return "P-SEQ";
     if (x == AUDIO_STATE_PLAY_BUFF)          return "P-BUFF";
     if (x == AUDIO_STATE_RECORD_FROM_MIC)    return "R-MIC";
     if (x == AUDIO_STATE_RECORD_FROM_DEVICE) return "R-DEV";
@@ -631,12 +648,14 @@ static void add_tone(sdlx_tone_t **t, int freq, int intvl_ms)
     *t = *t + 1;
 }       
             
+#ifdef NOTDEF
 static void add_gap(sdlx_tone_t **t, int intvl_ms)
 {       
     (*t)->freq = 0;
     (*t)->intvl_ms = intvl_ms;
     *t = *t + 1;
 }           
+#endif
         
 static void add_terminator(sdlx_tone_t **t)
 {       
@@ -659,15 +678,21 @@ static void page_7_draw(void)
     // display state
     sdlx_audio_get_state(&state);
     if (state.play_current_ms != 0 || state.play_total_ms != 0) {
-        sdlx_render_printf(0, ROW2Y(row), "%-6s %4d %4d %3d",
+        char duration[40];
+        if (state.play_total_ms == 0) {
+            sprintf(duration, "INF");
+        } else {
+            sprintf(duration, "%d", (int)nearbyint(state.play_total_ms/1000.0));
+        }
+        sdlx_render_printf(0, ROW2Y(row), "%-6s %4d %4s %3d",
                            audio_state_str(state.state),
-                           (int)nearbyint(state.play_current_ms/1000),
-                           (int)nearbyint(state.play_total_ms/1000),
+                           (int)nearbyint(state.play_current_ms/1000.0),
+                           duration,
                            state.volume);
     } else if (state.record_ms != 0) {
         sdlx_render_printf(0, ROW2Y(row), "%-6s %4d %4s %3d",
                            audio_state_str(state.state),
-                           (int)nearbyint(state.record_ms/1000),
+                           (int)nearbyint(state.record_ms/1000.0),
                            "",
                            state.volume);
     } else {
@@ -693,6 +718,27 @@ static void page_7_draw(void)
     sdlx_register_event(loc, EVID_AUDIO_RESUME);
     row += 2.5;
 
+    // play tone at specific frequency
+    sdlx_render_printf(0, ROW2Y(row), "TONE");
+
+    loc = sdlx_render_printf_ex1(COL2X(5), ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "G");
+    sdlx_register_event(loc, EVID_AUDIO_PLAY_TONE_GO);
+
+    loc = sdlx_render_printf_ex1(COL2X(7), ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "%d", tone_freq);
+    sdlx_register_event(loc, EVID_AUDIO_PLAY_TONE_GET_FREQ);
+
+    loc = sdlx_render_printf_ex1(COL2X(12), ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "-");
+    sdlx_register_event(loc, EVID_AUDIO_PLAY_TONE_FREQ_DOWN);
+
+    loc = sdlx_render_printf_ex1(COL2X(15), ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "+");
+    sdlx_register_event(loc, EVID_AUDIO_PLAY_TONE_FREQ_UP);
+
+    loc = sdlx_render_printf_ex1(
+                COL2X(18), ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "%s",
+                tone_lrb == LEFT_CHANNEL ? "L" : (tone_lrb == RIGHT_CHANNEL ? "R" : "B"));
+    sdlx_register_event(loc, EVID_AUDIO_PLAY_TONE_CHAN_LRB);
+    row += 2.5;
+
     // record from mic and device
     sdlx_render_printf(0, ROW2Y(row), "REC");
     loc = sdlx_render_printf_ex1(COL2X(5), ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "MIC");
@@ -707,10 +753,10 @@ static void page_7_draw(void)
     sdlx_render_printf(0, ROW2Y(row), "PLAY");
     loc = sdlx_render_printf_ex1(COL2X(5), ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "MONO");
     sdlx_register_event(loc, EVID_AUDIO_PLAY_MONO_BUFF);
-    loc = sdlx_render_printf_ex1(COL2X(10), ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "STER");
+    loc = sdlx_render_printf_ex1(COL2X(10), ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "STEREO");
     sdlx_register_event(loc, EVID_AUDIO_PLAY_STEREO_BUFF);
-    loc = sdlx_render_printf_ex1(COL2X(15), ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "TONES");
-    sdlx_register_event(loc, EVID_AUDIO_PLAY_TONES);
+    loc = sdlx_render_printf_ex1(COL2X(17), ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "SEQ");
+    sdlx_register_event(loc, EVID_AUDIO_PLAY_TONES_SEQUENCE);
     row += 2.5;      
 
     // play files xxx use lower case
@@ -741,6 +787,52 @@ static void page_7_process_event(sdlx_event_t *ev)
     case EVID_AUDIO_RESUME:
         sdlx_audio_resume();
         break;
+    case EVID_AUDIO_PLAY_TONE_GO:
+    case EVID_AUDIO_PLAY_TONE_GET_FREQ:
+    case EVID_AUDIO_PLAY_TONE_FREQ_UP:
+    case EVID_AUDIO_PLAY_TONE_FREQ_DOWN:
+    case EVID_AUDIO_PLAY_TONE_CHAN_LRB: {
+        char  *str;
+        int    num_samples, i;
+        short *samples;
+
+        // update tone_freq and channel if requested
+        if (ev->event_id == EVID_AUDIO_PLAY_TONE_FREQ_UP) {
+            tone_freq += 100;
+        } else if (ev->event_id == EVID_AUDIO_PLAY_TONE_FREQ_DOWN) {
+            tone_freq -= 100;
+        } else if (ev->event_id == EVID_AUDIO_PLAY_TONE_GET_FREQ) {
+            str = sdlx_get_input_str("Frequency", NULL, true, COLOR_BLACK);
+            if (sscanf(str, "%d", &tone_freq) != 1) {
+                break;
+            }
+        } else if (ev->event_id == EVID_AUDIO_PLAY_TONE_CHAN_LRB) {
+            tone_lrb = ((tone_lrb + 1) % 3);
+        }
+
+        // limit tone_freq
+        if (tone_freq < MIN_TONE_FREQ) tone_freq = MIN_TONE_FREQ;
+        if (tone_freq > MAX_TONE_FREQ) tone_freq = MAX_TONE_FREQ;
+
+        // allocate buffer for 100 sine waves of stereo pcm
+        num_samples = FRAMES_PER_SEC * 2 * 100 / tone_freq;
+        samples = calloc(num_samples, sizeof(short));
+
+        // init buffer with 100 sine waves
+        for (i = 0; i < num_samples; i+=2) {
+            if (tone_lrb == LEFT_CHANNEL) {
+                samples[i] = 32767 * sin(TWO_PI * i * 100 / num_samples);
+            } else if (tone_lrb == RIGHT_CHANNEL) {
+                samples[i+1] = 32767 * sin(TWO_PI * i * 100 / num_samples);
+            } else {  // BOTH_CHANNELS
+                samples[i] = 32767 * sin(TWO_PI * i * 100 / num_samples);
+                samples[i+1] = samples[i];
+            }
+        }
+
+        // play buffer xxx better way to specify ininite loops
+        sdlx_audio_play_buff(samples, num_samples, 2, 0, true);  // xxx define for 0 loops
+        break; }
     case EVID_AUDIO_RECORD_FROM_MIC:
         sdlx_audio_record_from_mic(data_dir, "mic.wav", 10, 3, false);
         break;
@@ -780,15 +872,30 @@ static void page_7_process_event(sdlx_event_t *ev)
         }
         sdlx_audio_play_buff(samples, num_samples, num_channels, 2, true);
         break; }
-    case EVID_AUDIO_PLAY_TONES: {
+    case EVID_AUDIO_PLAY_TONES_SEQUENCE: {
         sdlx_tone_t tones[50], *t;
+
+        static int freq[20] = {
+                50, 100, 150, 200, 250,
+                300, 350, 400, 500, 1000, 1500, 2000, 2500, 3000, 3500,
+                4000, 4500, 5000, 5500, 6000, };
+        printf("XXXXXXXXXXXX  %zd\n", sizeof(freq)); //xxx cleanup, maybe revert to original
+
         t = tones;
-        for (int i = 0; i < 10; i++) {
-            add_tone(&t, 500, 500);  // freq=500 dur=500ms
-            add_gap(&t, 500);        // dur=500ms
+        for (int i = 0; i < sizeof(freq)/sizeof(int); i++) {
+            printf("adding tone %d\n", freq[i]);
+            add_tone(&t, freq[i], 1000);
         }
         add_terminator(&t);
         sdlx_audio_play_tones(tones);
+
+        //t = tones;
+        //for (int i = 0; i < 10; i++) {
+        //    add_tone(&t, 500, 500);  // freq=500 dur=500ms
+        //    add_gap(&t, 500);        // dur=500ms
+        //}
+        //add_terminator(&t);
+        //sdlx_audio_play_tones(tones);
         break; }
     case EVID_AUDIO_PLAY_MIC_WAV:
         sdlx_audio_play_file(data_dir, "mic.wav");
