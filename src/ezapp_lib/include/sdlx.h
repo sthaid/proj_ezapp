@@ -159,8 +159,13 @@ typedef struct {
     int  play_current_ms;
     int  play_total_ms;
     int  record_ms;
-    int  volume;
+    int  volume;  // xxx make thid double ?
     char pathname[200];
+    struct {
+        double low;
+        double mid;
+        double high;
+    } channel[2];
 } sdlx_audio_state_t;
 
 // - - - - - -

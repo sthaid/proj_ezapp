@@ -709,6 +709,17 @@ static void page_7_draw(void)
     }
     row += 2.0;
 
+    // display channel volume: low, mid, high bands
+    sdlx_render_printf(0, ROW2Y(1), "%0.2f %0.2f %0.2f",
+                       state.channel[0].low, 
+                       state.channel[0].mid, 
+                       state.channel[0].high);
+    int y = sdlx_win_height - CONTROL_EVENTS_DISPLAY_HEIGHT - sdlx_char_height_dflt;
+    sdlx_render_printf(0, y, "%0.2f %0.2f %0.2f",
+                       state.channel[1].low, 
+                       state.channel[1].mid, 
+                       state.channel[1].high);
+
     // stop, pause, resume
     loc = sdlx_render_printf_ex1(0, ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "STOP");
     sdlx_register_event(loc, EVID_AUDIO_STOP);
@@ -815,7 +826,8 @@ static void page_7_process_event(sdlx_event_t *ev)
         if (tone_freq > MAX_TONE_FREQ) tone_freq = MAX_TONE_FREQ;
 
         // allocate buffer for 100 sine waves of stereo pcm
-        num_samples = FRAMES_PER_SEC * 2 * 100 / tone_freq;
+        num_samples = FRAMES_PER_SEC * 100 / tone_freq;
+        num_samples *= 2;
         samples = calloc(num_samples, sizeof(short));
 
         // init buffer with 100 sine waves
