@@ -56,7 +56,7 @@ static MIX_Mixer *mixer;
 static MIX_Track *track;
 static MIX_Audio *audio;
 
-lame_global_flags *gfp;
+lame_global_flags *gfp;  // xxx why not static?
 
 static sdlx_audio_state_t  state;
 static int                 state_resume;
@@ -760,7 +760,7 @@ static void mp3_file_write(void *cx_arg, short *samples, int num_samples)
     int process_samples;
     mp3_file_cx_t *cx = cx_arg;
 
-    #define MAX_SAMPLES 8192
+    #define MAX_SAMPLES_MP3_FILE_WRITE 8192
 
     if (num_samples & 1) {
         ERROR("num_samples %d, must be multiple of 2\n", num_samples);
@@ -768,7 +768,7 @@ static void mp3_file_write(void *cx_arg, short *samples, int num_samples)
     }
 
     while (num_samples) {
-        process_samples = (num_samples > MAX_SAMPLES ? MAX_SAMPLES : num_samples);
+        process_samples = (num_samples > MAX_SAMPLES_MP3_FILE_WRITE ? MAX_SAMPLES_MP3_FILE_WRITE : num_samples);
 
         len = lame_encode_buffer_interleaved(gfp, samples, process_samples/2, mp3buf, sizeof(mp3buf));
         if (len < 0) {
@@ -922,12 +922,15 @@ static int record_mic_thread(void *cx_arg)
         }
 
         // scale record data
+        // xxx fix this gain problem
         for (int i = 0; i < bytes/sizeof(short); i++) {
             buff[i] = buff[i] * audio_params.record_gain;
         }
 
-//xxx record microphone:  MONO S16 48000
-//xxx  - sizeof buf
+        //xxx record microphone:  MONO S16 48000
+        //xxx  - sizeof buf
+        // xxx
+        fft(buff, bytes/sizeof(short), 2, FRAMES_PER_SEC, FFT_FMT_S16);
 
         // write the data to the file
         wav_file_write(cx->wav_file_cx, buff, bytes/sizeof(short));
@@ -1032,6 +1035,9 @@ int sdlx_audio_record_from_device(char *dir, char *filename)
     state.volume         = 0;
     sprintf(state.pathname, "%s/%s", dir, filename);
 
+    // xxx
+    sdlx_audio_pause();
+
     // create record_dev_thread
     cx = malloc(sizeof(record_dev_cx_t));
     cx->mp3_cx = mp3_cx;
@@ -1044,16 +1050,24 @@ int sdlx_audio_record_from_device(char *dir, char *filename)
 
 static int record_dev_thread(void *cx_arg)
 {
-    #define MAX_SAMPLES 8192
+    #define MAX_SAMPLES 2048
 
     record_dev_cx_t *cx = cx_arg;
     short samples[MAX_SAMPLES];
-    int rc;
+    int rc, volume;
 
     while (true) {
         // if in STOPPING state then goto done;
         if (state.state == AUDIO_STATE_STOPPING) {
             goto done;
+        }
+
+        // xxx
+        if (state.state == AUDIO_STATE_PAUSED) {
+            //xxx state.volume = 0;
+            //xxx also clear color organ when paused
+            usleep(TEN_MS);
+            continue;
         }
 
         // get playback capture audio samples,
@@ -1064,19 +1078,17 @@ static int record_dev_thread(void *cx_arg)
             goto done;
         }
 
-//xxx record from device:  STEREO S16 48000
-// MAX_SAMPLES
+        // xxx
+        fft(samples, MAX_SAMPLES, 2, FRAMES_PER_SEC, FFT_FMT_S16);
 
-        // encode and write the samples to the mp3 file
-        if (state.state == AUDIO_STATE_RECORD_FROM_DEVICE) {
-            mp3_file_write(cx->mp3_cx, samples, MAX_SAMPLES);
+        // xxx
+        volume = calc_volume_s16(samples, MAX_SAMPLES);
 
-            cx->recorded_samples += MAX_SAMPLES;
-            state.record_ms = (cx->recorded_samples / 2) / FRAMES_PER_MS;
-            state.volume    = calc_volume_s16(samples, MAX_SAMPLES);
-        } else {
-            state.volume = 0;
-        }
+        // xxx
+        mp3_file_write(cx->mp3_cx, samples, MAX_SAMPLES);
+        cx->recorded_samples += MAX_SAMPLES;
+        state.record_ms = (cx->recorded_samples / 2) / FRAMES_PER_MS;
+        state.volume    = volume;
     }
 
 done:
@@ -1323,6 +1335,7 @@ static void play_buff(short *samples, int num_samples, int num_channels, int *to
         state.play_current_ms = (*total_queued_samples / num_channels) / FRAMES_PER_MS;
 
         // calculate volume for the samples just queued
+        // xxx make volume a double in 0-1 ranage
         state.volume = calc_volume_s16(samples, num_xfer_samples);
 
         // call fft to compute the low,mid,high band volume
@@ -1531,20 +1544,11 @@ static void mixer_track_raw_callback(void *userdata, MIX_Track *track, const SDL
          num_samples, state.volume, state.play_current_ms/1000.0);
 
     // call fft to update audio state low,mid,high band volumes
-    int fmt;
-    if (play_file_spec.format == SDL_AUDIO_F32LE) {
-        fmt = FFT_FMT_FLOAT;
-    } else if (play_file_spec.format == SDL_AUDIO_S16LE) {
-        fmt = FFT_FMT_S16;
-    } else {
-        ERROR("spec fmt %s not supported\n", audio_fmt_str(play_file_spec.format));
-        return;
-    }
     fft(samples, 
         num_samples, 
         play_file_spec.channels,
         play_file_spec.freq,
-        fmt);
+        FFT_FMT_FLOAT);
 }
 
 static void mixer_track_stopped_callback(void *userdata, MIX_Track *track)
@@ -1598,6 +1602,7 @@ static int mp3_file_duration_ms_from_filename(char *dir, char *filename)
 }
 
 // -----------------  FFT - GET LOW/MID/HIGH BAND VOLUMES  --------------
+
 // xxx
 // - ensure NUM_SAMPLES_IN_FFT  is even
 // - change MAX_SAMPLES for playbackcapture
@@ -1614,31 +1619,35 @@ static int mp3_file_duration_ms_from_filename(char *dir, char *filename)
 // - stereo samples alternate left,right channels
 
 // variables
-static kiss_fftr_cfg   fft_real_cfg;
-static kiss_fft_scalar fft_input_lc[1000];  // left channel
-static kiss_fft_scalar fft_input_rc[1000];  // right channel
-static kiss_fft_cpx    fft_output[1000];
+static kiss_fft_scalar fft_input[2000];  // xxx array size check and define
+static kiss_fft_cpx    fft_output[1001];
 
-static int             fft_caller_fps;
+static kiss_fftr_cfg   fft_cfg;
 static int             fft_downsample;
 static int             fft_fps;
-static int             fft_intvl_ms;
 static int             fft_num_input;
 static int             fft_num_output;
 static int             fft_delta_f;
-static int             fft_num_input_gathered;
 
 // prototypes
-static void analyze_fft_output(double *low, double *mid, double *high);
+static kiss_fftr_cfg cached_alloc_fftr(int nfft);
+static float get_band_vol(int low_freq, int high_freq);
 
 // - - - - - - - - - - - - - - - - - - - - - 
 
+// xxx change routine name
 static void fft(void *samples, int num_samples, int num_channels, int fps, int fmt)
 {
     float *samples_float = (float*)samples;
     short *samples_s16   = (short*)samples;
-    long start_us = util_microsec_timer();
-    int i, samples_used=0;
+    int    i, k;
+    //xxx long   start_us = util_microsec_timer();
+
+    static struct {
+        int num_samples;
+        int num_channels;
+        int fps;
+    } cfg;
 
     // validate args; fps is not validated
     if ((samples == NULL) || 
@@ -1647,163 +1656,128 @@ static void fft(void *samples, int num_samples, int num_channels, int fps, int f
         (num_channels != 1 && num_channels != 2) ||
         (fmt != FFT_FMT_FLOAT && fmt != FFT_FMT_S16))
     {
-        ERROR("invalid args: samples=%p num_samples=%d num_channels=%d fps=%d\n",
-              samples, num_samples, num_channels, fps);
+        ERROR("invalid args: samples=%p num_samples=%d num_channels=%d fps=%d fmt=%d\n",
+              samples, num_samples, num_channels, fps, fmt);
         return;
     }
 
-    // if caller supplied fps has changed then re-init
-    if (fps != fft_caller_fps) {
-        INFO("INITIALIZING fps=%d\n", fps);
+    // if caller args have changed then re-init fft
+    if (num_samples != cfg.num_samples || num_channels != cfg.num_channels || fps != cfg.fps) {
+        // xxx
+        cfg.num_samples = num_samples;
+        cfg.num_channels = num_channels;
+        cfg.fps = fps;
 
-        fft_caller_fps           = fps;
-        fft_downsample           = (fps >= 48000 ? 4 : fps >= 36000 ? 3 : fps >= 24000 ? 2 : 1);
-        fft_fps                  = fps / fft_downsample;
-        fft_intvl_ms             = 20;
-        fft_num_input            = (fft_fps * fft_intvl_ms / 1000) & ~1;  // '& ~1' ensures multiple of 2
-        fft_num_output           = (fft_num_input / 2 + 1);
-        fft_delta_f              = (fft_fps / fft_num_input);
-        fft_num_input_gathered = 0;
+        // xxx
+        fft_downsample = (fps >= 48000 ? 4 : fps >= 36000 ? 3 : fps >= 24000 ? 2 : 1);
+        fft_fps        = fps / fft_downsample;
 
-        INFO("caller_fps  = %d\n", fft_caller_fps);
-        INFO("downsample  = %d\n", fft_downsample);
-        INFO("fps         = %d\n", fft_fps);
-        INFO("intvl_ms    = %d\n", fft_intvl_ms);
-        INFO("num_input   = %d\n", fft_num_input);
-        INFO("num_output  = %d\n", fft_num_output);
-        INFO("delta_f     = %d\n", fft_delta_f);
+        // xxx
+        fft_num_input  = (num_samples / num_channels / fft_downsample) & ~1;
+        // xxx check for too big
+        fft_num_output = (fft_num_input / 2 + 1);
+        fft_delta_f    = (fft_fps / fft_num_input);
 
-        kiss_fft_free(fft_real_cfg);
-        fft_real_cfg = kiss_fftr_alloc(fft_num_input, 0, NULL, NULL);
-        if (fft_real_cfg == NULL) {
-            ERROR("kiss_fftr_alloc failed\n");
+        // xxx
+        fft_cfg = cached_alloc_fftr(fft_num_input);
+        if (fft_cfg == NULL) {
+            ERROR("cached_alloc_fftr failed\n");
             return;
         }
     }
 
-    // num_samples must be multiple of num_channels*fft_downsample
-    // xxx limit frequency of this print 
-    int temp = num_samples;
-    num_samples = num_samples / (num_channels * fft_downsample) * (num_channels * fft_downsample);
-    if (num_samples != temp) {
-        INFO("WARNING num_samples reduced from %d to %d\n", temp, num_samples);
-    }
-
-    // add caller supplied samples to the left and right channel samples array;
-    // and apply downsampling
-    i = 0;
+    // downsample caller supplied samples to the fft_input array
+    k = 0;
     if (fmt == FFT_FMT_FLOAT) {
         if (num_channels == 1) {
-            for (i = 0; i < num_samples; i += fft_downsample) {
-                fft_input_lc[fft_num_input_gathered++] = samples_float[i];
-                if (fft_num_input_gathered == fft_num_input) break;
+            for (i = 0; i < fft_num_input; i++) {
+                fft_input[i] = samples_float[k];
+                k += fft_downsample;
             }
-        } else {  // num_channels == 2
-            for (i = 0; i < num_samples; i += 2*fft_downsample) {
-                fft_input_lc[fft_num_input_gathered] = samples_float[i];
-                fft_input_rc[fft_num_input_gathered] = samples_float[i+1];
-                fft_num_input_gathered++;
-                if (fft_num_input_gathered == fft_num_input) break;
+        } else {
+            for (i = 0; i < fft_num_input; i++) {
+                fft_input[i] = (samples_float[k] + samples_float[k+1]) / 2;
+                k += 2*fft_downsample;
             }
         }
     } else if (fmt == FFT_FMT_S16) {
         if (num_channels == 1) {
-            for (i = 0; i < num_samples; i += fft_downsample) {
-                fft_input_lc[fft_num_input_gathered++] = samples_s16[i] / 32768.;
-                if (fft_num_input_gathered == fft_num_input) break;
+            for (i = 0; i < fft_num_input; i++) {
+                fft_input[i] = samples_s16[k] / 32768.;
+                k += fft_downsample;
             }
-        } else {  // num_channels == 2
-            for (i = 0; i < num_samples; i += 2*fft_downsample) {
-                fft_input_lc[fft_num_input_gathered] = samples_s16[i] / 32768.;
-                fft_input_rc[fft_num_input_gathered] = samples_s16[i+1] / 32768.;
-                fft_num_input_gathered++;
-                if (fft_num_input_gathered == fft_num_input) break;
+        } else {
+            printf("FFT_FMT_S16\n");
+            for (i = 0; i < fft_num_input; i++) {
+                fft_input[i] = ((samples_s16[k] / 32768.0) + (samples_s16[k+1] / 32768.0)) / 2;
+                k += 2*fft_downsample;
             }
         }
-    } else {
-        ERROR("invalid fmt %d\n", fmt);
-        return;
-    }
-    samples_used = i;
-
-    // if not enough samples have been gathered then return;
-    if (fft_num_input_gathered < fft_num_input) {
-        return;
     }
 
-    // compute fft for mono or left channel;
-    // mono is calculated using the samples_lc array
-    kiss_fftr(fft_real_cfg, fft_input_lc, fft_output);
-    analyze_fft_output(&state.channel[0].low, 
-                       &state.channel[0].mid, 
-                       &state.channel[0].high);
+    // compute fft 
+    kiss_fftr(fft_cfg, fft_input, fft_output);
 
-    // if stereo then calculate fft for the right channel
-    if (num_channels == 2) {
-        kiss_fftr(fft_real_cfg, fft_input_rc, fft_output);
-        analyze_fft_output(&state.channel[1].low, 
-                           &state.channel[1].mid, 
-                           &state.channel[1].high);
-    } else {
-        state.channel[1].low  = 0;
-        state.channel[1].mid  = 0;
-        state.channel[1].high = 0;
-    }
-
-    // start gathering fresh samples when next called
-    fft_num_input_gathered = 0;
-
-    // print results
-    int discard_percent = 100 * (num_samples - samples_used) / num_samples;
-    INFO("FFT duration=%ld us  num_input=%d  delta_f=%d  downsample=%d  discard=%d%%\n", 
-         util_microsec_timer() - start_us,
-         fft_num_input, 
-         fft_delta_f,
-         fft_downsample,
-         discard_percent);
-}
-
-static void analyze_fft_output(double *low_arg, double *mid_arg, double *high_arg)
-{
-    #define LOW_BAND_TOP_FREQ    250
-    #define MID_BAND_TOP_FREQ   4000
-    #define HIGH_BAND_TOP_FREQ 10000
-
-    double output_magnitude_squared[1000];
-    double low = 0, mid = 0, high = 0;
-
-    // compute fft output magnitudes
-    for (int i = 0; i < fft_num_output; i++) {
-        output_magnitude_squared[i] = fft_output[i].r * fft_output[i].r + fft_output[i].i * fft_output[i].i;
-    }
-
-    // compute sum of the low,mid,high bands
-    for (int i = 1; i < fft_num_output; i++) {
-        if (i * fft_delta_f <= LOW_BAND_TOP_FREQ) {
-            low += output_magnitude_squared[i];
-        } else if (i * fft_delta_f <= MID_BAND_TOP_FREQ) {
-            mid += output_magnitude_squared[i];
-        } else if (i * fft_delta_f <= HIGH_BAND_TOP_FREQ) {
-            high += output_magnitude_squared[i];
-        }
-    }
-    low = sqrtf(low) / (fft_num_input / 2);
-    mid = sqrtf(mid) / (fft_num_input / 2);
-    high = sqrtf(high) / (fft_num_input / 2);
+    // extract low,mid,high band volume from fft_output
+    // - google search: "what is good cutoff for the low mid and high bands in a color organ"
+    //   Traditional Approach: Low (60-150 Hz), Mid (200-600 Hz), High (800-2200 Hz).
+    state.low_band_vol  = get_band_vol(60, 150);
+    state.mid_band_vol  = get_band_vol(200, 600);
+    state.high_band_vol = get_band_vol(800, 5800);
 
 #if 0
-    // development test:
-    // print sum of input, which should be same as output_magnitude[0];
-    // note that this test code always uses the fft left channel data
-    double sum = 0;
-    for (int i = 0; i < fft_num_input; i++) {
-        sum += fft_input_lc[i];
-    }
-    printf("sum_of_input=%8.3f  output_magnitude[0]=%0.3f\n", 
-           sum, sqrtf(output_magnitude_squared[0]));
+    // print results  xxx make this a verbose level print
+    INFO("dur=%ld fps=%d ns=%d nc=%d intvl=%d - ds=%d fps=%d n_in=%d n_out=%d delta_f=%d - low=%3.1f mid=%3.1f high=%3.1f\n",
+         util_microsec_timer() - start_us,
+         fps,
+         num_samples,
+         num_channels,
+         1000 * num_samples / num_channels / fps,  // ms
+         fft_downsample,
+         fft_fps,
+         fft_num_input,
+         fft_num_output,
+         fft_delta_f,
+         state.low_band_vol,
+         state.mid_band_vol,
+         state.high_band_vol);
 #endif
+}
 
-    *low_arg = low;
-    *mid_arg = mid;
-    *high_arg = high;
+static kiss_fftr_cfg cached_alloc_fftr(int nfft)
+{
+    #define MAX_CACHE 4
+    static struct {
+        int nfft;
+        kiss_fftr_cfg cfg;
+    } cache[MAX_CACHE];
+
+    for (int i = 0; i < MAX_CACHE; i++) {
+        if (cache[i].nfft == nfft) {
+            return cache[i].cfg;
+        }
+    }
+
+    INFO("calling kiss_fftr_alloc nfft=%d\n", nfft);
+    kiss_fft_free(cache[MAX_CACHE-1].cfg);
+    memmove(cache+1, cache, (MAX_CACHE-1)*sizeof(cache[0]));
+    cache[0].cfg = kiss_fftr_alloc(nfft,  0, NULL, NULL);
+    cache[0].nfft = nfft;
+    return cache[0].cfg;
+}
+
+static float get_band_vol(int low_freq, int high_freq)
+{
+    int   i, low_bin, high_bin;
+    float sum=0, result;
+
+    low_bin  = low_freq / fft_delta_f + 1;
+    high_bin = high_freq / fft_delta_f + 1;
+
+    for (i = low_bin; i <= high_bin; i++) {
+        sum += fft_output[i].r * fft_output[i].r + fft_output[i].i * fft_output[i].i;
+    }
+    result = sqrtf(sum) / (fft_num_input / 2);
+
+    return result;
 }

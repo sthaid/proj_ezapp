@@ -161,11 +161,9 @@ typedef struct {
     int  record_ms;
     int  volume;  // xxx make thid double ?
     char pathname[200];
-    struct {
-        double low;
-        double mid;
-        double high;
-    } channel[2];
+    double low_band_vol; //xxx names include color_organ
+    double mid_band_vol;
+    double high_band_vol;
 } sdlx_audio_state_t;
 
 // - - - - - -

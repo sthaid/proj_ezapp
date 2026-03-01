@@ -880,11 +880,9 @@ typedef struct { \n\
     int  record_ms; \n\
     int  volume; \n\
     char pathname[200]; \n\
-    struct { \n\
-        double low; \n\
-        double mid; \n\
-        double high; \n\
-    } channel[2]; \n\
+    double low_band_vol; \n\
+    double mid_band_vol; \n\
+    double high_band_vol; \n\
 } sdlx_audio_state_t; \n\
 \n\
 /* sensors */ \n\

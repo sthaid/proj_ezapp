@@ -31,7 +31,7 @@ public class ezapp_media_fgsvc extends Service {
     private static final int       STATE_RECORDING    = 2;
     private static final int       STATE_FAILED       = 3;
     private static final int       STATE_STOPPED      = 4;
-    private static final int       MAX_SAMPLES        = 8192;
+    private static final int       MAX_SAMPLES        = 2048;
     private static int             state;
     private static AudioRecord     audioRecord;
     private static MediaProjection mediaProjection;

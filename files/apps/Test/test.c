@@ -672,11 +672,13 @@ static void page_7_draw(void)
 {
     sdlx_audio_state_t state;
     sdlx_loc_t *loc;
-    double row=2;
+    double row=1;
     char pathname_copy[100];
 
-    // display state
+    // get audio state
     sdlx_audio_get_state(&state);
+
+    // display state
     if (state.play_current_ms != 0 || state.play_total_ms != 0) {
         char duration[40];
         if (state.play_total_ms == 0) {
@@ -707,18 +709,7 @@ static void page_7_draw(void)
         strcpy(pathname_copy, state.pathname);
         sdlx_render_printf(0, ROW2Y(row), "%s", basename(pathname_copy));
     }
-    row += 2.0;
-
-    // display channel volume: low, mid, high bands
-    sdlx_render_printf(0, ROW2Y(1), "%0.2f %0.2f %0.2f",
-                       state.channel[0].low, 
-                       state.channel[0].mid, 
-                       state.channel[0].high);
-    int y = sdlx_win_height - CONTROL_EVENTS_DISPLAY_HEIGHT - sdlx_char_height_dflt;
-    sdlx_render_printf(0, y, "%0.2f %0.2f %0.2f",
-                       state.channel[1].low, 
-                       state.channel[1].mid, 
-                       state.channel[1].high);
+    row += 2;
 
     // stop, pause, resume
     loc = sdlx_render_printf_ex1(0, ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "STOP");
@@ -782,6 +773,23 @@ static void page_7_draw(void)
     loc = sdlx_render_printf_ex1(0, ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "sample-9s.mp3");
     sdlx_register_event(loc, EVID_AUDIO_PLAY_SAMPLE_9S_MP3);
     row += 2;      
+
+    // display channel volume: low, mid, high bands xxx comment
+    int y, w;
+    double scale = 4;  // xxx make adjustable
+    y = sdlx_win_height - CONTROL_EVENTS_DISPLAY_HEIGHT - sdlx_char_height_dflt - 10;
+
+    w = state.low_band_vol * 333 * scale;
+    if (w > 333) w = 333;
+    sdlx_render_fill_rect(0, y, w, sdlx_char_height_dflt, COLOR_RED);
+
+    w = state.mid_band_vol * 333 * scale;
+    if (w > 333) w = 333;
+    sdlx_render_fill_rect(333, y, w, sdlx_char_height_dflt, COLOR_GREEN);
+
+    w = state.high_band_vol * 333 * scale;
+    if (w > 333) w = 333;
+    sdlx_render_fill_rect(666, y, w, sdlx_char_height_dflt, COLOR_BLUE);
 }
 
 static void page_7_process_event(sdlx_event_t *ev)
