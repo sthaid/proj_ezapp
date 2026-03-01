@@ -2,7 +2,7 @@ setlinebuf(stdout);
 
 printf("I eztest_script: starting\n");
 int rc;
-rc = sdlx_init(SUBSYS_VIDEO);
+rc = sdlx_init(SUBSYS_VIDEO|SUBSYS_AUDIO|SUBSYS_SENSOR);
 if (rc != 0) {
     printf("E %s: sdlx_init failed\n", progname);
     return 1;

@@ -712,6 +712,8 @@ static int wav_file_duration_ms_from_filename(char *dir, char *filename)
 
 // -----------------  CREATE MP3 FILE  -------------------
 
+// xxx add comment on file attributes
+
 typedef struct {
     int  fd;
     int  total_frames;
@@ -719,7 +721,7 @@ typedef struct {
 } mp3_file_cx_t;
 
 #define MAX_MP3_BUF 100000
-static unsigned char mp3buf[100000];
+static unsigned char *mp3buf;
 
 static void *mp3_file_open(char *dir, char *filename, bool append)
 {
@@ -1126,7 +1128,7 @@ done:
     return 0;
 }
 
-// -----------------  PLAY TONES --------------------------
+// -----------------  PLAY SEQUENCE OF TONES  -------------
 
 // defines
 #define MIN_TONE_FREQ  50   // inclusive range
