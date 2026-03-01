@@ -1,5 +1,18 @@
-horizontal orientation
+new apps
+- tones   close-encounters etc
+- audio   
+   - name = AudioFft
+      options  source MIC or DEV or FILE
+      select from list of files
+      display fft or color organ
+   - get spectrum of microphone data and other data
+   - scale color organ using slikder
+   - also option to record DEV to file
+- steps
 
+add fft supporot to picoc
+
+horizontal orientation
 
 app to play tone sequence 
 - twinkle little star
@@ -14,18 +27,8 @@ app to play tone sequence
        bah baa black sheep
        head shoulders keens and toes
 
-add fft supporot to picoc
-- get spectrum of microphone data and other data
-- name = AudioFft
-   options  source MIC or DEV or FILE
-   select from list of files
-   display fft or color organ
-- scale color organ using slikder
-- also option to record DEV to file
-
 steps app
 - keep track of steps, but only when app is running
-
 
 support verbose logging 
 Use Log.isLoggable(): This method checks the system property for a specific tag's log level before executing the log, though it has its own slight performance cost.

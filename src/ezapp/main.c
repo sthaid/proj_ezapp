@@ -750,7 +750,7 @@ static void settings(void)
             } else if (record_test_state == RECORDING) {
                 int bar_value_w =  sdlx_win_width * as.volume / 100;
                 int bar_height = sdlx_char_height_dflt;
-                sdlx_render_printf(sdlx_win_width-COL2X(2), y2, "%2d", as.volume);
+                sdlx_render_printf(sdlx_win_width-COL2X(2), y2, "%3d", (int)(as.volume*100));
                 sdlx_render_fill_rect(0, y2, bar_value_w, bar_height, COLOR_RED);
                 sdlx_render_rect(0, y2, sdlx_win_width, bar_height, 2, COLOR_WHITE);
             } else if (record_test_state == PLAYBACK) {

@@ -894,12 +894,11 @@ static void page_7_process_event(sdlx_event_t *ev)
         break; }
     case EVID_AUDIO_PLAY_TONES_SEQUENCE: {
         sdlx_tone_t tones[50], *t;
-
-        static int freq[20] = {
-                50, 100, 150, 200, 250,
-                300, 350, 400, 500, 1000, 1500, 2000, 2500, 3000, 3500,
-                4000, 4500, 5000, 5500, 6000, };
-        printf("XXXXXXXXXXXX  %zd\n", sizeof(freq)); //xxx cleanup, maybe revert to original
+        static int freq[33] = {
+            100, 110, 120, 130, 140, 150,                                           // low
+            200, 300, 400, 500, 600,                                                // mid
+            800, 900, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800, 1900,   // high
+            2000, 2100, 2200, 2300, 2400, 2500, 2600, 2700, 2800, 2900 };
 
         t = tones;
         for (int i = 0; i < sizeof(freq)/sizeof(int); i++) {
@@ -908,14 +907,6 @@ static void page_7_process_event(sdlx_event_t *ev)
         }
         add_terminator(&t);
         sdlx_audio_play_tones(tones);
-
-        //t = tones;
-        //for (int i = 0; i < 10; i++) {
-        //    add_tone(&t, 500, 500);  // freq=500 dur=500ms
-        //    add_gap(&t, 500);        // dur=500ms
-        //}
-        //add_terminator(&t);
-        //sdlx_audio_play_tones(tones);
         break; }
     case EVID_AUDIO_PLAY_MIC_WAV:
         sdlx_audio_play_file(data_dir, "mic.wav");
