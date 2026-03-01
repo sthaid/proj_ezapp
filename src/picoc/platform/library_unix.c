@@ -874,15 +874,17 @@ typedef struct { \n\
     short intvl_ms; \n\
 } sdlx_tone_t; \n\
 typedef struct { \n\
-    int  state; \n\
-    int  play_current_ms; \n\
-    int  play_total_ms; \n\
-    int  record_ms; \n\
-    int  volume; \n\
-    char pathname[200]; \n\
-    double low_band_vol; \n\
-    double mid_band_vol; \n\
-    double high_band_vol; \n\
+    int    state; \n\
+    int    play_current_ms; \n\
+    int    play_total_ms; \n\
+    int    record_ms; \n\
+    char   pathname[200]; \n\
+    double volume; \n\
+    struct { \n\
+        double low_band; \n\
+        double mid_band; \n\
+        double high_band; \n\
+    } color_organ; \n\
 } sdlx_audio_state_t; \n\
 \n\
 /* sensors */ \n\

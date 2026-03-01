@@ -1,24 +1,37 @@
+horizontal orientation
+
+app to play tone sequence 
+- twinkle little star
+- close encounters
+
 add fft supporot to picoc
-- write an fft test app
-- get spectrum of microphone data
+- get spectrum of microphone data and other data
+- name = AudioFft
+   options  source MIC or DEV or FILE
+   select from list of files
+   display fft or color organ
+- scale color organ using slikder
+- also option to record DEV to file
 
-support berbose printing
+steps app
+- keep track of steps, but only when app is running
 
-make color organ params adjustable
 
-color organ app
+support verbose logging 
+Use Log.isLoggable(): This method checks the system property for a specific tag's log level before executing the log, though it has its own slight performance cost.
+
+make color organ band params adjustable
 
 stop audio should clear the volumes
-and clear file name ??
+- and clear file name ??
+- and clear color organ
 
 AUDIO ON LINUX
 - play tones and buffer:  mono 960  stereo 1920   intvl 20
 - bluesky.wav       fps=24000 ns=512  nc=1 intvl=21
 - sample 9s mp3     fps=44100 ns=1882 nc=2 intvl=21
 - dev.mp3           fps=24000 ns=1024 nc=2 intvl=21
-
 AUDIO ON ANDROID
-
 - tone              fps=48000 ns=1920 nc=2 intvl=20 
 - seq               fps=48000 ns=960 nc=1 intvl=20
 - stereo            fps=48000 ns=1920 nc=2 intvl=20 
@@ -27,15 +40,9 @@ AUDIO ON ANDROID
 - sample 9s mp3     fps=44100 ns=1410 nc=2 intvl=15
 - dev.mp3           fps=24000 ns=768 nc=2 intvl=16
 - record dev        fps=48000 ns=2048 nc=2 intvl=21
-
-
 aplay -t raw -f FLOAT_LE -c 1 -r 12000 ../../jt.raw
-------------
 
-cleanup home dir 
-cleanup ez dir
-
-tilt has a prblem in the horiztal orientation
+cleanup home dir  and ez dir
 
 when an ezapp, running an ap, is brought back to foreground, the display is not updated
 

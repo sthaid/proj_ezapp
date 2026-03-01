@@ -690,19 +690,19 @@ static void page_7_draw(void)
                            audio_state_str(state.state),
                            (int)nearbyint(state.play_current_ms/1000.0),
                            duration,
-                           state.volume);
+                           (int)(state.volume * 100));
     } else if (state.record_ms != 0) {
         sdlx_render_printf(0, ROW2Y(row), "%-6s %4d %4s %3d",
                            audio_state_str(state.state),
                            (int)nearbyint(state.record_ms/1000.0),
                            "",
-                           state.volume);
+                           (int)(state.volume * 100));
     } else {
         sdlx_render_printf(0, ROW2Y(row), "%-6s %4s %4s %3d",
                            audio_state_str(state.state),
                            "",
                            "",
-                           state.volume);
+                           (int)(state.volume * 100));
     }
     row++;
     if (state.pathname[0] != '\0') {
@@ -779,15 +779,15 @@ static void page_7_draw(void)
     double scale = 4;  // xxx make adjustable
     y = sdlx_win_height - CONTROL_EVENTS_DISPLAY_HEIGHT - sdlx_char_height_dflt - 10;
 
-    w = state.low_band_vol * 333 * scale;
+    w = state.color_organ.low_band * 333 * scale;
     if (w > 333) w = 333;
     sdlx_render_fill_rect(0, y, w, sdlx_char_height_dflt, COLOR_RED);
 
-    w = state.mid_band_vol * 333 * scale;
+    w = state.color_organ.mid_band * 333 * scale;
     if (w > 333) w = 333;
     sdlx_render_fill_rect(333, y, w, sdlx_char_height_dflt, COLOR_GREEN);
 
-    w = state.high_band_vol * 333 * scale;
+    w = state.color_organ.high_band * 333 * scale;
     if (w > 333) w = 333;
     sdlx_render_fill_rect(666, y, w, sdlx_char_height_dflt, COLOR_BLUE);
 }

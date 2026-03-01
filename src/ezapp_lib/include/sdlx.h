@@ -155,15 +155,17 @@ typedef struct {
 } sdlx_tone_t;
 
 typedef struct {
-    int  state;
-    int  play_current_ms;
-    int  play_total_ms;
-    int  record_ms;
-    int  volume;  // xxx make thid double ?
-    char pathname[200];
-    double low_band_vol; //xxx names include color_organ
-    double mid_band_vol;
-    double high_band_vol;
+    int    state;
+    int    play_current_ms;
+    int    play_total_ms;
+    int    record_ms;
+    char   pathname[200];
+    double volume;
+    struct {
+        double low_band;
+        double mid_band;
+        double high_band;
+    } color_organ;
 } sdlx_audio_state_t;
 
 // - - - - - -

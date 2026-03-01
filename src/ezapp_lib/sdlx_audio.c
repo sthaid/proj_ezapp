@@ -8,24 +8,32 @@
 #include <SDL3/SDL.h>
 #include <SDL3_mixer/SDL_mixer.h>
 
-// xxx document capabilities
-// - record from mic
-// - record from device
-// - play file
-// - play tones
-// - play buff
-
-// xxx
+// xxx - higher priority
 // - why is so much record gain needed
-// - test mp3 file playback debug prints
+
+// xxx - medium priority
+// - use VERBOSE prints for commented out prints ?
 // - util_start_playbackcapture should return status
+
+// xxx - lower priority
 // - wav_file_stereo_test ?
+// - document capabilities
+//   - record from mic
+//   - record from device
+//   - play file
+//   - play tones
+//   - play buff
+
+// xxx - needs final verification
+// - make volume a double in 0-1 ranage
+// - check that pause and resume work corretly
 
 //
 // defines
 //
 
-#define TEN_MS 10000   // xxx switch all to 2 ms
+#define VERBOSE
+
 #define TWO_MS  2000
 
 #define FRAMES_PER_SEC 48000
@@ -35,9 +43,6 @@
 #define MP3_LAME_MODE_JOINT_STEREO     1
 #define MP3_LAME_MODE_DUAL_CHANNEL     2
 #define MP3_LAME_MODE_MONO             3
-
-#define MP3_LAME_KBRATE 64 
-#define MP3_LAME_MODE   MP3_LAME_MODE_JOINT_STEREO
 
 #define FFT_FMT_FLOAT 0
 #define FFT_FMT_S16   1
@@ -56,7 +61,7 @@ static MIX_Mixer *mixer;
 static MIX_Track *track;
 static MIX_Audio *audio;
 
-lame_global_flags *gfp;  // xxx why not static?
+static lame_global_flags *gfp;
 
 static sdlx_audio_state_t  state;
 static int                 state_resume;
@@ -75,8 +80,8 @@ static void audio_cleanup(void);
 static int audio_reset(void);
 static int audio_stop(void);
 
-static int calc_volume_s16(short *samples, int n);
-static int calc_volume_float(float *samples, int n);
+static double calc_volume_s16(short *samples, int n);
+static double calc_volume_float(float *samples, int n);
 
 static void mixer_track_raw_callback(void *userdata, MIX_Track *track, const SDL_AudioSpec *spec, float *pcm, int samples);
 static void mixer_track_stopped_callback(void *userdata, MIX_Track *track);
@@ -93,7 +98,7 @@ static void mp3_file_close(void *cx_arg);
 static int mp3_file_duration_ms(void *cx_arg) __attribute__((unused));
 static int mp3_file_duration_ms_from_filename(char *dir, char *filename);
 
-static void fft(void *samples, int num_samples, int num_channels, int fps, int fmt);
+static void color_organ(void *samples, int num_samples, int num_channels, int fps, int fmt);
 
 // -----------------  INITIALIZE  ---------------------------------
 
@@ -110,8 +115,8 @@ int sdlx_audio_init(void)
 
     lame_set_num_channels(gfp,2);
     lame_set_in_samplerate(gfp,FRAMES_PER_SEC);
-    lame_set_brate(gfp,MP3_LAME_KBRATE);
-    lame_set_mode(gfp,MP3_LAME_MODE);
+    lame_set_brate(gfp,64);
+    lame_set_mode(gfp,MP3_LAME_MODE_JOINT_STEREO);
     lame_set_quality(gfp,2);   // 2=high  5 = medium  7=low
 
     if (lame_init_params(gfp) == -1) {
@@ -147,6 +152,10 @@ void sdlx_audio_quit(void)
         lame_close(gfp);
         gfp = NULL;
     }
+
+    // xxx more cleanups
+    // - mp3buf
+    // - kissfft cache
 }
 
 static void audio_print_list_of_devices(void)
@@ -207,7 +216,6 @@ static int audio_init(void)
     INFO("actual_spec: format=0x%x channels=%d freq=%d\n", 
          playback_actual_spec.format, playback_actual_spec.channels, playback_actual_spec.freq);
 
-    // xxx maybe move this
     track = MIX_CreateTrack(mixer);
     if (track == NULL) {
         ERROR("MIX_CreateTrack failed, %s\n", SDL_GetError());
@@ -252,21 +260,25 @@ static void audio_cleanup(void)
 
 static int audio_stop(void)
 {
+    // if audio is idle then return success
     if (state.state == AUDIO_STATE_IDLE) {
         return 0;
     }
 
+    // set audio state to STOPPING
     state.state = AUDIO_STATE_STOPPING;
 
+    // if SDL Mixer is playing a track then stop it
     if (audio) {
         int fade_out_frames = 0;
         MIX_StopTrack(track, fade_out_frames);
     }
 
+    // wait for in progress audio to stop
     int ms = 0;
     while (state.state != AUDIO_STATE_IDLE) {
-        usleep(TEN_MS);
-        ms += 10;
+        usleep(TWO_MS);
+        ms += 2;
 
         if (ms > 5000) {
             ERROR("failed to stop\n");
@@ -274,6 +286,10 @@ static int audio_stop(void)
         }
     }
 
+    // clear audio state
+    memset(&state, 0, sizeof(state));
+
+    // return success
     return 0;
 }
 
@@ -314,6 +330,7 @@ void sdlx_audio_pause(void)
     if (audio) {
         MIX_PauseTrack(track);
     }
+
     if (audio_stream) {
         SDL_PauseAudioStreamDevice(audio_stream);  
     }
@@ -321,6 +338,9 @@ void sdlx_audio_pause(void)
     state_resume = state.state;
     state.state = AUDIO_STATE_PAUSED;
     state.volume = 0;
+    state.color_organ.low_band = 0;
+    state.color_organ.mid_band = 0;
+    state.color_organ.high_band = 0;
 }
 
 void sdlx_audio_resume(void)
@@ -356,32 +376,31 @@ void sdlx_audio_get_params(sdlx_audio_params_t *ap)
 
 // -----------------  UTILS  -----------------------------
 
-// xxx make this consistent with fft
-static int calc_volume_s16(short *samples, int n)
+static double calc_volume_s16(short *samples, int n)
 {   
-    long sum_squares = 0;
-    int  volume;
+    long   sum_squares = 0;
+    double volume;
 
-    #define VOLUME_SCALE_FACTOR (300. / 32768.)
+    #define VOLUME_SCALE_FACTOR 0.0001
 
     // calculate volume using RMS value of samples 
     for (int i = 0; i < n; i++) {
         sum_squares += (samples[i] * samples[i]);
     }
-    volume = sqrt(sum_squares / n) * VOLUME_SCALE_FACTOR;
+    volume = sqrt((double)sum_squares / n) * VOLUME_SCALE_FACTOR;
 
-    // limit volume to max value 100
-    if (volume > 100) volume = 100;
+    // limit volume to max value 1
+    if (volume > 1) volume = 1;
 
     // return volume
     return volume;
 }
 
-static int calc_volume_float(float *samples, int n)
+static double calc_volume_float(float *samples, int n)
 {   
-    long  sum_squares = 0;
-    int   volume;
-    short s16_sample;
+    long   sum_squares = 0;
+    double volume;
+    short  s16_sample;
 
     // calculate volume using RMS value of samples 
     for (int i = 0; i < n; i++) {
@@ -390,8 +409,8 @@ static int calc_volume_float(float *samples, int n)
     }
     volume = sqrt(sum_squares / n) * VOLUME_SCALE_FACTOR;
 
-    // limit volume to max value 100
-    if (volume > 100) volume = 100;
+    // limit volume to max value 1
+    if (volume > 1) volume = 1;
 
     // return volume
     return volume;
@@ -695,10 +714,11 @@ static int wav_file_duration_ms_from_filename(char *dir, char *filename)
 
 typedef struct {
     int  fd;
-    int  total_frames;  // xxx or make this total_ms
+    int  total_frames;
     char path[200];
 } mp3_file_cx_t;
 
+#define MAX_MP3_BUF 100000
 static unsigned char mp3buf[100000];
 
 static void *mp3_file_open(char *dir, char *filename, bool append)
@@ -711,6 +731,11 @@ static void *mp3_file_open(char *dir, char *filename, bool append)
     if (gfp == NULL) {
         ERROR("gfp not initialized\n");
         return NULL;
+    }
+
+    // if mp3buf is not allocated then allocate; it is never freed
+    if (mp3buf == NULL) {
+        mp3buf = calloc(MAX_MP3_BUF,1);
     }
 
     // create pathname, verify suffix is ".mp3"
@@ -770,7 +795,7 @@ static void mp3_file_write(void *cx_arg, short *samples, int num_samples)
     while (num_samples) {
         process_samples = (num_samples > MAX_SAMPLES_MP3_FILE_WRITE ? MAX_SAMPLES_MP3_FILE_WRITE : num_samples);
 
-        len = lame_encode_buffer_interleaved(gfp, samples, process_samples/2, mp3buf, sizeof(mp3buf));
+        len = lame_encode_buffer_interleaved(gfp, samples, process_samples/2, mp3buf, MAX_MP3_BUF);
         if (len < 0) {
             ERROR("lame_encode_buffer failed, rc=%d\n", len);
             return;
@@ -792,7 +817,7 @@ static void mp3_file_close(void *cx_arg)
     mp3_file_cx_t *cx = cx_arg;
 
     // flush lame internal buffers
-    len = lame_encode_flush(gfp, mp3buf, sizeof(mp3buf));
+    len = lame_encode_flush(gfp, mp3buf, MAX_MP3_BUF);
     if (len < 0) {
         ERROR("lame_encode_flush failed, rc=%d\n", len);
         return;
@@ -906,7 +931,7 @@ static int record_mic_thread(void *cx_arg)
             break;
         }
         if (state.state == AUDIO_STATE_PAUSED) {
-            usleep(TEN_MS);
+            usleep(TWO_MS);
             continue;
         }
 
@@ -917,20 +942,17 @@ static int record_mic_thread(void *cx_arg)
             break;
         }
         if (bytes == 0) {
-            usleep(TEN_MS);
+            usleep(TWO_MS);
             continue;
         }
 
         // scale record data
-        // xxx fix this gain problem
         for (int i = 0; i < bytes/sizeof(short); i++) {
             buff[i] = buff[i] * audio_params.record_gain;
         }
 
-        //xxx record microphone:  MONO S16 48000
-        //xxx  - sizeof buf
-        // xxx
-        fft(buff, bytes/sizeof(short), 2, FRAMES_PER_SEC, FFT_FMT_S16);
+        // process audio samples for color organ
+        color_organ(buff, bytes/sizeof(short), 2, FRAMES_PER_SEC, FFT_FMT_S16);
 
         // write the data to the file
         wav_file_write(cx->wav_file_cx, buff, bytes/sizeof(short));
@@ -959,7 +981,7 @@ static int record_mic_thread(void *cx_arg)
         }
 
         // short sleep
-        usleep(TEN_MS);
+        usleep(TWO_MS);
     }
 
     // pause and clear the record stream
@@ -986,7 +1008,7 @@ static int record_mic_thread(void *cx_arg)
     audio_stream = NULL;
     free(cx);
     state.state = AUDIO_STATE_IDLE;
-    state.volume = 0;
+    memset(&state, 0, sizeof(state));
     return 0;
 }
 
@@ -1035,7 +1057,8 @@ int sdlx_audio_record_from_device(char *dir, char *filename)
     state.volume         = 0;
     sprintf(state.pathname, "%s/%s", dir, filename);
 
-    // xxx
+    // initialize in PAUSED state to give user time to start the
+    // device playback
     sdlx_audio_pause();
 
     // create record_dev_thread
@@ -1062,11 +1085,9 @@ static int record_dev_thread(void *cx_arg)
             goto done;
         }
 
-        // xxx
+        // if state is PAUSED then short sleep, and continue
         if (state.state == AUDIO_STATE_PAUSED) {
-            //xxx state.volume = 0;
-            //xxx also clear color organ when paused
-            usleep(TEN_MS);
+            usleep(TWO_MS);
             continue;
         }
 
@@ -1078,14 +1099,16 @@ static int record_dev_thread(void *cx_arg)
             goto done;
         }
 
-        // xxx
-        fft(samples, MAX_SAMPLES, 2, FRAMES_PER_SEC, FFT_FMT_S16);
+        // process audio samples for color organ
+        color_organ(samples, MAX_SAMPLES, 2, FRAMES_PER_SEC, FFT_FMT_S16);
 
-        // xxx
+        // calculate volume
         volume = calc_volume_s16(samples, MAX_SAMPLES);
 
-        // xxx
+        // write samples to the mp3 file
         mp3_file_write(cx->mp3_cx, samples, MAX_SAMPLES);
+
+        // make updates to cx and state 
         cx->recorded_samples += MAX_SAMPLES;
         state.record_ms = (cx->recorded_samples / 2) / FRAMES_PER_MS;
         state.volume    = volume;
@@ -1099,7 +1122,7 @@ done:
     mp3_file_close(cx->mp3_cx);
     free(cx);
     state.state = AUDIO_STATE_IDLE;
-    state.volume = 0;
+    memset(&state, 0, sizeof(state));
     return 0;
 }
 
@@ -1259,7 +1282,7 @@ static int tones_thread(void *cx_arg)
 
     // wait for all queued audio to be played
     while (SDL_GetAudioStreamQueued(audio_stream) > 0) {  
-        usleep(TEN_MS);
+        usleep(TWO_MS);
     }
 
 done:
@@ -1269,7 +1292,7 @@ done:
     free(cx);
     free(samples);
     state.state = AUDIO_STATE_IDLE;
-    state.volume = 0;
+    memset(&state, 0, sizeof(state));
     return 0;
 }
 
@@ -1320,7 +1343,7 @@ static void play_buff(short *samples, int num_samples, int num_channels, int *to
             return;
         }
         if (state.state == AUDIO_STATE_PAUSED) {
-            usleep(TEN_MS);
+            usleep(TWO_MS);
             continue;
         }
 
@@ -1335,11 +1358,10 @@ static void play_buff(short *samples, int num_samples, int num_channels, int *to
         state.play_current_ms = (*total_queued_samples / num_channels) / FRAMES_PER_MS;
 
         // calculate volume for the samples just queued
-        // xxx make volume a double in 0-1 ranage
         state.volume = calc_volume_s16(samples, num_xfer_samples);
 
-        // call fft to compute the low,mid,high band volume
-        fft(samples, num_xfer_samples, num_channels, FRAMES_PER_SEC, FFT_FMT_S16);
+        // process audio samples for color organ
+        color_organ(samples, num_xfer_samples, num_channels, FRAMES_PER_SEC, FFT_FMT_S16);
 
         // sleep while there is more than 40 ms queued;
         // break out of this sleep loop if audio state has become STOPPING or PAUSED
@@ -1430,7 +1452,7 @@ static int play_buff_thread(void *cx_arg)
     while ((SDL_GetAudioStreamQueued(audio_stream) > 0) &&
            (state.state != AUDIO_STATE_STOPPING && state.state != AUDIO_STATE_PAUSED))
     {
-        usleep(TEN_MS);
+        usleep(TWO_MS);
     }
 
     // cleanup and return
@@ -1441,7 +1463,7 @@ static int play_buff_thread(void *cx_arg)
     }
     free(cx);
     state.state = AUDIO_STATE_IDLE;
-    state.volume = 0;
+    memset(&state, 0, sizeof(state));
     return 0;
 }
 
@@ -1531,7 +1553,6 @@ int sdlx_audio_play_file(char *dir, char *filename)
 static void mixer_track_raw_callback(void *userdata, MIX_Track *track, const SDL_AudioSpec *spec,
                                      float *samples, int num_samples)
 {
-
     // update audio state.play_current_ms
     long frames = MIX_GetTrackPlaybackPosition(track);
     state.play_current_ms = MIX_TrackFramesToMS(track, frames);
@@ -1539,16 +1560,16 @@ static void mixer_track_raw_callback(void *userdata, MIX_Track *track, const SDL
     // update audio state.volume
     state.volume = calc_volume_float(samples, num_samples);
 
-    INFO("fmt=%s  num_samples=%d  volume=%d  play_current=%0.0f secs\n", 
-         audio_fmt_str(play_file_spec.format),
-         num_samples, state.volume, state.play_current_ms/1000.0);
+    //INFO("fmt=%s  num_samples=%d  volume=%d  play_current=%0.0f secs\n", 
+    //     audio_fmt_str(play_file_spec.format),
+    //     num_samples, state.volume, state.play_current_ms/1000.0);
 
-    // call fft to update audio state low,mid,high band volumes
-    fft(samples, 
-        num_samples, 
-        play_file_spec.channels,
-        play_file_spec.freq,
-        FFT_FMT_FLOAT);
+    // process audio samples for color organ
+    color_organ(samples, 
+                num_samples, 
+                play_file_spec.channels,
+                play_file_spec.freq,
+                FFT_FMT_FLOAT);
 }
 
 static void mixer_track_stopped_callback(void *userdata, MIX_Track *track)
@@ -1556,7 +1577,7 @@ static void mixer_track_stopped_callback(void *userdata, MIX_Track *track)
     MIX_DestroyAudio(audio);
     audio = NULL;
     state.state = AUDIO_STATE_IDLE;
-    state.volume = 0;
+    memset(&state, 0, sizeof(state));
 }
 
 static char *audio_fmt_str(int fmt)
@@ -1603,24 +1624,15 @@ static int mp3_file_duration_ms_from_filename(char *dir, char *filename)
 
 // -----------------  FFT - GET LOW/MID/HIGH BAND VOLUMES  --------------
 
-// xxx
-// - ensure NUM_SAMPLES_IN_FFT  is even
-// - change MAX_SAMPLES for playbackcapture
-// - add debug prints
-// - make test.wav file that is a freq sweep of lft and then right channels
-// - print the overall duration
-// - catpure the band volumes in the test pgm,  at the top and bottom of display
-//        maybe elim the filename line
-//     put volume on state line
-//     combine the play/curr play_total, record all on one line
-
 // notes:
-// - support S16 and FLOAT sample formats
-// - stereo samples alternate left,right channels
+// - supports S16 and FLOAT sample formats
+// - num_channels == 2 (stereo) samples alternate left,right channels
+
+#define MAX_FFT_INPUT 1000
 
 // variables
-static kiss_fft_scalar fft_input[2000];  // xxx array size check and define
-static kiss_fft_cpx    fft_output[1001];
+static kiss_fft_scalar fft_input[MAX_FFT_INPUT];
+static kiss_fft_cpx    fft_output[MAX_FFT_INPUT/2 + 1];
 
 static kiss_fftr_cfg   fft_cfg;
 static int             fft_downsample;
@@ -1635,13 +1647,14 @@ static float get_band_vol(int low_freq, int high_freq);
 
 // - - - - - - - - - - - - - - - - - - - - - 
 
-// xxx change routine name
-static void fft(void *samples, int num_samples, int num_channels, int fps, int fmt)
+static void color_organ(void *samples, int num_samples, int num_channels, int fps, int fmt)
 {
     float *samples_float = (float*)samples;
     short *samples_s16   = (short*)samples;
     int    i, k;
-    //xxx long   start_us = util_microsec_timer();
+#ifdef VERBOSE
+    long   start_us = util_microsec_timer();
+#endif
 
     static struct {
         int num_samples;
@@ -1663,22 +1676,27 @@ static void fft(void *samples, int num_samples, int num_channels, int fps, int f
 
     // if caller args have changed then re-init fft
     if (num_samples != cfg.num_samples || num_channels != cfg.num_channels || fps != cfg.fps) {
-        // xxx
+        // save callers args for comparison on next call
         cfg.num_samples = num_samples;
         cfg.num_channels = num_channels;
         cfg.fps = fps;
 
-        // xxx
+        // determine downsample factor
         fft_downsample = (fps >= 48000 ? 4 : fps >= 36000 ? 3 : fps >= 24000 ? 2 : 1);
         fft_fps        = fps / fft_downsample;
 
-        // xxx
+        // determine size of fft input and output buffers; and
+        // determine frequency span of each fft bin (fft_delta_f)
         fft_num_input  = (num_samples / num_channels / fft_downsample) & ~1;
-        // xxx check for too big
+        if (fft_num_input > MAX_FFT_INPUT) {
+            ERROR("fft_num_input %d is too large\n", fft_num_input);
+            cfg.fps = 0;
+            return;
+        }
         fft_num_output = (fft_num_input / 2 + 1);
         fft_delta_f    = (fft_fps / fft_num_input);
 
-        // xxx
+        // allocate kiss_fftr_cfg
         fft_cfg = cached_alloc_fftr(fft_num_input);
         if (fft_cfg == NULL) {
             ERROR("cached_alloc_fftr failed\n");
@@ -1707,7 +1725,6 @@ static void fft(void *samples, int num_samples, int num_channels, int fps, int f
                 k += fft_downsample;
             }
         } else {
-            printf("FFT_FMT_S16\n");
             for (i = 0; i < fft_num_input; i++) {
                 fft_input[i] = ((samples_s16[k] / 32768.0) + (samples_s16[k+1] / 32768.0)) / 2;
                 k += 2*fft_downsample;
@@ -1721,12 +1738,12 @@ static void fft(void *samples, int num_samples, int num_channels, int fps, int f
     // extract low,mid,high band volume from fft_output
     // - google search: "what is good cutoff for the low mid and high bands in a color organ"
     //   Traditional Approach: Low (60-150 Hz), Mid (200-600 Hz), High (800-2200 Hz).
-    state.low_band_vol  = get_band_vol(60, 150);
-    state.mid_band_vol  = get_band_vol(200, 600);
-    state.high_band_vol = get_band_vol(800, 5800);
+    state.color_organ.low_band  = get_band_vol(60, 150);
+    state.color_organ.mid_band  = get_band_vol(200, 600);
+    state.color_organ.high_band = get_band_vol(800, 5800);
 
-#if 0
-    // print results  xxx make this a verbose level print
+#ifdef VERBOSE
+    // print results
     INFO("dur=%ld fps=%d ns=%d nc=%d intvl=%d - ds=%d fps=%d n_in=%d n_out=%d delta_f=%d - low=%3.1f mid=%3.1f high=%3.1f\n",
          util_microsec_timer() - start_us,
          fps,
@@ -1738,9 +1755,9 @@ static void fft(void *samples, int num_samples, int num_channels, int fps, int f
          fft_num_input,
          fft_num_output,
          fft_delta_f,
-         state.low_band_vol,
-         state.mid_band_vol,
-         state.high_band_vol);
+         state.color_organ.low_band,
+         state.color_organ.mid_band,
+         state.color_organ.high_band);
 #endif
 }
 
