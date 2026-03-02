@@ -142,10 +142,6 @@ void StdTimeSetupFunc(Picoc *pc)
         exit(1);
     }
 
-    /* make a "struct tm" which is the same size as a native tm structure */
-//  TypeCreateOpaqueStruct(pc, NULL, TableStrRegister(pc, "tm"),
-//      sizeof(struct tm)); //xxx
-
     /* define CLK_PER_SEC etc. */
     VariableDefinePlatformVar(pc, NULL, "CLOCKS_PER_SEC", &pc->IntType,
         (union AnyValue*)&CLOCKS_PER_SECValue, false);

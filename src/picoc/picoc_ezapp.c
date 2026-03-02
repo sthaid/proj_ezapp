@@ -1,8 +1,8 @@
-#include <libgen.h>
+// EXAPP this is picoc entrypoint, called by src/ezapp/main.c
 
 #include "picoc.h"
 
-#define PICOC_STACK_SIZE (128000*4)  // xxx check this
+#define PICOC_STACK_SIZE (128000*4)  // 512,000 bytes
 
 int picoc_ezapp(char *args)
 {

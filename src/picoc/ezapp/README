@@ -1,9 +1,23 @@
-=================
-libgen
-=================
+This direcotry provides information on customizing picoc
+for use with EZAPP
+
+============================
+GENERAL INFO
+============================
+
+Changes to picoc are tagged with 'EZAPP'.
+
+Issues requiring follow up are tagged with 'xxx'.
+
+To view changes made to picoc:
+  git diff 89f7b53128c196223bbab6a516e03bf0ab85e124 .
+
+============================
+PLATFORM LIBRARY GEN TOOL (libgen)
+============================
 
 Used to translate platform routine prototypes to format that
 can be incorporated in platform/library_unix.c.
 
-Files run_libgen and libgen_in.h provide a usage example.
+Usage example, refer to: run_libgen and libgen_in.h.
 

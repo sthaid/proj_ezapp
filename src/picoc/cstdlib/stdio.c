@@ -258,7 +258,7 @@ int StdioBasePrintf(struct ParseState *Parser, FILE *Stream, char *StrOut,
                 switch (*FPos) {
                 case 'd':  // EZAPP handle integer converts all the same
                 case 'i':
-                case 'u':
+                case 'u':  // EZAPP xxx check this
                 case 'o':
                 case 'x':
                 case 'X':
@@ -817,7 +817,7 @@ void StdioPclose(struct ParseState *Parser, struct Value *ReturnValue,
     ReturnValue->Val->Integer = rc;
 }
 
-// EZAPP setlinebuf
+// EZAPP add setlinebuf
 void StdioSetlinebuf(struct ParseState *Parser, struct Value *ReturnValue,
     struct Value **Param, int NumArgs)
 {

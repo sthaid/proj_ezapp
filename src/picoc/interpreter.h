@@ -6,11 +6,10 @@
 
 #include "platform.h"
 
-// EZAPP TODO xxx why needed?
+// EZAPP TODO xxx why is this needed?
 struct __sFILE {
   char __private[152];
 } __attribute__((aligned(sizeof(void*))));
-
 
 #ifndef NULL
 #define NULL 0
