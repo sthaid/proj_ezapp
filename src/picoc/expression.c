@@ -238,7 +238,7 @@ int IsTypeToken(struct ParseState *Parser, enum LexToken t,
     return 0;
 }
 
-// EZAPP TODO
+// EZAPP xxx
 long ExpressionCoerceInteger(struct Value *Val)
 {
     switch (Val->Typ->Base) {
