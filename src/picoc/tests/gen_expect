@@ -7,12 +7,19 @@ if [ "$test" = "" ]; then
 fi
 
 echo "Building $test.c"
-gcc $test.c
+gcc -Wall -Werror $test.c
 if [ $? -ne 0 ]; then
   echo "ERROR failed to compile $test.c"
   exit 1
 fi
+echo
 
 echo "Generating $test.expect"
 ./a.out > $test.expect
 rm a.out
+echo
+
+#echo "Expect file $test.expect"
+#cat $test.expect
+
+exit 0

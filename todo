@@ -1,3 +1,17 @@
+upgrade to 25.10
+
+picoc
+- check prints of d i u o x X fmts for ints and longs 
+- review expression.c
+- // EZAPP TODO xxx why is this needed?
+    struct __sFILE {
+      char __private[152];
+    } __attribute__((aligned(sizeof(void*))));
+
+picoc
+- review
+- float problem
+
 new apps
 - tones   close-encounters etc
 - audio   
@@ -11,8 +25,9 @@ new apps
 - steps
 
 add fft supporot to picoc
+- add test to test app
 
-horizontal orientation
+horizontal orientation ?
 
 app to play tone sequence 
 - twinkle little star

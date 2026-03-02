@@ -63,11 +63,13 @@ TESTS=	00_assignment.test \
 	67_macro_crash.test \
 	68_return.test \
 
+EZAPP_TESTS = 70_printf.test \
+
 include csmith/Makefile
 include jpoirier/Makefile
 
 %.test: %.expect %.c
-	@echo Test: $*...
+	@echo -n "Test: $*... "
 	@if [ "x`echo $* | grep args`" != "x" ]; \
 	then \
 		../picoc $*.c - arg1 arg2 arg3 arg4 2>&1 >$*.output; \
@@ -83,15 +85,23 @@ include jpoirier/Makefile
         	diff -u $*.expect $*.output; \
        		rm -f $*.output; \
 		exit 1; \
+	else \
+        	echo "passed"; \
 	fi; \
-       	rm -f $*.output
+	rm -f $*.output
 
-all: test jpoirier csmith
+all: test jpoirier csmith ezapp
 
 test: $(TESTS)
 	@echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 	@echo "%%%%%%%%%%%% Tests Passed %%%%%%%%%%%%"
 	@echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
+	@echo
+
+ezapp: $(EZAPP_TESTS)
+	@echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
+	@echo "%%%%%%%%%%%% Ezapp Tests Passed %%%%%%%%%%%%"
+	@echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 	@echo
 
 csmith: $(CSMITH_TESTS)
@@ -105,4 +115,3 @@ jpoirier: $(JPOIRIER_TESTS)
 	@echo "%%%%%%%%%%%% JPoirier Tests Passed %%%%%%%%%%%%"
 	@echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 	@echo
-
