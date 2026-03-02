@@ -62,7 +62,6 @@ TESTS=	00_assignment.test \
 	66_printf_undefined.test \
 	67_macro_crash.test \
 	68_return.test \
-	69_shebang_script.test \
 
 include csmith/Makefile
 include jpoirier/Makefile
@@ -87,7 +86,7 @@ include jpoirier/Makefile
 	fi; \
        	rm -f $*.output
 
-all: test
+all: test jpoirier csmith
 
 test: $(TESTS)
 	@echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"

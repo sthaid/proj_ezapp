@@ -1,0 +1,18 @@
+#!/bin/bash
+
+test=$1
+if [ "$test" = "" ]; then
+  echo "ERROR test name expected"
+  exit 1
+fi
+
+echo "Building $test.c"
+gcc $test.c
+if [ $? -ne 0 ]; then
+  echo "ERROR failed to compile $test.c"
+  exit 1
+fi
+
+echo "Generating $test.expect"
+./a.out > $test.expect
+rm a.out
