@@ -1,0 +1,9 @@
+=================
+libgen
+=================
+
+Used to translate platform routine prototypes to format that
+can be incorporated in platform/library_unix.c.
+
+Files run_libgen and libgen_in.h provide a usage example.
+

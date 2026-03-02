@@ -6,6 +6,7 @@
 void replace(char *s, char *pattern1, char *pattern2);
 char *picoc_type(char *type);
 void remove_newline(char *s);
+bool is_blank_line(char *s);
 
 int main(int argc, char **argv)
 {
@@ -18,11 +19,18 @@ int main(int argc, char **argv)
     setlinebuf(stderr);
 
 again:
-    // get prototype from stdin, and make some adjustments
+    // get prototype from stdin
     if (fgets(prototype_orig, sizeof(prototype_orig), stdin) == NULL) {
         return 0;
     }
     remove_newline(prototype_orig);
+
+    // ignore blank lines
+    if (is_blank_line(prototype_orig)) {
+        goto again;
+    }
+
+    //make some adjustments
     p = strstr(prototype_orig, "__attribute__");
     if (p) strcpy(p, ";");
 
@@ -235,4 +243,12 @@ void remove_newline(char *s)
     if (len > 0 && s[len-1] == '\n') {
         s[len-1] = '\0';
     }
+}
+
+bool is_blank_line(char *s)
+{
+    for (; *s; s++) {
+        if (!isspace(*s)) return false;
+    }
+    return true;
 }
