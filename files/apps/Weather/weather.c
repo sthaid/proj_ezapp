@@ -849,7 +849,7 @@ void display_detailed_forecast(int idx)
             done = true;
             break;
         case EVID_PREVIOUS: {
-            forecast_t *fc = (mode == HOURLY ? &hourly[0] : &daily[0]);  // xxx picoc problem
+            forecast_t *fc = (mode == HOURLY ? &hourly[0] : &daily[0]);
             int i = idx-1;
             while (i >= 0 && (!fc[i].valid || (mode == DAILY && !fc[i].is_daytime))) {
                 i--;
@@ -860,7 +860,7 @@ void display_detailed_forecast(int idx)
             }
             break; }
         case EVID_NEXT: {
-            forecast_t *fc = (mode == HOURLY ? &hourly[0] : &daily[0]);  // xxx picoc problem
+            forecast_t *fc = (mode == HOURLY ? &hourly[0] : &daily[0]);
             int i = idx+1;
             while (i < MAX_FORECAST && (!fc[i].valid || (mode == DAILY && !fc[i].is_daytime))) {
                 i++;

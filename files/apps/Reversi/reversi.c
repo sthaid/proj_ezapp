@@ -64,9 +64,9 @@ int main(int argc, char **argv)
     game_init(&board);
     eval_str[0] = '\0';
 
-    // seed random number generator
-    // xxx commented out to compare picoc and linux versions
-    //srandom(util_microsec_timer());
+    // seed random number generator; 
+    // comment this out if deterministic computer moves are desired
+    srandom(util_microsec_timer());
 
     // xxx
     update_display_init();

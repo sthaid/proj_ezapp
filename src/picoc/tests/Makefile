@@ -63,8 +63,6 @@ TESTS=	00_assignment.test \
 	67_macro_crash.test \
 	68_return.test \
 
-EZAPP_TESTS = 70_printf.test \
-
 include csmith/Makefile
 include jpoirier/Makefile
 
@@ -81,37 +79,52 @@ include jpoirier/Makefile
 	fi
 	@if [ "x`diff -qbu $*.expect $*.output`" != "x" ]; \
 	then \
-        	echo "error in test $*"; \
+        	echo "********** FAILED **********"; \
         	diff -u $*.expect $*.output; \
        		rm -f $*.output; \
 		exit 1; \
 	else \
-        	echo "passed"; \
+        	echo "PASSED"; \
 	fi; \
-	rm -f $*.output
+       	rm -f $*.output
 
 all: test jpoirier csmith ezapp
 
 test: $(TESTS)
-	@echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
-	@echo "%%%%%%%%%%%% Tests Passed %%%%%%%%%%%%"
-	@echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
-	@echo
-
-ezapp: $(EZAPP_TESTS)
-	@echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
-	@echo "%%%%%%%%%%%% Ezapp Tests Passed %%%%%%%%%%%%"
-	@echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 	@echo
 
 csmith: $(CSMITH_TESTS)
-	@echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
-	@echo "%%%%%%%%%%%% CSmith Tests Passed %%%%%%%%%%%%"
-	@echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 	@echo
 
 jpoirier: $(JPOIRIER_TESTS)
-	@echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
-	@echo "%%%%%%%%%%%% JPoirier Tests Passed %%%%%%%%%%%%"
-	@echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 	@echo
+
+# EZAPP tests follows,
+# These differs from the baseline tests in that the ezapp tests
+# generate the expect file on every invokation.
+
+EZAPP_TESTS = 100_printf \
+              101_ternary_op \
+              102_statics \
+              103_cast 
+
+ezapp: $(EZAPP_TESTS)
+	@echo
+
+$(EZAPP_TESTS):
+	@echo -n "Test: $@ ... "
+	@gcc -o /tmp/$@ -Wall -Werror $@.c
+	@/tmp/$@ > $@.expect
+	@rm /tmp/$@
+	@../picoc $@.c 2>&1 > $@.output
+	@cmp -s $@.expect $@.output; \
+        if [ $$? != 0 ]; then \
+            echo "********** FAILED **********"; \
+            diff --side-by-side $@.expect $@.output; \
+            exit 0; \
+        else \
+            rm -f $@.expect $@.output; \
+            echo "PASSED"; \
+        fi
+
+.PHONY: $(EZAPP_TESTS)
