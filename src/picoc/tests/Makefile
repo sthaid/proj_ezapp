@@ -106,7 +106,8 @@ jpoirier: $(JPOIRIER_TESTS)
 EZAPP_TESTS = 100_printf \
               101_ternary_op \
               102_statics \
-              103_cast 
+              103_cast \
+              104_ops 
 
 ezapp: $(EZAPP_TESTS)
 	@echo
