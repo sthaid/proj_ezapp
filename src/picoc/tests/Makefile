@@ -88,7 +88,7 @@ include jpoirier/Makefile
 	fi; \
        	rm -f $*.output
 
-all: test jpoirier csmith 
+all: test jpoirier csmith ezapp
 
 test: $(TESTS)
 	@echo

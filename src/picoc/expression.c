@@ -460,6 +460,19 @@ void ExpressionPushInt(struct ParseState *Parser,
     ExpressionStackPushValueNode(Parser, StackTop, ValueLoc);
 }
 
+#if 1
+void ExpressionPushLongInt(struct ParseState *Parser,
+            struct ExpressionStack **StackTop, long IntValue)
+{
+    struct Value *ValueLoc = VariableAllocValueFromType(Parser->pc, Parser,
+                            &Parser->pc->LongType, false, NULL, false);
+
+    ValueLoc->Val->LongInteger = IntValue;
+
+    ExpressionStackPushValueNode(Parser, StackTop, ValueLoc);
+}
+#endif
+
 void ExpressionPushFP(struct ParseState *Parser,
     struct ExpressionStack **StackTop, double FPValue)
 {
@@ -533,9 +546,15 @@ void ExpressionAssign(struct ParseState *Parser, struct Value *DestValue,
         DestValue->Val->Character = (char)ExpressionCoerceInteger(SourceValue);
         break;
     case TypeLong:
+        //printf("DEST TYPE LONG  %d\n", SourceValue->Typ->Base);
+        if (SourceValue->Typ->Base == TypeInt) {
+            //printf(" SourceValue->Val->Integer = %d\n", SourceValue->Val->Integer);
+        }
         //printf("src %d\n", SourceValue->Typ->Base);
         if (SourceValue->Typ->Base == TypeFP) {
             DestValue->Val->LongInteger = SourceValue->Val->FP;
+        } else if (SourceValue->Typ->Base == TypeInt) {
+            DestValue->Val->LongInteger = SourceValue->Val->Integer;
         } else {
             DestValue->Val->LongInteger = SourceValue->Val->LongInteger;
         }
@@ -549,7 +568,19 @@ void ExpressionAssign(struct ParseState *Parser, struct Value *DestValue,
             (unsigned short)ExpressionCoerceUnsignedInteger(SourceValue);
         break;
     case TypeUnsignedLong:
-        DestValue->Val->UnsignedLongInteger = SourceValue->Val->UnsignedLongInteger;
+        //printf("DEST TYPE UNSIGNED LONG  %d  %d\n", 
+               //SourceValue->Typ->Base, DestValue->Typ->Base);
+        if (SourceValue->Typ->Base == TypeInt) {
+            //printf(" SourceValue->Val->UnsignedInteger = 0x%x\n", SourceValue->Val->UnsignedInteger);
+        }
+        if (SourceValue->Typ->Base == TypeInt) {
+            // xxxxxxxxxxxxxxxxxxx oops
+            //DestValue->Val->UnsignedLongInteger = SourceValue->Val->UnsignedInteger;    // 103_cast okay with this
+            DestValue->Val->UnsignedLongInteger = SourceValue->Val->Integer;              // 104_ops is better here
+        } else {
+            DestValue->Val->UnsignedLongInteger = SourceValue->Val->UnsignedLongInteger;
+        }
+        //printf("DestValue = %lx\n", DestValue->Val->UnsignedLongInteger );
         break;
     case TypeUnsignedChar:
         DestValue->Val->UnsignedCharacter =
@@ -638,13 +669,16 @@ void ExpressionQuestionMarkOperator(struct ParseState *Parser,
     struct ExpressionStack **StackTop, struct Value *BottomValue,
     struct Value *TopValue)
 {
+    //printf("QUESTION MARK BP=%d... ", BracketPrecedence);
     if (!IS_NUMERIC_COERCIBLE(TopValue))
         ProgramFail(Parser, "first argument to '?' should be a number");
 
     if (ExpressionCoerceInteger(TopValue)) {
+        //printf("IS TRUE\n");
         /* the condition's true, return the BottomValue */
         ExpressionStackPushValue(Parser, StackTop, BottomValue);
     } else {
+        //printf("IS FALSE\n");
         /* the condition's false, return void */
         ExpressionStackPushValueByType(Parser, StackTop, &Parser->pc->VoidType);
     }
@@ -655,10 +689,13 @@ void ExpressionColonOperator(struct ParseState *Parser,
     struct ExpressionStack **StackTop, struct Value *BottomValue,
     struct Value *TopValue)
 {
+    //printf("COLON BP=%d... ", BracketPrecedence);
     if (TopValue->Typ->Base == TypeVoid) {
+        //printf("TOP IS VOID\n");
         /* invoke the "else" part - return the BottomValue */
         ExpressionStackPushValue(Parser, StackTop, BottomValue);
     } else {
+        //printf("TOP IS NOT VOID\n");
         /* it was a "then" - return the TopValue */
         ExpressionStackPushValue(Parser, StackTop, TopValue);
     }
@@ -1103,7 +1140,11 @@ void ExpressionInfixOperator(struct ParseState *Parser,
             ResultInt = BottomInt >> TopInt;
             break;
         case TokenPlus:
+            //printf("TYPE %d %d\n",
+                //BottomValue->Typ->Base, TopValue->Typ->Base);
+            //printf("ADD  %ld %ld\n", BottomInt, TopInt);
             ResultInt = BottomInt + TopInt;
+            //printf("Result %ld\n", ResultInt);
             break;
         case TokenMinus:
             ResultInt = BottomInt - TopInt;
@@ -1121,7 +1162,8 @@ void ExpressionInfixOperator(struct ParseState *Parser,
             ProgramFail(Parser, "invalid operation");
             break;
         }
-        ExpressionPushInt(Parser, StackTop, ResultInt);
+        // xxxxxxxxxx
+        ExpressionPushLongInt(Parser, StackTop, ResultInt);
     } else if (BottomValue->Typ->Base == TypePointer &&
             IS_NUMERIC_COERCIBLE(TopValue)) {
         /* pointer/integer infix arithmetic */
@@ -1208,6 +1250,7 @@ void ExpressionInfixOperator(struct ParseState *Parser,
         /* cast a value to a different type */
         /* XXX - possible bug if the destination type takes more than s
             izeof(struct Value) + sizeof(struct ValueType *) */
+        //printf("CAST\n");
         struct Value *ValueLoc = ExpressionStackPushValueByType(Parser, StackTop,
             BottomValue->Val->Typ);
         ExpressionAssign(Parser, ValueLoc, TopValue, true, NULL, 0, true);
@@ -1806,6 +1849,7 @@ void ExpressionParseFunctionCall(struct ParseState *Parser,
     struct Value *Param;
     struct Value **ParamArray = NULL;
 
+    //printf("FUNC NAME %s  RunIt %d\n", FuncName, RunIt);
     if (RunIt) {
         /* get the function definition */
         VariableGet(Parser->pc, Parser, FuncName, &FuncValue);
@@ -1835,6 +1879,7 @@ void ExpressionParseFunctionCall(struct ParseState *Parser,
     }
 
     /* parse arguments */
+    //printf("PARSE ARGS\n");
     ArgCount = 0;
     do {
         if (RunIt && ArgCount < FuncValue->Val->FuncDef.NumParams)
