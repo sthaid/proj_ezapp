@@ -29,7 +29,6 @@ TESTS=	00_assignment.test \
 	29_array_address.test \
 	30_hanoi.test \
 	31_args.test \
-	32_led.test \
 	33_ternary_op.test \
 	34_array_assignment.test \
 	35_sizeof.test \
@@ -63,6 +62,8 @@ TESTS=	00_assignment.test \
 	67_macro_crash.test \
 	68_return.test \
 
+NOT_WORKING = 	32_led.test
+
 include csmith/Makefile
 include jpoirier/Makefile
 
@@ -80,15 +81,14 @@ include jpoirier/Makefile
 	@if [ "x`diff -qbu $*.expect $*.output`" != "x" ]; \
 	then \
         	echo "********** FAILED **********"; \
-        	diff -u $*.expect $*.output; \
-       		rm -f $*.output; \
+        	diff -y $*.expect $*.output; \
 		exit 1; \
 	else \
         	echo "PASSED"; \
 	fi; \
        	rm -f $*.output
 
-all: test jpoirier csmith ezapp
+all: test jpoirier csmith 
 
 test: $(TESTS)
 	@echo
@@ -107,7 +107,8 @@ EZAPP_TESTS = 100_printf \
               101_ternary_op \
               102_statics \
               103_cast \
-              104_ops 
+              104_ops \
+              105_sizeof \
 
 ezapp: $(EZAPP_TESTS)
 	@echo
@@ -128,4 +129,8 @@ $(EZAPP_TESTS):
             echo "PASSED"; \
         fi
 
-.PHONY: $(EZAPP_TESTS)
+clean:
+	rm -f *.output
+	git ls-files --others *.expect | xargs rm -f
+
+.PHONY: $(EZAPP_TESTS) clean

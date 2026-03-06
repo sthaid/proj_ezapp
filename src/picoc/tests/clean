@@ -1,4 +1,0 @@
-#!/bin/bash
-
-rm -f *.output
-git ls-files --others *.expect | xargs rm -f
