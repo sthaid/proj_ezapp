@@ -533,7 +533,12 @@ void ExpressionAssign(struct ParseState *Parser, struct Value *DestValue,
         DestValue->Val->Character = (char)ExpressionCoerceInteger(SourceValue);
         break;
     case TypeLong:
-        DestValue->Val->LongInteger = SourceValue->Val->LongInteger;
+        //printf("src %d\n", SourceValue->Typ->Base);
+        if (SourceValue->Typ->Base == TypeFP) {
+            DestValue->Val->LongInteger = SourceValue->Val->FP;
+        } else {
+            DestValue->Val->LongInteger = SourceValue->Val->LongInteger;
+        }
         break;
     case TypeUnsignedInt:
         DestValue->Val->UnsignedInteger =
