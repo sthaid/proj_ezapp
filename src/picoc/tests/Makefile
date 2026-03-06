@@ -109,6 +109,7 @@ EZAPP_TESTS = 100_printf \
               103_cast \
               104_ops \
               105_sizeof \
+              106_ifdef
 
 ezapp: $(EZAPP_TESTS)
 	@echo

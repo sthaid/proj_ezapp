@@ -129,12 +129,16 @@ enum LexToken {
                TokenArrow,
     /* 0x2b */ TokenOpenBracket,
                TokenCloseBracket,
+
+    // xxx comment needed here
+
     /* 0x2d */ TokenIdentifier,
                TokenIntegerConstant,
+               TokenLongIntegerConstant,
                TokenFPConstant,
                TokenStringConstant,
                TokenCharacterConstant,
-    /* 0x32 */ TokenSemicolon,
+    /* 0x32 */ TokenSemicolon,  // xxx update number comments
                TokenEllipsis,
     /* 0x34 */ TokenLeftBrace,
                TokenRightBrace,
@@ -221,25 +225,25 @@ struct ParseState {
 
 /* values */
 enum BaseType {
-    TypeVoid,                   /* no type */
-    TypeInt,                    /* integer */
-    TypeShort,                  /* short integer */
-    TypeChar,                   /* a single character (signed) */
-    TypeLong,                   /* long integer */
-    TypeUnsignedInt,            /* unsigned integer */
-    TypeUnsignedShort,          /* unsigned short integer */
-    TypeUnsignedChar,           /* unsigned 8-bit number */ /* must be before unsigned long */
-    TypeUnsignedLong,           /* unsigned long integer */
-    TypeFP,                     /* floating point */
-    TypeFunction,               /* a function */
-    TypeMacro,                  /* a macro */
-    TypePointer,                /* a pointer */
-    TypeArray,                  /* an array of a sub-type */
-    TypeStruct,                 /* aggregate type */
-    TypeUnion,                  /* merged type */
-    TypeEnum,                   /* enumerated integer type */
-    TypeGotoLabel,              /* a label we can "goto" */
-    Type_Type                   /* a type for storing types */
+    TypeVoid,                   /* 0  no type */
+    TypeInt,                    /* 1  integer */
+    TypeShort,                  /* 2  short integer */
+    TypeChar,                   /* 3  a single character (signed) */
+    TypeLong,                   /* 4  long integer */
+    TypeUnsignedInt,            /* 5  unsigned integer */
+    TypeUnsignedShort,          /* 6  unsigned short integer */
+    TypeUnsignedChar,           /* 7  unsigned 8-bit number */ /* must be before unsigned long */
+    TypeUnsignedLong,           /* 8  unsigned long integer */
+    TypeFP,                     /* 9  floating point */
+    TypeFunction,               /* 10 a function */
+    TypeMacro,                  /* 11 a macro */
+    TypePointer,                /* 12 a pointer */
+    TypeArray,                  /* 13 an array of a sub-type */
+    TypeStruct,                 /* 14 aggregate type */
+    TypeUnion,                  /* 15 merged type */
+    TypeEnum,                   /* 16 enumerated integer type */
+    TypeGotoLabel,              /* 17 a label we can "goto" */
+    Type_Type                   /* 18 a type for storing types */
 };
 
 /* data type */

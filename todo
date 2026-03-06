@@ -1,26 +1,10 @@
-  File          Line
-7 weather.c     485 value = util_json_get_value(json, "properties", "periods", &period_str, NULL);  // xxx picoc requires
-                    &period_str ?
-8 weather.c     852 forecast_t *fc = (mode == HOURLY ? &hourly[0] : &daily[0]);  // xxx picoc problem
-9 weather.c     863 forecast_t *fc = (mode == HOURLY ? &hourly[0] : &daily[0]);  // xxx picoc problem
-
----------------
-1 memo.c        106 color = (audio_state.state == AUDIO_STATE_PLAY_FILE       ? COLOR_GREEN :   // xxx picoc problem
-2 morse.c       245 char *morse_chars[] = {  // xxx this cant be static due to picoc limitation
-3 paddle.c      228 // xxx picoc problem:
-0 sunrise_web.c  89 //t_midday_gm = ((long)t_rise_gm + (long)t_set_gm) / 2;  // xxx why doesnt this work in picoc
-5 test.c        114 // xxx check this about picoc
-6 test.c        115 // picoc: picoc does not support this being static, causes crash
 
 
-NEED TEST FOR BIT OPERATORES LIKE << >> ~  *& |
-AND
+====================
+====================
+====================
 
 FIX CALCULATOR PGM
-
-====================
-====================
-====================
 
 upgrade to 25.10
 

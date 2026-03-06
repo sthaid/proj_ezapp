@@ -151,14 +151,10 @@ enum LexToken LexGetNumber(Picoc *pc, struct LexState *Lexer, struct Value *Valu
 {
     long Result = 0;
     long Base = 10;
-    enum LexToken ResultToken;
     double FPResult;
     double FPDiv;
-    /* long/unsigned flags */
-#if 0 /* unused for now */
     char IsLong = 0;
-    char IsUnsigned = 0;
-#endif
+    //char IsUnsigned = 0;
 
     if (*Lexer->Pos == '0') {
         /* a binary, octal or hex literal */
@@ -184,25 +180,32 @@ enum LexToken LexGetNumber(Picoc *pc, struct LexState *Lexer, struct Value *Valu
     }
     if (*Lexer->Pos == 'l' || *Lexer->Pos == 'L') {
         LEXER_INC(Lexer);
-        /* IsLong = 1; */
+        IsLong = 1;
     }
 
-    Value->Typ = &pc->LongType; /* ignored? */
-    Value->Val->LongInteger = Result;
+    // xxx might be issue with this commit?
+    // xxx todo unsigned int constants
+    if ((Lexer->Pos == Lexer->End) ||
+        (*Lexer->Pos != '.' && *Lexer->Pos != 'e' && *Lexer->Pos != 'E'))
+    {
+        // set IsLong if integer value exceeds max
+        if ((unsigned long)Result >= 0x100000000) {
+            IsLong = true;
+        }
 
-    ResultToken = TokenIntegerConstant;
-
-    if (Lexer->Pos == Lexer->End)
-        return ResultToken;
-
-    if (Lexer->Pos == Lexer->End) {
-        return ResultToken;
+        // return int/long constant
+        if (!IsLong) {
+            Value->Typ = &pc->IntType;
+            Value->Val->Integer = Result;
+            return TokenIntegerConstant;
+        } else {
+            Value->Typ = &pc->LongType;
+            Value->Val->LongInteger = Result;
+            return TokenLongIntegerConstant;
+        }
     }
 
-    if (*Lexer->Pos != '.' && *Lexer->Pos != 'e' && *Lexer->Pos != 'E') {
-        return ResultToken;
-    }
-
+    // floating point constant ...
     Value->Typ = &pc->FPType;
     FPResult = (double)Result;
 
@@ -613,7 +616,8 @@ int LexTokenSize(enum LexToken Token)
 {
     switch (Token) {
     case TokenIdentifier: case TokenStringConstant: return sizeof(char*);
-    case TokenIntegerConstant: return sizeof(long);
+    case TokenIntegerConstant: return sizeof(int);
+    case TokenLongIntegerConstant: return sizeof(long);
     case TokenCharacterConstant: return sizeof(unsigned char);
     case TokenFPConstant: return sizeof(double);
     default: return 0;
@@ -817,6 +821,9 @@ enum LexToken LexGetRawToken(struct ParseState *Parser, struct Value **Value,
                 pc->LexValue.Typ = NULL;
                 break;
             case TokenIntegerConstant:
+                pc->LexValue.Typ = &pc->IntType;
+                break;
+            case TokenLongIntegerConstant:
                 pc->LexValue.Typ = &pc->LongType;
                 break;
             case TokenCharacterConstant:
@@ -905,6 +912,7 @@ void LexHashIf(struct ParseState *Parser)
         Token = LexGetRawToken(&MacroParser, &IdentValue, true);
     }
 
+    // xxx what is this for?
     if (Token != TokenCharacterConstant && Token != TokenIntegerConstant)
         ProgramFail(Parser, "value expected");
 
