@@ -29,6 +29,7 @@ TESTS=	00_assignment.test \
 	29_array_address.test \
 	30_hanoi.test \
 	31_args.test \
+  	32_led.test \
 	33_ternary_op.test \
 	34_array_assignment.test \
 	35_sizeof.test \
@@ -62,13 +63,11 @@ TESTS=	00_assignment.test \
 	67_macro_crash.test \
 	68_return.test \
 
-NOT_WORKING = 	32_led.test
-
 include csmith/Makefile
 include jpoirier/Makefile
 
 %.test: %.expect %.c
-	@echo -n "Test: $*... "
+	@printf "%-35s" "Test: $*... "
 	@if [ "x`echo $* | grep args`" != "x" ]; \
 	then \
 		../picoc $*.c - arg1 arg2 arg3 arg4 2>&1 >$*.output; \
@@ -115,7 +114,7 @@ ezapp: $(EZAPP_TESTS)
 	@echo
 
 $(EZAPP_TESTS):
-	@echo -n "Test: $@ ... "
+	@printf "%-35s" "Test: $@ ... "
 	@gcc -o /tmp/$@ -Wall -Werror $@.c
 	@/tmp/$@ > $@.expect
 	@rm /tmp/$@

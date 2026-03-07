@@ -67,14 +67,14 @@ void test_u64_u64(unsigned long x, unsigned long y)
     printf("%lx %s %lx = %lx\n", x, "+", y, x + y);
     printf("%lx %s %lx = %lx\n", x, "-", y, x - y);
     printf("%lx %s %lx = %lx\n", x, "*", y, x * y);
-//  printf("%lx %s %lx = %lx\n", x, "/", y, x / y);  //xxx
+    printf("%lx %s %lx = %lx\n", x, "/", y, x / y);
     printf("%lx %s %lx = %lx\n", x, "&", y, x & y);
     printf("%lx %s %lx = %lx\n", x, "|", y, x | y);
     printf("%lx %s %lx = %lx\n", x, "^", y, x ^ y);
 
     if ((unsigned)y < 64) {
         printf("%lx %s %lx = %lx\n", x, "<<", y, x << y);
-//      printf("%lx %s %lx = %lx\n", x, ">>", y, x >> y);  //xxx
+        printf("%lx %s %lx = %lx\n", x, ">>", y, x >> y);
     }
 
     printf("%s%lx = %lx\n", "~", x, ~x);

@@ -1033,6 +1033,14 @@ void ExpressionInfixOperator(struct ParseState *Parser,
         enum BaseType BottomTyp = BottomValue->Typ->Base;
         bool Bottom64 = (BottomTyp == TypeLong || BottomTyp == TypeUnsignedLong);
         bool Top64 = (TopTyp == TypeLong || TopTyp == TypeUnsignedLong);
+        bool BottomUnsigned = (BottomTyp == TypeUnsignedChar ||
+                               BottomTyp == TypeUnsignedShort ||
+                               BottomTyp == TypeUnsignedInt ||
+                               BottomTyp == TypeUnsignedLong);
+        bool TopUnsigned = (TopTyp == TypeUnsignedChar ||
+                            TopTyp == TypeUnsignedShort ||
+                            TopTyp == TypeUnsignedInt ||
+                            TopTyp == TypeUnsignedLong);
         switch (Op) {
         case TokenAssign:
             ResultInt = ExpressionAssignInt(Parser, BottomValue, TopInt, false);
@@ -1119,7 +1127,11 @@ void ExpressionInfixOperator(struct ParseState *Parser,
             ResultInt = BottomInt << TopInt;
             break;
         case TokenShiftRight:
-            ResultInt = BottomInt >> TopInt;
+            if (BottomUnsigned) {
+                ResultInt = (unsigned long)BottomInt >> TopInt;
+            } else {
+                ResultInt = BottomInt >> TopInt;
+            }
             break;
         case TokenPlus:
             // xxxxxxxxxxxx
@@ -1138,7 +1150,13 @@ void ExpressionInfixOperator(struct ParseState *Parser,
             ResultInt = BottomInt * TopInt;
             break;
         case TokenSlash:
-            ResultInt = BottomInt / TopInt;
+            // When a signed and unsigned integer are used in the same expression,
+            // the signed operand is implicitly converted to an unsigned type to perform the operation. 
+            if (BottomUnsigned || TopUnsigned) {
+                ResultInt = (unsigned long)BottomInt / (unsigned long)TopInt;
+            } else {
+                ResultInt = BottomInt / TopInt;
+            }
             break;
         case TokenModulus:
             ResultInt = BottomInt % TopInt;

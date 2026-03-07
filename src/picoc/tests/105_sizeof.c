@@ -2,18 +2,18 @@
 #include <time.h>
 #include <unistd.h>
 
-// xxx fix these
 int main()
 {
     printf("sizoef(char)           = %zd\n", sizeof(char));
     printf("sizoef(short)          = %zd\n", sizeof(short));
     printf("sizoef(int)            = %zd\n", sizeof(int));
     printf("sizoef(long)           = %zd\n", sizeof(long));
-    //printf("sizoef(float)          = %zd\n", sizeof(float));
+    //printf("sizoef(float)          = %zd\n", sizeof(float));  //xxx
     printf("sizoef(double)         = %zd\n", sizeof(double));
 
-    //printf("sizoef(size_t)         = %zd\n", sizeof(size_t));
-    //printf("sizoef(off_t)          = %zd\n", sizeof(off_t));
+    printf("sizoef(size_t)         = %zd\n", sizeof(size_t));
+    printf("sizoef(ssize_t)        = %zd\n", sizeof(ssize_t));
+    printf("sizoef(off_t)          = %zd\n", sizeof(off_t));
     printf("sizoef(time_t)         = %zd\n", sizeof(time_t));
     printf("sizoef(clock_t)        = %zd\n", sizeof(clock_t));
 
