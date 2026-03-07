@@ -1,24 +1,41 @@
 #include <stdio.h>
 
-// this declaration does not work;
-// to workaround, either:
-// - don't use 'static'
-// - include the array size, change [] to [2]
-//static char *x1[] = {"hello", "world"};  //xxx
+static char *x1[2]  = {"hello", "world"};
+static char *x2[10] = {"hello", "world"};
 
-// removing 'static' resolves the issue
-char *x2[] = {"hello", "world"};
+char *x3[2] = {"hello", "world"};
+int z1 = 10;
+static int z2 = 11;
+
+void proc(void);
 
 int main()
 {
-//  int n1 = sizeof(x1) / sizeof(x1[0]);
-//  printf("n1 = %d\n", n1);
-//  if (n1 == 2) printf("%s %s\n", x1[0], x1[1]);
+    if (sizeof(x1) == 0 || sizeof(x2) == 0 || sizeof(x3) == 0) {
+        printf("ERROR sizeof x1,x2,x3 is zero\n");
+        return 0;
+    }
 
-    int n2 = sizeof(x2) / sizeof(x2[0]);
-    printf("n2 = %d\n", n2);
-    if (n2 == 2) printf("%s %s\n", x2[0], x2[1]);
+    printf("x1: n=%zd %s %s\n", sizeof(x1)/sizeof(x1[0]), x1[0], x1[1]);
+    printf("x2: n=%zd %s %s\n", sizeof(x2)/sizeof(x2[0]), x2[0], x2[1]);
+    printf("x3: n=%zd %s %s\n", sizeof(x3)/sizeof(x3[0]), x3[0], x3[1]);
+
+    proc();
+    proc();
+    proc();
 
     return 0;
 }
 
+void proc(void)
+{
+    static int array[2] = {1, 2};
+    static int x = 3;
+
+    if (sizeof(array) == 0) {
+        printf("ERROR sizeof array is 0\n");
+        return;
+    }
+
+    printf("proc: x = %d  array  = %d %d  z1,z2  = %d %d\n", x++, array[0]++, array[1]++, z1++, z2++);
+}
