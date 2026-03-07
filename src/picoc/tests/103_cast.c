@@ -5,11 +5,9 @@ int main()
     long          s64;
     unsigned long u64;
     int           s32;
-    //unsigned int  u32;
     signed char   s8;
     unsigned char u8;
 
-    // this fails, prints 4638387860618067575
     printf("cast floating point 123.456 to long ...\n");
     s64 = (long)123.456;
     printf("s64 = %ld\n", s64);
@@ -46,28 +44,18 @@ int main()
     u64 = 0x100000000;
     printf("u64 = %ld\n", u64);
 
-    // this fails, and prints -2147483648  expected=2147483648
     printf("evaluate 's64 = (long)0x7fffffff + 1' ...\n");
     s64 = (long)0x7fffffff + 1;
     printf("s64 = %ld\n", s64);
 
-#if 0  //xxx
-    // this fails, and prints 0   expected=4294967296
     printf("evaluate 'u64 = (unsigned long)0xffffffff + 1' ...\n");
     u64 = (unsigned long)0xffffffff + 1;
     printf("u64 = %lu\n", u64);
-
-    // this works, and is a possbile workaround for the preceeding test
-    printf("evaluate 'u64 = (unsigned long)((unsigned long)0xffffffff+1)' ...\n");
-    u64 = (unsigned long)((unsigned long)0xffffffff + 1);
-    printf("u64 = %lu\n", u64);
-#endif
 
     printf("evaluate 'u64 = 0xffffffff + 1' ...\n");
     u64 = 0xffffffff + 1;
     printf("u64 = %lu\n", u64);
 
-    // this fails, and prints 4294967296   expected=0
     printf("evaluate 'u64 = (unsigned long)(0xffffffff + 1)' ...\n");
     u64 = (unsigned long)(0xffffffff + 1);
     printf("u64 = %lu\n", u64);

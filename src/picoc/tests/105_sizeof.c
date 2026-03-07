@@ -23,6 +23,7 @@ int main()
     printf("sizeof(0xffffffffL)    = %zd\n", sizeof(0xffffffffL));
     printf("sizeof(0x100000000)    = %zd\n", sizeof(0x100000000));
     printf("sizeof(0x100000000L)   = %zd\n", sizeof(0x100000000L));
+    printf("sizeof(4000000000)     = %zd\n", sizeof(4000000000));
 
     printf("%x\n",  1);
     printf("%lx\n", 1L);
@@ -30,6 +31,7 @@ int main()
     printf("%lx\n", 0xffffffffL);
     printf("%lx\n", 0x100000000);
     printf("%lx\n", 0x100000000L);
+    printf("%ld\n", 4000000000);
 
     return 0;
 }

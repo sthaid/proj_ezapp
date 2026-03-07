@@ -135,6 +135,8 @@ enum LexToken {
     /* 0x2d */ TokenIdentifier,
                TokenIntegerConstant,
                TokenLongIntegerConstant,
+               TokenUnsignedIntegerConstant,
+               TokenUnsignedLongIntegerConstant,
                TokenFPConstant,
                TokenStringConstant,
                TokenCharacterConstant,
