@@ -4,6 +4,7 @@
 
 #include "../interpreter.h"
 
+
 static int CLOCKS_PER_SECValue = CLOCKS_PER_SEC;
 
 #ifdef CLK_PER_SEC

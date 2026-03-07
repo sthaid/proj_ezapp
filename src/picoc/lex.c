@@ -185,8 +185,6 @@ enum LexToken LexGetNumber(Picoc *pc, struct LexState *Lexer, struct Value *Valu
         IsLong = 1;
     }
 
-    // xxx might be issue with this commit?
-    // xxx todo unsigned int constants
     if ((Lexer->Pos == Lexer->End) ||
         (*Lexer->Pos != '.' && *Lexer->Pos != 'e' && *Lexer->Pos != 'E'))
     {
@@ -198,7 +196,6 @@ enum LexToken LexGetNumber(Picoc *pc, struct LexState *Lexer, struct Value *Valu
         } else if (tok == TokenLongIntegerConstant) {
             Value->Typ = &pc->LongType;
             Value->Val->LongInteger = Result;
-            //printf("VALUE = %ld\n", Value->Val->LongInteger);
         } else if (tok == TokenUnsignedIntegerConstant) {
             Value->Typ = &pc->UnsignedIntType;
             Value->Val->UnsignedInteger = Result;
@@ -269,16 +266,12 @@ enum LexToken GetIntegerConstantToken(unsigned long Result, int Base, char IsUns
         }
     } else {
         if (Result <= 0x7fffffffu) {
-            //printf("LINE %d  Result=%lx\n", __LINE__, Result);
             return TokenIntegerConstant;
         } else if (Result <= 0xffffffffu) {
-            //printf("LINE %d  Result=%lx\n", __LINE__, Result);
             return TokenUnsignedIntegerConstant;
         } else if (Result <= 0x7fffffffffffffffu) {
-            //printf("LINE %d  Result=%lx  %ld\n", __LINE__, Result, Result);
             return TokenLongIntegerConstant;
         } else {
-            //printf("LINE %d  Result=%lx\n", __LINE__, Result);
             return TokenUnsignedLongIntegerConstant;
         }
     }
@@ -657,12 +650,10 @@ int LexTokenSize(enum LexToken Token)
 {
     switch (Token) {
     case TokenIdentifier: case TokenStringConstant: return sizeof(char*);
-
     case TokenIntegerConstant: return sizeof(int);
     case TokenUnsignedIntegerConstant: return sizeof(unsigned int);
     case TokenLongIntegerConstant: return sizeof(long);
     case TokenUnsignedLongIntegerConstant: return sizeof(unsigned long);
-
     case TokenCharacterConstant: return sizeof(unsigned char);
     case TokenFPConstant: return sizeof(double);
     default: return 0;
@@ -963,7 +954,7 @@ void LexHashIf(struct ParseState *Parser)
         Token = LexGetRawToken(&MacroParser, &IdentValue, true);
     }
 
-    // xxx what is this for?
+    // xxx is this working?
     if (Token != TokenCharacterConstant && Token != TokenIntegerConstant)
         ProgramFail(Parser, "value expected");
 

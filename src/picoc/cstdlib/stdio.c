@@ -258,7 +258,7 @@ int StdioBasePrintf(struct ParseState *Parser, FILE *Stream, char *StrOut,
                 switch (*FPos) {
                 case 'd':  // EZAPP handle integer converts all the same
                 case 'i':
-                case 'u':  // EZAPP xxx check this
+                case 'u':
                 case 'o':
                 case 'x':
                 case 'X':

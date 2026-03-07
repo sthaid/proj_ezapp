@@ -12,6 +12,7 @@ static int LittleEndian;
 /* global initialisation for libraries */
 void LibraryInit(Picoc *pc)
 {
+
     /* define the version number macro */
     pc->VersionString = TableStrRegister(pc, PICOC_VERSION);
     VariableDefinePlatformVar(pc, NULL, "PICOC_VERSION", pc->CharPtrType,

@@ -23,6 +23,7 @@
 # error ***** A platform must be explicitly defined! *****
 #endif
 
+
 /* configurable options */
 /* select your host type (or do it in the Makefile):
  #define UNIX_HOST
