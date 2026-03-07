@@ -1,5 +1,7 @@
 #include <stdio.h>
 
+// xxx array sizes must be provided
+
 static char *x1[2]  = {"hello", "world"};
 static char *x2[10] = {"hello", "world"};
 
