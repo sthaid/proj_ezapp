@@ -8,6 +8,7 @@ void test_s32_s32(int x, int y)
     printf("%x %s %x = %x\n", x, "-", y, x - y);
     printf("%x %s %x = %x\n", x, "*", y, x * y);
     printf("%x %s %x = %x\n", x, "/", y, x / y);
+    printf("%x %s %x = %x\n", x, "%", y, x % y);
     printf("%x %s %x = %x\n", x, "&", y, x & y);
     printf("%x %s %x = %x\n", x, "|", y, x | y);
     printf("%x %s %x = %x\n", x, "^", y, x ^ y);
@@ -30,6 +31,7 @@ void test_u32_u32(unsigned int x, unsigned int y)
     printf("%x %s %x = %x\n", x, "-", y, x - y);
     printf("%x %s %x = %x\n", x, "*", y, x * y);
     printf("%x %s %x = %x\n", x, "/", y, x / y);
+    printf("%x %s %x = %x\n", x, "%", y, x % y);
     printf("%x %s %x = %x\n", x, "&", y, x & y);
     printf("%x %s %x = %x\n", x, "|", y, x | y);
     printf("%x %s %x = %x\n", x, "^", y, x ^ y);
@@ -52,6 +54,7 @@ void test_s64_s64(long x, long y)
     printf("%lx %s %lx = %lx\n", x, "-", y, x - y);
     printf("%lx %s %lx = %lx\n", x, "*", y, x * y);
     printf("%lx %s %lx = %lx\n", x, "/", y, x / y);
+    printf("%lx %s %lx = %lx\n", x, "%", y, x % y);
     printf("%lx %s %lx = %lx\n", x, "&", y, x & y);
     printf("%lx %s %lx = %lx\n", x, "|", y, x | y);
     printf("%lx %s %lx = %lx\n", x, "^", y, x ^ y);
@@ -74,6 +77,7 @@ void test_u64_u64(unsigned long x, unsigned long y)
     printf("%lx %s %lx = %lx\n", x, "-", y, x - y);
     printf("%lx %s %lx = %lx\n", x, "*", y, x * y);
     printf("%lx %s %lx = %lx\n", x, "/", y, x / y);
+    printf("%lx %s %lx = %lx\n", x, "%", y, x % y);
     printf("%lx %s %lx = %lx\n", x, "&", y, x & y);
     printf("%lx %s %lx = %lx\n", x, "|", y, x | y);
     printf("%lx %s %lx = %lx\n", x, "^", y, x ^ y);
@@ -96,6 +100,7 @@ void test_u64_s64(unsigned long x, long y)
     printf("%lx %s %lx = %lx\n", x, "-", y, x - y);
     printf("%lx %s %lx = %lx\n", x, "*", y, x * y);
     printf("%lx %s %lx = %lx\n", x, "/", y, x / y);
+    printf("%lx %s %lx = %lx\n", x, "%", y, x % y);
     printf("%lx %s %lx = %lx\n", x, "&", y, x & y);
     printf("%lx %s %lx = %lx\n", x, "|", y, x | y);
     printf("%lx %s %lx = %lx\n", x, "^", y, x ^ y);
@@ -118,6 +123,7 @@ void test_u64_s32(unsigned long x, int y)
     printf("%lx %s %x = %lx\n", x, "-", y, x - y);
     printf("%lx %s %x = %lx\n", x, "*", y, x * y);
     printf("%lx %s %x = %lx\n", x, "/", y, x / y);
+    printf("%lx %s %x = %lx\n", x, "%", y, x % y);
     printf("%lx %s %x = %lx\n", x, "&", y, x & y);
     printf("%lx %s %x = %lx\n", x, "|", y, x | y);
     printf("%lx %s %x = %lx\n", x, "^", y, x ^ y);
@@ -140,6 +146,7 @@ void test_s32_u64(int x, unsigned long y)
     printf("%x %s %lx = %lx\n", x, "-", y, x - y);
     printf("%x %s %lx = %lx\n", x, "*", y, x * y);
     printf("%x %s %lx = %lx\n", x, "/", y, x / y);
+    printf("%x %s %lx = %lx\n", x, "%", y, x % y);
     printf("%x %s %lx = %lx\n", x, "&", y, x & y);
     printf("%x %s %lx = %lx\n", x, "|", y, x | y);
     printf("%x %s %lx = %lx\n", x, "^", y, x ^ y);

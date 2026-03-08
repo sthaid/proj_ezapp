@@ -1020,8 +1020,8 @@ void ExpressionInfixOperator(struct ParseState *Parser,
         else
             ExpressionPushFP(Parser, StackTop, ResultFP);
     } else if (IS_NUMERIC_COERCIBLE(TopValue) && IS_NUMERIC_COERCIBLE(BottomValue)) {
-        // xxxxxxxxxxxxx this section may need work
         /* integer operation */
+
         // NOTES:
         // - When a signed and unsigned integer are used in the same expression,
         //   the signed operand is implicitly converted to an unsigned type to perform the operation. 
@@ -1029,69 +1029,88 @@ void ExpressionInfixOperator(struct ParseState *Parser,
         //   in C, the 32-bit integer is implicitly converted (promoted) to the 64-bit integer
         //   type before the operation is performed
 
-        long TopInt = ExpressionCoerceInteger(TopValue);
+        long TopInt    = ExpressionCoerceInteger(TopValue);
         long BottomInt = ExpressionCoerceInteger(BottomValue);
 
-        enum BaseType TopTyp = TopValue->Typ->Base;
+        enum BaseType TopTyp    = TopValue->Typ->Base;
         enum BaseType BottomTyp = BottomValue->Typ->Base;
 
-        bool Bottom64;
-        bool Top64;
-        bool BottomUnsigned;
-        bool TopUnsigned;
+        bool Bottom64 = (BottomTyp == TypeLong || BottomTyp == TypeUnsignedLong);
+        bool Top64    = (TopTyp == TypeLong || TopTyp == TypeUnsignedLong);
+
+        bool BottomUnsigned = (BottomTyp == TypeUnsignedChar ||
+                               BottomTyp == TypeUnsignedShort ||
+                               BottomTyp == TypeUnsignedInt ||
+                               BottomTyp == TypeUnsignedLong);
+        bool TopUnsigned    = (TopTyp == TypeUnsignedChar ||
+                               TopTyp == TypeUnsignedShort ||
+                               TopTyp == TypeUnsignedInt ||
+                               TopTyp == TypeUnsignedLong);
+
+        bool do_assign = false;
 
         switch (Op) {
+        // assignment
         case TokenAssign:
-            ResultInt = ExpressionAssignInt(Parser, BottomValue, TopInt, false);
+            ResultInt = TopInt;
+            do_assign = true;
             break;
+
+        // opeators that perform the op and assign
         case TokenAddAssign:
-            ResultInt = ExpressionAssignInt(Parser, BottomValue,
-                BottomInt + TopInt, false);
+            ResultInt = BottomInt + TopInt;
+            do_assign = true;
             break;
         case TokenSubtractAssign:
-            ResultInt = ExpressionAssignInt(Parser, BottomValue,
-                BottomInt-TopInt, false);
+            ResultInt = BottomInt - TopInt;
+            do_assign = true;
             break;
         case TokenMultiplyAssign:
-            ResultInt = ExpressionAssignInt(Parser, BottomValue,
-                BottomInt*TopInt, false);
+            ResultInt = BottomInt * TopInt;
+            do_assign = true;
             break;
         case TokenDivideAssign:
-            ResultInt = ExpressionAssignInt(Parser, BottomValue,
-                BottomInt/TopInt, false);
+            ResultInt = BottomInt / TopInt;
+            do_assign = true;
             break;
         case TokenModulusAssign:
-            ResultInt = ExpressionAssignInt(Parser, BottomValue,
-                BottomInt%TopInt, false);
+            ResultInt = BottomInt % TopInt;
+            do_assign = true;
             break;
         case TokenShiftLeftAssign:
-            ResultInt = ExpressionAssignInt(Parser, BottomValue,
-                BottomInt<<TopInt, false);
+            ResultInt = BottomInt << TopInt;
+            do_assign = true;
             break;
         case TokenShiftRightAssign:
-            if (BottomValue->Typ->Base == TypeUnsignedInt || BottomValue->Typ->Base == TypeUnsignedLong)
-                ResultInt = ExpressionAssignInt(Parser, BottomValue, (uint64_t) BottomInt >> TopInt, false);
-            else
-                ResultInt = ExpressionAssignInt(Parser, BottomValue, BottomInt >> TopInt, false);
+            if (BottomUnsigned) {
+                ResultInt = (unsigned long)BottomInt >> TopInt;
+            } else {
+                ResultInt = BottomInt >> TopInt;
+            }
+            do_assign = true;
             break;
         case TokenArithmeticAndAssign:
-            ResultInt = ExpressionAssignInt(Parser, BottomValue,
-                BottomInt&TopInt, false);
+            ResultInt = BottomInt&TopInt;
+            do_assign = true;
             break;
         case TokenArithmeticOrAssign:
-            ResultInt = ExpressionAssignInt(Parser, BottomValue,
-                BottomInt|TopInt, false);
+            ResultInt = BottomInt|TopInt;
+            do_assign = true;
             break;
         case TokenArithmeticExorAssign:
-            ResultInt = ExpressionAssignInt(Parser, BottomValue,
-                BottomInt^TopInt, false);
+            ResultInt = BottomInt^TopInt;
+            do_assign = true;
             break;
+
+        // logical operators
         case TokenLogicalOr:
             ResultInt = BottomInt || TopInt;
             break;
         case TokenLogicalAnd:
             ResultInt = BottomInt && TopInt;
             break;
+
+        // bitwise operators
         case TokenArithmeticOr:
             ResultInt = BottomInt | TopInt;
             break;
@@ -1101,6 +1120,8 @@ void ExpressionInfixOperator(struct ParseState *Parser,
         case TokenAmpersand:
             ResultInt = BottomInt & TopInt;
             break;
+
+        // comparison: == != ...
         case TokenEqual:
             ResultInt = BottomInt == TopInt;
             break;
@@ -1135,56 +1156,76 @@ void ExpressionInfixOperator(struct ParseState *Parser,
                 ResultInt = BottomInt >= TopInt;
             }
             break;
+
+        // << >>
         case TokenShiftLeft:
             ResultInt = BottomInt << TopInt;
             break;
         case TokenShiftRight:
-            BottomUnsigned = (BottomTyp == TypeUnsignedChar ||
-                              BottomTyp == TypeUnsignedShort ||
-                              BottomTyp == TypeUnsignedInt ||
-                              BottomTyp == TypeUnsignedLong);
             if (BottomUnsigned) {
                 ResultInt = (unsigned long)BottomInt >> TopInt;
             } else {
                 ResultInt = BottomInt >> TopInt;
             }
             break;
+
+        // + - * / %
         case TokenPlus:
-            Bottom64 = (BottomTyp == TypeLong || BottomTyp == TypeUnsignedLong);
-            Top64    = (TopTyp == TypeLong || TopTyp == TypeUnsignedLong);
-            if (Bottom64 || Top64) {
-                ResultInt = BottomInt + TopInt;
+            if (BottomUnsigned || TopUnsigned) {
+                ResultInt = (unsigned long)BottomInt + (unsigned long)TopInt;
             } else {
-                ResultInt = (BottomInt + TopInt) & 0xffffffff;
+                ResultInt = BottomInt + TopInt;
+            }
+            if (!Bottom64 && !Top64) {
+                ResultInt &= 0xffffffff;
             }
             break;
         case TokenMinus:
-            ResultInt = BottomInt - TopInt;
+            if (BottomUnsigned || TopUnsigned) {
+                ResultInt = (unsigned long)BottomInt - (unsigned long)TopInt;
+            } else {
+                ResultInt = BottomInt - TopInt;
+            }
+            if (!Bottom64 && !Top64) {
+                ResultInt &= 0xffffffff;
+            }
             break;
         case TokenAsterisk:
-            ResultInt = BottomInt * TopInt;
+            if (BottomUnsigned || TopUnsigned) {
+                ResultInt = (unsigned long)BottomInt * (unsigned long)TopInt;
+            } else {
+                ResultInt = BottomInt * TopInt;
+            }
+            if (!Bottom64 && !Top64) {
+                ResultInt &= 0xffffffff;
+            }
             break;
         case TokenSlash:
-            BottomUnsigned = (BottomTyp == TypeUnsignedChar ||
-                              BottomTyp == TypeUnsignedShort ||
-                              BottomTyp == TypeUnsignedInt ||
-                              BottomTyp == TypeUnsignedLong);
-            TopUnsigned = (TopTyp == TypeUnsignedChar ||
-                           TopTyp == TypeUnsignedShort ||
-                           TopTyp == TypeUnsignedInt ||
-                           TopTyp == TypeUnsignedLong);
             if (BottomUnsigned || TopUnsigned) {
                 ResultInt = (unsigned long)BottomInt / (unsigned long)TopInt;
             } else {
                 ResultInt = BottomInt / TopInt;
             }
+            if (!Bottom64 && !Top64) {
+                ResultInt &= 0xffffffff;
+            }
             break;
         case TokenModulus:
-            ResultInt = BottomInt % TopInt;
+            if (BottomUnsigned || TopUnsigned) {
+                ResultInt = (unsigned long)BottomInt % (unsigned long)TopInt;
+            } else {
+                ResultInt = BottomInt % TopInt;
+            }
+            if (!Bottom64 && !Top64) {
+                ResultInt &= 0xffffffff;
+            }
             break;
         default:
             ProgramFail(Parser, "invalid operation");
             break;
+        }
+        if (do_assign) {
+            ResultInt = ExpressionAssignInt(Parser, BottomValue, ResultInt, false);
         }
         ExpressionPushLongInt(Parser, StackTop, ResultInt);
     } else if (BottomValue->Typ->Base == TypePointer &&
