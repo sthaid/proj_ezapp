@@ -148,7 +148,7 @@ int main(int argc, char **argv)
             sdlx_render_rect(0, y2, sdlx_win_width, BAR_HEIGHT, 2, COLOR_WHITE);
         } else if (audio_state.state == AUDIO_STATE_RECORD_FROM_MIC) {
             int bar_value_w =  sdlx_win_width * audio_state.volume / 100;
-            sdlx_render_printf(sdlx_win_width-COL2X(2), y2, "%2d", audio_state.volume);
+            sdlx_render_printf(sdlx_win_width-COL2X(2), y2, "%4.2f", audio_state.volume);
             sdlx_render_fill_rect(0, y2, bar_value_w, BAR_HEIGHT, COLOR_RED);
             sdlx_render_rect(0, y2, sdlx_win_width, BAR_HEIGHT, 2, COLOR_WHITE);
         }

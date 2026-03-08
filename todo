@@ -1,3 +1,12 @@
+Steps
+- git clone git@github.com:sthaid/proj_ezapp.git
+- cd proj_ezapp
+- bin/clone_sdl
+- make -C bin/src
+- make -S linux
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
 Apps
 - License
 - Help

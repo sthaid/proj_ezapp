@@ -10,6 +10,7 @@ uninstall:
 	adb uninstall org.sthaid.ezApp
 
 clean:
+	rm -f  ../src/ezapp/version.h
 	rm -rf SDL assets setup_files/orig
 
 # -----------------------------

@@ -96,7 +96,7 @@ int main(int argc, char **argv)
 
         // display state, either Ready or Running
         sdlx_render_printf(0, ROW2Y(3), "%s", 
-                           (state.state == AUDIO_STATE_PLAY_TONES ? "RUNNING" : "READY"));
+                           (state.state == AUDIO_STATE_PLAY_TONES_SEQUENCE ? "RUNNING" : "READY"));
 
         // display wpm value
         sdlx_render_printf(0, ROW2Y(5), "WPM=%d", wpm);

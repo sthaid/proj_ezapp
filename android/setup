@@ -87,8 +87,6 @@ update_build_file app_src_main_java_org_libsdl_app_ezapp_media_fgsvc.java \
                                                    app/src/main/java/org/libsdl/app/ezapp_media_fgsvc.java
 update_build_file app_src_main_java_org_libsdl_app_ezapp_utils.java \
                                                    app/src/main/java/org/libsdl/app/ezapp_utils.java
-update_build_file app_src_main_java_org_libsdl_app_ezapp_playbackcapture.java \
-                                                   app/src/main/java/org/libsdl/app/ezapp_playbackcapture.java
 
 mv app/src/main/res $ANDROID_TOP/setup_files/orig/app_src_main_res
 ln -s $ANDROID_TOP/setup_files/app_src_main_res app/src/main/res

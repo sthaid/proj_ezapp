@@ -23,6 +23,7 @@ run: build
 	cd ../files; ../linux/build/ezapp/ezapp 2>&1 | ezlogfilter
 
 clean:
+	rm -f  ../src/ezapp/version.h
 	rm -rf build local
 
 .PHONY: SDL SDL_ttf SDL_mixer lodepng kissfft cJSON mp3lame ezapp_lib picoc

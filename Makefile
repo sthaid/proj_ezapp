@@ -1,8 +1,8 @@
 
 SUBDIRS = \
+    bin/src \
     linux \
-    android \
-    bin/src 
+    android 
 
 APPS := $(sort $(dir $(wildcard files/apps/*/.)))
 SVCS := $(sort $(dir $(wildcard files/svcs/*/.)))
@@ -20,6 +20,11 @@ svcs:
 
 clean:
 	for d in $(SUBDIRS) ; do echo "\n======== CLEAN $$d ========\n"; make -C $$d clean || exit 1; done
+
+clobber: clean
+	rm -f src/ezapp/version.h
+	git ls-files --other files | xargs rm -f
+	rm -rf src/SDL src/SDL_mixer src/SDL_ttf
 
 install_on_android:
 	make -C android install_debug
