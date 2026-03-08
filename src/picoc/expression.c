@@ -1090,15 +1090,15 @@ void ExpressionInfixOperator(struct ParseState *Parser,
             do_assign = true;
             break;
         case TokenArithmeticAndAssign:
-            ResultInt = BottomInt&TopInt;
+            ResultInt = BottomInt & TopInt;
             do_assign = true;
             break;
         case TokenArithmeticOrAssign:
-            ResultInt = BottomInt|TopInt;
+            ResultInt = BottomInt | TopInt;
             do_assign = true;
             break;
         case TokenArithmeticExorAssign:
-            ResultInt = BottomInt^TopInt;
+            ResultInt = BottomInt ^ TopInt;
             do_assign = true;
             break;
 
