@@ -80,14 +80,14 @@ include jpoirier/Makefile
 	@if [ "x`diff -qbu $*.expect $*.output`" != "x" ]; \
 	then \
         	echo "********** FAILED **********"; \
-        	diff -y $*.expect $*.output; \
+        	diff --side-by-side $*.expect $*.output; \
 		exit 1; \
 	else \
         	echo "PASSED"; \
 	fi; \
        	rm -f $*.output
 
-all: test jpoirier csmith ezapp
+all: test shaid jpoirier csmith
 
 test: $(TESTS)
 	@echo
@@ -98,39 +98,31 @@ csmith: $(CSMITH_TESTS)
 jpoirier: $(JPOIRIER_TESTS)
 	@echo
 
-# EZAPP tests follows,
-# These differs from the baseline tests in that the ezapp tests
+
+# ##############################
+
+# These tests differs from the baseline tests in that these tests
 # generate the expect file on every invokation.
 
-EZAPP_TESTS = 100_printf \
-              101_ternary_op \
-              102_statics \
-              103_cast \
-              104_ops \
-              105_sizeof \
-              106_ifdef
+include shaid/Makefile
 
-ezapp: $(EZAPP_TESTS)
+shaid: $(SHAID_TESTS)
 	@echo
 
-$(EZAPP_TESTS):
+$(SHAID_TESTS):
 	@printf "%-35s" "Test: $@ ... "
-	@gcc -o /tmp/$@ -Wall -Werror $@.c
-	@/tmp/$@ > $@.expect
-	@rm /tmp/$@
+	@rm -f $@.expect;  gcc -o $@ -Wall -Werror $@.c;  $@ > $@.expect;  rm $@
 	@../picoc $@.c 2>&1 > $@.output
 	@cmp -s $@.expect $@.output; \
-        if [ $$? != 0 ]; then \
-            echo "********** FAILED **********"; \
-            diff --side-by-side $@.expect $@.output; \
-            exit 0; \
-        else \
-            rm -f $@.expect $@.output; \
-            echo "PASSED"; \
-        fi
+	if [ $$? != 0 ]; then \
+	    echo "********** FAILED **********"; \
+	    diff --side-by-side $@.expect $@.output; \
+	    exit 1; \
+	else \
+	    echo "PASSED"; \
+	    rm -f $@.expect $@.output; \
+	fi
 
 clean:
 	rm -f *.output
-	git ls-files --others *.expect | xargs rm -f
-
-.PHONY: $(EZAPP_TESTS) clean
+	rm -f shaid/*.output shaid/*.expect
