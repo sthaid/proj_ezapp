@@ -1,5 +1,3 @@
-// EZAPP added this file
-
 #include <libgen.h>
 
 #include "../interpreter.h"

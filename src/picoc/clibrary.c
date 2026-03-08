@@ -27,7 +27,7 @@ void LibraryInit(Picoc *pc)
     VariableDefinePlatformVar(pc, NULL, "LITTLE_ENDIAN", &pc->IntType,
         (union AnyValue*)&LittleEndian, false);
 
-    /* EZAPP: define ANDROID macro when picoc built for Android */
+    /* define ANDROID macro when picoc built for Android */
 #ifdef ANDROID
     int one = 1;
     VariableDefinePlatformVar(pc, NULL, "ANDROID", &pc->IntType,

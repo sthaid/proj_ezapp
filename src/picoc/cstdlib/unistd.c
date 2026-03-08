@@ -45,7 +45,7 @@ void UnistdClose(struct ParseState *Parser, struct Value *ReturnValue,
     ReturnValue->Val->Integer = close(Param[0]->Val->Integer);
 }
 
-#if 0  // EZAPP remove unistd calls not supported by Android NDK
+#if 0
 void UnistdConfstr(struct ParseState *Parser, struct Value *ReturnValue,
     struct Value **Param, int NumArgs)
 {
@@ -143,7 +143,7 @@ void UnistdGetcwd(struct ParseState *Parser, struct Value *ReturnValue,
         Param[1]->Val->Integer);
 }
 
-#if 0  // EZAPP remove unistd calls not supported by Android NDK
+#if 0
 void UnistdGetdtablesize(struct ParseState *Parser, struct Value *ReturnValue,
     struct Value **Param, int NumArgs)
 {
@@ -169,7 +169,7 @@ void UnistdGetgid(struct ParseState *Parser, struct Value *ReturnValue,
     ReturnValue->Val->Integer = getgid();
 }
 
-#if 0  // EZAPP remove unistd calls not supported by Android NDK
+#if 0
 void UnistdGethostid(struct ParseState *Parser, struct Value *ReturnValue,
     struct Value **Param, int NumArgs)
 {
@@ -183,7 +183,7 @@ void UnistdGetlogin(struct ParseState *Parser, struct Value *ReturnValue,
     ReturnValue->Val->Pointer = getlogin();
 }
 
-#if 0  // EZAPP remove unistd calls not supported by Android NDK
+#if 0
 void UnistdGetlogin_r(struct ParseState *Parser, struct Value *ReturnValue,
     struct Value **Param, int NumArgs)
 {
@@ -198,7 +198,7 @@ void UnistdGetpagesize(struct ParseState *Parser, struct Value *ReturnValue,
     ReturnValue->Val->Integer = getpagesize();
 }
 
-#if 0  // EZAPP remove unistd calls not supported by Android NDK
+#if 0
 void UnistdGetpass(struct ParseState *Parser, struct Value *ReturnValue,
     struct Value **Param, int NumArgs)
 {
@@ -272,7 +272,7 @@ void UnistdLink(struct ParseState *Parser, struct Value *ReturnValue,
         Param[1]->Val->Pointer);
 }
 
-#if 0  // EZAPP remove unistd calls not supported by Android NDK
+#if 0
 void UnistdLockf(struct ParseState *Parser, struct Value *ReturnValue,
     struct Value **Param, int NumArgs)
 {
@@ -461,7 +461,7 @@ void UnistdTtyname_r(struct ParseState *Parser, struct Value *ReturnValue,
         Param[1]->Val->Pointer, Param[2]->Val->Integer);
 }
 
-#if 0  // EZAPP remove unistd calls not supported by Android NDK
+#if 0
 void UnistdUalarm(struct ParseState *Parser, struct Value *ReturnValue,
     struct Value **Param, int NumArgs)
 {

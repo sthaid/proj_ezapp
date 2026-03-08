@@ -24,7 +24,7 @@ struct __sFILE {
 #endif
 */
 /* Get the name of a type */
-#if 0  // EZAPP changed to avoid multi-line comment error
+#if 0
 #define typename(x) _Generic((x),   \
     _Bool: "_Bool", \
     unsigned char: "unsigned char", \

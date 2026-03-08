@@ -5,10 +5,6 @@ for use with EZAPP
 GENERAL INFO
 ============================
 
-Changes to picoc are tagged with 'EZAPP'.
-
-Issues requiring follow up are tagged with 'xxx'.
-
 To view changes made to picoc:
   git diff 89f7b53128c196223bbab6a516e03bf0ab85e124 .
 

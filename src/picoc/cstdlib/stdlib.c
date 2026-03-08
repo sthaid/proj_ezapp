@@ -107,7 +107,6 @@ void StdlibSystem(struct ParseState *Parser, struct Value *ReturnValue,
     ReturnValue->Val->Integer = system(Param[0]->Val->Pointer);
 }
 
-// EZAPP add WEXITSTATUS
 void StdlibWexitstatus(struct ParseState *Parser, struct Value *ReturnValue,
     struct Value **Param, int NumArgs)
 {
@@ -154,7 +153,6 @@ void StdlibLdiv(struct ParseState *Parser, struct Value *ReturnValue,
 }
 #endif
 
-// EZAPP add random() and srandom()
 void StdlibRandom(struct ParseState *Parser, struct Value *ReturnValue,
     struct Value **Param, int NumArgs)
 {

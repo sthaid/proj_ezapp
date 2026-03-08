@@ -247,7 +247,6 @@ enum LexToken LexGetNumber(Picoc *pc, struct LexState *Lexer, struct Value *Valu
 
 enum LexToken GetIntegerConstantToken(unsigned long Result, int Base, char IsUnsigned, char IsLong)
 {
-    //printf("Result = %lx  Base = %d\n", Result, Base);
     if (IsLong && IsUnsigned) {
         return TokenUnsignedLongIntegerConstant;
     } else if (IsLong) {

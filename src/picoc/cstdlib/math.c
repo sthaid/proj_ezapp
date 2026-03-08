@@ -159,7 +159,6 @@ void MathFloor(struct ParseState *Parser, struct Value *ReturnValue,
     ReturnValue->Val->FP = floor(Param[0]->Val->FP);
 }
 
-// EZAPP add nearbyint
 void MathNearbyint(struct ParseState *Parser, struct Value *ReturnValue,
     struct Value **Param, int NumArgs)
 {

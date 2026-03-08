@@ -256,7 +256,7 @@ int StdioBasePrintf(struct ParseState *Parser, FILE *Stream, char *StrOut,
 
             do {
                 switch (*FPos) {
-                case 'd':  // EZAPP handle integer converts all the same
+                case 'd':
                 case 'i':
                 case 'u':
                 case 'o':
@@ -411,7 +411,7 @@ int StdioBasePrintf(struct ParseState *Parser, FILE *Stream, char *StrOut,
     }
 
     /* null-terminate */
-    // EZAPP null terminate strings when StrOutLen is -1; such as from sprintf
+    // null terminate strings when StrOutLen is -1; such as from sprintf
     if (SOStream.StrOutPtr != NULL && (SOStream.StrOutLen > 0 || SOStream.StrOutLen == -1))
         *SOStream.StrOutPtr = '\0';
 
@@ -817,7 +817,6 @@ void StdioPclose(struct ParseState *Parser, struct Value *ReturnValue,
     ReturnValue->Val->Integer = rc;
 }
 
-// EZAPP add setlinebuf
 void StdioSetlinebuf(struct ParseState *Parser, struct Value *ReturnValue,
     struct Value **Param, int NumArgs)
 {

@@ -1,5 +1,3 @@
-// EZAPP time.c updated to use 8 byte time_t and clock_t, to match Android and Linux
-/*  */
 #include <time.h>
 
 #include "../interpreter.h"

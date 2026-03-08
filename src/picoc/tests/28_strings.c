@@ -15,7 +15,7 @@ printf("%d\n", strcmp(a, "apple") > 0);
 printf("%d\n", strcmp(a, "goere") > 0);
 printf("%d\n", strcmp(a, "zebra") < 0);
 
-printf("%zd\n", strlen(a));  // EZAPP modified
+printf("%zd\n", strlen(a));
 
 strcat(a, "!");
 printf("%s\n", a);
@@ -25,7 +25,7 @@ printf("%d\n", strncmp(a, "goere", 2) == 0);
 printf("%d\n", strncmp(a, "goerg", 2) == 0);
 printf("%d\n", strncmp(a, "zebra", 2) < 0);
 
-//printf("%s\n", index(a, 'o'));  // EZAPP commented out, these are not supported
+//printf("%s\n", index(a, 'o'));  // these are not supported
 //printf("%s\n", rindex(a, 'l'));
 //printf("%d\n", rindex(a, 'x') == NULL);
 

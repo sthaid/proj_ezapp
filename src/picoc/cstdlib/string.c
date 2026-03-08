@@ -49,7 +49,7 @@ void StringStrncat(struct ParseState *Parser, struct Value *ReturnValue,
 }
 
 #ifndef WIN32
-#if 0  // EXAPP remove because not supported in Android NDK
+#if 0  // remove because not supported in Android NDK
 void StringIndex(struct ParseState *Parser, struct Value *ReturnValue,
     struct Value **Param, int NumArgs)
 {
@@ -162,7 +162,6 @@ void StringStrstr(struct ParseState *Parser, struct Value *ReturnValue,
         Param[1]->Val->Pointer);
 }
 
-// EZAPP added strcasestr
 void StringStrcasestr(struct ParseState *Parser, struct Value *ReturnValue,
     struct Value **Param, int NumArgs)
 {
