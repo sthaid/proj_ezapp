@@ -98,7 +98,6 @@ csmith: $(CSMITH_TESTS)
 jpoirier: $(JPOIRIER_TESTS)
 	@echo
 
-
 # ##############################
 
 # These tests differs from the baseline tests in that these tests
