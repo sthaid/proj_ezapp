@@ -1,3 +1,28 @@
+Apps
+- License
+- Help
+- File explorer
+  . these can all have adjustable font size and horizontail and vert scrolling
+
+Picoc
+- create include files;  and include them in the files tree
+- print unsigned + singed
+- update tests dir
+  - put mine in subdir
+  - dont use 'EZAPP' tag string
+  - finish up expression.c
+  - check for other xxx
+- make float type ???
+
+Top level Readme
+- this is what Help App disoplays
+
+Other Apps
+- Calculator  rename to either Calc or Numbers
+  fully test
+- reneme Templates to SvcDemo
+- StepCount  Svc keeps track of when app is running and steps
+- Music,  display either FFT or color organ
 
 
 ====================

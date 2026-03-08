@@ -891,6 +891,142 @@ void ExpressionPostfixOperator(struct ParseState *Parser,
         ProgramFail(Parser, "invalid operation");
 }
 
+// xxx do while 0
+#define MACRO(op,bot,top,fail,assign) \
+    *assign = false; \
+    *fail   = false; \
+    switch (op) { \
+    case TokenAssign: \
+        result = top; \
+        *assign = true; \
+        break; \
+    case TokenAddAssign: \
+        result = bot + top; \
+        *assign = true; \
+        break; \
+    case TokenSubtractAssign: \
+        result = bot - top; \
+        *assign = true; \
+        break; \
+    case TokenMultiplyAssign: \
+        result = bot * top; \
+        *assign = true; \
+        break; \
+    case TokenDivideAssign: \
+        result = bot / top; \
+        *assign = true; \
+        break; \
+    case TokenModulusAssign: \
+        result = bot % top; \
+        *assign = true; \
+        break; \
+    case TokenShiftLeftAssign: \
+        result = bot << top; \
+        *assign = true; \
+        break; \
+    case TokenShiftRightAssign: \
+        result = bot >> top; \
+        *assign = true; \
+        break; \
+    case TokenArithmeticAndAssign: \
+        result = bot & top; \
+        *assign = true; \
+        break; \
+    case TokenArithmeticOrAssign: \
+        result = bot | top; \
+        *assign = true; \
+        break; \
+    case TokenArithmeticExorAssign: \
+        result = bot ^ top; \
+        *assign = true; \
+        break; \
+    case TokenLogicalOr: \
+        result = bot || top; \
+        break; \
+    case TokenLogicalAnd: \
+        result = bot && top; \
+        break; \
+    case TokenArithmeticOr: \
+        result = bot | top; \
+        break; \
+    case TokenArithmeticExor: \
+        result = bot ^ top; \
+        break; \
+    case TokenAmpersand: \
+        result = bot & top; \
+        break; \
+    case TokenEqual: \
+        result = bot == top; \
+        break; \
+    case TokenNotEqual: \
+        result = bot != top; \
+        break; \
+    case TokenLessThan: \
+        result = bot < top; \
+        break; \
+    case TokenGreaterThan: \
+        result = bot > top; \
+        break; \
+    case TokenLessEqual: \
+        result = bot <= top; \
+        break; \
+    case TokenGreaterEqual: \
+        result = bot >= top; \
+        break; \
+    case TokenShiftLeft: \
+        result = bot << top; \
+        break; \
+    case TokenShiftRight: \
+        result = bot >> top; \
+        break; \
+    case TokenPlus: \
+        result = bot + top; \
+        break; \
+    case TokenMinus: \
+        result = bot - top; \
+        break; \
+    case TokenAsterisk: \
+        result = bot * top; \
+        break; \
+    case TokenSlash: \
+        result = bot / top; \
+        break; \
+    case TokenModulus: \
+        result = bot % top; \
+        break; \
+    default: \
+        *fail = true; \
+        break; \
+    }
+
+int infix_s32(int op, int bot, int top, int *fail, int *assign)
+{
+    int result = 0;
+    MACRO(op,bot,top,fail,assign);
+    return result;
+}
+
+unsigned int infix_u32(int op, unsigned int bot, unsigned int top, int *fail, int *assign)
+{
+    unsigned int result = 0;
+    MACRO(op,bot,top,fail,assign);
+    return result;
+}
+
+long infix_s64(int op, long bot, long top, int *fail, int *assign)
+{
+    long result = 0;
+    MACRO(op,bot,top,fail,assign);
+    return result;
+}
+
+unsigned long infix_u64(int op, unsigned long bot, unsigned long top, int *fail, int *assign)
+{
+    unsigned long result = 0;
+    MACRO(op,bot,top,fail,assign);
+    return result;
+}
+
 /* evaluate an infix operator */
 void ExpressionInfixOperator(struct ParseState *Parser,
     struct ExpressionStack **StackTop, enum LexToken Op,
@@ -1025,8 +1161,11 @@ void ExpressionInfixOperator(struct ParseState *Parser,
         // NOTES:
         // - When a signed and unsigned integer are used in the same expression,
         //   the signed operand is implicitly converted to an unsigned type to perform the operation. 
-        long TopInt = ExpressionCoerceInteger(TopValue);
-        long BottomInt = ExpressionCoerceInteger(BottomValue);
+        // - When a 32-bit int and a 64-bit long long (or int64_t) are used in the same expression
+        //   in C, the 32-bit integer is implicitly converted (promoted) to the 64-bit integer
+        //   type before the operation is performed
+        //long TopInt = ExpressionCoerceInteger(TopValue);
+        //long BottomInt = ExpressionCoerceInteger(BottomValue);
         enum BaseType TopTyp = TopValue->Typ->Base;
         enum BaseType BottomTyp = BottomValue->Typ->Base;
         bool Bottom64 = (BottomTyp == TypeLong || BottomTyp == TypeUnsignedLong);
@@ -1039,121 +1178,46 @@ void ExpressionInfixOperator(struct ParseState *Parser,
                             TopTyp == TypeUnsignedShort ||
                             TopTyp == TypeUnsignedInt ||
                             TopTyp == TypeUnsignedLong);
-        switch (Op) {
-        case TokenAssign:
-            ResultInt = ExpressionAssignInt(Parser, BottomValue, TopInt, false);
-            break;
-        case TokenAddAssign:
-            ResultInt = ExpressionAssignInt(Parser, BottomValue,
-                BottomInt + TopInt, false);
-            break;
-        case TokenSubtractAssign:
-            ResultInt = ExpressionAssignInt(Parser, BottomValue,
-                BottomInt-TopInt, false);
-            break;
-        case TokenMultiplyAssign:
-            ResultInt = ExpressionAssignInt(Parser, BottomValue,
-                BottomInt*TopInt, false);
-            break;
-        case TokenDivideAssign:
-            ResultInt = ExpressionAssignInt(Parser, BottomValue,
-                BottomInt/TopInt, false);
-            break;
-        case TokenModulusAssign:
-            ResultInt = ExpressionAssignInt(Parser, BottomValue,
-                BottomInt%TopInt, false);
-            break;
-        case TokenShiftLeftAssign:
-            ResultInt = ExpressionAssignInt(Parser, BottomValue,
-                BottomInt<<TopInt, false);
-            break;
-        case TokenShiftRightAssign:
-            if (BottomValue->Typ->Base == TypeUnsignedInt || BottomValue->Typ->Base == TypeUnsignedLong)
-                ResultInt = ExpressionAssignInt(Parser, BottomValue, (uint64_t) BottomInt >> TopInt, false);
-            else
-                ResultInt = ExpressionAssignInt(Parser, BottomValue, BottomInt >> TopInt, false);
-            break;
-        case TokenArithmeticAndAssign:
-            ResultInt = ExpressionAssignInt(Parser, BottomValue,
-                BottomInt&TopInt, false);
-            break;
-        case TokenArithmeticOrAssign:
-            ResultInt = ExpressionAssignInt(Parser, BottomValue,
-                BottomInt|TopInt, false);
-            break;
-        case TokenArithmeticExorAssign:
-            ResultInt = ExpressionAssignInt(Parser, BottomValue,
-                BottomInt^TopInt, false);
-            break;
-        case TokenLogicalOr:
-            ResultInt = BottomInt || TopInt;
-            break;
-        case TokenLogicalAnd:
-            ResultInt = BottomInt && TopInt;
-            break;
-        case TokenArithmeticOr:
-            ResultInt = BottomInt | TopInt;
-            break;
-        case TokenArithmeticExor:
-            ResultInt = BottomInt ^ TopInt;
-            break;
-        case TokenAmpersand:
-            ResultInt = BottomInt & TopInt;
-            break;
-        case TokenEqual:
-            ResultInt = BottomInt == TopInt;
-            break;
-        case TokenNotEqual:
-            ResultInt = BottomInt != TopInt;
-            break;
-        case TokenLessThan:
-            ResultInt = BottomInt < TopInt;
-            break;
-        case TokenGreaterThan:
-            ResultInt = BottomInt > TopInt;
-            break;
-        case TokenLessEqual:
-            ResultInt = BottomInt <= TopInt;
-            break;
-        case TokenGreaterEqual:
-            ResultInt = BottomInt >= TopInt;
-            break;
-        case TokenShiftLeft:
-            ResultInt = BottomInt << TopInt;
-            break;
-        case TokenShiftRight:
-            if (BottomUnsigned) {
-                ResultInt = (unsigned long)BottomInt >> TopInt;
+
+        int fail=false, assign=false;
+        long bot = ExpressionCoerceInteger(BottomValue);
+        long top = ExpressionCoerceInteger(TopValue);
+    
+#if 1
+        if (Op == TokenShiftLeft || Op == TokenShiftRight) {
+            if (!Bottom64) {
+                if (!BottomUnsigned) {
+                    ResultInt =  infix_s32(Op, bot, top, &fail, &assign);
+                } else {
+                    ResultInt =  infix_u32(Op, bot, top, &fail, &assign);
+                }
             } else {
-                ResultInt = BottomInt >> TopInt;
+                if (!BottomUnsigned) {
+                    ResultInt =  infix_s64(Op, bot, top, &fail, &assign);
+                } else {
+                    ResultInt =  infix_u64(Op, bot, top, &fail, &assign);
+                }
             }
-            break;
-        case TokenPlus:
-            if (Bottom64 || Top64) {
-                ResultInt = BottomInt + TopInt;
+        } else 
+#endif
+        if (!Bottom64 && !Top64) {
+            if (!BottomUnsigned && !TopUnsigned) {
+                ResultInt =  infix_s32(Op, bot, top, &fail, &assign);
             } else {
-                ResultInt = (BottomInt + TopInt) & 0xffffffff;
+                ResultInt =  infix_u32(Op, bot, top, &fail, &assign);
             }
-            break;
-        case TokenMinus:
-            ResultInt = BottomInt - TopInt;
-            break;
-        case TokenAsterisk:
-            ResultInt = BottomInt * TopInt;
-            break;
-        case TokenSlash:
-            if (BottomUnsigned || TopUnsigned) {
-                ResultInt = (unsigned long)BottomInt / (unsigned long)TopInt;
+        } else {
+            if (!BottomUnsigned && !TopUnsigned) {
+                ResultInt =  infix_s64(Op, bot, top, &fail, &assign);
             } else {
-                ResultInt = BottomInt / TopInt;
+                ResultInt =  infix_u64(Op, bot, top, &fail, &assign);
             }
-            break;
-        case TokenModulus:
-            ResultInt = BottomInt % TopInt;
-            break;
-        default:
+        }
+        if (fail) {
             ProgramFail(Parser, "invalid operation");
-            break;
+        }
+        if (assign) {
+            ExpressionAssignInt(Parser, BottomValue, ResultInt, false);
         }
         ExpressionPushLongInt(Parser, StackTop, ResultInt);
     } else if (BottomValue->Typ->Base == TypePointer &&
