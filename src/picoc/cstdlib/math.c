@@ -165,7 +165,7 @@ void MathNearbyint(struct ParseState *Parser, struct Value *ReturnValue,
     ReturnValue->Val->FP = nearbyint(Param[0]->Val->FP);
 }
 
-/* all math.h functions */  // EZAPP use double instad of float, and add nearbyint
+/* all math.h functions */
 struct LibraryFunction MathFunctions[] =
 {
      {MathAcos, "double acos(double);"},

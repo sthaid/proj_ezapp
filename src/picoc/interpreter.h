@@ -6,7 +6,7 @@
 
 #include "platform.h"
 
-// EZAPP TODO xxx why is this needed?
+// why is this needed?
 struct __sFILE {
   char __private[152];
 } __attribute__((aligned(sizeof(void*))));
@@ -748,7 +748,7 @@ extern const char UnistdDefs[];
 extern struct LibraryFunction UnistdFunctions[];
 extern void UnistdSetupFunc(Picoc *pc);
 
-/* libgen.c EZAPP */
+/* libgen.c */
 extern struct LibraryFunction LibgenFunctions[];
 
 #endif /* INTERPRETER_H */
