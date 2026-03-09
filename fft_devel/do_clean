@@ -1,0 +1,3 @@
+#!/bin/bash
+
+rm -rf kissfft local example tester sine_wave_gen sine_*.raw

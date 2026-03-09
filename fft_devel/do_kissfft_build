@@ -1,13 +1,17 @@
 #!/bin/bash
 
+rm -rf kissfft
+git clone https://github.com/mborgerding/kissfft
+
 rm -rf local
 mkdir local
+local=$(pwd)/local
 
 cd kissfft
 rm -rf build
 mkdir build
 cd build
-cmake .. -DCMAKE_INSTALL_PREFIX=/home/haid/ez/fft/local \
+cmake .. -DCMAKE_INSTALL_PREFIX=$local \
          -DKISSFFT_STATIC=ON \
          -DKISSFFT_TEST=OFF \
          -DKISSFFT_TOOLS=OFF 
