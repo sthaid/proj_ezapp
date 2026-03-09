@@ -54,7 +54,7 @@ echo
 echo "==== CREATE TEMPLATE BUILD DIR ===="
 touch stub.c
 $SDL_DIR/build-scripts/create-android-project.py $PACKAGE_NAME stub.c
-rm stub.c $BUILD_DIR/app/jni/src/stub.c
+rm stub.c $BUILD_DIR/app/jni/src/stub.c $BUILD_DIR/app/jni/src/CMakeLists.txt
 echo
 
 echo "==== ADD SYMLINKS TO SRC ===="
@@ -68,7 +68,9 @@ ln -s $REPO_TOP/src/SDL_mixer .
 ln -s $REPO_TOP/src/SDL_ttf .
 ln -s $REPO_TOP/src/ezapp_lib .
 cd $BUILD_DIR/app/jni/src
-ln -s $REPO_TOP/src/ezapp/* .
+ln -s $REPO_TOP/src/ezapp/main.c .
+ln -s $REPO_TOP/src/ezapp/std_hdrs.h .
+ln -s $REPO_TOP/src/ezapp/version.h .
 cd $ANDROID_TOP
 echo
 

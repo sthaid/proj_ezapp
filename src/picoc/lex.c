@@ -167,7 +167,9 @@ enum LexToken LexGetNumber(Picoc *pc, struct LexState *Lexer, struct Value *Valu
             } else if (*Lexer->Pos == 'b' || *Lexer->Pos == 'B') {
                 Base = 2; LEXER_INC(Lexer);
             } else if (*Lexer->Pos != '.')
-                Base = 8;  //xxx could be cleanedup
+                /* NOTE: this sets the base for '0' to 8, as well as
+                   setting the base of octal constans, such as 0123, to 8 */
+                Base = 8;
         }
     }
 
@@ -953,7 +955,6 @@ void LexHashIf(struct ParseState *Parser)
         Token = LexGetRawToken(&MacroParser, &IdentValue, true);
     }
 
-    // xxx is this working?
     if (Token != TokenCharacterConstant && Token != TokenIntegerConstant)
         ProgramFail(Parser, "value expected");
 
@@ -1044,20 +1045,23 @@ void LexPrintToken(enum LexToken Token)
                     "CloseBracket",
         /* 0x2d */  "Identifier",
                     "IntegerConstant",
+                    "LongIntegerConstant",
+                    "UnsignedIntegerConstant",
+                    "UnsignedLongIntegerConstant",
                     "FPConstant",
                     "StringConstant",
                     "CharacterConstant",
-        /* 0x32 */  "Semicolon",
+        /* 0x35 */  "Semicolon",
                     "Ellipsis",
-        /* 0x34 */  "LeftBrace",
+        /* 0x37 */  "LeftBrace",
                     "RightBrace",
-        /* 0x36 */  "IntType",
+        /* 0x39 */  "IntType",
                     "CharType",
                     "FloatType",
                     "DoubleType",
                     "VoidType",
                     "EnumType",
-        /* 0x3c */  "LongType",
+        /* 0x3f */  "LongType",
                     "SignedType",
                     "ShortType",
                     "StaticType",
@@ -1068,7 +1072,7 @@ void LexPrintToken(enum LexToken Token)
                     "UnionType",
                     "UnsignedType",
                     "Typedef",
-        /* 0x46 */  "Continue",
+        /* 0x49 */  "Continue",
                     "Do",
                     "Else",
                     "For",
@@ -1080,20 +1084,20 @@ void LexPrintToken(enum LexToken Token)
                     "Case",
                     "Default",
                     "Return",
-        /* 0x52 */
-                    "HashDefine",
+        /* 0x55 */  "HashDefine",
                     "HashInclude",
                     "HashIf",
                     "HashIfdef",
                     "HashIfndef",
                     "HashElse",
                     "HashEndif",
-        /* 0x59 */  "New",
+        /* 0x5c */  "New",
                     "Delete",
-        /* 0x5b */  "OpenMacroBracket",
-        /* 0x5c */  "EOF",
+        /* 0x5e */  "OpenMacroBracket",
+        /* 0x5f */  "EOF",
                     "EndOfLine",
-                    "EndOfFunction"
+                    "EndOfFunction",
+                    "BackSlash"
     };
     printf("{%s}", TokenNames[Token]);
 }

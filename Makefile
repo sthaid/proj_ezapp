@@ -8,6 +8,7 @@ APPS := $(sort $(dir $(wildcard files/apps/*/.)))
 SVCS := $(sort $(dir $(wildcard files/svcs/*/.)))
 
 build:
+	if [ ! -d src/SDL -o ! -d src/SDL_ttf -o ! -d src/SDL_mixer ]; then bin/build_tools/clone_sdl; fi
 	for d in $(SUBDIRS) ; do echo "\n======== BUILD $$d ========\n"; make -C $$d || exit 1; done
 	for d in $(APPS)    ; do echo "\n======== BUILD APP $$d ========\n"; cd $$d; eztest build || exit 1; cd ../../..; done
 	for d in $(SVCS)    ; do echo "\n======== BUILD SVC $$d ========\n"; cd $$d; eztest build || exit 1; cd ../../..; done

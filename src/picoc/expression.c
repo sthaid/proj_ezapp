@@ -1048,6 +1048,7 @@ void ExpressionInfixOperator(struct ParseState *Parser,
                                TopTyp == TypeUnsignedLong);
 
         bool do_assign = false;
+        bool trunc32   = false;
 
         switch (Op) {
         // assignment
@@ -1121,7 +1122,7 @@ void ExpressionInfixOperator(struct ParseState *Parser,
             ResultInt = BottomInt & TopInt;
             break;
 
-        // comparison: == != ...
+        // comparison: == != etc.
         case TokenEqual:
             ResultInt = BottomInt == TopInt;
             break;
@@ -1157,7 +1158,7 @@ void ExpressionInfixOperator(struct ParseState *Parser,
             }
             break;
 
-        // << >>
+        // bit shift: << >>
         case TokenShiftLeft:
             ResultInt = BottomInt << TopInt;
             break;
@@ -1169,7 +1170,7 @@ void ExpressionInfixOperator(struct ParseState *Parser,
             }
             break;
 
-        // + - * / %
+        // arithmetic: + - * / %
         case TokenPlus:
             if (BottomUnsigned || TopUnsigned) {
                 ResultInt = (unsigned long)BottomInt + (unsigned long)TopInt;
@@ -1177,7 +1178,7 @@ void ExpressionInfixOperator(struct ParseState *Parser,
                 ResultInt = BottomInt + TopInt;
             }
             if (!Bottom64 && !Top64) {
-                ResultInt &= 0xffffffff;
+                trunc32 = true;
             }
             break;
         case TokenMinus:
@@ -1187,7 +1188,7 @@ void ExpressionInfixOperator(struct ParseState *Parser,
                 ResultInt = BottomInt - TopInt;
             }
             if (!Bottom64 && !Top64) {
-                ResultInt &= 0xffffffff;
+                trunc32 = true;
             }
             break;
         case TokenAsterisk:
@@ -1197,7 +1198,7 @@ void ExpressionInfixOperator(struct ParseState *Parser,
                 ResultInt = BottomInt * TopInt;
             }
             if (!Bottom64 && !Top64) {
-                ResultInt &= 0xffffffff;
+                trunc32 = true;
             }
             break;
         case TokenSlash:
@@ -1207,7 +1208,7 @@ void ExpressionInfixOperator(struct ParseState *Parser,
                 ResultInt = BottomInt / TopInt;
             }
             if (!Bottom64 && !Top64) {
-                ResultInt &= 0xffffffff;
+                trunc32 = true;
             }
             break;
         case TokenModulus:
@@ -1217,17 +1218,28 @@ void ExpressionInfixOperator(struct ParseState *Parser,
                 ResultInt = BottomInt % TopInt;
             }
             if (!Bottom64 && !Top64) {
-                ResultInt &= 0xffffffff;
+                trunc32 = true;
             }
             break;
         default:
             ProgramFail(Parser, "invalid operation");
             break;
         }
+
+        if (trunc32) {
+            if (ResultInt > 0) {
+                ResultInt &= 0xffffffff;
+            } else if (ResultInt < 0) {
+                ResultInt |= 0xffffffff00000000;
+            }
+        }
+
         if (do_assign) {
             ResultInt = ExpressionAssignInt(Parser, BottomValue, ResultInt, false);
         }
+
         ExpressionPushLongInt(Parser, StackTop, ResultInt);
+
     } else if (BottomValue->Typ->Base == TypePointer &&
             IS_NUMERIC_COERCIBLE(TopValue)) {
         /* pointer/integer infix arithmetic */
@@ -2022,6 +2034,7 @@ void ExpressionParseFunctionCall(struct ParseState *Parser,
             VariableStackFramePop(Parser);
         } else {
             // FIXME: too many parameters?
+            // Warmomg -Wdeprecated-non-prototype is generated on Android build
             FuncValue->Val->FuncDef.Intrinsic(Parser, ReturnValue, ParamArray,
                                               ArgCount);
         }

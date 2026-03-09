@@ -83,6 +83,8 @@ struct Picoc_Struct;
 typedef struct Picoc_Struct Picoc;
 
 /* lexical tokens */
+/* NOTE: the order of this array must correspond to the order of
+         OperatorPrecedence[] in expression.c */
 enum LexToken {
     /* 0x00 */ TokenNone,
     /* 0x01 */ TokenComma,
@@ -130,7 +132,7 @@ enum LexToken {
     /* 0x2b */ TokenOpenBracket,
                TokenCloseBracket,
 
-    // xxx comment needed here
+    /* OperatorPrecedence, found in expression.c, ends here */
 
     /* 0x2d */ TokenIdentifier,
                TokenIntegerConstant,
@@ -140,17 +142,17 @@ enum LexToken {
                TokenFPConstant,
                TokenStringConstant,
                TokenCharacterConstant,
-    /* 0x32 */ TokenSemicolon,  // xxx update number comments
+    /* 0x35 */ TokenSemicolon,
                TokenEllipsis,
-    /* 0x34 */ TokenLeftBrace,
+    /* 0x37 */ TokenLeftBrace,
                TokenRightBrace,
-    /* 0x36 */ TokenIntType,
+    /* 0x39 */ TokenIntType,
                TokenCharType,
                TokenFloatType,
                TokenDoubleType,
                TokenVoidType,
                TokenEnumType,
-    /* 0x3c */ TokenLongType,
+    /* 0x3f */ TokenLongType,
                TokenSignedType,
                TokenShortType,
                TokenStaticType,
@@ -161,7 +163,7 @@ enum LexToken {
                TokenUnionType,
                TokenUnsignedType,
                TokenTypedef,
-    /* 0x46 */ TokenContinue,
+    /* 0x49 */ TokenContinue,
                TokenDo,
                TokenElse,
                TokenFor,
@@ -173,17 +175,17 @@ enum LexToken {
                TokenCase,
                TokenDefault,
                TokenReturn,
-    /* 0x52 */ TokenHashDefine,
+    /* 0x55 */ TokenHashDefine,
                TokenHashInclude,
                TokenHashIf,
                TokenHashIfdef,
                TokenHashIfndef,
                TokenHashElse,
                TokenHashEndif,
-    /* 0x59 */ TokenNew,
+    /* 0x5c */ TokenNew,
                TokenDelete,
-    /* 0x5b */ TokenOpenMacroBracket,
-    /* 0x5c */ TokenEOF,
+    /* 0x5e */ TokenOpenMacroBracket,
+    /* 0x5f */ TokenEOF,
                TokenEndOfLine,
                TokenEndOfFunction,
                TokenBackSlash
