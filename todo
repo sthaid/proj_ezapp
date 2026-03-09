@@ -6,7 +6,13 @@ weather app not working
 checkout specific commit in sdl dirs
 
 
+picoc
+- ANDROID ifdef
+- FIXME
+
 eztest RUN_ON_LINUX   - apps need call to sdlx_init and setlinebuf
+//   setlinebuf(stdout);
+//   sdlx_init(SUBSYS_VIDEO | SUBSYS_AUDIO | SUBSYS_SENSOR);
 elif [ "$CMD" == run_on_linux ]; then
     echo "Performing linux run of $APP_NAME ..."
 elif [ "$CMD" = run_on_linux ]; then

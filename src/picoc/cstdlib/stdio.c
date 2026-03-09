@@ -795,7 +795,6 @@ void StdioVsscanf(struct ParseState *Parser, struct Value *ReturnValue,
         Param[0]->Val->Pointer, Param[1]->Val->Pointer, Param[2]->Val->Pointer);
 }
 
-// EZAPP add popen & pclose
 void StdioPopen(struct ParseState *Parser, struct Value *ReturnValue,
     struct Value **Param, int NumArgs)
 {

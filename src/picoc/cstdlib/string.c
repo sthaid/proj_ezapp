@@ -48,8 +48,7 @@ void StringStrncat(struct ParseState *Parser, struct Value *ReturnValue,
         Param[1]->Val->Pointer, Param[2]->Val->Integer);
 }
 
-#ifndef WIN32
-#if 0  // remove because not supported in Android NDK
+#if !defined(WIN32) && !defined(ANDROID)
 void StringIndex(struct ParseState *Parser, struct Value *ReturnValue,
     struct Value **Param, int NumArgs)
 {
@@ -63,7 +62,6 @@ void StringRindex(struct ParseState *Parser, struct Value *ReturnValue,
     ReturnValue->Val->Pointer = rindex(Param[0]->Val->Pointer,
         Param[1]->Val->Integer);
 }
-#endif
 #endif
 
 void StringStrlen(struct ParseState *Parser, struct Value *ReturnValue,
@@ -201,9 +199,9 @@ void StringStrtok_r(struct ParseState *Parser, struct Value *ReturnValue,
 /* all string.h functions */
 struct LibraryFunction StringFunctions[] =
 {
-#ifndef WIN32
-/*    {StringIndex,   "char *index(char *,int);"}, */
-/*    {StringRindex,  "char *rindex(char *,int);"}, */
+#if !defined(WIN32) && !defined(ANDROID)
+    {StringIndex,   "char *index(char *,int);"},
+    {StringRindex,  "char *rindex(char *,int);"},
 #endif
     {StringMemcpy,  "void *memcpy(void *,void *,int);"},
     {StringMemmove, "void *memmove(void *,void *,int);"},
