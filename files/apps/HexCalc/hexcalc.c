@@ -5,8 +5,6 @@
 #include <sdlx.h>
 #include <utils.h>
 
-// xxx - code cleanup and comments
-
 // display locations
 #define DISPLAY_Y_TOP       100
 #define BUTTONS_X_LEFT      100
@@ -29,7 +27,7 @@
 #define EVID_SHR     ('>' | '>' << 8)
 #define BLANK 0
 
-int button[MAX_BUTTON_ROW][MAX_BUTTON_COL] = {
+int hex_mode_buttons[MAX_BUTTON_ROW][MAX_BUTTON_COL] = {
     { EVID_32BIT, EVID_DSP_HEX,  BLANK,   EVID_CE,    EVID_CLR,   },
     {    'C',         'D',        'E',       'F',       'G',      },
     {    '8',         '9',        'A',       'B',       'M',      },
@@ -37,6 +35,16 @@ int button[MAX_BUTTON_ROW][MAX_BUTTON_COL] = {
     {    '0',         '1',        '2',       '3',       '~',      },
     {    '&',         '|',        '^',    EVID_SHL,   EVID_SHR,   },
     {    '+',         '-',        '*',       '/',      '=',       },
+        };
+
+int dec_mode_buttons[MAX_BUTTON_ROW][MAX_BUTTON_COL] = {
+    { EVID_32BIT, EVID_DSP_DEC,  BLANK,   EVID_CE,    EVID_CLR,   },
+    {    '7',         '8',        '9',      BLANK,      'G',      },
+    {    '4',         '5',        '6',      BLANK,      'M',      },
+    {    '1',         '2',        '3',      BLANK,      'K',      },
+    {   BLANK,        '0',       BLANK,     BLANK,      '~',      },
+    {    '+',         '-',        '*',       '/',       '=',      },
+    {   BLANK,       BLANK,      BLANK,     BLANK,     BLANK,     },
         };
 
 // colors
@@ -58,12 +66,14 @@ int button[MAX_BUTTON_ROW][MAX_BUTTON_COL] = {
 // global variables
 char *progname;
 char *data_dir;
+int   bits          = EVID_32BIT; 
+int   display_fmt   = EVID_DSP_HEX;
 
 // prototypes
-void update_number_display(unsigned long value, int bits, int display, bool error);
-void draw_button(int row, int col, bool highlight);
+void update_number_display(unsigned long value, bool error);
+void draw_button(int row, int col, int button, bool highlight);
 void evid_to_button_row_and_col(int evid, int *button_row, int *button_col);
-unsigned long process_op(int op, unsigned long operand1, unsigned long operand2, int bits, bool *error);
+unsigned long process_op(int op, unsigned long operand1, unsigned long operand2, bool *error);
 sdlx_texture_t *create_filled_circle_texture(int radius, sdlx_color_t color);
 void cleanup(void);
 
@@ -75,8 +85,6 @@ int main(int argc, char **argv)
     int           highlight_button_row = -1;
     int           highlight_button_col = -1;
 
-    int           bits          = EVID_32BIT; 
-    int           display_fmt   = EVID_DSP_HEX;
     int           display_state = RESULT;
     int           op            = OP_NONE;
     unsigned long display_value = 0;
@@ -105,12 +113,17 @@ int main(int argc, char **argv)
         for (int row = 0; row < MAX_BUTTON_ROW; row++) {
             for (int col = 0; col < MAX_BUTTON_COL; col++) {
                 bool highlight = (row == highlight_button_row && col == highlight_button_col);
-                draw_button(row, col, highlight);
+                int button = (display_fmt == EVID_DSP_HEX
+                              ? hex_mode_buttons[row][col] 
+                              : dec_mode_buttons[row][col] );
+                if (button != BLANK) {
+                    draw_button(row, col, button, highlight);
+                }
             }
         }
         
         // update number display
-        update_number_display(display_value, bits, display_fmt, error);
+        update_number_display(display_value, error);
 
         // register control event to end program
         sdlx_register_control_events(0, NULL,
@@ -169,7 +182,8 @@ int main(int argc, char **argv)
             break;
         case EVID_64BIT: case EVID_32BIT:
             bits = (bits == EVID_64BIT ? EVID_32BIT : EVID_64BIT);
-            button[0][0] = bits;
+            hex_mode_buttons[0][0] = bits;
+            dec_mode_buttons[0][0] = bits;
             if (bits == EVID_32BIT) {
                 display_value = (unsigned int)display_value;
                 operand_value = (unsigned int)operand_value;
@@ -177,28 +191,20 @@ int main(int argc, char **argv)
             break;
         case EVID_DSP_HEX: case EVID_DSP_DEC:
             display_fmt = (display_fmt == EVID_DSP_HEX ? EVID_DSP_DEC : EVID_DSP_HEX);
-            button[0][1] = display_fmt;
             break;
 
         // number input events
         case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9':
         case 'A': case 'B': case 'C':  case 'D':  case 'E':  case 'F': {
-            int n = (event.event_id <= '9' ? event.event_id - '0' : event.event_id - 'A' + 0xa);
+            unsigned int n = (event.event_id <= '9' ? event.event_id - '0' : event.event_id - 'A' + 0xa);
+            unsigned int base = (display_fmt == EVID_DSP_HEX ? 16 : 10);
 
             if (display_state == RESULT || display_state == NO_VALUE) {
                 display_value = 0;
                 display_state = INPUTTING;
             }
 
-            if (bits == EVID_64BIT) {
-                if ((display_value & (0xful << 60)) == 0) {
-                    display_value = (display_value << 4) | n;
-                }
-            } else {
-                if ((display_value & (0xful << 28)) == 0) {
-                    display_value = (display_value << 4) | n;
-                }
-            }
+            display_value = (display_value * base) + n;
             break; }
 
         // number constant input
@@ -231,7 +237,7 @@ int main(int argc, char **argv)
                 break;
             }
             if (op != OP_NONE) {
-                display_value = process_op(op, operand_value, display_value, bits, &error);
+                display_value = process_op(op, operand_value, display_value, &error);
             }
             operand_value = display_value;
             op = event.event_id;
@@ -241,7 +247,7 @@ int main(int argc, char **argv)
         // equals op
         case '=':
             if (op != OP_NONE && display_state != NO_VALUE) {
-                display_value = process_op(op, operand_value, display_value, bits, &error);
+                display_value = process_op(op, operand_value, display_value, &error);
             }
             operand_value = 0;
             op = OP_NONE;
@@ -257,7 +263,7 @@ int main(int argc, char **argv)
 
 // -----------------  SUPPORT ROUTINES  ----------------------------
 
-void update_number_display(unsigned long value, int bits, int display_fmt, bool error)
+void update_number_display(unsigned long value, bool error)
 {
     int font_max_chars;
     char fmt[20];
@@ -291,7 +297,7 @@ void update_number_display(unsigned long value, int bits, int display_fmt, bool 
 sdlx_texture_t *button_texture;
 sdlx_texture_t *highlighted_button_texture;
 
-void draw_button(int row, int col, bool highlight)
+void draw_button(int row, int col, int button, bool highlight)
 {
     sdlx_loc_t loc;
     int x, y, radius;
@@ -306,7 +312,7 @@ void draw_button(int row, int col, bool highlight)
         sdlx_query_texture(button_texture, &texture_w, &texture_h);
     }
 
-    if (button[row][col] == 0) {
+    if (button == BLANK) {
         return;
     }    
 
@@ -317,10 +323,8 @@ void draw_button(int row, int col, bool highlight)
         !highlight ? button_texture : highlighted_button_texture,
         x-texture_w/2, y-texture_h/2);
 
-    //xxx sdlx_print_set_default(20, BUTTON_COLOR_TEXT, !highlight ? BUTTON_COLOR_NORMAL : BUTTON_COLOR_HIGHLIGHT);
-    //xxx sdlx_print_set_default(20, BUTTON_COLOR_TEXT);
     memset(str, 0, sizeof(str));
-    memcpy(str, &button[row][col], 4);
+    memcpy(str, &button, 4);
     sdlx_render_printf_ex2(x, y, 
                            FONT_NORMAL, BUTTON_COLOR_TEXT, FLAG_XY_CTR, WRAP_NONE,
                            "%s", str);
@@ -329,19 +333,31 @@ void draw_button(int row, int col, bool highlight)
     loc.y = y - texture_h/2;
     loc.w = texture_w;
     loc.h = texture_h;
-    sdlx_register_event(&loc, button[row][col]);
+    sdlx_register_event(&loc, button);
 }
 
 void evid_to_button_row_and_col(int evid, int *button_row, int *button_col)
 {
     int row, col;
 
-    for (row = 0; row < MAX_BUTTON_ROW; row++) {
-        for (col = 0; col < MAX_BUTTON_COL; col++) {
-            if (button[row][col] == evid) {
-                *button_row = row;
-                *button_col = col;
-                return;
+    if (display_fmt == EVID_DSP_HEX) {
+        for (row = 0; row < MAX_BUTTON_ROW; row++) {
+            for (col = 0; col < MAX_BUTTON_COL; col++) {
+                if (hex_mode_buttons[row][col] == evid) {
+                    *button_row = row;
+                    *button_col = col;
+                    return;
+                }
+            }
+        }
+    } else {
+        for (row = 0; row < MAX_BUTTON_ROW; row++) {
+            for (col = 0; col < MAX_BUTTON_COL; col++) {
+                if (dec_mode_buttons[row][col] == evid) {
+                    *button_row = row;
+                    *button_col = col;
+                    return;
+                }
             }
         }
     }
@@ -350,7 +366,7 @@ void evid_to_button_row_and_col(int evid, int *button_row, int *button_col)
     *button_col = -1;
 }
 
-unsigned long process_op(int op, unsigned long operand1, unsigned long operand2, int bits, bool *error)
+unsigned long process_op(int op, unsigned long operand1, unsigned long operand2, bool *error)
 {
     unsigned long result;
 

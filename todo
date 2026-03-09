@@ -1,14 +1,18 @@
-clock issue
-calc in dec mode shoud accept decimal inputs
-weather app not working
+calc
+- in dec mode shoud accept decimal inputs
+- rename to Numbers?
 
-
-checkout specific commit in sdl dirs
-
+Music App
+- can Mic recording be to a mp3 file (mono)
+- can Mp3 files be appended
 
 picoc
-- ANDROID ifdef
+- add float type
+- deal with xxx in picoc tests
+- xxx in library_unix.c
 - FIXME
+
+checkout specific commit in sdl dirs
 
 eztest RUN_ON_LINUX   - apps need call to sdlx_init and setlinebuf
 //   setlinebuf(stdout);
@@ -31,14 +35,6 @@ elif [ "$CMD" = run_on_linux ]; then
 fi
 
 xxxxxxxxxxxxxxxxxx
-
-Steps
-- git clone git@github.com:sthaid/proj_ezapp.git
-- cd proj_ezapp
-- bin/clone_sdl
-- make
-
-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Apps
 - License
