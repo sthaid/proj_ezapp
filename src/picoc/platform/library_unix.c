@@ -558,9 +558,9 @@ void Sdlx_sensor_find(struct ParseState *Parser, struct Value *ReturnValue,
 void Sdlx_sensor_read_raw(struct ParseState *Parser, struct Value *ReturnValue,
         struct Value **Param, int NumArgs)
 {
-    int      id         = (int)Param[0]->Val->Integer;
-    double * data       = (double *)Param[1]->Val->Pointer;
-    int      num_values = (int)Param[2]->Val->Integer;
+    int     id         = (int)Param[0]->Val->Integer;
+    float * data       = (float *)Param[1]->Val->Pointer;
+    int     num_values = (int)Param[2]->Val->Integer;
 
     int retval;
     retval = sdlx_sensor_read_raw(id, data, num_values);
@@ -570,10 +570,11 @@ void Sdlx_sensor_read_raw(struct ParseState *Parser, struct Value *ReturnValue,
 void Sdlx_sensor_read_step_counter(struct ParseState *Parser, struct Value *ReturnValue,
         struct Value **Param, int NumArgs)
 {
-    double * step_count = (double *)Param[0]->Val->Pointer;
+    unsigned long * step_count       = (unsigned long *)Param[0]->Val->Pointer;
+    unsigned long * first_step_count = (unsigned long *)Param[1]->Val->Pointer;
 
     int retval;
-    retval = sdlx_sensor_read_step_counter(step_count);
+    retval = sdlx_sensor_read_step_counter(step_count, first_step_count);
     ReturnValue->Val->Integer = retval;
 }
 
@@ -780,8 +781,8 @@ struct LibraryFunction SdlFunctions[] = {
     // sensors
     { Sdlx_sensor_get_info_tbl,      "sdlx_sensor_info_t *sdlx_sensor_get_info_tbl(int *max);" },
     { Sdlx_sensor_find,              "int sdlx_sensor_find(int type);" },
-    { Sdlx_sensor_read_raw,          "int sdlx_sensor_read_raw(int id, double *data, int num_values);" },
-    { Sdlx_sensor_read_step_counter, "int sdlx_sensor_read_step_counter(double *step_count);" },
+    { Sdlx_sensor_read_raw,          "int sdlx_sensor_read_raw(int id, float *data, int num_values);" },
+    { Sdlx_sensor_read_step_counter, "int sdlx_sensor_read_step_counter(unsigned long *step_count, unsigned long *first_step_count);" },
     { Sdlx_sensor_read_mag_heading,  "int sdlx_sensor_read_mag_heading(double *mag_heading);" },
     { Sdlx_sensor_read_accelerometer,"int sdlx_sensor_read_accelerometer(double *ax, double *ay, double *az);" },
     { Sdlx_sensor_read_roll_pitch,   "int sdlx_sensor_read_roll_pitch(double *roll, double *pitch);" },

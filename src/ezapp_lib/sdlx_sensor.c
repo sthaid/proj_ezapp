@@ -30,7 +30,7 @@ static int               max_sensor_info_tbl;
 
 SDL_Sensor              *sensor[MAX_SENSOR_ID];  // indexed by id
 
-static double first_step_count;
+static unsigned long first_step_count;
 
 //
 // prototypes
@@ -43,6 +43,7 @@ int sdlx_sensor_init(void)
     int            i, max, num_sensors;
     SDL_SensorID  *ids;
     double         dummy, pressure;
+    unsigned long  dummy_ulong;
 
     INFO("initializing\n");
 
@@ -87,20 +88,12 @@ int sdlx_sensor_init(void)
     // free the list of ids
     SDL_free(ids);
 
-    // xxx comment
-    // xxx - what is this for
-    // xxx - why isn't compass included
-    // xxx - are there other routines that need to be called from here
-    sdlx_sensor_read_temperature(&dummy);
-    sdlx_sensor_read_humidity(&dummy);
-    sdlx_sensor_read_pressure(&dummy);
-    sdlx_sensor_read_step_counter(&dummy);
+    // read the first_step_count;
+    // note: the first call to read the step count does not work
+    sdlx_sensor_read_step_counter(&dummy_ulong, NULL);
     usleep(250000);
-    sdlx_sensor_read_temperature(&dummy);
-    sdlx_sensor_read_humidity(&dummy);
-    sdlx_sensor_read_pressure(&pressure);
-    sdlx_sensor_read_step_counter(&first_step_count);
-    INFO("first_step_count = %.0f pressure = %.0f\n", first_step_count, pressure);
+    sdlx_sensor_read_step_counter(&first_step_count, NULL);
+    INFO("first_step_count = %ld pressure = %.0f\n", first_step_count, pressure);
 
     // return success
     INFO("success\n");
@@ -143,21 +136,14 @@ int sdlx_sensor_find(int type)
     return sensor_info_tbl[i].id;
 }
 
-int sdlx_sensor_read_raw(int id, double *data, int num_values)
+int sdlx_sensor_read_raw(int id, float *data, int num_values)
 {
-    int   i;
     bool  succ;
-    float float_data[16];
 
-// xxx mutex
-
-    // Note that the data are first obtained in float_data[], and 
-    // then converted to doubles for return in the data array.
-    // The reason for this is that picoc handles variables declared 
-    // float as doubles; they are both 8 bytes.
+    // xxx mutex ?
 
     // preset return data to 0
-    memset(data, 0, num_values * sizeof(double));
+    memset(data, 0, num_values * sizeof(float));
 
     // validate args
     if (id < 0 || id >= MAX_SENSOR_ID) {
@@ -178,25 +164,11 @@ int sdlx_sensor_read_raw(int id, double *data, int num_values)
         }
     }
 
-    // get the sensor data, in float_data[]
-    succ = SDL_GetSensorData(sensor[id], float_data, num_values);
+    // get the sensor data
+    succ = SDL_GetSensorData(sensor[id], data, num_values);
     if (!succ) {
         ERROR("SDL_GetSensorData failed for id %d, %s\n", id, SDL_GetError());
         return -1;
-    }
-
-    // convert the float_data to double data, for return to caller
-    if (SDL_GetSensorNonPortableType(sensor[id]) != ASENSOR_TYPE_STEP_COUNTER) {
-        for (i = 0; i < num_values; i++) {
-            data[i] = float_data[i];
-        }
-    } else {
-        // the step_counter sensor is a special case, returning a 64 bit integer;
-        // refer to NDK ASensorEvent, which is included in the comment section
-        // at the end of this file
-        unsigned long step_count;
-        memcpy(&step_count, float_data, sizeof(step_count));
-        data[0] = step_count;
     }
 
     // success
@@ -208,9 +180,9 @@ int sdlx_sensor_read_raw(int id, double *data, int num_values)
 #define RAD_TO_DEG (180 / M_PI)
 #define DEG_TO_RAD (M_PI / 180)
 
-int sdlx_sensor_read_step_counter(double *step_count)
+int sdlx_sensor_read_step_counter(unsigned long *step_count, unsigned long *first_step_count_arg)
 {
-    double data[3];
+    unsigned long raw_step_count;
     
     static bool   first_call = true;
     static int    id = -1;
@@ -227,10 +199,20 @@ int sdlx_sensor_read_step_counter(double *step_count)
     }
 
     // read step counter sensor
-    sdlx_sensor_read_raw(id, data, 3);
+    // NOTE: the step_counter sensor is a special case, returning a 64 bit integer;
+    //       refer to NDK ASensorEvent, which is included in the comment section
+    //       at the end of this file
+    sdlx_sensor_read_raw(id, (float*)&raw_step_count, 2);
 
-    // return step count sensor value minus first step count value read
-    *step_count = data[0] - first_step_count;
+    // return step count sensor value minus first step count value 
+    *step_count = raw_step_count - first_step_count;
+
+    // return first_step_count, if requested
+    if (first_step_count_arg != NULL) {
+        *first_step_count_arg = first_step_count;
+    }
+
+    // success
     return 0;
 }
 
@@ -240,7 +222,7 @@ int sdlx_sensor_read_step_counter(double *step_count)
 // units: m/s^2
 int sdlx_sensor_read_accelerometer(double *ax, double *ay, double *az)
 {
-    double data[3];
+    float data[3];
 
     static bool first_call = true;
     static int  id = -1;
@@ -272,7 +254,7 @@ int sdlx_sensor_read_accelerometer(double *ax, double *ay, double *az)
 
 int sdlx_sensor_read_roll_pitch(double *roll, double *pitch)
 {
-    double data[3];
+    float data[3];
     double ax, ay, az;
 
     static bool first_call = true;
@@ -314,7 +296,7 @@ int sdlx_sensor_read_roll_pitch(double *roll, double *pitch)
 
 int sdlx_sensor_read_mag_heading(double *mag_heading)
 {
-    double data[3];
+    float data[3];
     double mx, my, mz;
     double roll, pitch; 
     double mprimex, mprimey;
@@ -368,7 +350,7 @@ int sdlx_sensor_read_mag_heading(double *mag_heading)
 
 int sdlx_sensor_read_pressure(double *millibars)
 {
-    double data[3];
+    float data[3];
 
     static bool first_call = true;
     static int  id = -1;
@@ -395,7 +377,7 @@ int sdlx_sensor_read_pressure(double *millibars)
 // not tested
 int sdlx_sensor_read_temperature(double *degrees_c)
 {
-    double data[3];
+    float data[3];
 
     static bool first_call = true;
     static int  id = -1;
@@ -422,7 +404,7 @@ int sdlx_sensor_read_temperature(double *degrees_c)
 // not tested
 int sdlx_sensor_read_humidity(double *percent)
 {
-    double data[3];
+    float data[3];
 
     static bool first_call = true;
     static int  id = -1;

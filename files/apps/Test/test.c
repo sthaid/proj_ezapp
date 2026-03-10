@@ -968,7 +968,7 @@ static void page_8_exit(void)
 
 // -----------------  PAGE 9: SENSOR DATA ---------------------
 
-#define MAX_SENSOR_TEST_TBL 6
+#define MAX_SENSOR_TEST_TBL 4
 
 struct sensor_test_s {
     char *name;
@@ -986,10 +986,6 @@ static void page_9_init(void)
     sensor_test_tbl[2].type =  ASENSOR_TYPE_ACCELEROMETER;
     sensor_test_tbl[3].name =  "press";
     sensor_test_tbl[3].type =  ASENSOR_TYPE_PRESSURE;
-    sensor_test_tbl[4].name =  "temp";
-    sensor_test_tbl[4].type =  ASENSOR_TYPE_AMBIENT_TEMPERATURE;
-    sensor_test_tbl[5].name =  "humid";
-    sensor_test_tbl[5].type =  ASENSOR_TYPE_RELATIVE_HUMIDITY; // xxx add routine for this
 
     for (int i = 0; i < MAX_SENSOR_TEST_TBL; i++) {
         struct sensor_test_s *x = &sensor_test_tbl[i];
@@ -999,12 +995,12 @@ static void page_9_init(void)
 
 static void page_9_draw(void)
 {
-    double data[3];
-    int    row = 2;
-    int    rc;
-    double step_count;
-    double mag_heading, roll, pitch, millibars, degrees_c, percent;
-    double ax, ay, az;
+    float         data[3];
+    int           row = 2;
+    int           rc;
+    unsigned long step_count, first_step_count;
+    double        mag_heading, roll, pitch, millibars, degrees_c, percent;
+    double        ax, ay, az;
 
     sdlx_print_set_default(FONT_SMALL, COLOR_WHITE);
 
@@ -1020,9 +1016,9 @@ static void page_9_draw(void)
 
     sdlx_print_set_default(FONT_NORMAL, COLOR_WHITE);
 
-    rc = sdlx_sensor_read_step_counter(&step_count);
+    rc = sdlx_sensor_read_step_counter(&step_count, &first_step_count);
     if (rc == 0) {
-        sdlx_render_printf(0, ROW2Y(row++), "stepc=% .0f", step_count);
+        sdlx_render_printf(0, ROW2Y(row++), "stepc=%ld  %ld", step_count, first_step_count);
     }
 
     rc = sdlx_sensor_read_mag_heading(&mag_heading);
@@ -1043,16 +1039,6 @@ static void page_9_draw(void)
     rc = sdlx_sensor_read_pressure(&millibars);
     if (rc == 0) {
         sdlx_render_printf(0, ROW2Y(row++), "press=% 5.0f", millibars);
-    }
-
-    rc = sdlx_sensor_read_temperature(&degrees_c);
-    if (rc == 0) {
-        sdlx_render_printf(0, ROW2Y(row++), "temp =% 4.0f", degrees_c);
-    }
-
-    rc = sdlx_sensor_read_humidity(&percent);
-    if (rc == 0) {
-        sdlx_render_printf(0, ROW2Y(row++), "humid=% 4.0f", percent);
     }
 }
 
