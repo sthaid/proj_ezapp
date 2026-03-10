@@ -65,7 +65,8 @@ typedef FILE IOFILE;
 
 /* coercion of numeric types to other numeric types */
 #define IS_FP(v) ((v)->Typ->Base == TypeFP)
-#define FP_VAL(v) ((v)->Val->FP)
+#define IS_FP32(v) ((v)->Typ->Base == TypeFP32)
+#define IS_FP_OR_FP32(v) (IS_FP(v) || IS_FP32(v))
 
 /* ap -> AllowPointerCoercion = true | false */
 #define IS_POINTER_COERCIBLE(v, ap) ((ap) ? ((v)->Typ->Base == TypePointer) : 0)
@@ -73,7 +74,7 @@ typedef FILE IOFILE;
 
 #define IS_INTEGER_NUMERIC_TYPE(t) ((t)->Base >= TypeInt && (t)->Base <= TypeUnsignedLong)
 #define IS_INTEGER_NUMERIC(v) IS_INTEGER_NUMERIC_TYPE((v)->Typ)
-#define IS_NUMERIC_COERCIBLE(v) (IS_INTEGER_NUMERIC(v) || IS_FP(v))
+#define IS_NUMERIC_COERCIBLE(v) (IS_INTEGER_NUMERIC(v) || IS_FP_OR_FP32(v))
 #define IS_NUMERIC_COERCIBLE_PLUS_POINTERS(v,ap) (IS_NUMERIC_COERCIBLE(v) || IS_POINTER_COERCIBLE(v,ap))
 
 
@@ -238,16 +239,17 @@ enum BaseType {
     TypeUnsignedShort,          /* 6  unsigned short integer */
     TypeUnsignedChar,           /* 7  unsigned 8-bit number */ /* must be before unsigned long */
     TypeUnsignedLong,           /* 8  unsigned long integer */
-    TypeFP,                     /* 9  floating point */
-    TypeFunction,               /* 10 a function */
-    TypeMacro,                  /* 11 a macro */
-    TypePointer,                /* 12 a pointer */
-    TypeArray,                  /* 13 an array of a sub-type */
-    TypeStruct,                 /* 14 aggregate type */
-    TypeUnion,                  /* 15 merged type */
-    TypeEnum,                   /* 16 enumerated integer type */
-    TypeGotoLabel,              /* 17 a label we can "goto" */
-    Type_Type                   /* 18 a type for storing types */
+    TypeFP,                     /* 9  floating point (double) */
+    TypeFP32,                   /* 10 floating point (float) */
+    TypeFunction,               /* 11 a function */
+    TypeMacro,                  /* 12 a macro */
+    TypePointer,                /* 13 a pointer */
+    TypeArray,                  /* 14 an array of a sub-type */
+    TypeStruct,                 /* 15 aggregate type */
+    TypeUnion,                  /* 16 merged type */
+    TypeEnum,                   /* 17 enumerated integer type */
+    TypeGotoLabel,              /* 18 a label we can "goto" */
+    Type_Type                   /* 19 a type for storing types */
 };
 
 /* data type */
@@ -303,6 +305,7 @@ union AnyValue {
     struct FuncDef FuncDef;
     struct MacroDef MacroDef;
     double FP;
+    float FP32;
     void *Pointer;      /* unsafe native pointers */
 };
 
@@ -486,6 +489,7 @@ struct Picoc_Struct {
     struct ValueType UnsignedLongType;
     struct ValueType UnsignedCharType;
     struct ValueType FPType;
+    struct ValueType FP32Type;
     struct ValueType VoidType;
     struct ValueType TypeType;
     struct ValueType FunctionType;

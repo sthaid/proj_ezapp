@@ -94,6 +94,9 @@ void PrintType(struct ValueType *Typ, IOFILE *Stream)
     case TypeFP:
         PrintStr("double", Stream);
         break;
+    case TypeFP32:
+        PrintStr("float", Stream);
+        break;
     case TypeFunction:
         PrintStr("function", Stream);
         break;

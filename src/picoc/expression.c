@@ -2,22 +2,10 @@
  * which handles operator precedence */
 #include "interpreter.h"
 
-
 /* whether evaluation is left to right for a given precedence level */
 #define IS_LEFT_TO_RIGHT(p) ((p) != 2 && (p) != 14)
 #define BRACKET_PRECEDENCE (20)
-
-/* If the destination is not float, we can't assign a floating value to it,
-    we need to convert it to integer instead */
-#define ASSIGN_FP_OR_INT(value) \
-        if (IS_FP(BottomValue)) { \
-            ResultFP = ExpressionAssignFP(Parser, BottomValue, value); \
-        } else { \
-            ResultInt = ExpressionAssignInt(Parser, BottomValue,  (long)(value), false); \
-            ResultIsInt = true; }
-
 #define DEEP_PRECEDENCE (BRACKET_PRECEDENCE*1000)
-
 
 /* local prototypes */
 enum OperatorOrder {
@@ -94,13 +82,13 @@ static struct OpPrecedence OperatorPrecedence[] = {
     /* TokenCloseBracket, */ {0, 15, 0, ")"}
 };
 
-
 #ifdef DEBUG_EXPRESSIONS
 static void ExpressionStackShow(Picoc *pc, struct ExpressionStack *StackTop);
 #endif
 static int IsTypeToken(struct ParseState * Parser, enum LexToken t, struct Value * LexValue);
 static long ExpressionAssignInt(struct ParseState *Parser, struct Value *DestValue, long FromInt, int After);
 static double ExpressionAssignFP(struct ParseState *Parser, struct Value *DestValue, double FromFP);
+static float ExpressionAssignFP32(struct ParseState *Parser, struct Value *DestValue, float FromFP32);
 static void ExpressionStackPushValueNode(struct ParseState *Parser, struct ExpressionStack **StackTop, struct Value *ValueLoc);
 static struct Value *ExpressionStackPushValueByType(struct ParseState *Parser, struct ExpressionStack **StackTop, struct ValueType *PushType);
 static void ExpressionStackPushValue(struct ParseState *Parser, struct ExpressionStack **StackTop, struct Value *PushValue);
@@ -108,6 +96,7 @@ static void ExpressionStackPushLValue(struct ParseState *Parser, struct Expressi
 static void ExpressionStackPushDereference(struct ParseState *Parser, struct ExpressionStack **StackTop, struct Value *DereferenceValue);
 static void ExpressionPushInt(struct ParseState *Parser, struct ExpressionStack **StackTop, long IntValue);
 static void ExpressionPushFP(struct ParseState *Parser, struct ExpressionStack **StackTop, double FPValue);
+static void ExpressionPushFP32(struct ParseState *Parser, struct ExpressionStack **StackTop, float FP32Value);
 static void ExpressionAssignToPointer(struct ParseState *Parser, struct Value *ToValue, struct Value *FromValue, const char *FuncName, int ParamNo, int AllowPointerCoercion);
 static void ExpressionQuestionMarkOperator(struct ParseState *Parser, struct ExpressionStack **StackTop, struct Value *BottomValue, struct Value *TopValue);
 static void ExpressionColonOperator(struct ParseState *Parser, struct ExpressionStack **StackTop, struct Value *BottomValue, struct Value *TopValue);
@@ -161,6 +150,9 @@ void ExpressionStackShow(Picoc *pc, struct ExpressionStack *StackTop)
                 break;
             case TypeFP:
                 printf("%f:fp", StackTop->Val->Val->FP);
+                break;
+            case TypeFP32:
+                printf("%f:fp32", StackTop->Val->Val->FP32);
                 break;
             case TypeFunction:
                 printf("%s:function", StackTop->Val->Val->Identifier);
@@ -258,6 +250,8 @@ long ExpressionCoerceInteger(struct Value *Val)
         return (long)Val->Val->Pointer;
     case TypeFP:
         return (long)Val->Val->FP;
+    case TypeFP32:
+        return (long)Val->Val->FP32;
     default:
         return 0;
     }
@@ -286,6 +280,8 @@ unsigned long ExpressionCoerceUnsignedInteger(struct Value *Val)
         return (unsigned long)Val->Val->Pointer;
     case TypeFP:
         return (unsigned long)Val->Val->FP;
+    case TypeFP32:
+        return (unsigned long)Val->Val->FP32;
     default:
         return 0;
     }
@@ -312,6 +308,8 @@ double ExpressionCoerceFP(struct Value *Val)
         return (double)Val->Val->UnsignedCharacter;
     case TypeFP:
         return Val->Val->FP;
+    case TypeFP32:
+        return Val->Val->FP32;
     default:
         return 0.0;
     }
@@ -362,7 +360,7 @@ long ExpressionAssignInt(struct ParseState *Parser, struct Value *DestValue,
     return Result;
 }
 
-/* assign a floating point value */
+/* assign a floating point (double) value */
 double ExpressionAssignFP(struct ParseState *Parser, struct Value *DestValue,
     double FromFP)
 {
@@ -371,6 +369,17 @@ double ExpressionAssignFP(struct ParseState *Parser, struct Value *DestValue,
 
     DestValue->Val->FP = FromFP;
     return FromFP;
+}
+
+/* assign a floating point (float) value */
+float ExpressionAssignFP32(struct ParseState *Parser, struct Value *DestValue,
+    float FromFP32)
+{
+    if (!DestValue->IsLValue)
+        ProgramFail(Parser, "can't assign to this");
+
+    DestValue->Val->FP32 = FromFP32;
+    return FromFP32;
 }
 
 /* push a node on to the expression stack */
@@ -481,6 +490,15 @@ void ExpressionPushFP(struct ParseState *Parser,
     ExpressionStackPushValueNode(Parser, StackTop, ValueLoc);
 }
 
+void ExpressionPushFP32(struct ParseState *Parser,
+    struct ExpressionStack **StackTop, float FP32Value)
+{
+    struct Value *ValueLoc = VariableAllocValueFromType(Parser->pc, Parser,
+                                 &Parser->pc->FP32Type, false, NULL, false);
+    ValueLoc->Val->FP32 = FP32Value;
+    ExpressionStackPushValueNode(Parser, StackTop, ValueLoc);
+}
+
 /* assign to a pointer */
 void ExpressionAssignToPointer(struct ParseState *Parser, struct Value *ToValue,
     struct Value *FromValue, const char *FuncName, int ParamNo,
@@ -568,6 +586,12 @@ void ExpressionAssign(struct ParseState *Parser, struct Value *DestValue,
             AssignFail(Parser, "%t from %t", DestValue->Typ, SourceValue->Typ,
                 0, 0, FuncName, ParamNo);
         DestValue->Val->FP = (double)ExpressionCoerceFP(SourceValue);
+        break;
+    case TypeFP32:
+        if (!IS_NUMERIC_COERCIBLE_PLUS_POINTERS(SourceValue, AllowPointerCoercion))
+            AssignFail(Parser, "%t from %t", DestValue->Typ, SourceValue->Typ,
+                0, 0, FuncName, ParamNo);
+        DestValue->Val->FP32 = (double)ExpressionCoerceFP(SourceValue);
         break;
     case TypePointer:
         ExpressionAssignToPointer(Parser, DestValue, SourceValue, FuncName,
@@ -742,6 +766,32 @@ void ExpressionPrefixOperator(struct ParseState *Parser,
                 break;
             }
             ExpressionPushFP(Parser, StackTop, ResultFP);
+        } else if (TopValue->Typ == &Parser->pc->FP32Type) {
+            /* floating point 32 prefix arithmetic */
+            float ResultFP32 = 0.0;
+            switch (Op) {
+            case TokenPlus:
+                ResultFP32 = TopValue->Val->FP32;
+                break;
+            case TokenMinus:
+                ResultFP32 = -TopValue->Val->FP32;
+                break;
+            case TokenIncrement:
+                ResultFP32 = ExpressionAssignFP32(Parser, TopValue,
+                    TopValue->Val->FP32+1);
+                break;
+            case TokenDecrement:
+                ResultFP32 = ExpressionAssignFP32(Parser, TopValue,
+                    TopValue->Val->FP32-1);
+                break;
+            case TokenUnaryNot:
+                ResultFP32 = !TopValue->Val->FP32;
+                break;
+            default:
+                ProgramFail(Parser, "invalid operation");
+                break;
+            }
+            ExpressionPushFP32(Parser, StackTop, ResultFP32);
         } else if (IS_NUMERIC_COERCIBLE(TopValue)) {
             /* integer prefix arithmetic */
             long ResultInt = 0;
@@ -840,6 +890,22 @@ void ExpressionPostfixOperator(struct ParseState *Parser,
             break;
         }
         ExpressionPushFP(Parser, StackTop, ResultFP);
+    } else if (TopValue->Typ == &Parser->pc->FP32Type) {
+        /* floating point prefix arithmetic */
+        float ResultFP32 = 0.0;
+
+        switch (Op) {
+        case TokenIncrement:
+            ResultFP32 = ExpressionAssignFP32(Parser, TopValue, TopValue->Val->FP32+1);
+            break;
+        case TokenDecrement:
+            ResultFP32 = ExpressionAssignFP32(Parser, TopValue, TopValue->Val->FP32-1);
+            break;
+        default:
+            ProgramFail(Parser, "invalid operation");
+            break;
+        }
+        ExpressionPushFP32(Parser, StackTop, ResultFP32);
     } else if (IS_NUMERIC_COERCIBLE(TopValue)) {
         long ResultInt = 0;
         long TopInt = ExpressionCoerceInteger(TopValue);
@@ -944,35 +1010,43 @@ void ExpressionInfixOperator(struct ParseState *Parser,
         ExpressionQuestionMarkOperator(Parser, StackTop, TopValue, BottomValue);
     else if (Op == TokenColon)
         ExpressionColonOperator(Parser, StackTop, TopValue, BottomValue);
-    else if ((TopValue->Typ == &Parser->pc->FPType &&
-                 BottomValue->Typ == &Parser->pc->FPType) ||
-              (TopValue->Typ == &Parser->pc->FPType
-                    && IS_NUMERIC_COERCIBLE(BottomValue)) ||
-              (IS_NUMERIC_COERCIBLE(TopValue)
-                && BottomValue->Typ == &Parser->pc->FPType) ) {
+    else if ((IS_FP_OR_FP32(TopValue) && IS_FP_OR_FP32(BottomValue)) ||
+             (IS_FP_OR_FP32(TopValue) && IS_NUMERIC_COERCIBLE(BottomValue)) ||
+             (IS_FP_OR_FP32(BottomValue) && IS_NUMERIC_COERCIBLE(TopValue)))
+    {
         /* floating point infix arithmetic */
+
         int ResultIsInt = false;
         double ResultFP = 0.0;
-        double TopFP = (TopValue->Typ == &Parser->pc->FPType) ?
-            TopValue->Val->FP : (double)ExpressionCoerceInteger(TopValue);
-        double BottomFP = (BottomValue->Typ == &Parser->pc->FPType) ?
-            BottomValue->Val->FP : (double)ExpressionCoerceInteger(BottomValue);
+        double TopFP = ExpressionCoerceFP(TopValue);
+        double BottomFP = ExpressionCoerceFP(BottomValue);
+
+        /* If the destination is not float, we can't assign a floating value to it,
+            we need to convert it to integer instead */
+        #define ASSIGN_FP_OR_FP32_OR_INT(value) \
+                if (IS_FP(BottomValue)) { \
+                    ResultFP = ExpressionAssignFP(Parser, BottomValue, value); \
+                } else if (IS_FP32(BottomValue)) { \
+                    ResultFP = ExpressionAssignFP32(Parser, BottomValue, value); \
+                } else { \
+                    ResultInt = ExpressionAssignInt(Parser, BottomValue,  (long)(value), false); \
+                    ResultIsInt = true; }
 
         switch (Op) {
         case TokenAssign:
-            ASSIGN_FP_OR_INT(TopFP);
+            ASSIGN_FP_OR_FP32_OR_INT(TopFP);
             break;
         case TokenAddAssign:
-            ASSIGN_FP_OR_INT(BottomFP + TopFP);
+            ASSIGN_FP_OR_FP32_OR_INT(BottomFP + TopFP);
             break;
         case TokenSubtractAssign:
-            ASSIGN_FP_OR_INT(BottomFP - TopFP);
+            ASSIGN_FP_OR_FP32_OR_INT(BottomFP - TopFP);
             break;
         case TokenMultiplyAssign:
-            ASSIGN_FP_OR_INT(BottomFP * TopFP);
+            ASSIGN_FP_OR_FP32_OR_INT(BottomFP * TopFP);
             break;
         case TokenDivideAssign:
-            ASSIGN_FP_OR_INT(BottomFP / TopFP);
+            ASSIGN_FP_OR_FP32_OR_INT(BottomFP / TopFP);
             break;
         case TokenEqual:
             ResultInt = BottomFP == TopFP;

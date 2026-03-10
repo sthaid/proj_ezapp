@@ -1,6 +1,32 @@
-calc
-- in dec mode shoud accept decimal inputs
-- rename to Numbers?
+clibrary.c
+expression.c
+include.c
+interpreter.h
+lex.c
+picoc
+platform.c
+type.c
+
+
+
+
+[HOME2 | main | picoc]$ grep -l FP *.c
+clibrary.c             k
+expression.c           in prog
+include.c              k
+lex.c                  k
+platform.c             k
+type.c                 k
+
+[HOME2 | main | picoc]$ grep -l FP *.h
+interpreter.h         in prog
+
+
+
+
+xxxxxxxxxxxxxxxxxxxxx
+
+
 
 Music App
 - can Mic recording be to a mp3 file (mono)
@@ -11,6 +37,7 @@ picoc
 - deal with xxx in picoc tests
 - xxx in library_unix.c
 - FIXME
+- ANDORID vs ANDROID_HOST
 
 checkout specific commit in sdl dirs
 
