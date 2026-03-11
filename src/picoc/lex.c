@@ -239,11 +239,11 @@ enum LexToken LexGetNumber(Picoc *pc, struct LexState *Lexer, struct Value *Valu
         FPResult *= pow((double)Base, (double)Result * ExponentSign);
     }
 
-    Value->Val->FP = FPResult;
-
+    // NOTE: the 'f' suffix is discarded, and the constant is stored in double format
     if (*Lexer->Pos == 'f' || *Lexer->Pos == 'F')
         LEXER_INC(Lexer);
 
+    Value->Val->FP = FPResult;
     return TokenFPConstant;
 }
 
