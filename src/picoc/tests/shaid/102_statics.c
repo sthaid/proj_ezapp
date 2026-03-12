@@ -1,11 +1,12 @@
 #include <stdio.h>
 
-// xxx array sizes must be provided
+// xxx array sizes must be provided if declared 'static'
 
 static char *x1[2]  = {"hello", "world"};
 static char *x2[10] = {"hello", "world"};
 
 char *x3[2] = {"hello", "world"};
+char *x3b[] = {"hello", "world", "more_world"};  // xxx array size not needed here since not declared 'static'
 int z1 = 10;
 static int z2 = 11;
 
@@ -13,14 +14,15 @@ void proc(void);
 
 int main()
 {
-    if (sizeof(x1) == 0 || sizeof(x2) == 0 || sizeof(x3) == 0) {
+    if (sizeof(x1) == 0 || sizeof(x2) == 0 || sizeof(x3) == 0 || sizeof(x3b) == 0) {
         printf("ERROR sizeof x1,x2,x3 is zero\n");
         return 0;
     }
 
-    printf("x1: n=%zd %s %s\n", sizeof(x1)/sizeof(x1[0]), x1[0], x1[1]);
-    printf("x2: n=%zd %s %s\n", sizeof(x2)/sizeof(x2[0]), x2[0], x2[1]);
-    printf("x3: n=%zd %s %s\n", sizeof(x3)/sizeof(x3[0]), x3[0], x3[1]);
+    printf("x1:  n=%zd %s %s\n", sizeof(x1)/sizeof(x1[0]), x1[0], x1[1]);
+    printf("x2:  n=%zd %s %s\n", sizeof(x2)/sizeof(x2[0]), x2[0], x2[1]);
+    printf("x3:  n=%zd %s %s\n", sizeof(x3)/sizeof(x3[0]), x3[0], x3[1]);
+    printf("x3b: n=%zd %s %s %s\n", sizeof(x3b)/sizeof(x3b[0]), x3b[0], x3b[1], x3b[2]);
 
     proc();
     proc();
