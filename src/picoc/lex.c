@@ -239,12 +239,14 @@ enum LexToken LexGetNumber(Picoc *pc, struct LexState *Lexer, struct Value *Valu
         FPResult *= pow((double)Base, (double)Result * ExponentSign);
     }
 
-    // NOTE: the 'f' suffix is discarded, and the constant is stored in double format
-    if (*Lexer->Pos == 'f' || *Lexer->Pos == 'F')
+    if (*Lexer->Pos == 'f' || *Lexer->Pos == 'F') {
         LEXER_INC(Lexer);
-
-    Value->Val->FP = FPResult;
-    return TokenFPConstant;
+        Value->Val->FP32 = FPResult;
+        return TokenFP32Constant;
+    } else {
+        Value->Val->FP = FPResult;
+        return TokenFPConstant;
+    }
 }
 
 enum LexToken GetIntegerConstantToken(unsigned long Result, int Base, char IsUnsigned, char IsLong)
@@ -657,6 +659,7 @@ int LexTokenSize(enum LexToken Token)
     case TokenUnsignedLongIntegerConstant: return sizeof(unsigned long);
     case TokenCharacterConstant: return sizeof(unsigned char);
     case TokenFPConstant: return sizeof(double);
+    case TokenFP32Constant: return sizeof(float);
     default: return 0;
     }
 }
@@ -875,6 +878,9 @@ enum LexToken LexGetRawToken(struct ParseState *Parser, struct Value **Value,
             case TokenFPConstant:
                 pc->LexValue.Typ = &pc->FPType;
                 break;
+            case TokenFP32Constant:
+                pc->LexValue.Typ = &pc->FP32Type;
+                break;
             default:
                 break;
             }
@@ -1049,19 +1055,20 @@ void LexPrintToken(enum LexToken Token)
                     "UnsignedIntegerConstant",
                     "UnsignedLongIntegerConstant",
                     "FPConstant",
+                    "FP32Constant",
                     "StringConstant",
                     "CharacterConstant",
-        /* 0x35 */  "Semicolon",
+        /* 0x36 */  "Semicolon",
                     "Ellipsis",
-        /* 0x37 */  "LeftBrace",
+        /* 0x38 */  "LeftBrace",
                     "RightBrace",
-        /* 0x39 */  "IntType",
+        /* 0x3a */  "IntType",
                     "CharType",
                     "FloatType",
                     "DoubleType",
                     "VoidType",
                     "EnumType",
-        /* 0x3f */  "LongType",
+        /* 0x40 */  "LongType",
                     "SignedType",
                     "ShortType",
                     "StaticType",
@@ -1072,7 +1079,7 @@ void LexPrintToken(enum LexToken Token)
                     "UnionType",
                     "UnsignedType",
                     "Typedef",
-        /* 0x49 */  "Continue",
+        /* 0x4a */  "Continue",
                     "Do",
                     "Else",
                     "For",
@@ -1084,17 +1091,17 @@ void LexPrintToken(enum LexToken Token)
                     "Case",
                     "Default",
                     "Return",
-        /* 0x55 */  "HashDefine",
+        /* 0x56 */  "HashDefine",
                     "HashInclude",
                     "HashIf",
                     "HashIfdef",
                     "HashIfndef",
                     "HashElse",
                     "HashEndif",
-        /* 0x5c */  "New",
+        /* 0x5d */  "New",
                     "Delete",
-        /* 0x5e */  "OpenMacroBracket",
-        /* 0x5f */  "EOF",
+        /* 0x5f */  "OpenMacroBracket",
+        /* 0x60 */  "EOF",
                     "EndOfLine",
                     "EndOfFunction",
                     "BackSlash"

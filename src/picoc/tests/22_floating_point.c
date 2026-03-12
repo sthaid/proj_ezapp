@@ -56,18 +56,20 @@ void test_floats(void)
     printf("%f\n", a);
 
     // infix operators
-#if 1
-    printf("%0.3f\n", 12.34f + 56.78f);
-    printf("%0.3f\n", 12.34f - 56.78f);
-    printf("%0.3f\n", 12.34f * 56.78f);
-    printf("%0.3f\n", 12.34f / 56.78f);
-#else
-    // xxx FIXME, problems: the 'f' suffix is ignored, and the result of infix ops on float type is double
     printf("%f\n", 12.34f + 56.78f);
     printf("%f\n", 12.34f - 56.78f);
     printf("%f\n", 12.34f * 56.78f);
     printf("%f\n", 12.34f / 56.78f);
-#endif
+
+    printf("%f\n", 12.34 + 56.78f);
+    printf("%f\n", 12.34 - 56.78f);
+    printf("%f\n", 12.34 * 56.78f);
+    printf("%f\n", 12.34 / 56.78f);
+
+    printf("%f\n", 12.34f + 56.78);
+    printf("%f\n", 12.34f - 56.78);
+    printf("%f\n", 12.34f * 56.78);
+    printf("%f\n", 12.34f / 56.78);
 
     // comparison operators
     printf("%d %d %d %d %d %d\n", 12.34f < 56.78f, 12.34f <= 56.78f, 12.34f == 56.78f, 12.34f >= 56.78f, 12.34f > 56.78f, 12.34f != 56.78f);

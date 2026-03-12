@@ -1016,21 +1016,27 @@ void ExpressionInfixOperator(struct ParseState *Parser,
     {
         /* floating point infix arithmetic */
 
-        int ResultIsInt = false;
-        double ResultFP = 0.0;
-        double TopFP = ExpressionCoerceFP(TopValue);
-        double BottomFP = ExpressionCoerceFP(BottomValue);
+        int    ResultIsInt  = false;
+        int    ResultIsFP   = false;
+        int    ResultIsFP32 = false;
+        double ResultFP     = 0.0;
+        float  ResultFP32   = 0.0;
+        double TopFP        = ExpressionCoerceFP(TopValue);
+        double BottomFP     = ExpressionCoerceFP(BottomValue);
 
         /* If the destination is not float, we can't assign a floating value to it,
             we need to convert it to integer instead */
         #define ASSIGN_FP_OR_FP32_OR_INT(value) \
                 if (IS_FP(BottomValue)) { \
                     ResultFP = ExpressionAssignFP(Parser, BottomValue, value); \
+                    ResultIsFP = true; \
                 } else if (IS_FP32(BottomValue)) { \
-                    ResultFP = ExpressionAssignFP32(Parser, BottomValue, value); \
+                    ResultFP32 = ExpressionAssignFP32(Parser, BottomValue, value); \
+                    ResultIsFP32 = true; \
                 } else { \
                     ResultInt = ExpressionAssignInt(Parser, BottomValue,  (long)(value), false); \
-                    ResultIsInt = true; }
+                    ResultIsInt = true; \
+                }
 
         switch (Op) {
         case TokenAssign:
@@ -1073,26 +1079,55 @@ void ExpressionInfixOperator(struct ParseState *Parser,
             ResultIsInt = true;
             break;
         case TokenPlus:
-            ResultFP = BottomFP + TopFP;
+            if (IS_FP(BottomValue) || IS_FP(TopValue)) {
+                ResultFP = BottomFP + TopFP;
+                ResultIsFP = true;
+            } else {
+                ResultFP32 = BottomFP + TopFP;
+                ResultIsFP32 = true;
+            }
             break;
         case TokenMinus:
-            ResultFP = BottomFP - TopFP;
+            if (IS_FP(BottomValue) || IS_FP(TopValue)) {
+                ResultFP = BottomFP - TopFP;
+                ResultIsFP = true;
+            } else {
+                ResultFP32 = BottomFP - TopFP;
+                ResultIsFP32 = true;
+            }
             break;
         case TokenAsterisk:
-            ResultFP = BottomFP * TopFP;
+            if (IS_FP(BottomValue) || IS_FP(TopValue)) {
+                ResultFP = BottomFP * TopFP;
+                ResultIsFP = true;
+            } else {
+                ResultFP32 = BottomFP * TopFP;
+                ResultIsFP32 = true;
+            }
             break;
         case TokenSlash:
-            ResultFP = BottomFP / TopFP;
+            if (IS_FP(BottomValue) || IS_FP(TopValue)) {
+                ResultFP = BottomFP / TopFP;
+                ResultIsFP = true;
+            } else {
+                ResultFP32 = BottomFP / TopFP;
+                ResultIsFP32 = true;
+            }
             break;
         default:
             ProgramFail(Parser, "invalid operation");
             break;
         }
 
-        if (ResultIsInt)
+        if (ResultIsInt) {
             ExpressionPushInt(Parser, StackTop, ResultInt);
-        else
+        } else if (ResultIsFP) {
             ExpressionPushFP(Parser, StackTop, ResultFP);
+        } else if (ResultIsFP32) {
+            ExpressionPushFP32(Parser, StackTop, ResultFP32);
+        } else {
+            ProgramFail(Parser, "not Int, FP, or FP32");
+        }
     } else if (IS_NUMERIC_COERCIBLE(TopValue) && IS_NUMERIC_COERCIBLE(BottomValue)) {
         /* integer operation */
 
