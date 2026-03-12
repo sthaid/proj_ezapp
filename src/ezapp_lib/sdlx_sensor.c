@@ -42,7 +42,6 @@ int sdlx_sensor_init(void)
 {
     int            i, max, num_sensors;
     SDL_SensorID  *ids;
-    double         dummy, pressure;
     unsigned long  dummy_ulong;
 
     INFO("initializing\n");
@@ -93,7 +92,7 @@ int sdlx_sensor_init(void)
     sdlx_sensor_read_step_counter(&dummy_ulong, NULL);
     usleep(250000);
     sdlx_sensor_read_step_counter(&first_step_count, NULL);
-    INFO("first_step_count = %ld pressure = %.0f\n", first_step_count, pressure);
+    INFO("first_step_count = %ld\n", first_step_count);
 
     // return success
     INFO("success\n");

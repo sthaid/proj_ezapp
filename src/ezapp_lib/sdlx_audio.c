@@ -9,20 +9,21 @@
 #include <SDL3_mixer/SDL_mixer.h>
 
 // xxx - higher priority
+// - try lame 96 kbps
+// - add fft to audio state, rename color_organ() proc?
 // - why is so much record gain needed
+// - consider sdlx_audio_get_state return ptr to audio state
 
 // xxx - medium priority
 // - use VERBOSE prints for commented out prints ?
 // - util_start_playbackcapture should return status
 
-// xxx - lower priority
-// - wav_file_stereo_test ?
-// - document capabilities
-//   - record from mic
-//   - record from device
-//   - play file
-//   - play tones
-//   - play buff
+// xxx document capabilities
+// - record from mic
+// - record from device
+// - play file
+// - play tones
+// - play buff
 
 // xxx - needs final verification
 // - make volume a double in 0-1 ranage
@@ -62,6 +63,7 @@ static MIX_Track *track;
 static MIX_Audio *audio;
 
 static lame_global_flags *gfp;
+static unsigned char     *mp3buf;
 
 static sdlx_audio_state_t  state;
 static int                 state_resume;
@@ -86,18 +88,13 @@ static double calc_volume_float(float *samples, int n);
 static void mixer_track_raw_callback(void *userdata, MIX_Track *track, const SDL_AudioSpec *spec, float *pcm, int samples);
 static void mixer_track_stopped_callback(void *userdata, MIX_Track *track);
 
-static void *wav_file_open(char *dir, char *filename, int num_channels, bool append);
-static void wav_file_write(void *cx_arg, short *samples, int num_samples);
-static void wav_file_close(void *cx_arg);
-static int wav_file_duration_ms(void *cx_arg);
-static int wav_file_duration_ms_from_filename(char *dir, char *filename);
-
-static void *mp3_file_open(char *dir, char *filename, bool append);
+static void *mp3_file_open(char *dir, char *filename, int num_channels, bool append);
 static void mp3_file_write(void *cx_arg, short *samples, int num_samples);
 static void mp3_file_close(void *cx_arg);
 static int mp3_file_duration_ms(void *cx_arg) __attribute__((unused));
 static int mp3_file_duration_ms_from_filename(char *dir, char *filename);
 
+static void kiss_fft_cleanup(void);
 static void color_organ(void *samples, int num_samples, int num_channels, int fps, int fmt);
 
 // -----------------  INITIALIZE  ---------------------------------
@@ -152,10 +149,10 @@ void sdlx_audio_quit(void)
         lame_close(gfp);
         gfp = NULL;
     }
+    free(mp3buf);
 
-    // xxx more cleanups
-    // - mp3buf
-    // - kissfft cache
+    // cleanup kiss_fft
+    kiss_fft_cleanup();
 }
 
 static void audio_print_list_of_devices(void)
@@ -400,11 +397,10 @@ static double calc_volume_float(float *samples, int n)
 {   
     long   sum_squares = 0;
     double volume;
-    short  s16_sample;
 
     // calculate volume using RMS value of samples 
     for (int i = 0; i < n; i++) {
-        s16_sample = samples[i] * 32768;
+        int s16_sample = samples[i] * 32768;
         sum_squares += (s16_sample * s16_sample);
     }
     volume = sqrt(sum_squares / n) * VOLUME_SCALE_FACTOR;
@@ -432,287 +428,22 @@ static char *concat_dir_and_filename(char *dir, char *fn, char *path)
     return path;
 }
 
-// -----------------  CREATE WAV FILE  -------------------
-
-// file format: FRAMES_PER_SEC, S16, Mono or Stereo
-
-typedef struct {
-    int  fd;
-    int  total_samples;
-    int  num_channels;
-    char path[200];
-} wav_file_cx_t;
-
-typedef struct {
-    uint8_t chunk_id[4];        // "RIFF"
-    uint32_t chunk_size;        // File size - 8
-    uint8_t format[4];          // "WAVE"
-
-    uint8_t subchunk1_id[4];    // "fmt "
-    uint32_t subchunk1_size;    // Size of this chunk (usually 16 for PCM)
-    uint16_t audio_format;      // Audio format (1 for PCM)
-    uint16_t num_channels;      // Number of channels (1 = mono, 2 = stereo)
-    uint32_t sample_rate;       // Sampling rate
-    uint32_t byte_rate;         // SampleRate * NumChannels * BitsPerSample/8
-    uint16_t block_align;       // NumChannels * BitsPerSample/8
-    uint16_t bits_per_sample;   // Number of bits per sample
-
-    uint8_t subchunk2_id[4];    // "data"
-    uint32_t subchunk2_size;    // Size of the data section
-} wav_file_hdr_t;
-
-static void wav_file_write_hdr(void *cx_arg);
-static void wav_file_set_hdr_chunk_sizes(void *cx_arg);
-static int wav_file_verify_hdr(void *cx_arg, int *total_samples);
-
-static void *wav_file_open(char *dir, char *filename, int num_channels, bool append)
-{
-    char           path[200];
-    int            fd, len;
-    wav_file_cx_t *cx;
-    struct stat    statbuf;
-
-    // create pathname,
-    // verify suffix is ".wav"
-    concat_dir_and_filename(dir, filename, path);
-    len = strlen(path);
-    if (len < 5 || strcmp(path+len-4, ".wav") != 0) {
-        ERROR("wav extension required\n");
-        return NULL;
-    }
-
-    // if append requested and file doesnt exit then clear append request
-    if (append && stat(path, &statbuf) != 0) {
-        append = false;
-    }
-
-    // if not appending
-    //   create or truncate file
-    //   write wav file hdr
-    // else
-    //   open file
-    //   verify header
-    //   seek to end
-    // endif
-    if (!append) {
-        fd = open(path, O_RDWR|O_CREAT|O_TRUNC, 0666);
-        if (fd < 0) {
-            ERROR("failed to create '%s', %s\n", path, strerror(errno));
-            return NULL;
-        }
-
-        cx = calloc(1, sizeof(wav_file_cx_t));
-        cx->fd = fd;
-        cx->total_samples = 0;
-        cx->num_channels = num_channels;
-        strcpy(cx->path, path);
-
-        wav_file_write_hdr(cx);
-    } else {
-        fd = open(path, O_RDWR);
-        if (fd < 0) {
-            ERROR("failed to open for append '%s', %s\n", path, strerror(errno));
-            return NULL;
-        }
-
-        cx = calloc(1, sizeof(wav_file_cx_t));
-        cx->fd = fd;
-        cx->num_channels = num_channels;
-        strcpy(cx->path, path);
-
-        if (wav_file_verify_hdr(cx, &cx->total_samples) != 0) {
-            ERROR("%s has invalid header\n", path);
-            free(cx);
-            return NULL;
-        }
-
-        lseek(fd, 0, SEEK_END);
-    }
-
-    // return cx
-    return cx;
-}
-
-static void wav_file_write(void *cx_arg, short *samples, int num_samples)
-{
-    wav_file_cx_t *cx = cx_arg;
-    int fd = cx->fd;
-
-    write(fd, samples, num_samples*sizeof(short));    
-    cx->total_samples += num_samples;
-}
-
-static void wav_file_close(void *cx_arg)
-{
-    wav_file_cx_t *cx = cx_arg;
-    int fd = cx->fd;
-
-    wav_file_set_hdr_chunk_sizes(cx);
-    close(fd);
-
-    free(cx);
-}
-
-static int wav_file_duration_ms(void *cx_arg)
-{
-    wav_file_cx_t *cx = cx_arg;
-
-    return (cx->total_samples / cx->num_channels) / FRAMES_PER_MS;
-}
-
-static void wav_file_write_hdr(void *cx_arg)
-{
-    wav_file_cx_t *cx = cx_arg;
-    int fd = cx->fd;
-    int num_data_bytes;
-    wav_file_hdr_t hdr;
-
-    // this will be set later by wav_file_close call to wav_file_set_hdr_chunk_sizes
-    num_data_bytes = 0;
-
-    // RIFF Chunk
-    memcpy(hdr.chunk_id, "RIFF", 4);
-    hdr.chunk_size = num_data_bytes + sizeof(wav_file_hdr_t) - 8;  // file_size - 8
-    memcpy(hdr.format, "WAVE", 4);
-
-    // fmt Subchunk
-    memcpy(hdr.subchunk1_id, "fmt ", 4);
-    hdr.subchunk1_size  = 16;    // PCM
-    hdr.audio_format    = 1;     // PCM
-    hdr.num_channels    = cx->num_channels;
-    hdr.sample_rate     = FRAMES_PER_SEC;
-    hdr.bits_per_sample = 16;   // S16
-    hdr.block_align     = hdr.num_channels * hdr.bits_per_sample / 8;
-    hdr.byte_rate       = hdr.sample_rate * hdr.block_align;
-
-    // data Subchunk
-    memcpy(hdr.subchunk2_id, "data", 4);
-    hdr.subchunk2_size = num_data_bytes;
-
-    // write the hdr
-    lseek(fd, 0, SEEK_SET);
-    write(fd, &hdr, sizeof(hdr));
-    lseek(fd, 0, SEEK_END);
-}
-
-static void wav_file_set_hdr_chunk_sizes(void *cx_arg)
-{
-    wav_file_cx_t *cx  = cx_arg;
-    int fd             = cx->fd;
-    int subchunk2_size = cx->total_samples * sizeof(short);
-    int chunk_size     = subchunk2_size + sizeof(wav_file_hdr_t) - 8;
-
-    lseek(fd, offsetof(wav_file_hdr_t, chunk_size), SEEK_SET);
-    write(fd, &chunk_size, sizeof(chunk_size));
-
-    lseek(fd, offsetof(wav_file_hdr_t, subchunk2_size), SEEK_SET);
-    write(fd, &subchunk2_size, sizeof(subchunk2_size));
-
-    lseek(fd, 0, SEEK_END);
-}
-
-// returns total_samples in the wav file
-static int wav_file_verify_hdr(void *cx_arg, int *total_samples)
-{
-    wav_file_cx_t *cx = cx_arg;
-    int fd = cx->fd;
-    int rc;
-    struct stat statbuf;
-    wav_file_hdr_t hdr;
-
-    *total_samples = 0;
-
-    lseek(fd, 0, SEEK_SET);
-
-    if (fstat(fd, &statbuf) != 0) {
-        ERROR("fstat %s failed, %s\n", cx->path, strerror(errno));
-        return -1;
-    }
-
-    rc = read(fd, &hdr, sizeof(hdr));
-    if (rc != sizeof(hdr)) {
-        ERROR("read %s failed, %s\n", cx->path, strerror(errno));
-        return -1;
-    }
-
-    if (memcmp(&hdr.chunk_id, "RIFF", 4) != 0) {
-        ERROR("invalid hdr.chunk_id\n");
-        return -1;
-    }
-    if (hdr.chunk_size != statbuf.st_size - 8) {
-        ERROR("invalid hdr.chunk_size %d, expected %ld\n", hdr.chunk_size, statbuf.st_size);
-        return -1;
-    }
-    if (memcmp(&hdr.format, "WAVE", 4) != 0) {
-        ERROR("invalid hdr.format\n");
-        return -1;
-    }
-    if (hdr.num_channels != 1 && hdr.num_channels != 2) {
-        ERROR("invalid hdr.num_channels %d\n", hdr.num_channels);
-        return -1;
-    }
-    if (hdr.bits_per_sample != 16) {
-        ERROR("invalid hdr bits_per_sample.%d\n", hdr.bits_per_sample);
-        return -1;
-    }
-    if (hdr.sample_rate != FRAMES_PER_SEC) {
-        ERROR("invalid hdr sample_rate.%d\n", hdr.sample_rate);
-        return -1;
-    }
-
-    lseek(fd, 0, SEEK_END);
-
-    *total_samples = hdr.subchunk2_size / sizeof(short);
-    return 0;
-}
-
-static int wav_file_duration_ms_from_filename(char *dir, char *filename)
-{
-    int            fd, len, duration_ms;
-    wav_file_hdr_t hdr;
-    struct stat    statbuf;
-    char           path[200];
-
-    // open wav file
-    concat_dir_and_filename(dir, filename, path);
-    fd = open(path, O_RDONLY);
-    if (fd < 0) {
-        ERROR("failed to open %s, %s\n", path, strerror(errno));
-        return 0;
-    }
-
-    // read wav file hdr
-    len = read(fd, &hdr, sizeof(hdr));
-    if (len != sizeof(hdr)) {
-        ERROR("failed to read wav file hdr\n");
-        close(fd);
-        return 0;
-    }
-
-    // sanity check wav file hdr
-    if (memcmp(&hdr.format, "WAVE", 4) != 0) {
-        ERROR("invalid hdr.format\n");
-        return 0;
-    }
-    if (hdr.num_channels != 1 && hdr.num_channels != 2) {
-        ERROR("invalid hdr.num_channels %d\n", hdr.num_channels);
-        return 0;
-    }
-
-    // get file size
-    fstat(fd, &statbuf);
-
-    // close fd
-    close(fd);
-
-    // convert wav file size to duration_ms, and return duration_ms
-    duration_ms = (statbuf.st_size - sizeof(hdr)) / (hdr.num_channels * sizeof(short)) / FRAMES_PER_MS;
-    return duration_ms;
-}
-
 // -----------------  CREATE MP3 FILE  -------------------
 
-// xxx add comment on file attributes
+// MP3 file is created using the LAMS MP3 Encoder.
+//
+// "LAME ("LAME Ain't an MP3 Encoder") is a widely used, open-source audio 
+// encoding library and command-line tool designed to convert audio files 
+// into high-quality MP3 format. As a free software released in 1998, it is 
+// considered the industry standard for creating high-fidelity MP3s, offering
+// better quality and speed than most other encoders."
+//
+// Lame is initialized in sdlx_audio_init.
+// - num_channels   = 2
+// - frames_per_sec = 48000
+// - bit rate       = 64 kbps
+// - mode           = joint stereo
+// - quality        = 2  (high)
 
 typedef struct {
     int  fd;
@@ -721,9 +452,8 @@ typedef struct {
 } mp3_file_cx_t;
 
 #define MAX_MP3_BUF 100000
-static unsigned char *mp3buf;
 
-static void *mp3_file_open(char *dir, char *filename, bool append)
+static void *mp3_file_open(char *dir, char *filename, int num_channels, bool append)
 {
     char           path[200];
     int            fd, len;
@@ -732,6 +462,12 @@ static void *mp3_file_open(char *dir, char *filename, bool append)
     // if gfp is not initialized then return error
     if (gfp == NULL) {
         ERROR("gfp not initialized\n");
+        return NULL;
+    }
+
+    // only num_channels equal 2 is supported
+    if (num_channels != 2) {
+        ERROR("num_channels=%d, must be 2\n", num_channels);
         return NULL;
     }
 
@@ -850,9 +586,7 @@ int sdlx_audio_file_duration_ms(char *dir, char *filename)
     
     len = strlen(filename);
 
-    if (len > 4 && strcmp(&filename[len-4], ".wav") == 0) {
-        return wav_file_duration_ms_from_filename(dir, filename);
-    } else if (len > 4 && strcmp(&filename[len-4], ".mp3") == 0) {
+    if (len > 4 && strcmp(&filename[len-4], ".mp3") == 0) {
         return mp3_file_duration_ms_from_filename(dir, filename);
     } else {
         ERROR("invalid filename %s\n", filename);
@@ -860,10 +594,10 @@ int sdlx_audio_file_duration_ms(char *dir, char *filename)
     }
 }
 
-// -----------------  RECORD MICROPHONE TO MONO WAV FILE ------------------
+// -----------------  RECORD MICROPHONE  ------------------
 
 typedef struct {
-    void *wav_file_cx;
+    void *mp3_file_cx;
     int   max_secs;
     int   auto_stop_secs;
 } record_mic_cx_t;
@@ -873,7 +607,7 @@ static int record_mic_thread(void *cx_arg);
 int sdlx_audio_record_from_mic(char *dir, char *filename, int max_duration_secs, int auto_stop_secs, bool append)
 {
     record_mic_cx_t    *cx=NULL;
-    void               *wav_file_cx=NULL;
+    void               *mp3_file_cx=NULL;
     const SDL_AudioSpec record_spec = { SDL_AUDIO_S16, 1, FRAMES_PER_SEC };
 
     // reset audio
@@ -889,9 +623,9 @@ int sdlx_audio_record_from_mic(char *dir, char *filename, int max_duration_secs,
         return -1;
     }
 
-    // open wav file
-    wav_file_cx = wav_file_open(dir, filename, 1, append);  // num_channels=1
-    if (wav_file_cx == NULL) {
+    // open mp3 file; num_channels=1
+    mp3_file_cx = mp3_file_open(dir, filename, 2, append);
+    if (mp3_file_cx == NULL) {
         ERROR("failed to open wav file %s/%s\n", dir, filename);
         return -1; 
     }
@@ -899,13 +633,13 @@ int sdlx_audio_record_from_mic(char *dir, char *filename, int max_duration_secs,
     // init state
     memset(&state, 0, sizeof(state));
     state.state          = AUDIO_STATE_RECORD_FROM_MIC;
-    state.record_ms      = wav_file_duration_ms(wav_file_cx);
+    state.record_ms      = mp3_file_duration_ms(mp3_file_cx);
     state.volume         = 0;
     sprintf(state.pathname, "%s/%s", dir, filename);
 
     // create thread to xfer microphone data to wav file
     cx = malloc(sizeof(record_mic_cx_t));
-    cx->wav_file_cx     = wav_file_cx;
+    cx->mp3_file_cx     = mp3_file_cx;
     cx->max_secs        = max_duration_secs;
     cx->auto_stop_secs  = auto_stop_secs;
     sdlx_create_detached_thread(record_mic_thread, cx);
@@ -917,9 +651,10 @@ int sdlx_audio_record_from_mic(char *dir, char *filename, int max_duration_secs,
 static int record_mic_thread(void *cx_arg)
 {
     record_mic_cx_t *cx = (record_mic_cx_t*)cx_arg;
-    short        buff[4096];
+    short        mono_buff[4096];
+    short        stereo_buff[8192];
     int          bytes, silence_bytes=0;
-    //int          no_bytes_cnt=0;
+    int          mono_buff_samples, stereo_buff_samples;
 
     const int auto_stop_bytes = cx->auto_stop_secs * FRAMES_PER_SEC * 2;
 
@@ -938,7 +673,8 @@ static int record_mic_thread(void *cx_arg)
         }
 
         // get audio data
-        bytes = SDL_GetAudioStreamData(audio_stream, buff, sizeof(buff));  
+        // note: last arg is buffer length, in bytes
+        bytes = SDL_GetAudioStreamData(audio_stream, mono_buff, sizeof(mono_buff));  
         if (bytes == -1) {
             ERROR("SDL_GetAudioStreamData failed, %s\n", SDL_GetError());
             break;
@@ -947,23 +683,26 @@ static int record_mic_thread(void *cx_arg)
             usleep(TWO_MS);
             continue;
         }
+        mono_buff_samples = bytes / sizeof(short);
+        stereo_buff_samples = 2 * mono_buff_samples;
 
-        // scale record data
-        for (int i = 0; i < bytes/sizeof(short); i++) {
-            buff[i] = buff[i] * audio_params.record_gain;
+        // scale record data, and create stereo_buff
+        for (int i = 0; i < mono_buff_samples; i++) {
+            mono_buff[i] = mono_buff[i] * audio_params.record_gain;
+            stereo_buff[2*i] = stereo_buff[2*i+1] = mono_buff[i];
         }
 
         // process audio samples for color organ
-        color_organ(buff, bytes/sizeof(short), 2, FRAMES_PER_SEC, FFT_FMT_S16);
+        color_organ(mono_buff, mono_buff_samples, 1, FRAMES_PER_SEC, FFT_FMT_S16);
 
         // write the data to the file
-        wav_file_write(cx->wav_file_cx, buff, bytes/sizeof(short));
+        mp3_file_write(cx->mp3_file_cx, stereo_buff, stereo_buff_samples);
 
         // keep track of how long the recording has been in progress
-        state.record_ms = wav_file_duration_ms(cx->wav_file_cx);
+        state.record_ms = mp3_file_duration_ms(cx->mp3_file_cx);
 
         // calculate volume of the samples just obtained
-        state.volume = calc_volume_s16(buff, bytes/sizeof(short));
+        state.volume = calc_volume_s16(mono_buff, mono_buff_samples);
 
         // if auto_stop is enabled then if silent for n secs stop recording
         if (cx->auto_stop_secs > 0) {
@@ -997,15 +736,15 @@ static int record_mic_thread(void *cx_arg)
     #define N_ONE_SIN_WAV  (FRAMES_PER_SEC / HZ)   // samples in 1 sine wave
     #define N_TOTAL        (NUM_SIN_WAVES * N_ONE_SIN_WAV)  // total samples
     if (tone == NULL) {
-        tone = malloc(2 * N_TOTAL);
+        tone = malloc(2 * N_TOTAL * sizeof(short));
         for (int j = 0; j < N_TOTAL; j++) {
-            tone[j] = AMPLITUDE * sin((2*M_PI) * ((double)j / N_ONE_SIN_WAV));
+            tone[2*j] = tone[2*j+1] = AMPLITUDE * sin((2*M_PI) * ((double)j / N_ONE_SIN_WAV));
         }
     }
-    wav_file_write(cx->wav_file_cx, tone, N_TOTAL);
+    mp3_file_write(cx->mp3_file_cx, tone, 2*N_TOTAL);
 
     // cleanup and return
-    wav_file_close(cx->wav_file_cx);
+    mp3_file_close(cx->mp3_file_cx);
     SDL_DestroyAudioStream(audio_stream);
     audio_stream = NULL;
     free(cx);
@@ -1039,7 +778,7 @@ int sdlx_audio_record_from_device(char *dir, char *filename)
     }
 
     // create new mp3 file, append=false
-    mp3_cx = mp3_file_open(dir, filename, false);
+    mp3_cx = mp3_file_open(dir, filename, 2, false);
     if (mp3_cx == NULL) {
         ERROR("failed to create %s\n", filename);
         return -1;
@@ -1132,7 +871,7 @@ done:
 
 // defines
 #define MIN_TONE_FREQ  50   // inclusive range
-#define MAX_TONE_FREQ 6000 
+#define MAX_TONE_FREQ  6000 
 
 // typedefs
 typedef struct {
@@ -1303,7 +1042,7 @@ static void smooth(short *samples, int num_samples)
     #define MAX_SMOOTHER  (FRAMES_PER_SEC / 200)   // number of frames in 5 ms
 
     // apply 'S' curve to the begining and end of samples;
-    // this eliminates popping sound by providing a smooth transition
+    // this eliminates a popping sound by providing a smooth transition
     //
     // google searches:
     //   "equation for an s curve to smootly ramp up or down audio data"
@@ -1342,7 +1081,7 @@ static void play_buff(short *samples, int num_samples, int num_channels, int *to
     num_remaining_samples = num_samples;
     while (num_remaining_samples) {
         if (state.state == AUDIO_STATE_STOPPING) {
-            return;
+            break;
         }
         if (state.state == AUDIO_STATE_PAUSED) {
             usleep(TWO_MS);
@@ -1505,7 +1244,7 @@ int sdlx_audio_play_file(char *dir, char *filename)
         return -1;
     }
 
-    // load the file, predecode arg is false
+    // load the file, set predecode arg to false
     audio = MIX_LoadAudio(mixer, path, false);
     if (audio == NULL) {
         ERROR("MIX_LoadAudio, %s\n", SDL_GetError());
@@ -1783,6 +1522,15 @@ static kiss_fftr_cfg cached_alloc_fftr(int nfft)
     cache[0].cfg = kiss_fftr_alloc(nfft,  0, NULL, NULL);
     cache[0].nfft = nfft;
     return cache[0].cfg;
+}
+
+static kiss_fft_cleanup(void)
+{
+    for (int i = 0; i < MAX_CACHE; i++) {
+        kiss_fft_free(cache[i].cfg);
+        cache[i].cfg = NULL;
+        cache[i].nfft = 0;
+    }
 }
 
 static float get_band_vol(int low_freq, int high_freq)

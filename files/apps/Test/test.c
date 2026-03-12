@@ -111,8 +111,8 @@ int main(int argc, char **argv)
 
 // -----------------  SUPPORT PROCS FOR ALL PAGES  ------------
 
-// xxx check this about picoc
-// picoc: picoc does not support this being static, causes crash
+// NOTE: picoc does not support this being static, causes crash;
+//      if declared static, the number of array elements must be provided
 char *page_title[] = {     // Page
         "Unit Test",       //   0
         "Font",            //   1
@@ -126,7 +126,7 @@ char *page_title[] = {     // Page
         "Sensor Values",   //   9
         "Location",        //  10
             };
-static int pagenum = 7; //xxx
+static int pagenum = 7; //xxx put back to 0
 
 #define LAST_PAGE 10
 
@@ -611,10 +611,9 @@ static void alpha_test(int idx, char *test_name, sdlx_color_t bg_color, sdlx_col
 #define EVID_AUDIO_PLAY_TONES_SEQUENCE     21
 #define EVID_AUDIO_PLAY_MONO_BUFF          22
 #define EVID_AUDIO_PLAY_STEREO_BUFF        23
-#define EVID_AUDIO_PLAY_MIC_WAV            24
+#define EVID_AUDIO_PLAY_MIC_MP3            24
 #define EVID_AUDIO_PLAY_DEV_MP3            25
-#define EVID_AUDIO_PLAY_BLUESKY_WAV        26
-#define EVID_AUDIO_PLAY_SAMPLE_9S_MP3      27
+#define EVID_AUDIO_PLAY_SAMPLE_9S_MP3      26
 
 #define BOTH_CHANNELS 0
 #define LEFT_CHANNEL  1
@@ -761,14 +760,11 @@ static void page_7_draw(void)
     sdlx_register_event(loc, EVID_AUDIO_PLAY_TONES_SEQUENCE);
     row += 2.5;      
 
-    // play files xxx use lower case
-    loc = sdlx_render_printf_ex1(0, ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "mic.wav");
-    sdlx_register_event(loc, EVID_AUDIO_PLAY_MIC_WAV);
+    // play files 
+    loc = sdlx_render_printf_ex1(0, ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "mic.mp3");
+    sdlx_register_event(loc, EVID_AUDIO_PLAY_MIC_MP3);
     loc = sdlx_render_printf_ex1(COL2X(10), ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "dev.mp3");
     sdlx_register_event(loc, EVID_AUDIO_PLAY_DEV_MP3);
-    row += 2;      
-    loc = sdlx_render_printf_ex1(0, ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "bluesky.wav");
-    sdlx_register_event(loc, EVID_AUDIO_PLAY_BLUESKY_WAV);
     row += 2;      
     loc = sdlx_render_printf_ex1(0, ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "sample-9s.mp3");
     sdlx_register_event(loc, EVID_AUDIO_PLAY_SAMPLE_9S_MP3);
@@ -850,14 +846,16 @@ static void page_7_process_event(sdlx_event_t *ev)
             }
         }
 
-        // play buffer xxx better way to specify ininite loops
-        sdlx_audio_play_buff(samples, num_samples, 2, 0, true);  // xxx define for 0 loops
+        // play buffer
+        int num_channels = 2;
+        int num_loops = 0;  // infinite
+        sdlx_audio_play_buff(samples, num_samples, num_channels, num_loops, true);
         break; }
     case EVID_AUDIO_RECORD_FROM_MIC:
-        sdlx_audio_record_from_mic(data_dir, "mic.wav", 10, 3, false);
+        sdlx_audio_record_from_mic(data_dir, "mic.mp3", 10, 3, false);
         break;
     case EVID_AUDIO_RECORD_FROM_MIC_APPEND:
-        sdlx_audio_record_from_mic(data_dir, "mic.wav", 10, 3, true);
+        sdlx_audio_record_from_mic(data_dir, "mic.mp3", 10, 3, true);
         break;
     case EVID_AUDIO_RECORD_FROM_DEV:
         sdlx_audio_record_from_device(data_dir, "dev.mp3");
@@ -908,14 +906,11 @@ static void page_7_process_event(sdlx_event_t *ev)
         add_terminator(&t);
         sdlx_audio_play_tones(tones);
         break; }
-    case EVID_AUDIO_PLAY_MIC_WAV:
-        sdlx_audio_play_file(data_dir, "mic.wav");
+    case EVID_AUDIO_PLAY_MIC_MP3:
+        sdlx_audio_play_file(data_dir, "mic.mp3");
         break;
     case EVID_AUDIO_PLAY_DEV_MP3:
         sdlx_audio_play_file(data_dir, "dev.mp3");
-        break;
-    case EVID_AUDIO_PLAY_BLUESKY_WAV:
-        sdlx_audio_play_file(data_dir, "bluesky.wav");
         break;
     case EVID_AUDIO_PLAY_SAMPLE_9S_MP3:
         sdlx_audio_play_file(data_dir, "sample-9s.mp3");

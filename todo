@@ -1,38 +1,18 @@
-clibrary.c
-expression.c
-include.c
-interpreter.h
-lex.c
-picoc
-platform.c
-type.c
-
-
-
-
-[HOME2 | main | picoc]$ grep -l FP *.c
-clibrary.c             k
-expression.c           in prog
-include.c              k
-lex.c                  k
-platform.c             k
-type.c                 k
-
-[HOME2 | main | picoc]$ grep -l FP *.h
-interpreter.h         in prog
-
-
-
-
 xxxxxxxxxxxxxxxxxxxxx
 
+check Test SEQ
 
+mic record auto stop?
+use tone generator on phone to test the mic record fft
+get rid of bluesky.wav
 
 Music App
 - can Mic recording be to a mp3 file (mono)
 - can Mp3 files be appended
+- do more testing of color organ (fft output)
 
 picoc
+- fix problem in 22_float test 
 - add float type
 - deal with xxx in picoc tests
 - xxx in library_unix.c
