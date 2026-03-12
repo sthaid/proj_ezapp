@@ -319,7 +319,7 @@ void sdlx_minimize_window(void);
 #else
     #define DEFAULT_RECORD_GAIN 1
 #endif
-#define DEFAULT_RECORD_SILENCE 10
+#define DEFAULT_RECORD_SILENCE 0.1
 
 typedef struct {
     double record_gain;

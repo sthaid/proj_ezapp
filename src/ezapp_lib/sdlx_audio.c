@@ -13,6 +13,7 @@
 // - add fft to audio state, rename color_organ() proc?
 // - why is so much record gain needed
 // - consider sdlx_audio_get_state return ptr to audio state
+// - better way to detect microphone silence
 
 // xxx - medium priority
 // - use VERBOSE prints for commented out prints ?
@@ -33,7 +34,7 @@
 // defines
 //
 
-#define VERBOSE
+//#define VERBOSE
 
 #define TWO_MS  2000
 
@@ -94,7 +95,7 @@ static void mp3_file_close(void *cx_arg);
 static int mp3_file_duration_ms(void *cx_arg) __attribute__((unused));
 static int mp3_file_duration_ms_from_filename(char *dir, char *filename);
 
-static void kiss_fft_cleanup(void);
+static void fft_cleanup(void);
 static void color_organ(void *samples, int num_samples, int num_channels, int fps, int fmt);
 
 // -----------------  INITIALIZE  ---------------------------------
@@ -152,7 +153,7 @@ void sdlx_audio_quit(void)
     free(mp3buf);
 
     // cleanup kiss_fft
-    kiss_fft_cleanup();
+    fft_cleanup();
 }
 
 static void audio_print_list_of_devices(void)
@@ -578,7 +579,7 @@ static int mp3_file_duration_ms(void *cx_arg)
     return cx->total_frames / FRAMES_PER_MS;
 }
 
-// -----------------  GET WAV OR MP3 FILE DURATION  ---------------------
+// -----------------  GET AUDIO FILE DURATION  ---------------------
 
 int sdlx_audio_file_duration_ms(char *dir, char *filename)
 {
@@ -604,6 +605,8 @@ typedef struct {
 
 static int record_mic_thread(void *cx_arg);
 
+// xxx check that files are created with mp3 extension
+
 int sdlx_audio_record_from_mic(char *dir, char *filename, int max_duration_secs, int auto_stop_secs, bool append)
 {
     record_mic_cx_t    *cx=NULL;
@@ -626,7 +629,7 @@ int sdlx_audio_record_from_mic(char *dir, char *filename, int max_duration_secs,
     // open mp3 file; num_channels=1
     mp3_file_cx = mp3_file_open(dir, filename, 2, append);
     if (mp3_file_cx == NULL) {
-        ERROR("failed to open wav file %s/%s\n", dir, filename);
+        ERROR("failed to open file %s/%s\n", dir, filename);
         return -1; 
     }
 
@@ -637,7 +640,7 @@ int sdlx_audio_record_from_mic(char *dir, char *filename, int max_duration_secs,
     state.volume         = 0;
     sprintf(state.pathname, "%s/%s", dir, filename);
 
-    // create thread to xfer microphone data to wav file
+    // create thread to xfer microphone data to mp3 file
     cx = malloc(sizeof(record_mic_cx_t));
     cx->mp3_file_cx     = mp3_file_cx;
     cx->max_secs        = max_duration_secs;
@@ -653,10 +656,9 @@ static int record_mic_thread(void *cx_arg)
     record_mic_cx_t *cx = (record_mic_cx_t*)cx_arg;
     short        mono_buff[4096];
     short        stereo_buff[8192];
-    int          bytes, silence_bytes=0;
+    int          bytes;
     int          mono_buff_samples, stereo_buff_samples;
-
-    const int auto_stop_bytes = cx->auto_stop_secs * FRAMES_PER_SEC * 2;
+    double       silence_secs = 0;
 
     // start recording
     SDL_ResumeAudioStreamDevice(audio_stream);  
@@ -706,12 +708,15 @@ static int record_mic_thread(void *cx_arg)
 
         // if auto_stop is enabled then if silent for n secs stop recording
         if (cx->auto_stop_secs > 0) {
+            //INFO("VOL %f  SILENCE %f  SECS %f\n", 
+            //       state.volume,  audio_params.record_silence, silence_secs);
             if (state.volume < audio_params.record_silence) {
-                silence_bytes += bytes;
+                silence_secs += ((double)mono_buff_samples / FRAMES_PER_SEC);
             } else {
-                silence_bytes = 0;
+                silence_secs = 0;
             }
-            if (silence_bytes > auto_stop_bytes) {
+            if (silence_secs > cx->auto_stop_secs) {
+                INFO("auto stopping, %d secs of silence detected\n", cx->auto_stop_secs);
                 break;
             }
         }
@@ -733,12 +738,12 @@ static int record_mic_thread(void *cx_arg)
     #define AMPLITUDE      5000     // max 32767
     #define HZ             500
     #define NUM_SIN_WAVES  (HZ / 4)  // 1/4 sec
-    #define N_ONE_SIN_WAV  (FRAMES_PER_SEC / HZ)   // samples in 1 sine wave
-    #define N_TOTAL        (NUM_SIN_WAVES * N_ONE_SIN_WAV)  // total samples
+    #define N_ONE_SIN_WAVE (FRAMES_PER_SEC / HZ)   // samples in 1 sine wave
+    #define N_TOTAL        (NUM_SIN_WAVES * N_ONE_SIN_WAVE)  // total samples
     if (tone == NULL) {
         tone = malloc(2 * N_TOTAL * sizeof(short));
         for (int j = 0; j < N_TOTAL; j++) {
-            tone[2*j] = tone[2*j+1] = AMPLITUDE * sin((2*M_PI) * ((double)j / N_ONE_SIN_WAV));
+            tone[2*j] = tone[2*j+1] = AMPLITUDE * sin((2*M_PI) * ((double)j / N_ONE_SIN_WAVE));
         }
     }
     mp3_file_write(cx->mp3_file_cx, tone, 2*N_TOTAL);
@@ -1502,14 +1507,14 @@ static void color_organ(void *samples, int num_samples, int num_channels, int fp
 #endif
 }
 
+#define MAX_CACHE 4
+static struct {
+    int nfft;
+    kiss_fftr_cfg cfg;
+} cache[MAX_CACHE];
+
 static kiss_fftr_cfg cached_alloc_fftr(int nfft)
 {
-    #define MAX_CACHE 4
-    static struct {
-        int nfft;
-        kiss_fftr_cfg cfg;
-    } cache[MAX_CACHE];
-
     for (int i = 0; i < MAX_CACHE; i++) {
         if (cache[i].nfft == nfft) {
             return cache[i].cfg;
@@ -1524,7 +1529,7 @@ static kiss_fftr_cfg cached_alloc_fftr(int nfft)
     return cache[0].cfg;
 }
 
-static kiss_fft_cleanup(void)
+static void fft_cleanup(void)
 {
     for (int i = 0; i < MAX_CACHE; i++) {
         kiss_fft_free(cache[i].cfg);

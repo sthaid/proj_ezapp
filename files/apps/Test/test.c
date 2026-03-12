@@ -613,7 +613,8 @@ static void alpha_test(int idx, char *test_name, sdlx_color_t bg_color, sdlx_col
 #define EVID_AUDIO_PLAY_STEREO_BUFF        23
 #define EVID_AUDIO_PLAY_MIC_MP3            24
 #define EVID_AUDIO_PLAY_DEV_MP3            25
-#define EVID_AUDIO_PLAY_SAMPLE_9S_MP3      26
+#define EVID_AUDIO_PLAY_BLUESKY_WAV        26
+#define EVID_AUDIO_PLAY_SAMPLE_9S_MP3      27
 
 #define BOTH_CHANNELS 0
 #define LEFT_CHANNEL  1
@@ -766,6 +767,9 @@ static void page_7_draw(void)
     loc = sdlx_render_printf_ex1(COL2X(10), ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "dev.mp3");
     sdlx_register_event(loc, EVID_AUDIO_PLAY_DEV_MP3);
     row += 2;      
+    loc = sdlx_render_printf_ex1(0, ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "bluesky.wav");
+    sdlx_register_event(loc, EVID_AUDIO_PLAY_BLUESKY_WAV);
+    row += 2;
     loc = sdlx_render_printf_ex1(0, ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "sample-9s.mp3");
     sdlx_register_event(loc, EVID_AUDIO_PLAY_SAMPLE_9S_MP3);
     row += 2;      
@@ -911,6 +915,9 @@ static void page_7_process_event(sdlx_event_t *ev)
         break;
     case EVID_AUDIO_PLAY_DEV_MP3:
         sdlx_audio_play_file(data_dir, "dev.mp3");
+        break;
+    case EVID_AUDIO_PLAY_BLUESKY_WAV:
+        sdlx_audio_play_file(data_dir, "bluesky.wav");
         break;
     case EVID_AUDIO_PLAY_SAMPLE_9S_MP3:
         sdlx_audio_play_file(data_dir, "sample-9s.mp3");
