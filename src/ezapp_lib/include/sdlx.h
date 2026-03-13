@@ -104,7 +104,6 @@ void sdlx_render_multiline_text(int x, int y, int y_top, int y_bottom,
 // render rectangle, lines, circles, points
 // - - - - - - - - - - - - - - - - - - - - -
 
-
 void sdlx_render_rect(int x, int y, int w, int h, int line_width, sdlx_color_t color);
 void sdlx_render_fill_rect(int x, int y, int w, int h, sdlx_color_t color);
 void sdlx_render_line(int x1, int y1, int x2, int y2, sdlx_color_t color);
