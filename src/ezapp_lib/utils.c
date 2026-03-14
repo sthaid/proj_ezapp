@@ -63,7 +63,7 @@ char *util_time2str(char * str, long us, int gmt, int display_ms, int display_da
     return str;
 }
 
-// -----------------  FILE READ/WRITE  -----------------------
+// -----------------  FILE READ/WRITE/etc  -------------------
 
 static char *concat(char *s1, char *s2, char *result)
 {

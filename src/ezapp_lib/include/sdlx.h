@@ -140,13 +140,11 @@ void sdlx_set_render_target(sdlx_texture_t *t);
 #define FRAMES_PER_SEC 48000
 
 #define AUDIO_STATE_IDLE                0
-#define AUDIO_STATE_STOPPING            1
-#define AUDIO_STATE_PAUSED              2
-#define AUDIO_STATE_PLAY_FILE           3
-#define AUDIO_STATE_PLAY_TONES_SEQUENCE 4
-#define AUDIO_STATE_PLAY_BUFF           5
-#define AUDIO_STATE_RECORD_FROM_MIC     6
-#define AUDIO_STATE_RECORD_FROM_DEVICE  7
+#define AUDIO_STATE_PLAY_FILE           1
+#define AUDIO_STATE_PLAY_TONES_SEQUENCE 2
+#define AUDIO_STATE_PLAY_BUFF           3
+#define AUDIO_STATE_RECORD_FROM_MIC     4
+#define AUDIO_STATE_RECORD_FROM_DEVICE  5
 
 typedef struct {
     short freq;
@@ -155,10 +153,12 @@ typedef struct {
 
 typedef struct {
     int    state;
+    int    stopping;  // xxx try to use bool here
+    int    paused;  // xxx try to use bool here
     int    play_current_ms;
     int    play_total_ms;
     int    record_ms;
-    char   pathname[200];
+    char   pathname[100];
     double volume;
     struct {
         double low_band;

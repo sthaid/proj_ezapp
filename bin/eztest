@@ -51,17 +51,18 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# perform requested action 
-if [ "$CMD" = build ]; then
-    CFLAGS="-Wall -Werror -Wno-unused-result -Wno-format-truncation -fcommon -g -I. "
-    gcc -DLINUX -o /tmp/$APP_NAME $CFLAGS $SRCS \
-        -I ../linux/local/include \
-        -L ../linux/local/lib -lezapp_lib -lmp3lame -llodepng -lcJSON -lkissfft-float -lSDL3 -lSDL3_ttf -lSDL3_mixer -lm
-    if [ $? -ne 0 ]; then
-        echo ABORT
-        exit 1
-    fi
-elif [ "$CMD" = run ]; then
+# always do test build using linux gcc
+CFLAGS="-Wall -Werror -Wno-unused-result -Wno-format-truncation -fcommon -g -I. "
+gcc -DLINUX -o /tmp/$APP_NAME $CFLAGS $SRCS \
+    -I ../linux/local/include \
+    -L ../linux/local/lib -lezapp_lib -lmp3lame -llodepng -lcJSON -lkissfft-float -lSDL3 -lSDL3_ttf -lSDL3_mixer -lm
+if [ $? -ne 0 ]; then
+    echo ABORT
+    exit 1
+fi
+
+# if run requested then run program using picoc
+if [ "$CMD" = run ]; then
     LIB_PATH=$(pwd)/../linux/local/lib
     gcc -o /tmp/picoc -D UNIX_HOST -O2 -g -Wall ../src/picoc/picoc.c \
         -L $LIB_PATH -lpicoc -lezapp_lib -lmp3lame -lcJSON -llodepng -lkissfft-float -lSDL3 -lSDL3_mixer -lSDL3_ttf -lm \

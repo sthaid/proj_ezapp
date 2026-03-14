@@ -863,23 +863,23 @@ typedef struct { \n\
 /* audio */ \n\
 #define FRAMES_PER_SEC 48000 \n\
 #define AUDIO_STATE_IDLE                0 \n\
-#define AUDIO_STATE_STOPPING            1 \n\
-#define AUDIO_STATE_PAUSED              2 \n\
-#define AUDIO_STATE_PLAY_FILE           3 \n\
-#define AUDIO_STATE_PLAY_TONES_SEQUENCE 4 \n\
-#define AUDIO_STATE_PLAY_BUFF           5 \n\
-#define AUDIO_STATE_RECORD_FROM_MIC     6 \n\
-#define AUDIO_STATE_RECORD_FROM_DEVICE  7 \n\
+#define AUDIO_STATE_PLAY_FILE           1 \n\
+#define AUDIO_STATE_PLAY_TONES_SEQUENCE 2 \n\
+#define AUDIO_STATE_PLAY_BUFF           3 \n\
+#define AUDIO_STATE_RECORD_FROM_MIC     4 \n\
+#define AUDIO_STATE_RECORD_FROM_DEVICE  5 \n\
 typedef struct { \n\
     short freq; \n\
     short intvl_ms; \n\
 } sdlx_tone_t; \n\
 typedef struct { \n\
     int    state; \n\
+    int    stopping; \n\
+    int    paused; \n\
     int    play_current_ms; \n\
     int    play_total_ms; \n\
     int    record_ms; \n\
-    char   pathname[200]; \n\
+    char   pathname[100]; \n\
     double volume; \n\
     struct { \n\
         double low_band; \n\
