@@ -3,6 +3,8 @@ xxxxxxxxxxxxxxxxxxxxx
 sizeof bool, and structure alignment with bools
 return ptr to audio state  not a copy
 
+other picoc restriction - short circuit
+
 check Test SEQ
 
 mic record auto stop?
