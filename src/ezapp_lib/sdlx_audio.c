@@ -9,6 +9,7 @@
 #include <SDL3_mixer/SDL_mixer.h>
 
 // xxx - higher priority
+// - check that filenams provided  have mp3 extension
 // - try lame 96 kbps
 // - add fft to audio state, rename color_organ() proc?
 // - why is so much record gain needed
@@ -67,7 +68,6 @@ static lame_global_flags *gfp;
 static unsigned char     *mp3buf;
 
 static sdlx_audio_state_t  state;
-static int                 state_resume;
 static bool                audio_is_initialized;
 static sdlx_audio_params_t audio_params = { DEFAULT_RECORD_GAIN, DEFAULT_RECORD_SILENCE };
 
@@ -263,8 +263,8 @@ static int audio_stop(void)
         return 0;
     }
 
-    // set audio state to STOPPING
-    state.state = AUDIO_STATE_STOPPING;
+    // set audio state to stopping
+    state.stopping = true;
 
     // if SDL Mixer is playing a track then stop it
     if (audio) {
@@ -321,7 +321,7 @@ int sdlx_audio_stop(void)
 
 void sdlx_audio_pause(void)
 {
-    if (state.state == AUDIO_STATE_IDLE || state.state == AUDIO_STATE_PAUSED) {
+    if (state.state == AUDIO_STATE_IDLE || state.paused) {
         return;
     }
 
@@ -330,11 +330,12 @@ void sdlx_audio_pause(void)
     }
 
     if (audio_stream) {
-        SDL_PauseAudioStreamDevice(audio_stream);  
+        if (state.state != AUDIO_STATE_RECORD_FROM_MIC) {
+            SDL_PauseAudioStreamDevice(audio_stream);  
+        }
     }
 
-    state_resume = state.state;
-    state.state = AUDIO_STATE_PAUSED;
+    state.paused = true;
     state.volume = 0;
     state.color_organ.low_band = 0;
     state.color_organ.mid_band = 0;
@@ -343,7 +344,7 @@ void sdlx_audio_pause(void)
 
 void sdlx_audio_resume(void)
 {
-    if (state.state != AUDIO_STATE_PAUSED) {
+    if (!state.paused) {
         return;
     }
 
@@ -354,7 +355,7 @@ void sdlx_audio_resume(void)
         SDL_ResumeAudioStreamDevice(audio_stream);  
     }
 
-    state.state = state_resume;
+    state.paused = false;
 }
 
 void sdlx_audio_get_state(sdlx_audio_state_t *x)
@@ -526,11 +527,18 @@ static void mp3_file_write(void *cx_arg, short *samples, int num_samples)
 
     #define MAX_SAMPLES_MP3_FILE_WRITE 8192
 
+    // if mp3 file is not open then just return
+    if (cx_arg == NULL) {
+        return;
+    }
+
+    // num_samples must be a mulitple of 2
     if (num_samples & 1) {
         ERROR("num_samples %d, must be multiple of 2\n", num_samples);
         return;
     }
 
+    // xxx comment
     while (num_samples) {
         process_samples = (num_samples > MAX_SAMPLES_MP3_FILE_WRITE ? MAX_SAMPLES_MP3_FILE_WRITE : num_samples);
 
@@ -555,6 +563,11 @@ static void mp3_file_close(void *cx_arg)
     int len;
     mp3_file_cx_t *cx = cx_arg;
 
+    // if mp3 file is not open then just return
+    if (cx_arg == NULL) {
+        return;
+    }
+
     // flush lame internal buffers
     len = lame_encode_flush(gfp, mp3buf, MAX_MP3_BUF);
     if (len < 0) {
@@ -575,6 +588,11 @@ static void mp3_file_close(void *cx_arg)
 static int mp3_file_duration_ms(void *cx_arg)
 {
     mp3_file_cx_t *cx = cx_arg;
+
+    // if mp3 file is not open then just return 0
+    if (cx_arg == NULL) {
+        return 0;
+    }
 
     return cx->total_frames / FRAMES_PER_MS;
 }
@@ -601,16 +619,16 @@ typedef struct {
     void *mp3_file_cx;
     int   max_secs;
     int   auto_stop_secs;
+    char  dir[100];
+    char  filename[100];
+    bool  append;
 } record_mic_cx_t;
 
 static int record_mic_thread(void *cx_arg);
 
-// xxx check that files are created with mp3 extension
-
 int sdlx_audio_record_from_mic(char *dir, char *filename, int max_duration_secs, int auto_stop_secs, bool append)
 {
     record_mic_cx_t    *cx=NULL;
-    void               *mp3_file_cx=NULL;
     const SDL_AudioSpec record_spec = { SDL_AUDIO_S16, 1, FRAMES_PER_SEC };
 
     // reset audio
@@ -626,25 +644,22 @@ int sdlx_audio_record_from_mic(char *dir, char *filename, int max_duration_secs,
         return -1;
     }
 
-    // open mp3 file; num_channels=1
-    mp3_file_cx = mp3_file_open(dir, filename, 2, append);
-    if (mp3_file_cx == NULL) {
-        ERROR("failed to open file %s/%s\n", dir, filename);
-        return -1; 
-    }
-
     // init state
     memset(&state, 0, sizeof(state));
     state.state          = AUDIO_STATE_RECORD_FROM_MIC;
-    state.record_ms      = mp3_file_duration_ms(mp3_file_cx);
+    state.record_ms      = 0;  // xxx todo mp3_file_duration_ms(mp3_file_cx);
     state.volume         = 0;
+    state.paused         = true;
     sprintf(state.pathname, "%s/%s", dir, filename);
 
     // create thread to xfer microphone data to mp3 file
     cx = malloc(sizeof(record_mic_cx_t));
-    cx->mp3_file_cx     = mp3_file_cx;
+    cx->mp3_file_cx     = NULL;            
     cx->max_secs        = max_duration_secs;
     cx->auto_stop_secs  = auto_stop_secs;
+    strcpy(cx->dir, dir);
+    strcpy(cx->filename, filename);
+    cx->append = append;
     sdlx_create_detached_thread(record_mic_thread, cx);
 
     // success
@@ -660,18 +675,15 @@ static int record_mic_thread(void *cx_arg)
     int          mono_buff_samples, stereo_buff_samples;
     double       silence_secs = 0;
 
-    // start recording
+    // start audio stream;
+    // the audio stream is running even when state is paused, to provide 
+    // color organ continuously
     SDL_ResumeAudioStreamDevice(audio_stream);  
 
     while (true) {
-        // if in STOPPING state then goto done;
-        // if in PAUSED state then short sleep and continue
-        if (state.state == AUDIO_STATE_STOPPING) {
+        // if in stopping state then goto done;
+        if (state.stopping) {
             break;
-        }
-        if (state.state == AUDIO_STATE_PAUSED) {
-            usleep(TWO_MS);
-            continue;
         }
 
         // get audio data
@@ -697,33 +709,45 @@ static int record_mic_thread(void *cx_arg)
         // process audio samples for color organ
         color_organ(mono_buff, mono_buff_samples, 1, FRAMES_PER_SEC, FFT_FMT_S16);
 
-        // write the data to the file
-        mp3_file_write(cx->mp3_file_cx, stereo_buff, stereo_buff_samples);
-
-        // keep track of how long the recording has been in progress
-        state.record_ms = mp3_file_duration_ms(cx->mp3_file_cx);
-
         // calculate volume of the samples just obtained
         state.volume = calc_volume_s16(mono_buff, mono_buff_samples);
 
-        // if auto_stop is enabled then if silent for n secs stop recording
-        if (cx->auto_stop_secs > 0) {
-            //INFO("VOL %f  SILENCE %f  SECS %f\n", 
-            //       state.volume,  audio_params.record_silence, silence_secs);
-            if (state.volume < audio_params.record_silence) {
-                silence_secs += ((double)mono_buff_samples / FRAMES_PER_SEC);
-            } else {
-                silence_secs = 0;
+        // if not paused then perform recording  
+        if (!state.paused) {
+            // if mp3 file has not been opened then do so
+            if (cx->mp3_file_cx == NULL) {
+                cx->mp3_file_cx = mp3_file_open(cx->dir, cx->filename, 2, cx->append);
+                if (cx->mp3_file_cx == NULL) {
+                    ERROR("failed to open %s/%s append=%d\n", cx->dir, cx->filename, cx->append);
+                    goto cleanup;
+                }
             }
-            if (silence_secs > cx->auto_stop_secs) {
-                INFO("auto stopping, %d secs of silence detected\n", cx->auto_stop_secs);
+
+            // write the data to the mp3 file
+            mp3_file_write(cx->mp3_file_cx, stereo_buff, stereo_buff_samples);
+
+            // keep track of how long the recording has been in progress
+            state.record_ms = mp3_file_duration_ms(cx->mp3_file_cx);
+
+            // if auto_stop is enabled then if silent for n secs stop recording
+            if (cx->auto_stop_secs > 0) {
+                //INFO("VOL %f  SILENCE %f  SECS %f\n", 
+                //       state.volume,  audio_params.record_silence, silence_secs);
+                if (state.volume < audio_params.record_silence) {
+                    silence_secs += ((double)mono_buff_samples / FRAMES_PER_SEC);
+                } else {
+                    silence_secs = 0;
+                }
+                if (silence_secs > cx->auto_stop_secs) {
+                    INFO("auto stopping, %d secs of silence detected\n", cx->auto_stop_secs);
+                    break;
+                }
+            }
+
+            // if max_secs is provided, and have recorded audio for max_secs then break
+            if ((cx->max_secs > 0) && (state.record_ms >= cx->max_secs * 1000)) {
                 break;
             }
-        }
-
-        // if have recorded audio for the desired time interval then break
-        if (state.record_ms >= cx->max_secs * 1000) {
-            break;
         }
 
         // short sleep
@@ -749,6 +773,7 @@ static int record_mic_thread(void *cx_arg)
     mp3_file_write(cx->mp3_file_cx, tone, 2*N_TOTAL);
 
     // cleanup and return
+cleanup:
     mp3_file_close(cx->mp3_file_cx);
     SDL_DestroyAudioStream(audio_stream);
     audio_stream = NULL;
@@ -803,7 +828,7 @@ int sdlx_audio_record_from_device(char *dir, char *filename)
     state.volume         = 0;
     sprintf(state.pathname, "%s/%s", dir, filename);
 
-    // initialize in PAUSED state to give user time to start the
+    // initialize in paused state to give user time to start the
     // device playback
     sdlx_audio_pause();
 
@@ -826,13 +851,14 @@ static int record_dev_thread(void *cx_arg)
     int rc, volume;
 
     while (true) {
-        // if in STOPPING state then goto done;
-        if (state.state == AUDIO_STATE_STOPPING) {
+        // if in stopping state then goto done;
+        if (state.stopping) {
             goto done;
         }
 
-        // if state is PAUSED then short sleep, and continue
-        if (state.state == AUDIO_STATE_PAUSED) {
+        // xxx similar changes here
+        // if state is paused then short sleep, and continue
+        if (state.paused) {
             usleep(TWO_MS);
             continue;
         }
@@ -1021,7 +1047,7 @@ static int tones_thread(void *cx_arg)
 
         // play the tone, or gap
         play_buff(samples, n, 1, &total_queued_samples);
-        if (state.state == AUDIO_STATE_STOPPING) {
+        if (state.stopping) {
             goto done;
         }
     }
@@ -1085,10 +1111,10 @@ static void play_buff(short *samples, int num_samples, int num_channels, int *to
 
     num_remaining_samples = num_samples;
     while (num_remaining_samples) {
-        if (state.state == AUDIO_STATE_STOPPING) {
+        if (state.stopping) {
             break;
         }
-        if (state.state == AUDIO_STATE_PAUSED) {
+        if (state.paused) {
             usleep(TWO_MS);
             continue;
         }
@@ -1110,11 +1136,11 @@ static void play_buff(short *samples, int num_samples, int num_channels, int *to
         color_organ(samples, num_xfer_samples, num_channels, FRAMES_PER_SEC, FFT_FMT_S16);
 
         // sleep while there is more than 40 ms queued;
-        // break out of this sleep loop if audio state has become STOPPING or PAUSED
+        // break out of this sleep loop if audio state has become stopping or paused
         do {
             queued_ms = (SDL_GetAudioStreamQueued(audio_stream) / (sizeof(short) * num_channels)) / FRAMES_PER_MS;
             usleep(TWO_MS);
-            if (state.state == AUDIO_STATE_STOPPING || state.state == AUDIO_STATE_PAUSED) {
+            if (state.stopping || state.paused) {
                 break;
             }
         } while (queued_ms > 40);
@@ -1189,15 +1215,13 @@ static int play_buff_thread(void *cx_arg)
     // call play_buff for the specified number of loops
     for (int i = 0; cx->loops == 0 || i < cx->loops; i++) {
         play_buff(cx->samples, cx->num_samples, cx->num_channels, &total_queued_samples);
-        if (state.state == AUDIO_STATE_STOPPING) {
+        if (state.stopping) {
             break;
         }
     }
 
     // wait for all queued audio to be played
-    while ((SDL_GetAudioStreamQueued(audio_stream) > 0) &&
-           (state.state != AUDIO_STATE_STOPPING && state.state != AUDIO_STATE_PAUSED))
-    {
+    while ((SDL_GetAudioStreamQueued(audio_stream) > 0) && (!state.stopping && !state.paused)) {
         usleep(TWO_MS);
     }
 
