@@ -1016,7 +1016,7 @@ void sdlx_render_points(sdlx_point_t *points, int count, sdlx_color_t color, int
 
 // -----------------  RENDER USING TEXTURES  ---------------------------- 
 
-// - - - - - - create/destroy/query/clear texture  - - - - - - - 
+// - - - - - - create/destroy/query/clear/color_mod texture  - - - - - - - 
 
 sdlx_texture_t *sdlx_create_texture(int width, int height)
 {
@@ -1077,6 +1077,16 @@ void sdlx_clear_texture(sdlx_texture_t *t_arg, sdlx_color_t color)
     } else {
         set_render_draw_color(color);
         SDL_RenderClear(renderer);
+    }
+}
+
+void sdlx_color_mod_texture(sdlx_texture_t *t, float r, float g, float b)
+{
+    bool succ;
+
+    succ = SDL_SetTextureColorModFloat((SDL_Texture*)t, r, g, b);
+    if (!succ) {
+        ERROR("failed color mod, %s\n", SDL_GetError());
     }
 }
 

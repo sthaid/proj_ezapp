@@ -124,7 +124,7 @@ int main(int argc, char **argv)
 
             // record or monitor device
             case EVID_DEV:
-                // xxx todo
+                sdlx_audio_record_from_device(data_dir, "dev.mp3");
                 break;
 
             // record or monitor microphone
@@ -271,8 +271,23 @@ void get_file_list(void)
 // xxx improve this
 void display_color_organ(void)
 {
-    int x, y, wh;
+    int x, y, wh=500;
 
+    x = X_RED_CTR - wh/2;
+    y = Y_RED_CTR - wh/2;
+    sdlx_color_mod_texture(red_circle_texture, as.color_organ.low_band , 0, 0);
+    sdlx_render_texture_ex1(red_circle_texture, x, y, wh, wh);
+
+    x = X_GREEN_CTR - wh/2;
+    y = Y_GREEN_CTR - wh/2;
+    sdlx_color_mod_texture(green_circle_texture, 0, as.color_organ.mid_band, 0);
+    sdlx_render_texture_ex1(green_circle_texture, x, y, wh, wh);
+
+    x = X_BLUE_CTR - wh/2;
+    y = Y_BLUE_CTR - wh/2;
+    sdlx_color_mod_texture(blue_circle_texture, 0, 0, as.color_organ.high_band);
+    sdlx_render_texture_ex1(blue_circle_texture, x, y, wh, wh);
+#if 0
     wh = as.color_organ.low_band * 500;
     //wh = 500;  xxx del
     x = X_RED_CTR - wh/2;
@@ -293,6 +308,7 @@ void display_color_organ(void)
     y = Y_BLUE_CTR - wh/2;
     if (wh > 500) wh = 500;
     sdlx_render_texture_ex1(blue_circle_texture, x, y, wh, wh);
+#endif
 }
 
 // -----------------  UTILS  -----------------------------------------

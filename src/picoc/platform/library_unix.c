@@ -349,6 +349,17 @@ void Sdlx_clear_texture(struct ParseState *Parser, struct Value *ReturnValue,
     sdlx_clear_texture(t, color);
 }
 
+void Sdlx_color_mod_texture(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
+{
+    sdlx_texture_t * t = (sdlx_texture_t *)Param[0]->Val->Pointer;
+    float            r = (float)Param[1]->Val->FP32;
+    float            g = (float)Param[2]->Val->FP32;
+    float            b = (float)Param[3]->Val->FP32;
+
+    sdlx_color_mod_texture(t, r, g, b);
+}
+
 void Sdlx_set_texture_pixels(struct ParseState *Parser, struct Value *ReturnValue,
         struct Value **Param, int NumArgs)
 {
@@ -758,6 +769,7 @@ struct LibraryFunction SdlFunctions[] = {
     { Sdlx_destroy_texture,          "void sdlx_destroy_texture(sdlx_texture_t *t);" },
     { Sdlx_query_texture,            "void sdlx_query_texture(sdlx_texture_t *t, int *w, int *h);" },
     { Sdlx_clear_texture,            "void sdlx_clear_texture(sdlx_texture_t *t, sdlx_color_t color);" },
+    { Sdlx_color_mod_texture,        "void sdlx_color_mod_texture(sdlx_texture_t *t, float r, float g, float b);" },
     { Sdlx_set_texture_pixels,       "void sdlx_set_texture_pixels(sdlx_texture_t *t, unsigned int *pixels);" },
     { Sdlx_get_texture_pixels,       "unsigned int *sdlx_get_texture_pixels(sdlx_texture_t *t, int *w, int *h);" },
     { Sdlx_render_texture,           "void sdlx_render_texture(sdlx_texture_t *t, int x, int y);" },

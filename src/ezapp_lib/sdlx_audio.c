@@ -788,6 +788,8 @@ cleanup:
 typedef struct {
     void *mp3_cx;
     int   recorded_samples;
+    char  dir[100];
+    char  filename[100];
 } record_dev_cx_t;
 
 static int record_dev_thread(void *cx);
@@ -795,7 +797,6 @@ static int record_dev_thread(void *cx);
 int sdlx_audio_record_from_device(char *dir, char *filename)
 {
     record_dev_cx_t *cx;
-    void *mp3_cx;
     int rc;
 
     // call sdlx_audio_stop, which will:
@@ -804,13 +805,6 @@ int sdlx_audio_record_from_device(char *dir, char *filename)
     //   not used when recording from device
     if (sdlx_audio_stop() != 0) {
         ERROR("sdlx_audio_stop failed\n");
-        return -1;
-    }
-
-    // create new mp3 file, append=false
-    mp3_cx = mp3_file_open(dir, filename, 2, false);
-    if (mp3_cx == NULL) {
-        ERROR("failed to create %s\n", filename);
         return -1;
     }
 
@@ -823,9 +817,9 @@ int sdlx_audio_record_from_device(char *dir, char *filename)
 
     // init state
     memset(&state, 0, sizeof(state));
-    state.state          = AUDIO_STATE_RECORD_FROM_DEVICE;
-    state.record_ms      = 0;
-    state.volume         = 0;
+    state.state     = AUDIO_STATE_RECORD_FROM_DEVICE;
+    state.record_ms = 0;
+    state.volume    = 0;
     sprintf(state.pathname, "%s/%s", dir, filename);
 
     // initialize in paused state to give user time to start the
@@ -834,8 +828,10 @@ int sdlx_audio_record_from_device(char *dir, char *filename)
 
     // create record_dev_thread
     cx = malloc(sizeof(record_dev_cx_t));
-    cx->mp3_cx = mp3_cx;
+    cx->mp3_cx = NULL;  
     cx->recorded_samples = 0;
+    strcpy(cx->dir, dir);
+    strcpy(cx->filename, filename);
     sdlx_create_detached_thread(record_dev_thread, cx);
 
     // return success
@@ -848,19 +844,12 @@ static int record_dev_thread(void *cx_arg)
 
     record_dev_cx_t *cx = cx_arg;
     short samples[MAX_SAMPLES];
-    int rc, volume;
+    int rc;
 
     while (true) {
         // if in stopping state then goto done;
         if (state.stopping) {
-            goto done;
-        }
-
-        // xxx similar changes here
-        // if state is paused then short sleep, and continue
-        if (state.paused) {
-            usleep(TWO_MS);
-            continue;
+            break;
         }
 
         // get playback capture audio samples,
@@ -868,25 +857,35 @@ static int record_dev_thread(void *cx_arg)
         rc = util_get_playbackcapture_audio(samples, MAX_SAMPLES);
         if (rc != 0) {
             ERROR("util_get_playbackcapture_audio failed\n");
-            goto done;
+            break;
         }
 
         // process audio samples for color organ
         color_organ(samples, MAX_SAMPLES, 2, FRAMES_PER_SEC, FFT_FMT_S16);
 
         // calculate volume
-        volume = calc_volume_s16(samples, MAX_SAMPLES);
+        state.volume = calc_volume_s16(samples, MAX_SAMPLES);
 
-        // write samples to the mp3 file
-        mp3_file_write(cx->mp3_cx, samples, MAX_SAMPLES);
+        // if not paused then perform recording  
+        if (!state.paused) {
+            // if mp3 file has not been opened then do so
+            if (cx->mp3_cx == NULL) {
+                cx->mp3_cx = mp3_file_open(cx->dir, cx->filename, 2, false);
+                if (cx->mp3_cx == NULL) {
+                    ERROR("failed to open %s/%s\n", cx->dir, cx->filename);
+                    break;
+                }
+            }
 
-        // make updates to cx and state 
-        cx->recorded_samples += MAX_SAMPLES;
-        state.record_ms = (cx->recorded_samples / 2) / FRAMES_PER_MS;
-        state.volume    = volume;
+            // write samples to the mp3 file
+            mp3_file_write(cx->mp3_cx, samples, MAX_SAMPLES);
+
+            // make updates to cx and state 
+            cx->recorded_samples += MAX_SAMPLES;
+            state.record_ms = (cx->recorded_samples / 2) / FRAMES_PER_MS;
+        }
     }
 
-done:
     // stop playback capture
     // close mp3 file,
     // return success

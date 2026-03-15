@@ -326,6 +326,7 @@ static void page_2_draw(void)
     sdlx_render_printf(0, ROW2Y(r++), "sizoef(short)  = %zd", sizeof(short));
     sdlx_render_printf(0, ROW2Y(r++), "sizoef(int)    = %zd", sizeof(int));
     sdlx_render_printf(0, ROW2Y(r++), "sizoef(long)   = %zd", sizeof(long));
+    sdlx_render_printf(0, ROW2Y(r++), "sizoef(bool)   = %zd", sizeof(bool));
     sdlx_render_printf(0, ROW2Y(r++), "sizoef(size_t) = %zd", sizeof(size_t));
     sdlx_render_printf(0, ROW2Y(r++), "sizoef(off_t)  = %zd", sizeof(off_t));
     sdlx_render_printf(0, ROW2Y(r++), "sizoef(time_t) = %zd", sizeof(time_t));
@@ -631,8 +632,6 @@ static int tone_lrb = BOTH_CHANNELS;
 static char *audio_state_str(int x)
 {
     if (x == AUDIO_STATE_IDLE)               return "IDLE";  // use 6 chars max
-    if (x == AUDIO_STATE_STOPPING)           return "STOPED";
-    if (x == AUDIO_STATE_PAUSED)             return "PAUSED";
     if (x == AUDIO_STATE_PLAY_FILE)          return "P-FILE";
     if (x == AUDIO_STATE_PLAY_TONES_SEQUENCE)return "P-SEQ";
     if (x == AUDIO_STATE_PLAY_BUFF)          return "P-BUFF";
@@ -1001,7 +1000,7 @@ static void page_9_draw(void)
     int           row = 2;
     int           rc;
     unsigned long step_count, first_step_count;
-    double        mag_heading, roll, pitch, millibars, degrees_c, percent;
+    double        mag_heading, roll, pitch, millibars;
     double        ax, ay, az;
 
     sdlx_print_set_default(FONT_SMALL, COLOR_WHITE);

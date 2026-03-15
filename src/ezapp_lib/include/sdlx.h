@@ -122,6 +122,7 @@ sdlx_texture_t *sdlx_create_texture(int w, int h);
 void sdlx_destroy_texture(sdlx_texture_t *t);
 void sdlx_query_texture(sdlx_texture_t *t, int *w, int *h);
 void sdlx_clear_texture(sdlx_texture_t *t, sdlx_color_t color);
+void sdlx_color_mod_texture(sdlx_texture_t *t, float r, float g, float b);
 
 void sdlx_set_texture_pixels(sdlx_texture_t *t, unsigned int *pixels);
 unsigned int *sdlx_get_texture_pixels(sdlx_texture_t *t, int *w, int *h);
