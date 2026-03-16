@@ -262,108 +262,43 @@ void get_file_list(void)
 
 // -----------------  DISPLAY COLOR ORGAN  ---------------------------
 
-#define X_RED_CTR    250
-#define Y_RED_CTR    683
-#define X_GREEN_CTR  750
-#define Y_GREEN_CTR  683
-#define X_BLUE_CTR   500
-#define Y_BLUE_CTR   250
+#define X_RED_CIRCLE    250
+#define Y_RED_CIRCLE    683
+#define X_GREEN_CIRCLE  750
+#define Y_GREEN_CIRCLE  683
+#define X_BLUE_CIRCLE   500
+#define Y_BLUE_CIRCLE   250
 
+#define DECAY  0.01
 
-#define DECAY_RATE 0.01
+void proc(sdlx_texture_t *t, int x_ctr, int y_ctr, double newval, double *work, double k)
+{
+    double current, sf;
 
-#define SFL 3.5
-#define SFM 3.5
-#define SFH 5.0
+    current = *work;
+    if (newval > current) {
+        current = newval;
+    } else {
+        current -= DECAY;
+        if (current < 0) current = 0;
+    }
+    *work = current;
 
-// xxx improve this
+    sf = k * current;
+    if (sf > 1) sf = 1;
+    if (sf < 0) sf = 0;
+
+    sdlx_color_mod_texture(t, sf, sf, sf);
+    sdlx_render_texture_ex1(t, x_ctr-250, y_ctr-250, 500, 500);
+}
+
 void display_color_organ(void)
 {
-    int x, y, wh=500;
-    
-    //printf("%s  %f %f %f\n", 
-        //as.pathname,
-        //as.color_organ.low_band,
-        //as.color_organ.mid_band,
-        //as.color_organ.high_band);
+    static double work_red, work_green, work_blue;
 
-    //static double scaled_low_band;
-    //scale(as.color_organ.low_band, &scaled_low_band);
-    //printf("current/target = %f %f\n", as.color_organ.low_band, scaled_low_band);
-
-    double scaled_low_band;
-    static double current_low_band;
-    if (as.color_organ.low_band > current_low_band) {
-        current_low_band = as.color_organ.low_band;
-    } else {
-        current_low_band -= DECAY_RATE;
-        if (current_low_band < 0) current_low_band = 0;
-    }
-    scaled_low_band = current_low_band * SFL;
-    if (scaled_low_band > 1) scaled_low_band = 1;
-
-    double scaled_mid_band;
-    static double current_mid_band;
-    if (as.color_organ.mid_band > current_mid_band) {
-        current_mid_band = as.color_organ.mid_band;
-    } else {
-        current_mid_band -= DECAY_RATE;
-        if (current_mid_band < 0) current_mid_band = 0;
-    }
-    scaled_mid_band = current_mid_band * SFM;
-    if (scaled_mid_band > 1) scaled_mid_band = 1;
-
-    // ------------------
-    double scaled_high_band;
-    static double current_high_band;
-    if (as.color_organ.high_band > current_high_band) {
-        current_high_band = as.color_organ.high_band;
-    } else {
-        current_high_band -= DECAY_RATE;
-        if (current_high_band < 0) current_high_band = 0;
-    }
-    //scaled_high_band = 0.72 * log(current_high_band) + 2.16;
-    scaled_high_band = 0.333 * log(current_high_band) + 1.30;
-    if (scaled_high_band > 1) scaled_high_band = 1;
-    if (scaled_high_band < 0) scaled_high_band = 0;
-    printf("%f\n", scaled_high_band);
-
-    x = X_RED_CTR - wh/2;
-    y = Y_RED_CTR - wh/2;
-    sdlx_color_mod_texture(red_circle_texture, scaled_low_band, 0, 0);
-    sdlx_render_texture_ex1(red_circle_texture, x, y, wh, wh);
-
-    x = X_GREEN_CTR - wh/2;
-    y = Y_GREEN_CTR - wh/2;
-    sdlx_color_mod_texture(green_circle_texture, 0, scaled_mid_band, 0);
-    sdlx_render_texture_ex1(green_circle_texture, x, y, wh, wh);
-
-    x = X_BLUE_CTR - wh/2;
-    y = Y_BLUE_CTR - wh/2;
-    sdlx_color_mod_texture(blue_circle_texture, 0, 0, scaled_high_band);
-    sdlx_render_texture_ex1(blue_circle_texture, x, y, wh, wh);
-#if 0
-    wh = as.color_organ.low_band * 500;
-    //wh = 500;  xxx del
-    x = X_RED_CTR - wh/2;
-    y = Y_RED_CTR - wh/2;
-    if (wh > 500) wh = 500;
-    sdlx_render_texture_ex1(red_circle_texture, x, y, wh, wh);
-
-    wh = as.color_organ.mid_band * 500;
-    //wh = 500;  xxx del
-    x = X_GREEN_CTR - wh/2;
-    y = Y_GREEN_CTR - wh/2;
-    if (wh > 500) wh = 500;
-    sdlx_render_texture_ex1(green_circle_texture, x, y, wh, wh);
-
-    wh = as.color_organ.high_band * 500;
-    //wh = 500;  xxx del
-    x = X_BLUE_CTR - wh/2;
-    y = Y_BLUE_CTR - wh/2;
-    if (wh > 500) wh = 500;
-    sdlx_render_texture_ex1(blue_circle_texture, x, y, wh, wh);
-#endif
+    proc(red_circle_texture, X_RED_CIRCLE, Y_RED_CIRCLE, as.color_organ.low_band, &work_red, 3);
+    proc(green_circle_texture, X_GREEN_CIRCLE, Y_GREEN_CIRCLE, as.color_organ.mid_band, &work_green, 5);
+    proc(blue_circle_texture, X_BLUE_CIRCLE, Y_BLUE_CIRCLE, as.color_organ.high_band, &work_blue, 7);
 }
 
 // -----------------  UTILS  -----------------------------------------
