@@ -23,6 +23,7 @@ picoc
 - xxx in library_unix.c
 - FIXME
 - ANDORID vs ANDROID_HOST
+- picoc numbers .333
 
 checkout specific commit in sdl dirs
 

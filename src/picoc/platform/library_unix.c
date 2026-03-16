@@ -886,8 +886,8 @@ typedef struct { \n\
 } sdlx_tone_t; \n\
 typedef struct { \n\
     int    state; \n\
-    int    stopping; \n\
-    int    paused; \n\
+    bool   stopping; \n\
+    bool   paused; \n\
     int    play_current_ms; \n\
     int    play_total_ms; \n\
     int    record_ms; \n\

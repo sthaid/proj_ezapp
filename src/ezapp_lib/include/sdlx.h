@@ -154,8 +154,8 @@ typedef struct {
 
 typedef struct {
     int    state;
-    int    stopping;  // xxx try to use bool here
-    int    paused;  // xxx try to use bool here
+    bool   stopping;
+    bool   paused;
     int    play_current_ms;
     int    play_total_ms;
     int    record_ms;
