@@ -287,7 +287,7 @@ void get_file_list(void)
 #define X_BLUE_CIRCLE   500
 #define Y_BLUE_CIRCLE   250
 
-#define DECAY  0.01
+#define DECAY  0.03
 
 #define DEFAULT_K_RED    30
 #define DEFAULT_K_GREEN  50

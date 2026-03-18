@@ -1,3 +1,13 @@
+color organ
+- horizontal orientation
+   - left and right channels
+- cleanup code
+-try exponential scaling
+- try faster decay time
+- auto adjust params
+- maybe a longer data sample interval - 40 ms?
+- fft color organ
+
 xxxxxxxxxxxxxxxxxxxxx
 
 sizeof bool, and structure alignment with bools
