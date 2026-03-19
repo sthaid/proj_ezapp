@@ -184,7 +184,7 @@ int sdlx_audio_file_duration_ms(char *dir, char *filename);
 
 int sdlx_audio_play_file(char *dir, char *filename);
 int sdlx_audio_play_tones(sdlx_tone_t *tones);
-int sdlx_audio_play_buff(short *samples, int num_samples, int num_channels,
+int sdlx_audio_play_buff(float *samples, int num_samples, int num_channels,
                          int loops, bool free_samples_when_done);
 
 // - - - - - -

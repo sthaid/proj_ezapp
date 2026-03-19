@@ -677,7 +677,7 @@ static void page_7_draw(void)
     // get audio state
     sdlx_audio_get_state(&state);
 
-    // display state
+    // display state xxxxxxxxxxx fix to include paused/stopping state flags
     if (state.play_current_ms != 0 || state.play_total_ms != 0) {
         char duration[40];
         if (state.play_total_ms == 0) {
@@ -812,7 +812,7 @@ static void page_7_process_event(sdlx_event_t *ev)
     case EVID_AUDIO_PLAY_TONE_CHAN_LRB: {
         char  *str;
         int    num_samples, i;
-        short *samples;
+        float *samples;
 
         // update tone_freq and channel if requested
         if (ev->event_id == EVID_AUDIO_PLAY_TONE_FREQ_UP) {
@@ -835,16 +835,16 @@ static void page_7_process_event(sdlx_event_t *ev)
         // allocate buffer for 100 sine waves of stereo pcm
         num_samples = FRAMES_PER_SEC * 100 / tone_freq;
         num_samples *= 2;
-        samples = calloc(num_samples, sizeof(short));
+        samples = calloc(num_samples, sizeof(float));
 
         // init buffer with 100 sine waves
         for (i = 0; i < num_samples; i+=2) {
             if (tone_lrb == LEFT_CHANNEL) {
-                samples[i] = 32767 * sin(TWO_PI * i * 100 / num_samples);
+                samples[i] = sin(TWO_PI * i * 100 / num_samples);
             } else if (tone_lrb == RIGHT_CHANNEL) {
-                samples[i+1] = 32767 * sin(TWO_PI * i * 100 / num_samples);
+                samples[i+1] = sin(TWO_PI * i * 100 / num_samples);
             } else {  // BOTH_CHANNELS
-                samples[i] = 32767 * sin(TWO_PI * i * 100 / num_samples);
+                samples[i] = sin(TWO_PI * i * 100 / num_samples);
                 samples[i+1] = samples[i];
             }
         }
@@ -867,11 +867,11 @@ static void page_7_process_event(sdlx_event_t *ev)
         int    secs = 4;
         int    num_channels = 1;
         int    num_samples = secs * FRAMES_PER_SEC * num_channels;
-        short *samples;
+        float *samples;
 
-        samples = malloc(num_samples * sizeof(short));
+        samples = malloc(num_samples * sizeof(float));
         for (int i = 0; i < num_samples; i++) {
-            samples[i] = 32767 * sin(2 * M_PI * 500.0 * i / FRAMES_PER_SEC);
+            samples[i] = sin(2 * M_PI * 500.0 * i / FRAMES_PER_SEC);
         }
         sdlx_audio_play_buff(samples, num_samples, num_channels, 2, true);
         break; }
@@ -879,17 +879,17 @@ static void page_7_process_event(sdlx_event_t *ev)
         int    secs = 4;
         int    num_channels = 2;
         int    num_samples = secs * FRAMES_PER_SEC * num_channels;
-        short *samples;
+        float *samples;
         int    j = 0;
 
-        samples = malloc(num_samples * sizeof(short));
+        samples = malloc(num_samples * sizeof(float));
         for (int i = 0; i < num_samples / 4; i++) {
-            samples[j++] = 32767 * sin(2 * M_PI * 500.0 * i / FRAMES_PER_SEC);
+            samples[j++] = sin(2 * M_PI * 500.0 * i / FRAMES_PER_SEC);
             samples[j++] = 0;
         }
         for (int i = 0; i < num_samples / 4; i++) {
             samples[j++] = 0;
-            samples[j++] = 32767 * sin(2 * M_PI * 500.0 * i / FRAMES_PER_SEC);
+            samples[j++] = sin(2 * M_PI * 500.0 * i / FRAMES_PER_SEC);
         }
         sdlx_audio_play_buff(samples, num_samples, num_channels, 2, true);
         break; }

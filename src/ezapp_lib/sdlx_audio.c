@@ -47,9 +47,6 @@
 #define MP3_LAME_MODE_DUAL_CHANNEL     2
 #define MP3_LAME_MODE_MONO             3
 
-#define FFT_FMT_FLOAT 0
-#define FFT_FMT_S16   1
-
 //
 // typedefs
 //
@@ -83,20 +80,19 @@ static void audio_cleanup(void);
 static int audio_reset(void);
 static int audio_stop(void);
 
-static double calc_volume_s16(short *samples, int n);
-static double calc_volume_float(float *samples, int n);
+static double calc_volume(float *samples, int n);
 
 static void mixer_track_raw_callback(void *userdata, MIX_Track *track, const SDL_AudioSpec *spec, float *pcm, int samples);
 static void mixer_track_stopped_callback(void *userdata, MIX_Track *track);
 
 static void *mp3_file_open(char *dir, char *filename, int num_channels, bool append);
-static void mp3_file_write(void *cx_arg, short *samples, int num_samples);
+static void mp3_file_write(void *cx_arg, float *samples, int num_samples);
 static void mp3_file_close(void *cx_arg);
 static int mp3_file_duration_ms(void *cx_arg) __attribute__((unused));
 static int mp3_file_duration_ms_from_filename(char *dir, char *filename);
 
 static void fft_cleanup(void);
-static void color_organ(void *samples, int num_samples, int num_channels, int fps, int fmt);
+static void color_organ(float *samples, int num_samples, int num_channels, int fps);
 
 // -----------------  INITIALIZE  ---------------------------------
 
@@ -196,7 +192,7 @@ static int audio_init(void)
     }
 
     // initializing SDL_mixer
-    const SDL_AudioSpec playback_request_spec = { SDL_AUDIO_S16, 2, FRAMES_PER_SEC };
+    const SDL_AudioSpec playback_request_spec = { SDL_AUDIO_F32, 2, FRAMES_PER_SEC };
     SDL_AudioSpec playback_actual_spec;
 
     if (!MIX_Init()) {
@@ -375,35 +371,15 @@ void sdlx_audio_get_params(sdlx_audio_params_t *ap)
 
 // -----------------  UTILS  -----------------------------
 
-static double calc_volume_s16(short *samples, int n)
+#define VOLUME_SCALE_FACTOR 1.0   // xxx fix later
+static double calc_volume(float *samples, int n)
 {   
-    long   sum_squares = 0;
+    double sum_squares = 0;
     double volume;
-
-    #define VOLUME_SCALE_FACTOR 0.0001
 
     // calculate volume using RMS value of samples 
     for (int i = 0; i < n; i++) {
         sum_squares += (samples[i] * samples[i]);
-    }
-    volume = sqrt((double)sum_squares / n) * VOLUME_SCALE_FACTOR;
-
-    // limit volume to max value 1
-    if (volume > 1) volume = 1;
-
-    // return volume
-    return volume;
-}
-
-static double calc_volume_float(float *samples, int n)
-{   
-    long   sum_squares = 0;
-    double volume;
-
-    // calculate volume using RMS value of samples 
-    for (int i = 0; i < n; i++) {
-        int s16_sample = samples[i] * 32768;
-        sum_squares += (s16_sample * s16_sample);
     }
     volume = sqrt(sum_squares / n) * VOLUME_SCALE_FACTOR;
 
@@ -519,13 +495,14 @@ static void *mp3_file_open(char *dir, char *filename, int num_channels, bool app
 // - samples are interleaved left, right channel
 // - there are 2 samples per frame (STEREO)
 // - num_samples must be multiple of 2
-static void mp3_file_write(void *cx_arg, short *samples, int num_samples)
+static void mp3_file_write(void *cx_arg, float *samples, int num_samples)
 {
+    #define MAX_SAMPLES_MP3_FILE_WRITE 8192
+
     int len;
     int process_samples;
     mp3_file_cx_t *cx = cx_arg;
-
-    #define MAX_SAMPLES_MP3_FILE_WRITE 8192
+    short samples_s16[MAX_SAMPLES_MP3_FILE_WRITE];
 
     // if mp3 file is not open then just return
     if (cx_arg == NULL) {
@@ -542,7 +519,13 @@ static void mp3_file_write(void *cx_arg, short *samples, int num_samples)
     while (num_samples) {
         process_samples = (num_samples > MAX_SAMPLES_MP3_FILE_WRITE ? MAX_SAMPLES_MP3_FILE_WRITE : num_samples);
 
-        len = lame_encode_buffer_interleaved(gfp, samples, process_samples/2, mp3buf, MAX_MP3_BUF);
+        // mp3lame requires s16 format
+        for (int i = 0; i < process_samples; i++) {
+            samples_s16[i] = samples[i] * 32767;
+        }
+
+        // note: 3rd arg is number of samples per channel, thus the divide by 2
+        len = lame_encode_buffer_interleaved(gfp, samples_s16, process_samples/2, mp3buf, MAX_MP3_BUF);
         if (len < 0) {
             ERROR("lame_encode_buffer failed, rc=%d\n", len);
             return;
@@ -629,7 +612,7 @@ static int record_mic_thread(void *cx_arg);
 int sdlx_audio_record_from_mic(char *dir, char *filename, int max_duration_secs, int auto_stop_secs, bool append)
 {
     record_mic_cx_t    *cx=NULL;
-    const SDL_AudioSpec record_spec = { SDL_AUDIO_S16, 1, FRAMES_PER_SEC };
+    const SDL_AudioSpec record_spec = { SDL_AUDIO_F32, 1, FRAMES_PER_SEC };
 
     // reset audio
     if (audio_reset() != 0) {
@@ -669,8 +652,8 @@ int sdlx_audio_record_from_mic(char *dir, char *filename, int max_duration_secs,
 static int record_mic_thread(void *cx_arg)
 {
     record_mic_cx_t *cx = (record_mic_cx_t*)cx_arg;
-    short        mono_buff[4096];
-    short        stereo_buff[8192];
+    float        mono_buff[4096];
+    float        stereo_buff[8192];
     int          bytes;
     int          mono_buff_samples, stereo_buff_samples;
     double       silence_secs = 0;
@@ -697,7 +680,7 @@ static int record_mic_thread(void *cx_arg)
             usleep(TWO_MS);
             continue;
         }
-        mono_buff_samples = bytes / sizeof(short);
+        mono_buff_samples = bytes / sizeof(float);
         stereo_buff_samples = 2 * mono_buff_samples;
 
         // scale record data, and create stereo_buff
@@ -707,10 +690,10 @@ static int record_mic_thread(void *cx_arg)
         }
 
         // process audio samples for color organ
-        color_organ(mono_buff, mono_buff_samples, 1, FRAMES_PER_SEC, FFT_FMT_S16);
+        color_organ(mono_buff, mono_buff_samples, 1, FRAMES_PER_SEC);
 
         // calculate volume of the samples just obtained
-        state.volume = calc_volume_s16(mono_buff, mono_buff_samples);
+        state.volume = calc_volume(mono_buff, mono_buff_samples);
 
         // if not paused then perform recording  
         if (!state.paused) {
@@ -758,14 +741,14 @@ static int record_mic_thread(void *cx_arg)
     SDL_PauseAudioStreamDevice(audio_stream);  
 
     // add short tone to end of file
-    static short *tone;
-    #define AMPLITUDE      5000     // max 32767
+    static float *tone;
+    #define AMPLITUDE      0.15
     #define HZ             500
     #define NUM_SIN_WAVES  (HZ / 4)  // 1/4 sec
     #define N_ONE_SIN_WAVE (FRAMES_PER_SEC / HZ)   // samples in 1 sine wave
     #define N_TOTAL        (NUM_SIN_WAVES * N_ONE_SIN_WAVE)  // total samples
     if (tone == NULL) {
-        tone = malloc(2 * N_TOTAL * sizeof(short));
+        tone = malloc(2 * N_TOTAL * sizeof(float));
         for (int j = 0; j < N_TOTAL; j++) {
             tone[2*j] = tone[2*j+1] = AMPLITUDE * sin((2*M_PI) * ((double)j / N_ONE_SIN_WAVE));
         }
@@ -843,7 +826,7 @@ static int record_dev_thread(void *cx_arg)
     #define MAX_SAMPLES 2048
 
     record_dev_cx_t *cx = cx_arg;
-    short samples[MAX_SAMPLES];
+    float samples[MAX_SAMPLES];
     int rc;
 
     while (true) {
@@ -861,10 +844,10 @@ static int record_dev_thread(void *cx_arg)
         }
 
         // process audio samples for color organ
-        color_organ(samples, MAX_SAMPLES, 2, FRAMES_PER_SEC, FFT_FMT_S16);
+        color_organ(samples, MAX_SAMPLES, 2, FRAMES_PER_SEC);
 
         // calculate volume
-        state.volume = calc_volume_s16(samples, MAX_SAMPLES);
+        state.volume = calc_volume(samples, MAX_SAMPLES);
 
         // if not paused then perform recording  
         if (!state.paused) {
@@ -906,7 +889,7 @@ static int record_dev_thread(void *cx_arg)
 // typedefs
 typedef struct {
     int n;
-    short data[0];
+    float data[0];
 } sine_wave_t;
 
 typedef struct {
@@ -919,14 +902,14 @@ static sine_wave_t *sine_waves[MAX_TONE_FREQ+1];
 
 // prototypes
 static int tones_thread(void *cx_arg);
-static void smooth(short *buff, int len);
-static void play_buff(short *samples, int num_samples, int num_channels, int *total_queued_samples);
+static void smooth(float *buff, int len);
+static void play_buff(float *samples, int num_samples, int num_channels, int *total_queued_samples);
 
 int sdlx_audio_play_tones(sdlx_tone_t *tones)
 {
     int num_tones, duration_ms, i;
     play_tones_cx_t *cx;
-    const SDL_AudioSpec playback_spec = { SDL_AUDIO_S16, 1, FRAMES_PER_SEC };
+    const SDL_AudioSpec playback_spec = { SDL_AUDIO_F32, 1, FRAMES_PER_SEC };
 
     // reset audio
     if (audio_reset() != 0) {
@@ -970,13 +953,13 @@ int sdlx_audio_play_tones(sdlx_tone_t *tones)
 static int tones_thread(void *cx_arg)
 {
     play_tones_cx_t *cx = (play_tones_cx_t*)cx_arg;
-    short           *samples;
+    float           *samples;
     int              max_samples;
     int              total_queued_samples = 0;
 
     // allocate samples to handle a tone or gap of up to 30 secs
     max_samples = 30 * FRAMES_PER_SEC;
-    samples = malloc(max_samples * sizeof(short));
+    samples = malloc(max_samples * sizeof(float));
     if (samples == NULL) {
         ERROR("malloc failed\n");
         goto done;
@@ -997,10 +980,10 @@ static int tones_thread(void *cx_arg)
 
         if (t->freq && sine_waves[t->freq] == NULL) {
             n = nearbyint(FRAMES_PER_SEC / t->freq);
-            sw = malloc(sizeof(int) + n * sizeof(short));
+            sw = malloc(sizeof(int) + n * sizeof(float));
             sw->n = n;
             for (j = 0; j < n; j++) {
-                sw->data[j] = 32767 * sin((2*M_PI) * ((double)j / n));
+                sw->data[j] = sin((2*M_PI) * ((double)j / n));
             }
             sine_waves[t->freq] = sw;
         }
@@ -1024,23 +1007,23 @@ static int tones_thread(void *cx_arg)
             if (n > max_samples) {
                 n = max_samples;
             }
-            memset(samples, 0, n*sizeof(short));
+            memset(samples, 0, n*sizeof(float));
         } else {
             sine_wave_t *sw = sine_waves[t->freq];
             int num_sine_waves = t->intvl_ms * t->freq / 1000;
-            short *ptr = samples;
+            float *ptr = samples;
 
             if (num_sine_waves * sw->n > max_samples) {
                 num_sine_waves = max_samples / sw->n;
             }
 
             for (int j = 0; j < num_sine_waves; j++) {
-                memcpy(ptr, sw->data, sw->n * sizeof(short));
+                memcpy(ptr, sw->data, sw->n * sizeof(float));
                 ptr += sw->n;
             }
             n = ptr - samples;
 
-            // prevent popping sound by remping up/down the begining/end of samples
+            // prevent popping sound by ramping up/down the begining/end of samples
             smooth(samples, n);
         }
 
@@ -1067,7 +1050,7 @@ done:
     return 0;
 }
 
-static void smooth(short *samples, int num_samples)
+static void smooth(float *samples, int num_samples)
 {
     #define MAX_SMOOTHER  (FRAMES_PER_SEC / 200)   // number of frames in 5 ms
 
@@ -1078,18 +1061,18 @@ static void smooth(short *samples, int num_samples)
     //   "equation for an s curve to smootly ramp up or down audio data"
     //   "plot 3x^2 - 2x^3"
 
-    static double *smoother;
+    static float *smoother;
 
     if (num_samples < 3 * MAX_SMOOTHER) {
         return;
     }
 
     if (smoother == NULL) {
-        smoother = calloc(MAX_SMOOTHER, sizeof(double));
+        smoother = calloc(MAX_SMOOTHER, sizeof(float));
         for (int i = 0; i < MAX_SMOOTHER; i++) {
-            double x = (double)i / MAX_SMOOTHER;
-            double x_squared = x * x;
-            double x_cubed   = x_squared * x;
+            float x = (float)i / MAX_SMOOTHER;
+            float x_squared = x * x;
+            float x_cubed   = x_squared * x;
             smoother[i] = 3 * x_squared - 2 * x_cubed;
         }
     }
@@ -1101,7 +1084,7 @@ static void smooth(short *samples, int num_samples)
 }
 
 // returns with 200 ms or less, still being played
-static void play_buff(short *samples, int num_samples, int num_channels, int *total_queued_samples)
+static void play_buff(float *samples, int num_samples, int num_channels, int *total_queued_samples)
 {
     int num_xfer_samples, num_remaining_samples;
     int queued_ms;
@@ -1122,22 +1105,22 @@ static void play_buff(short *samples, int num_samples, int num_channels, int *to
         num_xfer_samples = (num_remaining_samples > 960*num_channels 
                             ? 960*num_channels : 
                             num_remaining_samples);
-        SDL_PutAudioStreamData(audio_stream, samples, num_xfer_samples*sizeof(short));
+        SDL_PutAudioStreamData(audio_stream, samples, num_xfer_samples*sizeof(float));
 
         // publish duration played
         *total_queued_samples += num_xfer_samples;
         state.play_current_ms = (*total_queued_samples / num_channels) / FRAMES_PER_MS;
 
         // calculate volume for the samples just queued
-        state.volume = calc_volume_s16(samples, num_xfer_samples);
+        state.volume = calc_volume(samples, num_xfer_samples);
 
         // process audio samples for color organ
-        color_organ(samples, num_xfer_samples, num_channels, FRAMES_PER_SEC, FFT_FMT_S16);
+        color_organ(samples, num_xfer_samples, num_channels, FRAMES_PER_SEC);
 
         // sleep while there is more than 40 ms queued;
         // break out of this sleep loop if audio state has become stopping or paused
         do {
-            queued_ms = (SDL_GetAudioStreamQueued(audio_stream) / (sizeof(short) * num_channels)) / FRAMES_PER_MS;
+            queued_ms = (SDL_GetAudioStreamQueued(audio_stream) / (sizeof(float) * num_channels)) / FRAMES_PER_MS;
             usleep(TWO_MS);
             if (state.stopping || state.paused) {
                 break;
@@ -1153,7 +1136,7 @@ static void play_buff(short *samples, int num_samples, int num_channels, int *to
 // -----------------  PLAY BUFFER  ------------------------
 
 typedef struct {
-    short *samples;
+    float *samples;
     int    num_samples;
     int    num_channels;
     int    loops;
@@ -1162,9 +1145,9 @@ typedef struct {
 
 static int play_buff_thread(void *cx_arg);
 
-int sdlx_audio_play_buff(short *samples, int num_samples, int num_channels, int loops, bool free_samples_when_done)
+int sdlx_audio_play_buff(float *samples, int num_samples, int num_channels, int loops, bool free_samples_when_done)
 {
-    const SDL_AudioSpec playback_spec = { SDL_AUDIO_S16, num_channels, FRAMES_PER_SEC };
+    const SDL_AudioSpec playback_spec = { SDL_AUDIO_F32, num_channels, FRAMES_PER_SEC };
     int duration_ms;
     play_buff_cx_t *cx;
 
@@ -1327,7 +1310,7 @@ static void mixer_track_raw_callback(void *userdata, MIX_Track *track, const SDL
     state.play_current_ms = MIX_TrackFramesToMS(track, frames);
 
     // update audio state.volume
-    state.volume = calc_volume_float(samples, num_samples);
+    state.volume = calc_volume(samples, num_samples);
 
     //INFO("fmt=%s  num_samples=%d  volume=%d  play_current=%0.0f secs\n", 
     //     audio_fmt_str(play_file_spec.format),
@@ -1337,8 +1320,7 @@ static void mixer_track_raw_callback(void *userdata, MIX_Track *track, const SDL
     color_organ(samples, 
                 num_samples, 
                 play_file_spec.channels,
-                play_file_spec.freq,
-                FFT_FMT_FLOAT);
+                play_file_spec.freq);
 }
 
 static void mixer_track_stopped_callback(void *userdata, MIX_Track *track)
@@ -1416,10 +1398,8 @@ static float get_band_vol(int low_freq, int high_freq);
 
 // - - - - - - - - - - - - - - - - - - - - - 
 
-static void color_organ(void *samples, int num_samples, int num_channels, int fps, int fmt)
+static void color_organ(float *samples, int num_samples, int num_channels, int fps)
 {
-    float *samples_float = (float*)samples;
-    short *samples_s16   = (short*)samples;
     int    i, k;
 #ifdef VERBOSE
     long   start_us = util_microsec_timer();
@@ -1435,11 +1415,10 @@ static void color_organ(void *samples, int num_samples, int num_channels, int fp
     if ((samples == NULL) || 
         (num_samples == 0) || 
         (num_channels == 2 && (num_samples & 1)) ||
-        (num_channels != 1 && num_channels != 2) ||
-        (fmt != FFT_FMT_FLOAT && fmt != FFT_FMT_S16))
+        (num_channels != 1 && num_channels != 2))
     {
-        ERROR("invalid args: samples=%p num_samples=%d num_channels=%d fps=%d fmt=%d\n",
-              samples, num_samples, num_channels, fps, fmt);
+        ERROR("invalid args: samples=%p num_samples=%d num_channels=%d fps=%d\n",
+              samples, num_samples, num_channels, fps);
         return;
     }
 
@@ -1475,29 +1454,15 @@ static void color_organ(void *samples, int num_samples, int num_channels, int fp
 
     // downsample caller supplied samples to the fft_input array
     k = 0;
-    if (fmt == FFT_FMT_FLOAT) {
-        if (num_channels == 1) {
-            for (i = 0; i < fft_num_input; i++) {
-                fft_input[i] = samples_float[k];
-                k += fft_downsample;
-            }
-        } else {
-            for (i = 0; i < fft_num_input; i++) {
-                fft_input[i] = (samples_float[k] + samples_float[k+1]) / 2;
-                k += 2*fft_downsample;
-            }
+    if (num_channels == 1) {
+        for (i = 0; i < fft_num_input; i++) {
+            fft_input[i] = samples[k];
+            k += fft_downsample;
         }
-    } else if (fmt == FFT_FMT_S16) {
-        if (num_channels == 1) {
-            for (i = 0; i < fft_num_input; i++) {
-                fft_input[i] = samples_s16[k] / 32768.;
-                k += fft_downsample;
-            }
-        } else {
-            for (i = 0; i < fft_num_input; i++) {
-                fft_input[i] = ((samples_s16[k] / 32768.0) + (samples_s16[k+1] / 32768.0)) / 2;
-                k += 2*fft_downsample;
-            }
+    } else {
+        for (i = 0; i < fft_num_input; i++) {
+            fft_input[i] = (samples[k] + samples[k+1]) / 2;
+            k += 2*fft_downsample;
         }
     }
 

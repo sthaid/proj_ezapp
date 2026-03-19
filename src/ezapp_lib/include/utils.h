@@ -106,7 +106,7 @@ void util_toggle_flashlight(void);
 
 int util_start_playbackcapture(void);
 void util_stop_playbackcapture(void);
-int util_get_playbackcapture_audio(short *array, int num_array_elements);
+int util_get_playbackcapture_audio(float *array, int num_array_elements);
 
 // --------------------
 // NOT AVAILABLE IN PICOC

@@ -37,7 +37,7 @@
 // prototype of common routine to call java method
 static double call_java1(const char *method_name);
 static double call_java2(const char *method_name, char *str);
-static double call_java3(const char *method_name, short *array, int num_array_elements);
+static double call_java3(const char *method_name, float *array, int num_array_elements);
 
 // android utils init & destroy
 void util_android_utils_init(void)
@@ -139,7 +139,7 @@ int util_start_playbackcapture(void) {
 void util_stop_playbackcapture(void) {
     call_java1("stop_playbackcapture");
 }
-int util_get_playbackcapture_audio(short *array, int num_array_elements) {
+int util_get_playbackcapture_audio(float *array, int num_array_elements) {
     return call_java3("get_playbackcapture_audio", array, num_array_elements);
 }
 
@@ -232,7 +232,7 @@ static double call_java2(const char *method_name, char *arg_str)
 }
 
 // call method 'short[] proc(int arg_unused)' 
-double call_java3(const char *method_name, short *caller_array, int num_array_elements)
+double call_java3(const char *method_name, float *caller_array, int num_array_elements)
 {
     jmethodID method_id = 0;
     int arg_unused = 0;
@@ -275,7 +275,9 @@ double call_java3(const char *method_name, short *caller_array, int num_array_el
     }
 
     // return array_elements to caller
-    memcpy(caller_array, array_elements, num_array_elements*sizeof(short));
+    for (int i = 0; i < num_array_elements; i++) {
+        caller_array[i] = (float)array_elements[i] / 32767;
+    }
 
     // Release the array elements
     // - JNI_ABORT means changes made to array_elements are not copied back to the Java array.
@@ -332,6 +334,6 @@ bool util_is_flashlight_on(void) { return false; }
 
 int util_start_playbackcapture(void) { }
 void util_stop_playbackcapture(void) { }
-int util_get_playbackcapture_audio(short *array, int num_array_elements) { }
+int util_get_playbackcapture_audio(float *array, int num_array_elements) { }
 
 #endif

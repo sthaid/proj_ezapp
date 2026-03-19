@@ -506,7 +506,7 @@ void Sdlx_audio_play_tones(struct ParseState *Parser, struct Value *ReturnValue,
 void Sdlx_audio_play_buff(struct ParseState *Parser, struct Value *ReturnValue,
         struct Value **Param, int NumArgs)
 {
-    short * samples                = (short *)Param[0]->Val->Pointer;
+    float * samples                = (float *)Param[0]->Val->Pointer;
     int     num_samples            = (int)Param[1]->Val->Integer;
     int     num_channels           = (int)Param[2]->Val->Integer;
     int     loops                  = (int)Param[3]->Val->Integer;
@@ -786,7 +786,7 @@ struct LibraryFunction SdlFunctions[] = {
     { Sdlx_audio_file_duration_ms,   "int sdlx_audio_file_duration_ms(char *dir, char *filename);" },
     { Sdlx_audio_play_file,          "int sdlx_audio_play_file(char *dir, char *filename);" },
     { Sdlx_audio_play_tones,         "int sdlx_audio_play_tones(sdlx_tone_t *tones);" },
-    { Sdlx_audio_play_buff,          "int sdlx_audio_play_buff(short *samples, int num_samples, int num_channels, int loops, bool free_samples_when_done);" },
+    { Sdlx_audio_play_buff,          "int sdlx_audio_play_buff(float *samples, int num_samples, int num_channels, int loops, bool free_samples_when_done);" },
     { Sdlx_audio_record_from_mic,    "int sdlx_audio_record_from_mic(char *dir, char *filename, int max_duration_secs, int auto_stop_secs, bool append);" },
     { Sdlx_audio_record_from_device, "int sdlx_audio_record_from_device(char *dir, char *filename);" },
 
@@ -1339,7 +1339,7 @@ void Util_stop_playbackcapture(struct ParseState *Parser, struct Value *ReturnVa
 void Util_get_playbackcapture_audio(struct ParseState *Parser, struct Value *ReturnValue,
         struct Value **Param, int NumArgs)
 {
-    short *array = Param[0]->Val->Pointer;
+    float *array = Param[0]->Val->Pointer;
     int    num_elements = Param[1]->Val->Integer;
 
     util_get_playbackcapture_audio(array, num_elements);
@@ -1397,7 +1397,7 @@ struct LibraryFunction UtilsFunctions[] = {
     // call java: playbackcapture
     { Util_start_playbackcapture,     "void util_start_playbackcapture(void);" },
     { Util_stop_playbackcapture,      "void util_stop_playbackcapture(void);" },
-    { Util_get_playbackcapture_audio, "void util_get_playbackcapture_audio(short *array, int num_array_elements);" },
+    { Util_get_playbackcapture_audio, "void util_get_playbackcapture_audio(float *array, int num_array_elements);" },
 
     { NULL, NULL } };
 
