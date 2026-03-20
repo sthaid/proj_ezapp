@@ -1,3 +1,5 @@
+picoc sizeof(x) not working, when x is an array of struct
+
 color organ
 - horizontal orientation
    - left and right channels

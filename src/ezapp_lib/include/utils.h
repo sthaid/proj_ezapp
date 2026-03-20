@@ -91,8 +91,20 @@ int util_read_png_file(char *dir, char *filename, unsigned char **pixels, int *w
 int util_write_png_file(char *dir, char *filename, unsigned char *pixels, int w, int h);
 
 // --------------------
-// CALL ANDROID JAVA CODE
+// FFT
 // --------------------
+
+typedef struct {
+    float r;
+    float i;
+} complex_t;
+
+void util_fft_real_to_complex(int n_fft, float *input, complex_t *cpx_output);
+void util_fft_real_to_real(int n_fft, float *input, float *output);
+
+// ----------------------------------------------
+// CALL ANDROID JAVA CODE, NOT AVAILABLE IN PICOC
+// ----------------------------------------------
 
 void util_get_location(double *latitude, double *longitude, double *altitude_wgs84_meters);
 

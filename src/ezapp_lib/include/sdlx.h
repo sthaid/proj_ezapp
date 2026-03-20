@@ -147,6 +147,10 @@ void sdlx_set_render_target(sdlx_texture_t *t);
 #define AUDIO_STATE_RECORD_FROM_MIC     4
 #define AUDIO_STATE_RECORD_FROM_DEVICE  5
 
+#define GET_SAMPLES_MONO          0
+#define GET_SAMPLES_LEFT_CHANNEL  1
+#define GET_SAMPLES_RIGHT_CHANNEL 2
+
 typedef struct {
     short freq;
     short intvl_ms;
@@ -161,11 +165,7 @@ typedef struct {
     int    record_ms;
     char   pathname[100];
     double volume;
-    struct {
-        double low_band;
-        double mid_band;
-        double high_band;
-    } color_organ;
+    // xxx add fps and num_channels
 } sdlx_audio_state_t;
 
 // - - - - - -
@@ -177,6 +177,12 @@ void sdlx_audio_pause(void);
 void sdlx_audio_resume(void);
 void sdlx_audio_get_state(sdlx_audio_state_t * state);
 int sdlx_audio_file_duration_ms(char *dir, char *filename);
+
+// - - - - - -
+// get/downsample most recent samples
+// - - - - - -
+
+void sdlx_get_audio_samples(int num_ret_samples, int num_downsample, int which_channel, float *ret_samples);
 
 // - - - - - -
 // playback

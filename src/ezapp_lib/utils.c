@@ -5,6 +5,7 @@
 
 #include <cJSON.h>
 #include <lodepng.h>
+#include <kiss_fftr.h>
 
 #define PAGE_SIZE2 (getpagesize())
 
@@ -752,3 +753,74 @@ int util_write_png_file(char *dir, char *filename, unsigned char *pixels, int w,
 
     return 0;
 }
+
+// ----------------- FFT ---------------------
+
+static kiss_fftr_cfg cached_alloc_fftr(int n_fft);
+
+void util_fft_real_to_complex(int n_fft, float *input, complex_t *cpx_output)
+{
+    kiss_fftr_cfg  cfg;
+
+    // verify n_fft is multiple of 2, if not then decrement
+    if (n_fft & 1) {
+        ERROR("n_fft=%d is not multiple of 2\n", n_fft);
+        n_fft--;
+    }
+
+    // alloc kissfft cfg, and perform fft
+    cfg = cached_alloc_fftr(n_fft);
+    kiss_fftr(cfg, input, (kiss_fft_cpx*)cpx_output);
+}
+
+void util_fft_real_to_real(int n_fft, float *input, float *output)
+{
+    kiss_fftr_cfg  cfg;
+    int            n_output = n_fft / 2 + 1;
+    complex_t     *cpx_output;
+
+    // verify n_fft is multiple of 2, if not then decrement
+    if (n_fft & 1) {
+        ERROR("n_fft=%d is not multiple of 2\n", n_fft);
+        n_fft--;
+    }
+
+    // alloc fft complex output buffer
+    cpx_output = calloc(n_output, sizeof(complex_t));
+
+    // alloc kissfft cfg, and perform fft
+    cfg = cached_alloc_fftr(n_fft);
+    kiss_fftr(cfg, input, (kiss_fft_cpx*)cpx_output);
+
+    // convert complex ouput buffer to caller supplied real value buffer
+    for (int i = 0; i < n_output; i++) {
+        output[i] = sqrtf(cpx_output[i].r * cpx_output[i].r + cpx_output[i].i * cpx_output[i].i);
+    }
+
+    // free allocated complex output buffer
+    free(cpx_output);
+}
+
+#define MAX_CACHE 4
+
+static struct {
+    int n_fft;
+    kiss_fftr_cfg cfg;
+} cache[MAX_CACHE];
+
+static kiss_fftr_cfg cached_alloc_fftr(int n_fft)
+{
+    for (int i = 0; i < MAX_CACHE; i++) {
+        if (cache[i].n_fft == n_fft) {
+            return cache[i].cfg;
+        }
+    }
+
+    INFO("calling kiss_fftr_alloc n_fft=%d\n", n_fft);
+    kiss_fft_free(cache[MAX_CACHE-1].cfg);
+    memmove(cache+1, cache, (MAX_CACHE-1)*sizeof(cache[0]));
+    cache[0].cfg = kiss_fftr_alloc(n_fft,  0, NULL, NULL);
+    cache[0].n_fft = n_fft;
+    return cache[0].cfg;
+}
+

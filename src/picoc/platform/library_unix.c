@@ -471,6 +471,17 @@ void Sdlx_audio_get_state(struct ParseState *Parser, struct Value *ReturnValue,
     sdlx_audio_get_state(state);
 }
 
+void Sdlx_get_audio_samples(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
+{
+    int     num_ret_samples = (int)Param[0]->Val->Integer;
+    int     num_downsample  = (int)Param[1]->Val->Integer;
+    int     which_channel   = (int)Param[2]->Val->Integer;
+    float * ret_samples     = (float *)Param[3]->Val->Pointer;
+
+    sdlx_get_audio_samples(num_ret_samples, num_downsample, which_channel, ret_samples);
+}
+
 void Sdlx_audio_file_duration_ms(struct ParseState *Parser, struct Value *ReturnValue,
         struct Value **Param, int NumArgs)
 {
@@ -783,6 +794,7 @@ struct LibraryFunction SdlFunctions[] = {
     { Sdlx_audio_pause,              "void sdlx_audio_pause(void);" },
     { Sdlx_audio_resume,             "void sdlx_audio_resume(void);" },
     { Sdlx_audio_get_state,          "void sdlx_audio_get_state(sdlx_audio_state_t * state);" },
+    { Sdlx_get_audio_samples,        "void sdlx_get_audio_samples(int num_ret_samples, int num_downsample, int which_channel, float *ret_samples);" },
     { Sdlx_audio_file_duration_ms,   "int sdlx_audio_file_duration_ms(char *dir, char *filename);" },
     { Sdlx_audio_play_file,          "int sdlx_audio_play_file(char *dir, char *filename);" },
     { Sdlx_audio_play_tones,         "int sdlx_audio_play_tones(sdlx_tone_t *tones);" },
@@ -880,6 +892,9 @@ typedef struct { \n\
 #define AUDIO_STATE_PLAY_BUFF           3 \n\
 #define AUDIO_STATE_RECORD_FROM_MIC     4 \n\
 #define AUDIO_STATE_RECORD_FROM_DEVICE  5 \n\
+#define GET_SAMPLES_MONO          0 \n\
+#define GET_SAMPLES_LEFT_CHANNEL  1 \n\
+#define GET_SAMPLES_RIGHT_CHANNEL 2 \n\
 typedef struct { \n\
     short freq; \n\
     short intvl_ms; \n\
@@ -1266,6 +1281,30 @@ void Util_write_png_file(struct ParseState *Parser, struct Value *ReturnValue,
 }
 
 //
+// utils fft
+//
+
+void Util_fft_real_to_complex(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
+{
+    int         n_fft      = (int)Param[0]->Val->Integer;
+    float *     input      = (float *)Param[1]->Val->Pointer;
+    complex_t * cpx_output = (complex_t *)Param[2]->Val->Pointer;
+
+    util_fft_real_to_complex(n_fft, input, cpx_output);
+}
+
+void Util_fft_real_to_real(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
+{
+    int     n_fft  = (int)Param[0]->Val->Integer;
+    float * input  = (float *)Param[1]->Val->Pointer;
+    float * output = (float *)Param[2]->Val->Pointer;
+
+    util_fft_real_to_real(n_fft, input, output);
+}
+
+//
 // utils java methods
 //
 
@@ -1384,8 +1423,11 @@ struct LibraryFunction UtilsFunctions[] = {
     // png file read/write
     { Util_read_png_file,    "int util_read_png_file(char *dir, char *filename, unsigned char **pixels, int *w, int *h);" },
     { Util_write_png_file,   "int util_write_png_file(char *dir, char *filename, unsigned char *pixels, int w, int h);" },
+    // fft
+    { Util_fft_real_to_complex, "void util_fft_real_to_complex(int n_fft, float *input, complex_t *cpx_output);" },
+    { Util_fft_real_to_real,    "void util_fft_real_to_real(int n_fft, float *input, float *output);" },
     // call java: location
-    { Util_get_location,     "void util_get_location(double *latitude, double *longitude, double *altitude);" },
+    { Util_get_location,        "void util_get_location(double *latitude, double *longitude, double *altitude);" },
     // call java: text to speech
     { Util_text_to_speech,      "void util_text_to_speech(char *text);" },
     { Util_text_to_speech_stop, "void util_text_to_speech_stop(void);" },
@@ -1402,6 +1444,7 @@ struct LibraryFunction UtilsFunctions[] = {
     { NULL, NULL } };
 
 const char UtilsDefs[] = "\
+/* json */ \n\
 #define JSON_TYPE_UNDEFINED 0 \n\
 #define JSON_TYPE_FLAG      1 \n\
 #define JSON_TYPE_NUMBER    2 \n\
@@ -1419,6 +1462,11 @@ typedef struct { \n\
         void  *object; \n\
     } u; \n\
 } json_value_t; \n\
+/* fft */ \n\
+typedef struct { \n\
+    float r; \n\
+    float i; \n\
+} complex_t; \n\
 ";
 
 // -----------------  SVCS PLATFORM ROUTINES  --------------------------
