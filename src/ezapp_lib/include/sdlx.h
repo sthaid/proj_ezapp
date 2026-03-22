@@ -321,7 +321,7 @@ void sdlx_minimize_window(void);
 
 // sdlx_audio.c
 #ifdef ANDROID
-    #define DEFAULT_RECORD_GAIN 5
+    #define DEFAULT_RECORD_GAIN 100
 #else
     #define DEFAULT_RECORD_GAIN 1
 #endif

@@ -1,24 +1,20 @@
-put back the open calls
+util params - default fmt diferent than when changes
+maybe the params files should be cleared when reinstalling
+
+test on device
+- mic autostop kickcs in
+
+
+fix Memo app
+
 fft reverse
-args to append and to start paused
-test - state string
 scale option for fft cpx
 
-set hardcoded mar duration to 1 hour
-
-
-int sdlx_audio_record_from_mic(char *dir, char *filename, int auto_stop_secs, bool append, bool start_paused);
-int sdlx_audio_record_from_device(char *dir, char *filename, bool append, bool start_paused);
-
-allow for no file name when recording
-
-
-
-picoc ptr math
+more picoc issues
+- picoc ptr math
     vol = rms_float(fft+bin, 1);    fft+bin not working
-
-
-picoc sizeof(x) not working, when x is an array of struct
+- picoc sizeof(x) not working, when x is an array of struct
+- other picoc restriction - short circuit
 
 color organ
 - horizontal orientation
@@ -32,10 +28,6 @@ color organ
 
 xxxxxxxxxxxxxxxxxxxxx
 
-sizeof bool, and structure alignment with bools
-return ptr to audio state  not a copy
-
-other picoc restriction - short circuit
 
 check Test SEQ
 

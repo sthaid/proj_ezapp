@@ -651,7 +651,7 @@ static void settings(void)
     #define RECORDING 1
     #define PLAYBACK  2
 
-    #define RECORD_TEST_FILENAME "record_test.wav"
+    #define RECORD_TEST_FILENAME "record_test.mp3"
 
     #define EVID_COPYRIGHT            1001
     #define EVID_DEVEL_MODE           1002
@@ -730,14 +730,14 @@ static void settings(void)
         // display Record_Gain
         if (GET_Y2) {
             sdlx_audio_get_params(&ap);
-            loc = sdlx_render_printf(0, y2, "Record_Gain = %0.1f", ap.record_gain);
+            loc = sdlx_render_printf(0, y2, "Rec_Gain = %0.2f", ap.record_gain);
             sdlx_register_event(loc, EVID_RECORD_GAIN);
         }
 
         // display Record_Silence
         if (GET_Y2) {
             sdlx_audio_get_params(&ap);
-            loc = sdlx_render_printf(0, y2, "Record_Silence = %0.0f", ap.record_silence);
+            loc = sdlx_render_printf(0, y2, "Rec_Silence = %0.2f", ap.record_silence);
             sdlx_register_event(loc, EVID_RECORD_SILENCE);
         }
 
@@ -745,12 +745,12 @@ static void settings(void)
         if (GET_Y2) {
             sdlx_audio_get_state(&as);
             if (record_test_state == IDLE) {
-                loc = sdlx_render_printf(0, y2, "Record_Test");
+                loc = sdlx_render_printf(0, y2, "Rec_Test");
                 sdlx_register_event(loc, EVID_RECORD_TEST);
             } else if (record_test_state == RECORDING) {
-                int bar_value_w =  sdlx_win_width * as.volume / 100;
+                int bar_value_w =  sdlx_win_width * as.volume;
                 int bar_height = sdlx_char_height_dflt;
-                sdlx_render_printf(sdlx_win_width-COL2X(2), y2, "%3d", (int)(as.volume*100));
+                sdlx_render_printf(sdlx_win_width-COL2X(4), y2, "%4.2f", as.volume);
                 sdlx_render_fill_rect(0, y2, bar_value_w, bar_height, COLOR_RED);
                 sdlx_render_rect(0, y2, sdlx_win_width, bar_height, 2, COLOR_WHITE);
             } else if (record_test_state == PLAYBACK) {
@@ -778,7 +778,7 @@ static void settings(void)
 
         // Record_Test processing
         sdlx_audio_get_state(&as);
-        if (record_test_state == RECORDING && as.state == AUDIO_STATE_IDLE) {
+        if (record_test_state == RECORDING && (as.record_secs > 6 || as.state == AUDIO_STATE_IDLE)) {
             sdlx_audio_play_file(".", RECORD_TEST_FILENAME);
             record_test_state = PLAYBACK;
         } else if (record_test_state == PLAYBACK && as.state == AUDIO_STATE_IDLE) {
@@ -860,7 +860,7 @@ static void settings(void)
             svcs_display(BG_COLOR);
             break;
         case EVID_RECORD_GAIN: {
-            double number = get_number("Record_Scale", 1, 100);  // xxx was limitted to 10
+            double number = get_number("Rec_Gain", 1, 200);  // xxx why does Android need so much gain
             if (number != INVALID_NUMBER) {
                 params.record_gain = number;
                 util_set_numeric_param(".", "record_gain", number);
@@ -870,7 +870,7 @@ static void settings(void)
             }
             break; }
         case EVID_RECORD_SILENCE: {
-            double number = get_number("Record_Silence", 0, 20);
+            double number = get_number("Rec_Silence", 0, 20);
             if (number != INVALID_NUMBER) {
                 params.record_silence = number;
                 util_set_numeric_param(".", "record_silence", number);
@@ -880,7 +880,10 @@ static void settings(void)
             }
             break; }
         case EVID_RECORD_TEST: {
-            sdlx_audio_record_from_mic(".", RECORD_TEST_FILENAME, 5, 2, false);
+            // auto_stop_secs = 3
+            // append         = false
+            // start_paused   = false
+            sdlx_audio_record_from_mic(".", RECORD_TEST_FILENAME, 3, false, false);
             record_test_state = RECORDING;
             break; }
         case EVID_RESET_APPS_AND_SVCS: {
