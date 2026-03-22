@@ -323,7 +323,7 @@ void sdlx_minimize_window(void);
 #ifdef ANDROID
     #define DEFAULT_RECORD_GAIN 100
 #else
-    #define DEFAULT_RECORD_GAIN 1
+    #define DEFAULT_RECORD_GAIN 2
 #endif
 #define DEFAULT_RECORD_SILENCE 0.1
 
