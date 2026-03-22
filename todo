@@ -1,14 +1,21 @@
-util params - default fmt diferent than when changes
+"org.sthaid.ezApp/app/jni/SDL/src/audio/aaudio/SDL_aaudio.c"
+ctx.AAudioStreamBuilder_setInputPreset(builder, AAUDIO_INPUT_PRESET_CAMCORDER);
+
+SDL/build/org.sthaid.ezApp/app/jni/SDL/src/audio/aaudio/SDL_aaudio.c
+
+
+
+
+record volume ?
+AAUDIO_INPUT_PRESET_CAMCORDER
+    //ctx.AAudioStreamBuilder_setInputPreset(builder, AAUDIO_INPUT_PRESET_CAMCORDER);
+
+
 maybe the params files should be cleared when reinstalling
 
-test on device
-- mic autostop kickcs in
-
-
-fix Memo app
-
 fft reverse
-scale option for fft cpx
+- scale option for fft cpx
+- test fft with reverse
 
 more picoc issues
 - picoc ptr math

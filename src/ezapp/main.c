@@ -860,7 +860,7 @@ static void settings(void)
             svcs_display(BG_COLOR);
             break;
         case EVID_RECORD_GAIN: {
-            double number = get_number("Rec_Gain", 1, 200);  // xxx why does Android need so much gain
+            double number = get_number("Rec_Gain", 1, 20);
             if (number != INVALID_NUMBER) {
                 params.record_gain = number;
                 util_set_numeric_param(".", "record_gain", number);
