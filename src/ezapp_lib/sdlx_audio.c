@@ -7,7 +7,10 @@
 #include <SDL3/SDL.h>
 #include <SDL3_mixer/SDL_mixer.h>
 
+// xxx - search for yyy
+//
 // xxx - higher priority
+// - incl fps and num_ch in the state ?
 // - check that filenams provided  have mp3 extension
 // - try lame 96 kbps
 // - why is so much record gain needed
@@ -44,6 +47,8 @@
 #define MP3_LAME_MODE_JOINT_STEREO     1
 #define MP3_LAME_MODE_DUAL_CHANNEL     2
 #define MP3_LAME_MODE_MONO             3
+
+#define MAX_RECORD_SECS 3600
 
 //
 // typedefs
@@ -86,8 +91,6 @@ static void mixer_track_stopped_callback(void *userdata, MIX_Track *track);
 static void *mp3_file_open(char *dir, char *filename, int num_channels, bool append);
 static void mp3_file_write(void *cx_arg, float *samples, int num_samples);
 static void mp3_file_close(void *cx_arg);
-static int mp3_file_duration_ms(void *cx_arg) __attribute__((unused));
-static int mp3_file_duration_ms_from_filename(char *dir, char *filename);
 
 // -----------------  INITIALIZE  ---------------------------------
 
@@ -295,6 +298,7 @@ static int audio_reset(void)
 
 // -----------------  CONTROL / STATE / PARAMS  -------------------
 
+// yyy comments needed this section
 int sdlx_audio_stop(void)
 {
     if (audio_stop() != 0) {
@@ -333,9 +337,16 @@ void sdlx_audio_resume(void)
         return;
     }
 
+    if ((state.state == AUDIO_STATE_RECORD_FROM_MIC || state.state == AUDIO_STATE_RECORD_FROM_DEVICE) &&
+        (state.pathname[0] == '\0'))
+    {
+        return;
+    }
+
     if (audio) {
         MIX_ResumeTrack(track);
     }
+
     if (audio_stream) {
         SDL_ResumeAudioStreamDevice(audio_stream);  
     }
@@ -360,7 +371,6 @@ void sdlx_audio_get_params(sdlx_audio_params_t *ap)
 
 // -----------------  UTILS  -----------------------------
 
-// xxx incl fps and num_ch in the state ?
 #define MAX_AUDIO_SAMPLES 65536
 typedef struct {
     int           frames_per_sec;
@@ -368,7 +378,7 @@ typedef struct {
     unsigned long total;
     float         left[MAX_AUDIO_SAMPLES];
     float         right[MAX_AUDIO_SAMPLES];
-    float         mono[MAX_AUDIO_SAMPLES]; // xxx may not need mono
+    float         mono[MAX_AUDIO_SAMPLES];
 } sdlx_audio_samples_t;
 
 sdlx_audio_samples_t audio_samples;
@@ -481,7 +491,6 @@ static char *concat_dir_and_filename(char *dir, char *fn, char *path)
     } else if (fn) {
         strcpy(path, fn);
     } else {
-        ERROR("both dir and fn are null\n");
         path[0] = '\0';
     }
 
@@ -507,7 +516,6 @@ static char *concat_dir_and_filename(char *dir, char *fn, char *path)
 
 typedef struct {
     int  fd;
-    int  total_frames;
     char path[200];
 } mp3_file_cx_t;
 
@@ -564,9 +572,6 @@ static void *mp3_file_open(char *dir, char *filename, int num_channels, bool app
     // allocate and init cx
     cx = calloc(1, sizeof(mp3_file_cx_t));
     cx->fd = fd;
-    cx->total_frames = (!append 
-                        ? 0
-                        : mp3_file_duration_ms_from_filename(dir, filename) * FRAMES_PER_MS);
     strcpy(cx->path, path);
 
     // return cx
@@ -597,7 +602,7 @@ static void mp3_file_write(void *cx_arg, float *samples, int num_samples)
         return;
     }
 
-    // xxx comment
+    // yyy comment
     while (num_samples) {
         process_samples = (num_samples > MAX_SAMPLES_MP3_FILE_WRITE ? MAX_SAMPLES_MP3_FILE_WRITE : num_samples);
 
@@ -619,7 +624,6 @@ static void mp3_file_write(void *cx_arg, float *samples, int num_samples)
 
         samples += process_samples;
         num_samples -= process_samples;
-        cx->total_frames += process_samples/2;
     }
 }
 
@@ -650,50 +654,19 @@ static void mp3_file_close(void *cx_arg)
     free(cx);
 }
 
-static int mp3_file_duration_ms(void *cx_arg)
-{
-    mp3_file_cx_t *cx = cx_arg;
-
-    // if mp3 file is not open then just return 0
-    if (cx_arg == NULL) {
-        return 0;
-    }
-
-    return cx->total_frames / FRAMES_PER_MS;
-}
-
-// -----------------  GET AUDIO FILE DURATION  ---------------------
-
-int sdlx_audio_file_duration_ms(char *dir, char *filename)
-{
-    int len;
-    
-    len = strlen(filename);
-
-    if (len > 4 && strcmp(&filename[len-4], ".mp3") == 0) {
-        return mp3_file_duration_ms_from_filename(dir, filename);
-    } else {
-        ERROR("invalid filename %s\n", filename);
-        return 0;
-    }
-}
-
 // -----------------  RECORD MICROPHONE  ------------------
 
 typedef struct {
-    void *mp3_file_cx;
-    int   max_secs;
+    void *mp3_cx;
     int   auto_stop_secs;
-    char  dir[100];
-    char  filename[100];
-    bool  append;
 } record_mic_cx_t;
 
 static int record_mic_thread(void *cx_arg);
 
-int sdlx_audio_record_from_mic(char *dir, char *filename, int max_duration_secs, int auto_stop_secs, bool append)
+int sdlx_audio_record_from_mic(char *dir, char *filename, int auto_stop_secs, bool append, bool start_paused)
 {
-    record_mic_cx_t    *cx=NULL;
+    record_mic_cx_t    *cx = NULL;
+    void               *mp3_cx = NULL;
     const SDL_AudioSpec record_spec = { SDL_AUDIO_F32, 1, FRAMES_PER_SEC };
 
     // reset audio
@@ -709,22 +682,29 @@ int sdlx_audio_record_from_mic(char *dir, char *filename, int max_duration_secs,
         return -1;
     }
 
+    // if filename is provided then open mp3 file
+    if (filename != NULL && filename[0] != '\0') {
+        mp3_cx = mp3_file_open(dir, filename, 2, append);
+        if (mp3_cx == NULL) {
+            ERROR("failed to open %s/%s append=%d\n", dir, filename, append);
+            return -1;
+        }
+    }
+
     // init state
     memset(&state, 0, sizeof(state));
-    state.state          = AUDIO_STATE_RECORD_FROM_MIC;
-    state.record_ms      = 0;  // xxx todo mp3_file_duration_ms(mp3_file_cx);
-    state.volume         = 0;
-    state.paused         = true;
-    sprintf(state.pathname, "%s/%s", dir, filename);
+    state.state       = AUDIO_STATE_RECORD_FROM_MIC;
+    state.record_secs = 0;
+    state.volume      = 0;
+    state.paused      = start_paused;
+    if (mp3_cx != NULL) {
+        sprintf(state.pathname, "%s/%s", dir, filename);
+    }
 
     // create thread to xfer microphone data to mp3 file
     cx = malloc(sizeof(record_mic_cx_t));
-    cx->mp3_file_cx     = NULL;            
-    cx->max_secs        = max_duration_secs;
-    cx->auto_stop_secs  = auto_stop_secs;
-    strcpy(cx->dir, dir);
-    strcpy(cx->filename, filename);
-    cx->append = append;
+    cx->mp3_cx         = mp3_cx;
+    cx->auto_stop_secs = auto_stop_secs;
     sdlx_create_detached_thread(record_mic_thread, cx);
 
     // success
@@ -739,10 +719,10 @@ static int record_mic_thread(void *cx_arg)
     int          bytes;
     int          mono_buff_samples, stereo_buff_samples;
     double       silence_secs = 0;
+    double       record_secs = 0;
 
     // start audio stream;
-    // the audio stream is running even when state is paused, to provide 
-    // color organ continuously
+    // the audio stream is running even when state is paused, to provide fft
     SDL_ResumeAudioStreamDevice(audio_stream);  
 
     while (true) {
@@ -771,34 +751,27 @@ static int record_mic_thread(void *cx_arg)
             stereo_buff[2*i] = stereo_buff[2*i+1] = mono_buff[i];
         }
 
-        // save audio samples
+        // save audio samples, these samples can be obtained and used by an app,
+        // for example to compute fft
         save_audio_samples(mono_buff, mono_buff_samples, 1, FRAMES_PER_SEC);
 
         // calculate volume of the samples just obtained
         state.volume = calc_volume(mono_buff, mono_buff_samples);
 
-        // if not paused then perform recording  
-        if (!state.paused) {
-            // if mp3 file has not been opened then do so
-            if (cx->mp3_file_cx == NULL) {
-                cx->mp3_file_cx = mp3_file_open(cx->dir, cx->filename, 2, cx->append);
-                if (cx->mp3_file_cx == NULL) {
-                    ERROR("failed to open %s/%s append=%d\n", cx->dir, cx->filename, cx->append);
-                    goto cleanup;
-                }
-            }
-
+        // if not paused then record the samples
+        if (!state.paused && cx->mp3_cx) {
             // write the data to the mp3 file
-            mp3_file_write(cx->mp3_file_cx, stereo_buff, stereo_buff_samples);
+            mp3_file_write(cx->mp3_cx, stereo_buff, stereo_buff_samples);
 
             // keep track of how long the recording has been in progress
-            // xxx not working?
-            state.record_ms = mp3_file_duration_ms(cx->mp3_file_cx);
+            record_secs += ((double)mono_buff_samples / FRAMES_PER_SEC);
+            state.record_secs = record_secs;
 
             // if auto_stop is enabled then if silent for n secs stop recording
             if (cx->auto_stop_secs > 0) {
                 //INFO("VOL %f  SILENCE %f  SECS %f\n", 
                 //       state.volume,  audio_params.record_silence, silence_secs);
+                // xxx test this
                 if (state.volume < audio_params.record_silence) {
                     silence_secs += ((double)mono_buff_samples / FRAMES_PER_SEC);
                 } else {
@@ -810,8 +783,8 @@ static int record_mic_thread(void *cx_arg)
                 }
             }
 
-            // if max_secs is provided, and have recorded audio for max_secs then break
-            if ((cx->max_secs > 0) && (state.record_ms >= cx->max_secs * 1000)) {
+            // limit recording time
+            if (state.record_secs > MAX_RECORD_SECS) {
                 break;
             }
         }
@@ -836,11 +809,14 @@ static int record_mic_thread(void *cx_arg)
             tone[2*j] = tone[2*j+1] = AMPLITUDE * sin((2*M_PI) * ((double)j / N_ONE_SIN_WAVE));
         }
     }
-    mp3_file_write(cx->mp3_file_cx, tone, 2*N_TOTAL);
+    if (cx->mp3_cx) {
+        mp3_file_write(cx->mp3_cx, tone, 2*N_TOTAL);
+    }
 
     // cleanup and return
-cleanup:
-    mp3_file_close(cx->mp3_file_cx);
+    if (cx->mp3_cx) {
+        mp3_file_close(cx->mp3_cx);
+    }
     SDL_DestroyAudioStream(audio_stream);
     audio_stream = NULL;
     free(cx);
@@ -853,17 +829,15 @@ cleanup:
 
 typedef struct {
     void *mp3_cx;
-    int   recorded_samples;
-    char  dir[100];
-    char  filename[100];
 } record_dev_cx_t;
 
 static int record_dev_thread(void *cx);
 
-int sdlx_audio_record_from_device(char *dir, char *filename)
+int sdlx_audio_record_from_device(char *dir, char *filename, bool append, bool start_paused)
 {
-    record_dev_cx_t *cx;
-    int rc;
+    record_dev_cx_t *cx = NULL;
+    void            *mp3_cx = NULL;
+    int              rc;
 
     // call sdlx_audio_stop, which will:
     // - stop a currently running record or playback
@@ -874,30 +848,43 @@ int sdlx_audio_record_from_device(char *dir, char *filename)
         return -1;
     }
 
+    // if filename is provided then open mp3 file
+    if (filename != NULL && filename[0] != '\0') {
+        mp3_cx = mp3_file_open(dir, filename, 2, append);
+        if (mp3_cx == NULL) {
+            ERROR("failed to open %s/%s append=%d\n", dir, filename, append);
+            return -1;
+        }
+    }
+
     // call java to start playback capture
     rc = util_start_playbackcapture();
     if (rc != 0) {
         ERROR("util_start_playbackcapture failed\n");
+        if (mp3_cx) {
+            mp3_file_close(mp3_cx);
+        }
         return -1;
     }
 
     // init state
     memset(&state, 0, sizeof(state));
-    state.state     = AUDIO_STATE_RECORD_FROM_DEVICE;
-    state.record_ms = 0;
-    state.volume    = 0;
-    sprintf(state.pathname, "%s/%s", dir, filename);
+    state.state       = AUDIO_STATE_RECORD_FROM_DEVICE;
+    state.record_secs = 0;
+    state.volume      = 0;
+    state.paused      = start_paused;
+    if (mp3_cx != NULL) {
+        sprintf(state.pathname, "%s/%s", dir, filename);
+    }
 
-    // initialize in paused state to give user time to start the
-    // device playback
-    sdlx_audio_pause();
+    // if requested, initialize to paused state
+    if (start_paused) {
+        sdlx_audio_pause();
+    }
 
     // create record_dev_thread
     cx = malloc(sizeof(record_dev_cx_t));
-    cx->mp3_cx = NULL;  
-    cx->recorded_samples = 0;
-    strcpy(cx->dir, dir);
-    strcpy(cx->filename, filename);
+    cx->mp3_cx = mp3_cx;
     sdlx_create_detached_thread(record_dev_thread, cx);
 
     // return success
@@ -909,8 +896,9 @@ static int record_dev_thread(void *cx_arg)
     #define MAX_SAMPLES 2048
 
     record_dev_cx_t *cx = cx_arg;
-    float samples[MAX_SAMPLES];
-    int rc;
+    float            samples[MAX_SAMPLES];
+    int              rc;
+    double           record_secs = 0;
 
     while (true) {
         // if in stopping state then goto done;
@@ -926,29 +914,28 @@ static int record_dev_thread(void *cx_arg)
             break;
         }
 
-        // save audio samples
+        // save audio samples, for optional use by an app, such as to compute fft
         save_audio_samples(samples, MAX_SAMPLES, 2, FRAMES_PER_SEC);
 
         // calculate volume
+        // yyx should there be a different routine to calc_volume for stereo
         state.volume = calc_volume(samples, MAX_SAMPLES);
 
         // if not paused then perform recording  
-        if (!state.paused) {
-            // if mp3 file has not been opened then do so
-            if (cx->mp3_cx == NULL) {
-                cx->mp3_cx = mp3_file_open(cx->dir, cx->filename, 2, false);
-                if (cx->mp3_cx == NULL) {
-                    ERROR("failed to open %s/%s\n", cx->dir, cx->filename);
-                    break;
-                }
+        if (!state.paused && cx->mp3_cx) {
+            // write samples to the mp3 file
+            if (cx->mp3_cx) {
+                mp3_file_write(cx->mp3_cx, samples, MAX_SAMPLES);
             }
 
-            // write samples to the mp3 file
-            mp3_file_write(cx->mp3_cx, samples, MAX_SAMPLES);
+            // keep track of how long the recording has been in progress
+            record_secs += ((double)MAX_SAMPLES / 2) / FRAMES_PER_SEC;
+            state.record_secs = record_secs;
 
-            // make updates to cx and state 
-            cx->recorded_samples += MAX_SAMPLES;
-            state.record_ms = (cx->recorded_samples / 2) / FRAMES_PER_MS;
+            // limit recording time
+            if (state.record_secs > MAX_RECORD_SECS) {
+                break;
+            }
         }
     }
 
@@ -956,7 +943,9 @@ static int record_dev_thread(void *cx_arg)
     // close mp3 file,
     // return success
     util_stop_playbackcapture();
-    mp3_file_close(cx->mp3_cx);
+    if (cx->mp3_cx) {
+        mp3_file_close(cx->mp3_cx);
+    }
     free(cx);
     state.state = AUDIO_STATE_IDLE;
     memset(&state, 0, sizeof(state));
@@ -1018,10 +1007,10 @@ int sdlx_audio_play_tones(sdlx_tone_t *tones)
 
     // init state for playing tones
     memset(&state, 0, sizeof(state));
-    state.state           = AUDIO_STATE_PLAY_TONES_SEQUENCE; 
-    state.play_current_ms = 0;
-    state.play_total_ms   = duration_ms;
-    state.volume          = 0;
+    state.state             = AUDIO_STATE_PLAY_TONES_SEQUENCE; 
+    state.play_current_secs = 0;
+    state.play_total_secs   = duration_ms / 1000;
+    state.volume            = 0;
 
     // create thread to play the tones
     cx = malloc(sizeof(play_tones_cx_t) + num_tones * sizeof(sdlx_tone_t));
@@ -1192,7 +1181,7 @@ static void play_buff(float *samples, int num_samples, int num_channels, int *to
 
         // publish duration played
         *total_queued_samples += num_xfer_samples;
-        state.play_current_ms = (*total_queued_samples / num_channels) / FRAMES_PER_MS;
+        state.play_current_secs = (*total_queued_samples / num_channels) / FRAMES_PER_SEC;
 
         // calculate volume for the samples just queued
         state.volume = calc_volume(samples, num_xfer_samples);
@@ -1252,10 +1241,10 @@ int sdlx_audio_play_buff(float *samples, int num_samples, int num_channels, int 
 
     // init state for playing the caller supplied raw data
     memset(&state, 0, sizeof(state));
-    state.state           = AUDIO_STATE_PLAY_BUFF; 
-    state.play_current_ms = 0;
-    state.play_total_ms   = duration_ms;
-    state.volume          = 0;
+    state.state             = AUDIO_STATE_PLAY_BUFF; 
+    state.play_current_secs = 0;
+    state.play_total_secs   = duration_ms / 1000;
+    state.volume            = 0;
 
     // init cx and create play_buff_thread
     cx = malloc(sizeof(play_buff_cx_t));
@@ -1375,10 +1364,10 @@ int sdlx_audio_play_file(char *dir, char *filename)
 
     // init state
     memset(&state, 0, sizeof(state));
-    state.state           = AUDIO_STATE_PLAY_FILE;
-    state.play_current_ms = 0;
-    state.play_total_ms   = duration_ms;
-    state.volume          = 0;
+    state.state             = AUDIO_STATE_PLAY_FILE;
+    state.play_current_secs = 0;
+    state.play_total_secs   = duration_ms / 1000;
+    state.volume            = 0;
     sprintf(state.pathname, "%s/%s", dir, filename);
 
     // return success
@@ -1388,16 +1377,16 @@ int sdlx_audio_play_file(char *dir, char *filename)
 static void mixer_track_raw_callback(void *userdata, MIX_Track *track, const SDL_AudioSpec *spec,
                                      float *samples, int num_samples)
 {
-    // update audio state.play_current_ms
+    // update audio state.play_currentsecs_
     long frames = MIX_GetTrackPlaybackPosition(track);
-    state.play_current_ms = MIX_TrackFramesToMS(track, frames);
+    state.play_current_secs = MIX_TrackFramesToMS(track, frames) / 1000;
 
     // update audio state.volume
     state.volume = calc_volume(samples, num_samples);
 
-    //INFO("fmt=%s  num_samples=%d  volume=%d  play_current=%0.0f secs\n", 
+    //INFO("fmt=%s  num_samples=%d  volume=%d  play_current=%d secs\n", 
     //     audio_fmt_str(play_file_spec.format),
-    //     num_samples, state.volume, state.play_current_ms/1000.0);
+    //     num_samples, state.volume, state.play_current_secs);
 
     // save audio samples
     save_audio_samples(samples, 
@@ -1429,11 +1418,11 @@ static char *audio_fmt_str(int fmt)
     return "SDL_AUDIO_INVALID_FMT";
 }
 
-static int mp3_file_duration_ms_from_filename(char *dir, char *filename)
+int sdlx_audio_file_duration_secs(char *dir, char *filename)
 {
     char path[200];
     MIX_Audio *audio_lcl;
-    int duration_ms;
+    int duration_secs;
     long frames;
 
     concat_dir_and_filename(dir, filename, path);
@@ -1449,10 +1438,10 @@ static int mp3_file_duration_ms_from_filename(char *dir, char *filename)
         ERROR("failed to get duration of %s, frames=%ld\n", path, frames);
         frames = 0;
     }
-    duration_ms = MIX_AudioFramesToMS(audio_lcl,frames);
+    duration_secs = MIX_AudioFramesToMS(audio_lcl,frames) / 1000;
 
     MIX_DestroyAudio(audio_lcl);
 
-    return duration_ms;
+    return duration_secs;
 }
 

@@ -754,7 +754,7 @@ static void settings(void)
                 sdlx_render_fill_rect(0, y2, bar_value_w, bar_height, COLOR_RED);
                 sdlx_render_rect(0, y2, sdlx_win_width, bar_height, 2, COLOR_WHITE);
             } else if (record_test_state == PLAYBACK) {
-                int bar_value_w = (as.play_total_ms ? (sdlx_win_width * as.play_current_ms / as.play_total_ms) : 0);
+                int bar_value_w = (as.play_total_secs ? (sdlx_win_width * as.play_current_secs / as.play_total_secs) : 0);
                 int bar_height = sdlx_char_height_dflt;
                 sdlx_render_fill_rect(0, y2, bar_value_w, bar_height, COLOR_GREEN);
                 sdlx_render_rect(0, y2, sdlx_win_width, bar_height, 2, COLOR_WHITE);

@@ -482,14 +482,14 @@ void Sdlx_get_audio_samples(struct ParseState *Parser, struct Value *ReturnValue
     sdlx_get_audio_samples(num_ret_samples, num_downsample, which_channel, ret_samples);
 }
 
-void Sdlx_audio_file_duration_ms(struct ParseState *Parser, struct Value *ReturnValue,
+void Sdlx_audio_file_duration_secs(struct ParseState *Parser, struct Value *ReturnValue,
         struct Value **Param, int NumArgs)
 {
     char * dir      = (char *)Param[0]->Val->Pointer;
     char * filename = (char *)Param[1]->Val->Pointer;
 
     int retval;
-    retval = sdlx_audio_file_duration_ms(dir, filename);
+    retval = sdlx_audio_file_duration_secs(dir, filename);
     ReturnValue->Val->Integer = retval;
 }
 
@@ -533,23 +533,25 @@ void Sdlx_audio_record_from_mic(struct ParseState *Parser, struct Value *ReturnV
 {
     char * dir               = (char *)Param[0]->Val->Pointer;
     char * filename          = (char *)Param[1]->Val->Pointer;
-    int    max_duration_secs = (int)Param[2]->Val->Integer;
-    int    auto_stop_secs    = (int)Param[3]->Val->Integer;
-    bool   append            = (bool)Param[4]->Val->Integer;
+    int    auto_stop_secs    = (int)Param[2]->Val->Integer;
+    bool   append            = (bool)Param[3]->Val->Integer;
+    bool   start_paused      = (bool)Param[4]->Val->Integer;
 
     int retval;
-    retval = sdlx_audio_record_from_mic(dir, filename, max_duration_secs, auto_stop_secs, append);
+    retval = sdlx_audio_record_from_mic(dir, filename, auto_stop_secs, append, start_paused);
     ReturnValue->Val->Integer = retval;
 }
 
 void Sdlx_audio_record_from_device(struct ParseState *Parser, struct Value *ReturnValue,
         struct Value **Param, int NumArgs)
 {
-    char * dir      = (char *)Param[0]->Val->Pointer;
-    char * filename = (char *)Param[1]->Val->Pointer;
+    char * dir          = (char *)Param[0]->Val->Pointer;
+    char * filename     = (char *)Param[1]->Val->Pointer;
+    bool   append       = (bool)Param[2]->Val->Integer;
+    bool   start_paused = (bool)Param[3]->Val->Integer;
 
     int retval;
-    retval = sdlx_audio_record_from_device(dir, filename);
+    retval = sdlx_audio_record_from_device(dir, filename, append, start_paused);
     ReturnValue->Val->Integer = retval;
 }
 
@@ -795,12 +797,12 @@ struct LibraryFunction SdlFunctions[] = {
     { Sdlx_audio_resume,             "void sdlx_audio_resume(void);" },
     { Sdlx_audio_get_state,          "void sdlx_audio_get_state(sdlx_audio_state_t * state);" },
     { Sdlx_get_audio_samples,        "void sdlx_get_audio_samples(int num_ret_samples, int num_downsample, int which_channel, float *ret_samples);" },
-    { Sdlx_audio_file_duration_ms,   "int sdlx_audio_file_duration_ms(char *dir, char *filename);" },
+    { Sdlx_audio_file_duration_secs, "int sdlx_audio_file_duration_secs(char *dir, char *filename);" },
     { Sdlx_audio_play_file,          "int sdlx_audio_play_file(char *dir, char *filename);" },
     { Sdlx_audio_play_tones,         "int sdlx_audio_play_tones(sdlx_tone_t *tones);" },
     { Sdlx_audio_play_buff,          "int sdlx_audio_play_buff(float *samples, int num_samples, int num_channels, int loops, bool free_samples_when_done);" },
-    { Sdlx_audio_record_from_mic,    "int sdlx_audio_record_from_mic(char *dir, char *filename, int max_duration_secs, int auto_stop_secs, bool append);" },
-    { Sdlx_audio_record_from_device, "int sdlx_audio_record_from_device(char *dir, char *filename);" },
+    { Sdlx_audio_record_from_mic,    "int sdlx_audio_record_from_mic(char *dir, char *filename, int auto_stop_secs, bool append, bool start_paused);" },
+    { Sdlx_audio_record_from_device, "int sdlx_audio_record_from_device(char *dir, char *filename, bool append, bool start_paused);" },
 
     // sensors
     { Sdlx_sensor_get_info_tbl,      "sdlx_sensor_info_t *sdlx_sensor_get_info_tbl(int *max);" },
@@ -903,16 +905,11 @@ typedef struct { \n\
     int    state; \n\
     bool   stopping; \n\
     bool   paused; \n\
-    int    play_current_ms; \n\
-    int    play_total_ms; \n\
-    int    record_ms; \n\
+    int    play_current_secs; \n\
+    int    play_total_secs; \n\
+    int    record_secs; \n\
     char   pathname[100]; \n\
     double volume; \n\
-    struct { \n\
-        double low_band; \n\
-        double mid_band; \n\
-        double high_band; \n\
-    } color_organ; \n\
 } sdlx_audio_state_t; \n\
 \n\
 /* sensors */ \n\

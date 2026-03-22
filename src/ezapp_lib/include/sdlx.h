@@ -160,12 +160,12 @@ typedef struct {
     int    state;
     bool   stopping;
     bool   paused;
-    int    play_current_ms;
-    int    play_total_ms;
-    int    record_ms;
+    int    play_current_secs;
+    int    play_total_secs;
+    int    record_secs;
     char   pathname[100];
     double volume;
-    // xxx add fps and num_channels
+    // xxx add fps and num_channels ?
 } sdlx_audio_state_t;
 
 // - - - - - -
@@ -176,7 +176,7 @@ int sdlx_audio_stop(void);
 void sdlx_audio_pause(void);
 void sdlx_audio_resume(void);
 void sdlx_audio_get_state(sdlx_audio_state_t * state);
-int sdlx_audio_file_duration_ms(char *dir, char *filename);
+int sdlx_audio_file_duration_secs(char *dir, char *filename);
 
 // - - - - - -
 // get/downsample most recent samples
@@ -197,8 +197,8 @@ int sdlx_audio_play_buff(float *samples, int num_samples, int num_channels,
 // record
 // - - - - - -
 
-int sdlx_audio_record_from_mic(char *dir, char *filename, int max_duration_secs, int auto_stop_secs, bool append);
-int sdlx_audio_record_from_device(char *dir, char *filename);
+int sdlx_audio_record_from_mic(char *dir, char *filename, int auto_stop_secs, bool append, bool start_paused);
+int sdlx_audio_record_from_device(char *dir, char *filename, bool append, bool start_paused);
 
 // --------------------
 // SENSORS

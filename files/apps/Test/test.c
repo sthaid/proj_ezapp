@@ -633,17 +633,46 @@ static void alpha_test(int idx, char *test_name, sdlx_color_t bg_color, sdlx_col
 static int tone_freq = 1000;
 static int tone_lrb = BOTH_CHANNELS;
 
-static char *audio_state_str(sdlx_audio_state_t *as)
+static char *audio_state_str(sdlx_audio_state_t *as, bool *is_recording)
 {
-    if (as->state == AUDIO_STATE_IDLE)                              return "IDLE";
-    if (as->state == AUDIO_STATE_PLAY_FILE)                         return "PLAY-FILE";
-    if (as->state == AUDIO_STATE_PLAY_TONES_SEQUENCE)               return "PLAY-SEQ";
-    if (as->state == AUDIO_STATE_PLAY_BUFF)                         return "PLAY-BUFF";
-    if (as->state == AUDIO_STATE_RECORD_FROM_MIC && !as->paused)    return "REC-MIC";
-    if (as->state == AUDIO_STATE_RECORD_FROM_DEVICE && !as->paused) return "REC-DEV";
-    if (as->state == AUDIO_STATE_RECORD_FROM_MIC && as->paused)     return "MON-MIC";
-    if (as->state == AUDIO_STATE_RECORD_FROM_DEVICE && as->paused)  return "MON-DEV";
-    return "INVLD";
+    char total_secs_str[40];
+    static char str[60];
+
+    *is_recording = false;
+
+    switch (as->state) {
+    case AUDIO_STATE_IDLE:
+        return "IDLE";
+    case AUDIO_STATE_PLAY_FILE:
+    case AUDIO_STATE_PLAY_TONES_SEQUENCE:
+    case AUDIO_STATE_PLAY_BUFF:
+        if (as->play_total_secs == 0) {
+            sprintf(total_secs_str, "INF");
+        } else {
+            sprintf(total_secs_str, "%d", as->play_total_secs);
+        }
+        sprintf(str, "%s %d %s",
+                (as->state == AUDIO_STATE_PLAY_FILE ? "PLAY_FILE" :
+                 (as->state == AUDIO_STATE_PLAY_TONES_SEQUENCE ? "PLAY_TONES" : "PLAY_BUFF")),
+                as->play_current_secs,
+                total_secs_str);
+        return str;
+    case AUDIO_STATE_RECORD_FROM_MIC:
+    case AUDIO_STATE_RECORD_FROM_DEVICE:
+        if (!as->paused) {
+            sprintf(str, "%s %d",
+                    as->state == AUDIO_STATE_RECORD_FROM_MIC ? "REC_MIC" : "REC_DEVICE",
+                    as->record_secs);
+            *is_recording = true;
+        } else {
+            sprintf(str, "%s %d",
+                    as->state == AUDIO_STATE_RECORD_FROM_MIC ? "MON_MIC" : "MON_DEVICE",
+                    as->record_secs);
+        }
+        return str;
+    default:
+        return "INVLD";
+    }
 }
 
 static void add_tone(sdlx_tone_t **t, int freq, int intvl_ms)
@@ -678,42 +707,33 @@ static void helper(float low_freq, float high_freq, float *fft, float delta_f, s
 static void page_7_draw(void)
 {
     sdlx_audio_state_t state;
-    sdlx_loc_t *loc;
-    double row=1;
-    char pathname_copy[100];
-    long top_start_us = util_microsec_timer();
+    char              *state_str;
+    bool               is_recording;
+    sdlx_loc_t        *loc;
+    char               pathname_copy[100];
+    double             row=1;
+    long               top_start_us = util_microsec_timer();
 
     // get audio state
     sdlx_audio_get_state(&state);
 
-    // display state xxxxxxxxxxx fix to include paused/stopping state flags, and RED for recording
-    if (state.play_current_ms != 0 || state.play_total_ms != 0) {
-        char duration[40];
-        if (state.play_total_ms == 0) {
-            sprintf(duration, "INF");
-        } else {
-            sprintf(duration, "%d", (int)nearbyint(state.play_total_ms/1000.0));
-        }
-        sdlx_render_printf(0, ROW2Y(row), "%s %4d %4s",
-                           audio_state_str(&state),
-                           (int)nearbyint(state.play_current_ms/1000.0),
-                           duration);
-    } else if (state.record_ms != 0) {
-        sdlx_render_printf(0, ROW2Y(row), "%s %4d",
-                           audio_state_str(&state),
-                           (int)nearbyint(state.record_ms/1000.0));
+    // display state
+    state_str = audio_state_str(&state, &is_recording);
+    if (!is_recording) {
+        sdlx_render_printf(0, ROW2Y(row), "%s", state_str);
     } else {
-        sdlx_render_printf(0, ROW2Y(row), "%s", audio_state_str(&state));
+        sdlx_render_printf_ex1(0, ROW2Y(row), FONT_NORMAL, COLOR_RED, "%s", state_str);
     }
     row++;
 
+    // display pathname
     if (state.pathname[0] != '\0') {
         strcpy(pathname_copy, state.pathname);
         sdlx_render_printf(0, ROW2Y(row), "%s", basename(pathname_copy));
     }
     row += 2;
 
-    // stop, pause, resume
+    // controls: stop, pause, resume
     loc = sdlx_render_printf_ex1(0, ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "STOP");
     sdlx_register_event(loc, EVID_AUDIO_STOP);
     loc = sdlx_render_printf_ex1(COL2X(6), ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "PAUSE");
@@ -722,7 +742,7 @@ static void page_7_draw(void)
     sdlx_register_event(loc, EVID_AUDIO_RESUME);
     row += 2.5;
 
-    // play tone at specific frequency
+    // controls: play tone at specific frequency
     sdlx_render_printf(0, ROW2Y(row), "TONE");
 
     loc = sdlx_render_printf_ex1(COL2X(5), ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "G");
@@ -743,7 +763,7 @@ static void page_7_draw(void)
     sdlx_register_event(loc, EVID_AUDIO_PLAY_TONE_CHAN_LRB);
     row += 2.5;
 
-    // record from mic and device
+    // controls: record from mic and device
     sdlx_render_printf(0, ROW2Y(row), "REC");
     loc = sdlx_render_printf_ex1(COL2X(5), ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "MIC");
     sdlx_register_event(loc, EVID_AUDIO_RECORD_FROM_MIC);
@@ -753,7 +773,7 @@ static void page_7_draw(void)
     sdlx_register_event(loc, EVID_AUDIO_RECORD_FROM_MIC_APPEND);
     row += 2.5;
 
-    // play from buff and play tones
+    // controls: play from buff and play tones
     sdlx_render_printf(0, ROW2Y(row), "PLAY");
     loc = sdlx_render_printf_ex1(COL2X(5), ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "MON");
     sdlx_register_event(loc, EVID_AUDIO_PLAY_MONO_BUFF);
@@ -765,12 +785,14 @@ static void page_7_draw(void)
     sdlx_register_event(loc, EVID_AUDIO_PLAY_WHITE_NOISE);
     row += 2.5;      
 
-    // play files 
+    // controls: play recorded mic or device files 
     loc = sdlx_render_printf_ex1(0, ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "mic.mp3");
     sdlx_register_event(loc, EVID_AUDIO_PLAY_MIC_MP3);
     loc = sdlx_render_printf_ex1(COL2X(10), ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "dev.mp3");
     sdlx_register_event(loc, EVID_AUDIO_PLAY_DEV_MP3);
     row += 2;      
+
+    // controls: play provided sample files
     loc = sdlx_render_printf_ex1(0, ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "sky.wav");
     sdlx_register_event(loc, EVID_AUDIO_PLAY_BLUESKY_WAV);
     loc = sdlx_render_printf_ex1(COL2X(10), ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "smpl.mp3");
@@ -895,13 +917,21 @@ static void page_7_process_event(sdlx_event_t *ev)
         sdlx_audio_play_buff(samples, num_samples, num_channels, num_loops, true);
         break; }
     case EVID_AUDIO_RECORD_FROM_MIC:
-        sdlx_audio_record_from_mic(data_dir, "mic.mp3", 10, 3, false);
+        // auto_stop_secs = 3
+        // append         = false
+        // start_paused   = false
+        sdlx_audio_record_from_mic(data_dir, "mic.mp3", 3, false, false);
         break;
     case EVID_AUDIO_RECORD_FROM_MIC_APPEND:
-        sdlx_audio_record_from_mic(data_dir, "mic.mp3", 10, 3, true);
+        // auto_stop_secs = 3
+        // append         = true
+        // start_paused   = false
+        sdlx_audio_record_from_mic(data_dir, "mic.mp3", 3, true, false);
         break;
     case EVID_AUDIO_RECORD_FROM_DEV:
-        sdlx_audio_record_from_device(data_dir, "dev.mp3");
+        // append       = false
+        // start_paused = true        
+        sdlx_audio_record_from_device(data_dir, "dev.mp3", false, true);
         break;
     case EVID_AUDIO_PLAY_MONO_BUFF: {
         int    secs = 4;

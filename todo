@@ -2,6 +2,16 @@ put back the open calls
 fft reverse
 args to append and to start paused
 test - state string
+scale option for fft cpx
+
+set hardcoded mar duration to 1 hour
+
+
+int sdlx_audio_record_from_mic(char *dir, char *filename, int auto_stop_secs, bool append, bool start_paused);
+int sdlx_audio_record_from_device(char *dir, char *filename, bool append, bool start_paused);
+
+allow for no file name when recording
+
 
 
 picoc ptr math
