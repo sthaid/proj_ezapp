@@ -482,17 +482,6 @@ void Sdlx_get_audio_samples(struct ParseState *Parser, struct Value *ReturnValue
     sdlx_get_audio_samples(num_ret_samples, num_downsample, which_channel, ret_samples);
 }
 
-void Sdlx_audio_file_duration_secs(struct ParseState *Parser, struct Value *ReturnValue,
-        struct Value **Param, int NumArgs)
-{
-    char * dir      = (char *)Param[0]->Val->Pointer;
-    char * filename = (char *)Param[1]->Val->Pointer;
-
-    int retval;
-    retval = sdlx_audio_file_duration_secs(dir, filename);
-    ReturnValue->Val->Integer = retval;
-}
-
 void Sdlx_audio_play_file(struct ParseState *Parser, struct Value *ReturnValue,
         struct Value **Param, int NumArgs)
 {
@@ -797,7 +786,6 @@ struct LibraryFunction SdlFunctions[] = {
     { Sdlx_audio_resume,             "void sdlx_audio_resume(void);" },
     { Sdlx_audio_get_state,          "void sdlx_audio_get_state(sdlx_audio_state_t * state);" },
     { Sdlx_get_audio_samples,        "void sdlx_get_audio_samples(int num_ret_samples, int num_downsample, int which_channel, float *ret_samples);" },
-    { Sdlx_audio_file_duration_secs, "int sdlx_audio_file_duration_secs(char *dir, char *filename);" },
     { Sdlx_audio_play_file,          "int sdlx_audio_play_file(char *dir, char *filename);" },
     { Sdlx_audio_play_tones,         "int sdlx_audio_play_tones(sdlx_tone_t *tones);" },
     { Sdlx_audio_play_buff,          "int sdlx_audio_play_buff(float *samples, int num_samples, int num_channels, int loops, bool free_samples_when_done);" },

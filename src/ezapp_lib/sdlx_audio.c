@@ -1418,7 +1418,9 @@ static char *audio_fmt_str(int fmt)
     return "SDL_AUDIO_INVALID_FMT";
 }
 
-// xxx maybe delete this
+#if 0
+// possibly can't call tthis while a file is playing;
+// seems to be not needed, so commented out
 int sdlx_audio_file_duration_secs(char *dir, char *filename)
 {
     char path[200];
@@ -1426,8 +1428,6 @@ int sdlx_audio_file_duration_secs(char *dir, char *filename)
     int duration_secs;
     long frames;
 
-    // xxx probably cant do this while a file is playing,
-    //     however, I don't see why not
 
     concat_dir_and_filename(dir, filename, path);
 
@@ -1448,4 +1448,4 @@ int sdlx_audio_file_duration_secs(char *dir, char *filename)
 
     return duration_secs;
 }
-
+#endif
