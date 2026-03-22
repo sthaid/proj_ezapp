@@ -773,7 +773,7 @@ void util_fft_real_to_complex(int n_fft, float *input, complex_t *cpx_output)
     kiss_fftr(cfg, input, (kiss_fft_cpx*)cpx_output);
 }
 
-void util_fft_real_to_real(int n_fft, float *input, float *output)
+void util_fft_real_to_real(int n_fft, float *input, float *output, bool scale_by_n_fft)
 {
     kiss_fftr_cfg  cfg;
     int            n_output = n_fft / 2 + 1;
@@ -793,8 +793,14 @@ void util_fft_real_to_real(int n_fft, float *input, float *output)
     kiss_fftr(cfg, input, (kiss_fft_cpx*)cpx_output);
 
     // convert complex ouput buffer to caller supplied real value buffer
-    for (int i = 0; i < n_output; i++) {
-        output[i] = sqrtf(cpx_output[i].r * cpx_output[i].r + cpx_output[i].i * cpx_output[i].i);
+    if (scale_by_n_fft) {
+        for (int i = 0; i < n_output; i++) {
+            output[i] = sqrtf(cpx_output[i].r * cpx_output[i].r + cpx_output[i].i * cpx_output[i].i) / n_fft;
+        }
+    } else {
+        for (int i = 0; i < n_output; i++) {
+            output[i] = sqrtf(cpx_output[i].r * cpx_output[i].r + cpx_output[i].i * cpx_output[i].i);
+        }
     }
 
     // free allocated complex output buffer
@@ -822,5 +828,25 @@ static kiss_fftr_cfg cached_alloc_fftr(int n_fft)
     cache[0].cfg = kiss_fftr_alloc(n_fft,  0, NULL, NULL);
     cache[0].n_fft = n_fft;
     return cache[0].cfg;
+}
+
+double util_rms_float(float *x, int n)
+{       
+    double sum = 0;
+            
+    for (int i = 0; i < n; i++) {
+        sum += x[i] * x[i];
+    }
+    return sqrt(sum / n);
+}
+
+double util_rms_complex(complex_t *x, int n)
+{       
+    double sum = 0;
+            
+    for (int i = 0; i < n; i++) {
+        sum += x[i].r * x[i].r + x[i].i * x[i].i;
+    }
+    return sqrt(sum / n);
 }
 

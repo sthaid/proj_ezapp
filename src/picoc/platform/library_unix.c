@@ -1297,11 +1297,34 @@ void Util_fft_real_to_complex(struct ParseState *Parser, struct Value *ReturnVal
 void Util_fft_real_to_real(struct ParseState *Parser, struct Value *ReturnValue,
         struct Value **Param, int NumArgs)
 {
-    int     n_fft  = (int)Param[0]->Val->Integer;
-    float * input  = (float *)Param[1]->Val->Pointer;
-    float * output = (float *)Param[2]->Val->Pointer;
+    int     n_fft          = (int)Param[0]->Val->Integer;
+    float * input          = (float *)Param[1]->Val->Pointer;
+    float * output         = (float *)Param[2]->Val->Pointer;
+    bool    scale_by_n_fft = (bool)Param[3]->Val->Integer;
 
-    util_fft_real_to_real(n_fft, input, output);
+    util_fft_real_to_real(n_fft, input, output, scale_by_n_fft);
+}
+
+void Util_rms_float(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
+{
+    float * x = (float *)Param[0]->Val->Pointer;
+    int     n = (int)Param[1]->Val->Integer;
+
+    double retval;
+    retval = util_rms_float(x, n);
+    ReturnValue->Val->FP = retval;
+}
+
+void Util_rms_complex(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
+{
+    complex_t * x = (complex_t *)Param[0]->Val->Pointer;
+    int         n = (int)Param[1]->Val->Integer;
+
+    double retval;
+    retval = util_rms_complex(x, n);
+    ReturnValue->Val->FP = retval;
 }
 
 //
@@ -1425,7 +1448,9 @@ struct LibraryFunction UtilsFunctions[] = {
     { Util_write_png_file,   "int util_write_png_file(char *dir, char *filename, unsigned char *pixels, int w, int h);" },
     // fft
     { Util_fft_real_to_complex, "void util_fft_real_to_complex(int n_fft, float *input, complex_t *cpx_output);" },
-    { Util_fft_real_to_real,    "void util_fft_real_to_real(int n_fft, float *input, float *output);" },
+    { Util_fft_real_to_real,    "void util_fft_real_to_real(int n_fft, float *input, float *output, bool scale_by_n_fft);" },
+    { Util_rms_float,           "double util_rms_float(float *x, int n);" },
+    { Util_rms_complex,         "double util_rms_complex(complex_t *x, int n);" },
     // call java: location
     { Util_get_location,        "void util_get_location(double *latitude, double *longitude, double *altitude);" },
     // call java: text to speech

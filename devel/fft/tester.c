@@ -11,7 +11,7 @@
 // that do not cause truncation
 #define DURATION_SECS 5
 #define FPS           48000
-#define NUM_SAMPLES   960  // 20 ms interval
+#define NUM_SAMPLES   2400  // 50 ms interval
 #define DOWNSAMPLE    4
 
 #define NUM_FFT       (NUM_SAMPLES / DOWNSAMPLE)

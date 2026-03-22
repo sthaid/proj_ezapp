@@ -1,3 +1,13 @@
+put back the open calls
+fft reverse
+args to append and to start paused
+test - state string
+
+
+picoc ptr math
+    vol = rms_float(fft+bin, 1);    fft+bin not working
+
+
 picoc sizeof(x) not working, when x is an array of struct
 
 color organ

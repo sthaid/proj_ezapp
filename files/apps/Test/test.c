@@ -609,34 +609,40 @@ static void alpha_test(int idx, char *test_name, sdlx_color_t bg_color, sdlx_col
 #define EVID_AUDIO_RECORD_FROM_MIC         18
 #define EVID_AUDIO_RECORD_FROM_MIC_APPEND  19
 #define EVID_AUDIO_RECORD_FROM_DEV         20
-#define EVID_AUDIO_PLAY_TONES_SEQUENCE     21
-#define EVID_AUDIO_PLAY_MONO_BUFF          22
-#define EVID_AUDIO_PLAY_STEREO_BUFF        23
-#define EVID_AUDIO_PLAY_MIC_MP3            24
-#define EVID_AUDIO_PLAY_DEV_MP3            25
-#define EVID_AUDIO_PLAY_BLUESKY_WAV        26
-#define EVID_AUDIO_PLAY_SAMPLE_9S_MP3      27
+#define EVID_AUDIO_PLAY_MONO_BUFF          21
+#define EVID_AUDIO_PLAY_STEREO_BUFF        22
+#define EVID_AUDIO_PLAY_TONES_SEQUENCE     23
+#define EVID_AUDIO_PLAY_WHITE_NOISE        24
+#define EVID_AUDIO_PLAY_MIC_MP3            25
+#define EVID_AUDIO_PLAY_DEV_MP3            26
+#define EVID_AUDIO_PLAY_BLUESKY_WAV        27
+#define EVID_AUDIO_PLAY_SAMPLE_9S_MP3      28
 
 #define BOTH_CHANNELS 0
 #define LEFT_CHANNEL  1
 #define RIGHT_CHANNEL 2
 
-#define MIN_TONE_FREQ  50
+#define MIN_TONE_FREQ  100
 #define MAX_TONE_FREQ  6000
 
 #define TWO_PI  (2.0 * M_PI)
 
+#define VOLUME_SCALE       1 //xxx del
+#define COLOR_ORGAN_SCALE  30
+
 static int tone_freq = 1000;
 static int tone_lrb = BOTH_CHANNELS;
 
-static char *audio_state_str(int x)
+static char *audio_state_str(sdlx_audio_state_t *as)
 {
-    if (x == AUDIO_STATE_IDLE)               return "IDLE";  // use 6 chars max
-    if (x == AUDIO_STATE_PLAY_FILE)          return "P-FILE";
-    if (x == AUDIO_STATE_PLAY_TONES_SEQUENCE)return "P-SEQ";
-    if (x == AUDIO_STATE_PLAY_BUFF)          return "P-BUFF";
-    if (x == AUDIO_STATE_RECORD_FROM_MIC)    return "R-MIC";
-    if (x == AUDIO_STATE_RECORD_FROM_DEVICE) return "R-DEV";
+    if (as->state == AUDIO_STATE_IDLE)                              return "IDLE";
+    if (as->state == AUDIO_STATE_PLAY_FILE)                         return "PLAY-FILE";
+    if (as->state == AUDIO_STATE_PLAY_TONES_SEQUENCE)               return "PLAY-SEQ";
+    if (as->state == AUDIO_STATE_PLAY_BUFF)                         return "PLAY-BUFF";
+    if (as->state == AUDIO_STATE_RECORD_FROM_MIC && !as->paused)    return "REC-MIC";
+    if (as->state == AUDIO_STATE_RECORD_FROM_DEVICE && !as->paused) return "REC-DEV";
+    if (as->state == AUDIO_STATE_RECORD_FROM_MIC && as->paused)     return "MON-MIC";
+    if (as->state == AUDIO_STATE_RECORD_FROM_DEVICE && as->paused)  return "MON-DEV";
     return "INVLD";
 }
 
@@ -667,17 +673,20 @@ static void page_7_init(void)
 {
 }
 
+static void helper(float low_freq, float high_freq, float *fft, float delta_f, sdlx_color_t color, int x, int y);
+
 static void page_7_draw(void)
 {
     sdlx_audio_state_t state;
     sdlx_loc_t *loc;
     double row=1;
     char pathname_copy[100];
+    long top_start_us = util_microsec_timer();
 
     // get audio state
     sdlx_audio_get_state(&state);
 
-    // display state xxxxxxxxxxx fix to include paused/stopping state flags
+    // display state xxxxxxxxxxx fix to include paused/stopping state flags, and RED for recording
     if (state.play_current_ms != 0 || state.play_total_ms != 0) {
         char duration[40];
         if (state.play_total_ms == 0) {
@@ -685,25 +694,19 @@ static void page_7_draw(void)
         } else {
             sprintf(duration, "%d", (int)nearbyint(state.play_total_ms/1000.0));
         }
-        sdlx_render_printf(0, ROW2Y(row), "%-6s %4d %4s %3d",
-                           audio_state_str(state.state),
+        sdlx_render_printf(0, ROW2Y(row), "%s %4d %4s",
+                           audio_state_str(&state),
                            (int)nearbyint(state.play_current_ms/1000.0),
-                           duration,
-                           (int)(state.volume * 100));
+                           duration);
     } else if (state.record_ms != 0) {
-        sdlx_render_printf(0, ROW2Y(row), "%-6s %4d %4s %3d",
-                           audio_state_str(state.state),
-                           (int)nearbyint(state.record_ms/1000.0),
-                           "",
-                           (int)(state.volume * 100));
+        sdlx_render_printf(0, ROW2Y(row), "%s %4d",
+                           audio_state_str(&state),
+                           (int)nearbyint(state.record_ms/1000.0));
     } else {
-        sdlx_render_printf(0, ROW2Y(row), "%-6s %4s %4s %3d",
-                           audio_state_str(state.state),
-                           "",
-                           "",
-                           (int)(state.volume * 100));
+        sdlx_render_printf(0, ROW2Y(row), "%s", audio_state_str(&state));
     }
     row++;
+
     if (state.pathname[0] != '\0') {
         strcpy(pathname_copy, state.pathname);
         sdlx_render_printf(0, ROW2Y(row), "%s", basename(pathname_copy));
@@ -752,12 +755,14 @@ static void page_7_draw(void)
 
     // play from buff and play tones
     sdlx_render_printf(0, ROW2Y(row), "PLAY");
-    loc = sdlx_render_printf_ex1(COL2X(5), ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "MONO");
+    loc = sdlx_render_printf_ex1(COL2X(5), ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "MON");
     sdlx_register_event(loc, EVID_AUDIO_PLAY_MONO_BUFF);
-    loc = sdlx_render_printf_ex1(COL2X(10), ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "STEREO");
+    loc = sdlx_render_printf_ex1(COL2X(9), ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "STR");
     sdlx_register_event(loc, EVID_AUDIO_PLAY_STEREO_BUFF);
-    loc = sdlx_render_printf_ex1(COL2X(17), ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "SEQ");
+    loc = sdlx_render_printf_ex1(COL2X(13), ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "SEQ");
     sdlx_register_event(loc, EVID_AUDIO_PLAY_TONES_SEQUENCE);
+    loc = sdlx_render_printf_ex1(COL2X(17), ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "WN");
+    sdlx_register_event(loc, EVID_AUDIO_PLAY_WHITE_NOISE);
     row += 2.5;      
 
     // play files 
@@ -766,29 +771,64 @@ static void page_7_draw(void)
     loc = sdlx_render_printf_ex1(COL2X(10), ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "dev.mp3");
     sdlx_register_event(loc, EVID_AUDIO_PLAY_DEV_MP3);
     row += 2;      
-    loc = sdlx_render_printf_ex1(0, ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "bluesky.wav");
+    loc = sdlx_render_printf_ex1(0, ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "sky.wav");
     sdlx_register_event(loc, EVID_AUDIO_PLAY_BLUESKY_WAV);
-    row += 2;
-    loc = sdlx_render_printf_ex1(0, ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "sample-9s.mp3");
+    loc = sdlx_render_printf_ex1(COL2X(10), ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "smpl.mp3");
     sdlx_register_event(loc, EVID_AUDIO_PLAY_SAMPLE_9S_MP3);
     row += 2;      
 
-    // display channel volume: low, mid, high bands xxx comment
+    // display volume bar
     int y, w;
-    double scale = 4;  // xxx make adjustable
-    y = sdlx_win_height - CONTROL_EVENTS_DISPLAY_HEIGHT - sdlx_char_height_dflt - 10;
+    if (state.state != AUDIO_STATE_IDLE) {
+        y = sdlx_win_height - CONTROL_EVENTS_DISPLAY_HEIGHT - 2*sdlx_char_height_dflt - 10;
+        w = state.volume * 1000 * VOLUME_SCALE;
+        printf("VOLUME W %d\n", w);
+        sdlx_render_fill_rect(0, y, w, sdlx_char_height_dflt, COLOR_WHITE);
+    }
 
-    w = state.color_organ.low_band * 333 * scale;
-    if (w > 333) w = 333;
-    sdlx_render_fill_rect(0, y, w, sdlx_char_height_dflt, COLOR_RED);
+    // display color organ bars
+    if (state.state != AUDIO_STATE_IDLE) {
+        long start_us = util_microsec_timer();  //xxx del
 
-    w = state.color_organ.mid_band * 333 * scale;
-    if (w > 333) w = 333;
-    sdlx_render_fill_rect(333, y, w, sdlx_char_height_dflt, COLOR_GREEN);
+        int    num_downsample = 4;
+        int    num_samples = nearbyint(FRAMES_PER_SEC / num_downsample * 0.050);  // equals 600
+        float  samples[600], fft[301];
+        float  delta_f;
 
-    w = state.color_organ.high_band * 333 * scale;
+        delta_f = ((double)FRAMES_PER_SEC/num_downsample) / num_samples;
+        y       = sdlx_win_height - CONTROL_EVENTS_DISPLAY_HEIGHT - sdlx_char_height_dflt - 10;
+
+        sdlx_get_audio_samples(num_samples, num_downsample, LEFT_CHANNEL, samples);
+        util_fft_real_to_real(num_samples, samples, fft, true);
+        helper(60,  150,  fft, delta_f, COLOR_RED,   0,   y);
+        helper(200, 600,  fft, delta_f, COLOR_GREEN, 333, y);
+        helper(800, 2200, fft, delta_f, COLOR_BLUE,  666, y);
+
+        y += sdlx_char_height_dflt/2;
+        sdlx_get_audio_samples(num_samples, num_downsample, RIGHT_CHANNEL, samples);
+        util_fft_real_to_real(num_samples, samples, fft, true);
+        helper(60,  150,  fft, delta_f, COLOR_RED,   0,   y);
+        helper(200, 600,  fft, delta_f, COLOR_GREEN, 333, y);
+        helper(800, 2200, fft, delta_f, COLOR_BLUE,  666, y);
+
+        printf("DUR %ld\n", util_microsec_timer() - start_us);  // xxx delete
+    }
+
+    //printf("TOTAL DUR %ld\n", util_microsec_timer() - top_start_us);  // xxx delete
+}
+
+static void helper(float low_freq, float high_freq, float *fft, float delta_f, sdlx_color_t color, int x, int y)
+{
+    int first_bin, last_bin, w;
+    float band_vol;
+
+    first_bin = nearbyint(low_freq/delta_f);
+    last_bin = nearbyint(high_freq/delta_f);
+    band_vol = util_rms_float(&fft[first_bin], last_bin-first_bin+1);
+    w = band_vol * 333 * COLOR_ORGAN_SCALE;
+    //printf("%x  w %d   band_vol %f\n", color, w, band_vol);
     if (w > 333) w = 333;
-    sdlx_render_fill_rect(666, y, w, sdlx_char_height_dflt, COLOR_BLUE);
+    sdlx_render_fill_rect(x, y, w, sdlx_char_height_dflt/2, color);
 }
 
 static void page_7_process_event(sdlx_event_t *ev)
@@ -867,18 +907,20 @@ static void page_7_process_event(sdlx_event_t *ev)
         int    secs = 4;
         int    num_channels = 1;
         int    num_samples = secs * FRAMES_PER_SEC * num_channels;
+        int    loops = 2;
         float *samples;
 
         samples = malloc(num_samples * sizeof(float));
         for (int i = 0; i < num_samples; i++) {
             samples[i] = sin(2 * M_PI * 500.0 * i / FRAMES_PER_SEC);
         }
-        sdlx_audio_play_buff(samples, num_samples, num_channels, 2, true);
+        sdlx_audio_play_buff(samples, num_samples, num_channels, loops, true);
         break; }
     case EVID_AUDIO_PLAY_STEREO_BUFF: {
         int    secs = 4;
         int    num_channels = 2;
         int    num_samples = secs * FRAMES_PER_SEC * num_channels;
+        int    loops = 2;
         float *samples;
         int    j = 0;
 
@@ -891,23 +933,31 @@ static void page_7_process_event(sdlx_event_t *ev)
             samples[j++] = 0;
             samples[j++] = sin(2 * M_PI * 500.0 * i / FRAMES_PER_SEC);
         }
-        sdlx_audio_play_buff(samples, num_samples, num_channels, 2, true);
+        sdlx_audio_play_buff(samples, num_samples, num_channels, loops, true);
         break; }
     case EVID_AUDIO_PLAY_TONES_SEQUENCE: {
-        sdlx_tone_t tones[50], *t;
-        static int freq[33] = {
-            100, 110, 120, 130, 140, 150,                                           // low
-            200, 300, 400, 500, 600,                                                // mid
-            800, 900, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800, 1900,   // high
-            2000, 2100, 2200, 2300, 2400, 2500, 2600, 2700, 2800, 2900 };
+        sdlx_tone_t tones[100], *t;
 
         t = tones;
-        for (int i = 0; i < sizeof(freq)/sizeof(int); i++) {
-            printf("adding tone %d\n", freq[i]);
-            add_tone(&t, freq[i], 1000);
+        for (int f = 0; f <= 3000; f += 100) {
+            printf("adding tone %d\n", f);
+            add_tone(&t, f, 1000);
         }
         add_terminator(&t);
         sdlx_audio_play_tones(tones);
+        break; }
+    case EVID_AUDIO_PLAY_WHITE_NOISE: {
+        int    secs = 4;
+        int    num_channels = 1;
+        int    num_samples = secs * FRAMES_PER_SEC * num_channels;
+        int    loops = 2;
+        float *samples;
+
+        samples = malloc(num_samples * sizeof(float));
+        for (int i = 0; i < num_samples; i++) {
+            samples[i] = ((double)random() / 0x40000000) - 1;
+        }
+        sdlx_audio_play_buff(samples, num_samples, num_channels, loops, true);
         break; }
     case EVID_AUDIO_PLAY_MIC_MP3:
         sdlx_audio_play_file(data_dir, "mic.mp3");

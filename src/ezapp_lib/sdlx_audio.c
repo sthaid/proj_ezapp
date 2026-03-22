@@ -453,7 +453,7 @@ void sdlx_get_audio_samples(int num_ret_samples, int num_downsample, int which_c
             
 // -----------------  UTILS  -----------------------------
 
-#define VOLUME_SCALE_FACTOR 1.0   // xxx fix later
+#define VOLUME_SCALE_FACTOR 1.5
 static double calc_volume(float *samples, int n)
 {   
     double sum_squares = 0;
@@ -619,7 +619,7 @@ static void mp3_file_write(void *cx_arg, float *samples, int num_samples)
 
         samples += process_samples;
         num_samples -= process_samples;
-        cx->total_frames += num_samples/2;
+        cx->total_frames += process_samples/2;
     }
 }
 
@@ -792,6 +792,7 @@ static int record_mic_thread(void *cx_arg)
             mp3_file_write(cx->mp3_file_cx, stereo_buff, stereo_buff_samples);
 
             // keep track of how long the recording has been in progress
+            // xxx not working?
             state.record_ms = mp3_file_duration_ms(cx->mp3_file_cx);
 
             // if auto_stop is enabled then if silent for n secs stop recording

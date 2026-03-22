@@ -100,7 +100,10 @@ typedef struct {
 } complex_t;
 
 void util_fft_real_to_complex(int n_fft, float *input, complex_t *cpx_output);
-void util_fft_real_to_real(int n_fft, float *input, float *output);
+void util_fft_real_to_real(int n_fft, float *input, float *output, bool scale_by_n_fft);
+
+double util_rms_float(float *x, int n);
+double util_rms_complex(complex_t *x, int n);
 
 // ----------------------------------------------
 // CALL ANDROID JAVA CODE, NOT AVAILABLE IN PICOC
