@@ -12,11 +12,10 @@ android/setup_files/orig
 
 files/svcs/Location/loc_hist
 files/apps/Test/*.png
-files/apps/Test/*.wav
 files/apps/Test/*.mp3
 files/apps/Weather/*.json
 files/apps/Weather/icon
-files/apps/Memo/*.wav
+files/apps/Memo/*.mp3
 params
 
 bin/ezsh

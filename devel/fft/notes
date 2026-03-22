@@ -1,42 +1,25 @@
 ==============
-TODO
+BUILDING KISSFFT
 ==============
 
-build kissfft               DONE
+Note: this build procedure is no longer needed.
 
-write test pgm to create stereo pcm sine wav file 
-- at a specific freq               DONE
-- or freq span
-
-write fft test program to fft the sine wave file in xxx ms chunks
-- print how long it takes to do the fft
-- print the fft result 
-
-==============
-BUILDING
-==============
-
-mkdir /home/haid/ez/fft/local
+mkdir $path_to_local
 
 cd kissfft
 mkdir build
 cd build
-cmake .. -DCMAKE_INSTALL_PREFIX=/home/haid/ez/fft/local
+cmake .. -DCMAKE_INSTALL_PREFIX=$path_to_local
 cmake --build .
 cmake --install .
 
 ==============
-INFO
+FFT INFO
 ==============
 
 Search "what is an efficient way for software to determine audio volume in the low, mid, and high frequency bands"
 
 KISSFFT REPO - https://github.com/mborgerding/kissfft
-
-Bands:
-- low < 250
-- mid 250 - 4k
-- high > 4k
 
 Volume Calculation: 
   To find the volume (RMS) for a band, you sum the squares of the FFT magnitudes
