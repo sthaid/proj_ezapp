@@ -47,9 +47,9 @@ int main() {
     // Note: The inverse transform output usually needs to be scaled by N
     // to get the original signal back, depending on the compilation options
     // (the default behavior often omits scaling for simplicity/performance).
-    printf("\nReconstructed Time Domain (first few samples, unscaled):\n");
-    for (int i = 0; i < 102; i++) {
-        printf("Sample %d: %f\n", i, reconstructed_real[i] / N); // Apply manual scaling
+    printf("\nReconstructed Time Domain:\n");
+    for (int i = 0; i < N; i++) {
+        printf("Sample %d: %f %f\n", i, input_real[i], reconstructed_real[i] / N); // Apply manual scaling
     }
 
     // 6. Free the configuration structures to prevent memory leaks

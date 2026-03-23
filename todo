@@ -1,21 +1,34 @@
+fft reverse
+- scale option for fft cpx
+- test fft with reverse
+
+get back on color_organ
+
+maybe add to this - https://github.com/libsdl-org/sdl/issues/13402
+
+cleanup this list
+
+continue working on color organ
+
+where is the picoc issues list
+
+Altitude problem
+xxxxxxxxxxxxxxxxxxxx xxxxxxxxxxxxxxxxxxxx xxxxxxxxxxxxxxxxxxxx
+xxxxxxxxxxxxxxxxxxxx xxxxxxxxxxxxxxxxxxxx xxxxxxxxxxxxxxxxxxxx
+
 "org.sthaid.ezApp/app/jni/SDL/src/audio/aaudio/SDL_aaudio.c"
 ctx.AAudioStreamBuilder_setInputPreset(builder, AAUDIO_INPUT_PRESET_CAMCORDER);
 
 SDL/build/org.sthaid.ezApp/app/jni/SDL/src/audio/aaudio/SDL_aaudio.c
 
-
-
-
 record volume ?
 AAUDIO_INPUT_PRESET_CAMCORDER
     //ctx.AAudioStreamBuilder_setInputPreset(builder, AAUDIO_INPUT_PRESET_CAMCORDER);
 
+xxxxxxxxxxxxxxxxxxxx xxxxxxxxxxxxxxxxxxxx xxxxxxxxxxxxxxxxxxxx
+xxxxxxxxxxxxxxxxxxxx xxxxxxxxxxxxxxxxxxxx xxxxxxxxxxxxxxxxxxxx
 
 maybe the params files should be cleared when reinstalling
-
-fft reverse
-- scale option for fft cpx
-- test fft with reverse
 
 more picoc issues
 - picoc ptr math
@@ -34,7 +47,6 @@ color organ
 - fft color organ
 
 xxxxxxxxxxxxxxxxxxxxx
-
 
 check Test SEQ
 

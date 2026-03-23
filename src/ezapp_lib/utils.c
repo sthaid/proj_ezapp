@@ -756,27 +756,12 @@ int util_write_png_file(char *dir, char *filename, unsigned char *pixels, int w,
 
 // ----------------- FFT ---------------------
 
-static kiss_fftr_cfg cached_alloc_fftr(int n_fft);
-
-void util_fft_real_to_complex(int n_fft, float *input, complex_t *cpx_output)
-{
-    kiss_fftr_cfg  cfg;
-
-    // verify n_fft is multiple of 2, if not then decrement
-    if (n_fft & 1) {
-        ERROR("n_fft=%d is not multiple of 2\n", n_fft);
-        n_fft--;
-    }
-
-    // alloc kissfft cfg, and perform fft
-    cfg = cached_alloc_fftr(n_fft);
-    kiss_fftr(cfg, input, (kiss_fft_cpx*)cpx_output);
-}
+static kiss_fftr_cfg cached_alloc_fftr(int n_fft, bool inverse);
 
 void util_fft_real_to_real(int n_fft, float *input, float *output, bool scale_by_n_fft)
 {
     kiss_fftr_cfg  cfg;
-    int            n_output = n_fft / 2 + 1;
+    int            n_output;
     complex_t     *cpx_output;
 
     // verify n_fft is multiple of 2, if not then decrement
@@ -785,17 +770,22 @@ void util_fft_real_to_real(int n_fft, float *input, float *output, bool scale_by
         n_fft--;
     }
 
+    // determine number of elements in output
+    n_output = n_fft / 2 + 1;
+
     // alloc fft complex output buffer
     cpx_output = calloc(n_output, sizeof(complex_t));
 
     // alloc kissfft cfg, and perform fft
-    cfg = cached_alloc_fftr(n_fft);
+    cfg = cached_alloc_fftr(n_fft, false);
     kiss_fftr(cfg, input, (kiss_fft_cpx*)cpx_output);
 
-    // convert complex ouput buffer to caller supplied real value buffer
+    // convert complex ouput buffer to caller supplied real value buffer;
+    // apply scaling if requested
     if (scale_by_n_fft) {
+        float scale_factor = (1.0 / n_fft);
         for (int i = 0; i < n_output; i++) {
-            output[i] = sqrtf(cpx_output[i].r * cpx_output[i].r + cpx_output[i].i * cpx_output[i].i) / n_fft;
+            output[i] = sqrtf(cpx_output[i].r * cpx_output[i].r + cpx_output[i].i * cpx_output[i].i) * scale_factor;
         }
     } else {
         for (int i = 0; i < n_output; i++) {
@@ -807,26 +797,176 @@ void util_fft_real_to_real(int n_fft, float *input, float *output, bool scale_by
     free(cpx_output);
 }
 
+void util_fft_real_to_complex(int n_fft, float *input, complex_t *cpx_output, bool scale_by_n_fft)
+{
+    kiss_fftr_cfg  cfg;
+    int            n_output;
+
+    // verify n_fft is multiple of 2, if not then decrement
+    if (n_fft & 1) {
+        ERROR("n_fft=%d is not multiple of 2\n", n_fft);
+        n_fft--;
+    }
+
+    // determine number of elements in output
+    n_output = n_fft / 2 + 1;
+
+    // alloc kissfft cfg, and perform fft
+    cfg = cached_alloc_fftr(n_fft, false);
+    kiss_fftr(cfg, input, (kiss_fft_cpx*)cpx_output);
+
+    // if scaling is requested then do so
+    if (scale_by_n_fft) {
+        float scale_factor = 1.0 / n_fft;
+        for (int i = 0; i < n_output; i++) {
+            cpx_output[i].r *= scale_factor;
+            cpx_output[i].i *= scale_factor;
+        }
+    }
+}
+
+void util_fft_inverse_complex_to_real(int n_fft, complex_t *cpx_input, float *output, bool scale_by_n_fft)
+{
+    kiss_fftr_cfg cfg;
+
+    // verify n_fft is multiple of 2, if not then decrement
+    if (n_fft & 1) {
+        ERROR("n_fft=%d is not multiple of 2\n", n_fft);
+        n_fft--;
+    }
+
+    // alloc kissfft inverse cfg, and perform inverse fft
+    cfg = cached_alloc_fftr(n_fft, true);
+    kiss_fftri(cfg, (kiss_fft_cpx*)cpx_input, output);
+
+    // if scaling is requested then do so
+    if (scale_by_n_fft) {
+        float scale_factor = 1.0 / n_fft;
+        for (int i = 0; i < n_fft; i++) {
+            output[i] *= scale_factor;
+        }
+    }
+}
+
+// - - - - fft test - - - -
+
+static void fft_test_check(char *test_name, int n, float *array1, float *array2);
+
+void util_fft_test(void)
+{
+    #define TWO_PI (2 * M_PI)
+    #define N 1000
+
+    float     input[N];
+    complex_t cpx_output[N/2+1];
+    float     real_output[N/2+1];
+    float     expected_output[N/2+1];
+    float     reconstructed_input[N];
+
+    INFO("starting ...\n");
+
+    // -------------
+    // --- Test1 ---
+    // -------------
+
+    // init fft_input with sin wave, and zero other buffers
+    for (int i = 0; i < N; i++) {
+        input[i] = sin(TWO_PI * i / N * 10);
+    }
+    memset(cpx_output, 0, sizeof(cpx_output));
+    memset(reconstructed_input, 0, sizeof(reconstructed_input));
+
+    // perform fft, and inverse fft
+    util_fft_real_to_complex(N, input, cpx_output, false);
+    util_fft_inverse_complex_to_real(N, cpx_output, reconstructed_input, true);
+    fft_test_check("Test1", N, input, reconstructed_input);
+
+    // -------------
+    // --- Test2 ---
+    // -------------
+
+    // init fft_input with sin wave, and zero other buffers
+    for (int i = 0; i < N; i++) {
+        input[i] = sin(TWO_PI * i / N * 10);
+    }
+    memset(cpx_output, 0, sizeof(cpx_output));
+    memset(reconstructed_input, 0, sizeof(reconstructed_input));
+
+    // perform fft, and inverse fft
+    util_fft_real_to_complex(N, input, cpx_output, true);
+    util_fft_inverse_complex_to_real(N, cpx_output, reconstructed_input, false);
+    fft_test_check("Test2", N, input, reconstructed_input);
+
+    // -------------
+    // --- Test3 ---
+    // -------------
+
+    // init fft_input with sin wave, and zero other buffers
+    for (int i = 0; i < N; i++) {
+        input[i] = sin(TWO_PI * i / N * 10);
+    }
+    memset(real_output, 0, sizeof(real_output));
+    memset(expected_output, 0, sizeof(expected_output));
+    expected_output[10] = 0.5;
+
+    // perform real to real fft
+    util_fft_real_to_real(N, input, real_output, true);
+    fft_test_check("Test3", N/2+1, expected_output, real_output);
+
+    INFO("done\n");
+    exit(1); //xxx temp
+}
+
+static void fft_test_check(char *test_name, int n, float *array1, float *array2)
+{
+    #define EPSILON .001
+    bool different;
+    int  num_different = 0;
+
+    for (int i = 0; i < n; i++) {
+        different = (fabsf(array1[i] - array2[i]) > EPSILON);
+        if (different) num_different++;
+    }
+
+    if (num_different == 0) {
+        INFO("%s PASSED\n", test_name);
+        return;
+    }
+
+    ERROR("%s FAILED, num_different=%d\n", test_name, num_different);
+    for (int i = 0; i < n; i++) {
+        different = (fabsf(array1[i] - array2[i]) > EPSILON);
+        ERROR("%3d: %8.4f %8.4f   %s\n", 
+              i, array1[i], array2[i],
+              different ? "DIFFERENT" : "");
+    }
+}
+
+// - - - - fft cfg cached alloc - - - - 
+
 #define MAX_CACHE 4
 
+// xxx inuse flag?
 static struct {
-    int n_fft;
     kiss_fftr_cfg cfg;
+    int n_fft;
+    bool inverse;
 } cache[MAX_CACHE];
 
-static kiss_fftr_cfg cached_alloc_fftr(int n_fft)
+static kiss_fftr_cfg cached_alloc_fftr(int n_fft, bool inverse)
 {
     for (int i = 0; i < MAX_CACHE; i++) {
-        if (cache[i].n_fft == n_fft) {
+        if (cache[i].n_fft == n_fft && cache[i].inverse == inverse) {
             return cache[i].cfg;
         }
     }
 
-    INFO("calling kiss_fftr_alloc n_fft=%d\n", n_fft);
+    INFO("calling kiss_fftr_alloc n_fft=%d inverse=%d\n", n_fft, inverse);
     kiss_fft_free(cache[MAX_CACHE-1].cfg);
     memmove(cache+1, cache, (MAX_CACHE-1)*sizeof(cache[0]));
-    cache[0].cfg = kiss_fftr_alloc(n_fft,  0, NULL, NULL);
+    cache[0].cfg = kiss_fftr_alloc(n_fft, inverse, NULL, NULL);
     cache[0].n_fft = n_fft;
+    cache[0].inverse = inverse;
     return cache[0].cfg;
 }
 

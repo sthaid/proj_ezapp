@@ -99,8 +99,9 @@ typedef struct {
     float i;
 } complex_t;
 
-void util_fft_real_to_complex(int n_fft, float *input, complex_t *cpx_output);
 void util_fft_real_to_real(int n_fft, float *input, float *output, bool scale_by_n_fft);
+void util_fft_real_to_complex(int n_fft, float *input, complex_t *cpx_output, bool scale_by_n_fft);
+void util_fft_inverse_complex_to_real(int n_fft, complex_t *cpx_input, float *output, bool scale_by_n_fft);
 
 double util_rms_float(float *x, int n);
 double util_rms_complex(complex_t *x, int n);
