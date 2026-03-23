@@ -913,6 +913,14 @@ void util_fft_test(void)
     util_fft_real_to_real(N, input, real_output, true);
     fft_test_check("Test3", N/2+1, expected_output, real_output);
 
+    // ----------------------
+    // --- Test4 - Timing ---
+    // ----------------------
+
+    long start = util_microsec_timer();
+    util_fft_real_to_real(N, input, real_output, true);
+    INFO("Test4 PASSED - duration = %ld usec\n", util_microsec_timer() - start);
+
     INFO("done\n");
     exit(1); //xxx temp
 }
@@ -946,7 +954,7 @@ static void fft_test_check(char *test_name, int n, float *array1, float *array2)
 
 #define MAX_CACHE 4
 
-// xxx inuse flag?
+// xxx xxx inuse flag?
 static struct {
     kiss_fftr_cfg cfg;
     int n_fft;

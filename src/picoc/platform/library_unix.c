@@ -1269,6 +1269,17 @@ void Util_write_png_file(struct ParseState *Parser, struct Value *ReturnValue,
 // utils fft
 //
 
+void Util_fft_real_to_real(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
+{
+    int     n_fft          = (int)Param[0]->Val->Integer;
+    float * input          = (float *)Param[1]->Val->Pointer;
+    float * output         = (float *)Param[2]->Val->Pointer;
+    bool    scale_by_n_fft = (bool)Param[3]->Val->Integer;
+
+    util_fft_real_to_real(n_fft, input, output, scale_by_n_fft);
+}
+
 void Util_fft_real_to_complex(struct ParseState *Parser, struct Value *ReturnValue,
         struct Value **Param, int NumArgs)
 {
@@ -1280,15 +1291,15 @@ void Util_fft_real_to_complex(struct ParseState *Parser, struct Value *ReturnVal
     util_fft_real_to_complex(n_fft, input, cpx_output, scale_by_n_fft);
 }
 
-void Util_fft_real_to_real(struct ParseState *Parser, struct Value *ReturnValue,
+void Util_fft_inverse_complex_to_real(struct ParseState *Parser, struct Value *ReturnValue,
         struct Value **Param, int NumArgs)
 {
-    int     n_fft          = (int)Param[0]->Val->Integer;
-    float * input          = (float *)Param[1]->Val->Pointer;
-    float * output         = (float *)Param[2]->Val->Pointer;
-    bool    scale_by_n_fft = (bool)Param[3]->Val->Integer;
+    int         n_fft          = (int)Param[0]->Val->Integer;
+    complex_t * cpx_input      = (complex_t *)Param[1]->Val->Pointer;
+    float *     output         = (float *)Param[2]->Val->Pointer;
+    bool        scale_by_n_fft = (bool)Param[3]->Val->Integer;
 
-    util_fft_real_to_real(n_fft, input, output, scale_by_n_fft);
+    util_fft_inverse_complex_to_real(n_fft, cpx_input, output, scale_by_n_fft);
 }
 
 void Util_rms_float(struct ParseState *Parser, struct Value *ReturnValue,
@@ -1433,8 +1444,9 @@ struct LibraryFunction UtilsFunctions[] = {
     { Util_read_png_file,    "int util_read_png_file(char *dir, char *filename, unsigned char **pixels, int *w, int *h);" },
     { Util_write_png_file,   "int util_write_png_file(char *dir, char *filename, unsigned char *pixels, int w, int h);" },
     // fft
-    { Util_fft_real_to_complex, "void util_fft_real_to_complex(int n_fft, float *input, complex_t *cpx_output, bool scale_by_n_fft);" },
     { Util_fft_real_to_real,    "void util_fft_real_to_real(int n_fft, float *input, float *output, bool scale_by_n_fft);" },
+    { Util_fft_real_to_complex, "void util_fft_real_to_complex(int n_fft, float *input, complex_t *cpx_output, bool scale_by_n_fft);" },
+    { Util_fft_inverse_complex_to_real, "void util_fft_inverse_complex_to_real(int n_fft, complex_t *cpx_input, float *output, bool scale_by_n_fft);" },
     { Util_rms_float,           "double util_rms_float(float *x, int n);" },
     { Util_rms_complex,         "double util_rms_complex(complex_t *x, int n);" },
     // call java: location

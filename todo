@@ -1,3 +1,6 @@
+kissfft does not have O2
+
+
 fft reverse
 - scale option for fft cpx
 - test fft with reverse
