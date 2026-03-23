@@ -81,8 +81,6 @@ static void print_type_sizes(void) __attribute__ ((unused));
 static void create_files(int action);
 static int run(char *name, bool is_svc);
 
-void util_fft_test(void); //xxx
-
 int MAIN(int argc, char **argv)
 {
     int rc;
@@ -91,8 +89,6 @@ int MAIN(int argc, char **argv)
     if (rc != 0) {
         return 1;
     }
-
-    util_fft_test(); //xxx temp
 
     processing();
 

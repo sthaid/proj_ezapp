@@ -922,7 +922,6 @@ void util_fft_test(void)
     INFO("Test4 PASSED - duration = %ld usec\n", util_microsec_timer() - start);
 
     INFO("done\n");
-    exit(1); //xxx temp
 }
 
 static void fft_test_check(char *test_name, int n, float *array1, float *array2)

@@ -126,7 +126,7 @@ char *page_title[] = {     // Page
         "Sensor Values",   //   9
         "Location",        //  10
             };
-static int pagenum = 7; //xxx put back to 0
+static int pagenum = 0;
 
 #define LAST_PAGE 10
 
@@ -627,9 +627,6 @@ static void alpha_test(int idx, char *test_name, sdlx_color_t bg_color, sdlx_col
 
 #define TWO_PI  (2.0 * M_PI)
 
-#define VOLUME_SCALE       1 //xxx del
-#define COLOR_ORGAN_SCALE  30
-
 static int tone_freq = 1000;
 static int tone_lrb = BOTH_CHANNELS;
 
@@ -700,6 +697,7 @@ static void add_terminator(sdlx_tone_t **t)
 
 static void page_7_init(void)
 {
+    util_fft_test();
 }
 
 static void helper(float low_freq, float high_freq, float *fft, float delta_f, sdlx_color_t color, int x, int y);
@@ -712,7 +710,6 @@ static void page_7_draw(void)
     sdlx_loc_t        *loc;
     char               pathname_copy[100];
     double             row=1;
-    long               top_start_us = util_microsec_timer();
 
     // get audio state
     sdlx_audio_get_state(&state);
@@ -803,15 +800,13 @@ static void page_7_draw(void)
     int y, w;
     if (state.state != AUDIO_STATE_IDLE) {
         y = sdlx_win_height - CONTROL_EVENTS_DISPLAY_HEIGHT - 2*sdlx_char_height_dflt - 10;
-        w = state.volume * 1000 * VOLUME_SCALE;
+        w = state.volume * 1000;
         printf("VOLUME W %d\n", w);
         sdlx_render_fill_rect(0, y, w, sdlx_char_height_dflt, COLOR_WHITE);
     }
 
     // display color organ bars
     if (state.state != AUDIO_STATE_IDLE) {
-        long start_us = util_microsec_timer();  //xxx del
-
         int    num_downsample = 4;
         int    num_samples = nearbyint(FRAMES_PER_SEC / num_downsample * 0.050);  // equals 600
         float  samples[600], fft[301];
@@ -832,13 +827,10 @@ static void page_7_draw(void)
         helper(60,  150,  fft, delta_f, COLOR_RED,   0,   y);
         helper(200, 600,  fft, delta_f, COLOR_GREEN, 333, y);
         helper(800, 2200, fft, delta_f, COLOR_BLUE,  666, y);
-
-        printf("DUR %ld\n", util_microsec_timer() - start_us);  // xxx delete
     }
-
-    //printf("TOTAL DUR %ld\n", util_microsec_timer() - top_start_us);  // xxx delete
 }
 
+#define COLOR_ORGAN_SCALE  30
 static void helper(float low_freq, float high_freq, float *fft, float delta_f, sdlx_color_t color, int x, int y)
 {
     int first_bin, last_bin, w;
@@ -848,7 +840,6 @@ static void helper(float low_freq, float high_freq, float *fft, float delta_f, s
     last_bin = nearbyint(high_freq/delta_f);
     band_vol = util_rms_float(&fft[first_bin], last_bin-first_bin+1);
     w = band_vol * 333 * COLOR_ORGAN_SCALE;
-    //printf("%x  w %d   band_vol %f\n", color, w, band_vol);
     if (w > 333) w = 333;
     sdlx_render_fill_rect(x, y, w, sdlx_char_height_dflt/2, color);
 }
