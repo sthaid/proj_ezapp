@@ -618,9 +618,9 @@ static void alpha_test(int idx, char *test_name, sdlx_color_t bg_color, sdlx_col
 #define EVID_AUDIO_PLAY_BLUESKY_WAV        27
 #define EVID_AUDIO_PLAY_SAMPLE_9S_MP3      28
 
-#define BOTH_CHANNELS 0
-#define LEFT_CHANNEL  1
-#define RIGHT_CHANNEL 2
+#define TONE_BOTH_CHANNELS 0
+#define TONE_LEFT_CHANNEL  1
+#define TONE_RIGHT_CHANNEL 2
 
 #define MIN_TONE_FREQ  100
 #define MAX_TONE_FREQ  6000
@@ -628,7 +628,7 @@ static void alpha_test(int idx, char *test_name, sdlx_color_t bg_color, sdlx_col
 #define TWO_PI  (2.0 * M_PI)
 
 static int tone_freq = 1000;
-static int tone_lrb = BOTH_CHANNELS;
+static int tone_lrb = TONE_BOTH_CHANNELS;
 
 static char *audio_state_str(sdlx_audio_state_t *as, bool *is_recording)
 {
@@ -756,7 +756,7 @@ static void page_7_draw(void)
 
     loc = sdlx_render_printf_ex1(
                 COL2X(18), ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "%s",
-                tone_lrb == LEFT_CHANNEL ? "L" : (tone_lrb == RIGHT_CHANNEL ? "R" : "B"));
+                tone_lrb == TONE_LEFT_CHANNEL ? "L" : (tone_lrb == TONE_RIGHT_CHANNEL ? "R" : "B"));
     sdlx_register_event(loc, EVID_AUDIO_PLAY_TONE_CHAN_LRB);
     row += 2.5;
 
@@ -815,14 +815,14 @@ static void page_7_draw(void)
         delta_f = ((double)FRAMES_PER_SEC/num_downsample) / num_samples;
         y       = sdlx_win_height - CONTROL_EVENTS_DISPLAY_HEIGHT - sdlx_char_height_dflt - 10;
 
-        sdlx_get_audio_samples(num_samples, num_downsample, LEFT_CHANNEL, samples);
+        sdlx_get_audio_samples(num_samples, num_downsample, GET_SAMPLES_LEFT_CHANNEL, samples);
         util_fft_real_to_real(num_samples, samples, fft, true);
         helper(60,  150,  fft, delta_f, COLOR_RED,   0,   y);
         helper(200, 600,  fft, delta_f, COLOR_GREEN, 333, y);
         helper(800, 2200, fft, delta_f, COLOR_BLUE,  666, y);
 
         y += sdlx_char_height_dflt/2;
-        sdlx_get_audio_samples(num_samples, num_downsample, RIGHT_CHANNEL, samples);
+        sdlx_get_audio_samples(num_samples, num_downsample, GET_SAMPLES_RIGHT_CHANNEL, samples);
         util_fft_real_to_real(num_samples, samples, fft, true);
         helper(60,  150,  fft, delta_f, COLOR_RED,   0,   y);
         helper(200, 600,  fft, delta_f, COLOR_GREEN, 333, y);
@@ -892,11 +892,11 @@ static void page_7_process_event(sdlx_event_t *ev)
 
         // init buffer with 100 sine waves
         for (i = 0; i < num_samples; i+=2) {
-            if (tone_lrb == LEFT_CHANNEL) {
+            if (tone_lrb == TONE_LEFT_CHANNEL) {
                 samples[i] = sin(TWO_PI * i * 100 / num_samples);
-            } else if (tone_lrb == RIGHT_CHANNEL) {
+            } else if (tone_lrb == TONE_RIGHT_CHANNEL) {
                 samples[i+1] = sin(TWO_PI * i * 100 / num_samples);
-            } else {  // BOTH_CHANNELS
+            } else {  // TONE_BOTH_CHANNELS
                 samples[i] = sin(TWO_PI * i * 100 / num_samples);
                 samples[i+1] = samples[i];
             }

@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <math.h>
 
 #include <sdlx.h>
 #include <utils.h>
@@ -83,6 +84,13 @@ void color_organ_cleanup(void)
 
 // -----------------  COLOR ORGAN DISPLAY  ---------------------------
 
+#define LOW_BAND_START   60
+#define LOW_BAND_END     150
+#define MID_BAND_START   200
+#define MID_BAND_END     600
+#define HIGH_BAND_START  800
+#define HIGH_BAND_END    2200
+
 // xxx make 'as' a glbl ptr
 void color_organ_display(sdlx_audio_state_t *as)
 {
@@ -91,12 +99,41 @@ void color_organ_display(sdlx_audio_state_t *as)
     static bool   audio_paused_last = false;
     static bool   first_call = true;
 
+    float low_band=0, mid_band=0, high_band=0;
+
     if (as->state != AUDIO_STATE_IDLE) {
-        proc(red_circle_texture, X_RED_CIRCLE, Y_RED_CIRCLE, as->color_organ.low_band, &work_red, k_red);
-        proc(green_circle_texture, X_GREEN_CIRCLE, Y_GREEN_CIRCLE, as->color_organ.mid_band, &work_green, k_green);
-        proc(blue_circle_texture, X_BLUE_CIRCLE, Y_BLUE_CIRCLE, as->color_organ.high_band, &work_blue, k_blue);
+        int    num_downsample = 4;
+        int    num_samples = nearbyint(FRAMES_PER_SEC / num_downsample * 0.050);  // equals 600
+        float  delta_f = ((double)FRAMES_PER_SEC/num_downsample) / num_samples;
+        float  samples[600], fft[301];
+        int    first_bin, last_bin;
+
+        sdlx_get_audio_samples(num_samples, num_downsample, GET_SAMPLES_MONO, samples);
+        util_fft_real_to_real(num_samples, samples, fft, true);
+
+        first_bin = nearbyint(LOW_BAND_START/delta_f);
+        last_bin = nearbyint(LOW_BAND_END/delta_f);
+        low_band = util_rms_float(&fft[first_bin], last_bin-first_bin+1);// xxx picoc isue requires &fft[first_bin]
+
+        first_bin = nearbyint(MID_BAND_START/delta_f);
+        last_bin = nearbyint(MID_BAND_END/delta_f);
+        mid_band = util_rms_float(&fft[first_bin], last_bin-first_bin+1);// xxx picoc isue requires &fft[first_bin]
+
+        first_bin = nearbyint(HIGH_BAND_START/delta_f);
+        last_bin = nearbyint(HIGH_BAND_END/delta_f);
+        high_band = util_rms_float(&fft[first_bin], last_bin-first_bin+1);// xxx picoc isue requires &fft[first_bin]
+
+        printf("%f %f %f\n", low_band, mid_band, high_band);
     }
 
+    if (as->state != AUDIO_STATE_IDLE) {
+        proc(red_circle_texture, X_RED_CIRCLE, Y_RED_CIRCLE, low_band, &work_red, k_red);
+        proc(green_circle_texture, X_GREEN_CIRCLE, Y_GREEN_CIRCLE, mid_band, &work_green, k_green);
+        proc(blue_circle_texture, X_BLUE_CIRCLE, Y_BLUE_CIRCLE, high_band, &work_blue, k_blue);
+        printf("--------------\n");
+    }
+
+// xxx make a routine for this
     if ((as->state != AUDIO_STATE_IDLE) && 
         (!as->paused) &&
         (as->state != audio_state_last || as->paused != audio_paused_last))
@@ -127,6 +164,12 @@ void color_organ_display(sdlx_audio_state_t *as)
 void proc(sdlx_texture_t *t, int x_ctr, int y_ctr, double newval, double *work, int k)
 {
     double current, intensity;
+
+    newval *= 30;
+    printf("%f\n", newval);
+
+    // 10 10 70
+
 
     current = *work;
     if (newval > current) {

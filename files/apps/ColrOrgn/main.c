@@ -35,7 +35,9 @@ int y_title;
 int y_controls;
 int y_files_list;
 
-sdlx_audio_state_t as;  // xxx move to common, and make a ptr
+sdlx_audio_state_t as;  // yyy move to common, and make a ptr
+
+char files_dir[100];  // yyy move to common?
     
 //
 // prototypes
@@ -45,7 +47,7 @@ void register_events(void);
 void get_list_of_files(void);
 
 void remove_trailing_newline(char *s);
-char *state_str(void);
+char *get_state_str(bool *recording);
 
 // -----------------  MAIN  ------------------------------------------
     
@@ -53,6 +55,8 @@ int main(int argc, char **argv)
 {
     sdlx_event_t event;
     bool         end_program = false;
+    char        *state_str;
+    bool         recording;
 
     // save args
     progname = argv[0];
@@ -63,12 +67,15 @@ int main(int argc, char **argv)
     data_dir = argv[1];
     printf("I %s: starting, data_dir=%s\n", progname, data_dir);
 
+    // init files_dir
+    sprintf(files_dir, "%s/files", data_dir);
+
     // init y locations
     y_title = 950;
     y_controls = y_title + 1.5*sdlx_char_height_dflt;
     y_files_list = y_controls + 1.5*sdlx_char_height_dflt;
 
-    // xxx
+    // yyy
     color_organ_init();
 
     // runtime loop
@@ -76,15 +83,18 @@ int main(int argc, char **argv)
         // init the backbuffer
         sdlx_display_init(COLOR_BLACK);
 
-        // get audio state xxx should return a pointer, not the copy?
-        // xxx call just once to get the ptr?
-        // xxx or new api to get the fft info (a copy of it)
+        // get audio state yyy should return a pointer, not the copy?
+        // yyy call just once to get the ptr?
+        // yyy or new api to get the fft info (a copy of it)
         sdlx_audio_get_state(&as);
 
-        // display title line  xxx display in red when recording
+        // display title line  yyy display in red when recording
+        state_str = get_state_str(&recording);
         sdlx_render_printf_ex2(sdlx_win_width/2, y_title,
-                               FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE,
-                               "%s", state_str());
+                               FONT_NORMAL, 
+                               (recording ? COLOR_RED : COLOR_WHITE),
+                               FLAG_X_CTR, WRAP_NONE,
+                               "%s", state_str);
 
         // display color organ
         color_organ_display(&as);
@@ -106,7 +116,7 @@ int main(int argc, char **argv)
         if (event.event_id >= EVID_PLAY_FILE && event.event_id < EVID_PLAY_FILE+MAX_FILES) {
             // play the selected file
             int idx = event.event_id - EVID_PLAY_FILE;
-            sdlx_audio_play_file(data_dir, files[idx]);
+            sdlx_audio_play_file(files_dir, files[idx]);
         } else {
             switch (event.event_id) {
             // stop audio
@@ -116,15 +126,17 @@ int main(int argc, char **argv)
 
             // record or monitor device
             case EVID_DEV:
-                sdlx_audio_record_from_device(data_dir, "dev.mp3");
+                // append         = false
+                // start_paused   = true
+                sdlx_audio_record_from_device(files_dir, "record_dev.mp3", false, true);
                 break;
 
             // record or monitor microphone
             case EVID_MIC: {
-                int  max_secs       = 0;  // no limit
-                int  auto_stop_secs = 0;  // no limit
-                bool append         = false;
-                sdlx_audio_record_from_mic(data_dir, "mic.mp3", max_secs, auto_stop_secs, append);
+                // auto_stop_secs = 0
+                // append         = false
+                // start_paused   = true
+                sdlx_audio_record_from_mic(files_dir, "record_mic.mp3", 0, false, true);
                 break; }
 
             // these apply when recording from device or microphone
@@ -171,7 +183,7 @@ void register_events(void)
 {
     sdlx_loc_t *loc;
 
-    // xxx comment
+    // yyy comment
     if (as.state == AUDIO_STATE_IDLE) {
         loc = sdlx_render_printf(COL2X(0), y_controls, "%s", "dev");
         sdlx_register_event(loc, EVID_DEV);
@@ -202,7 +214,7 @@ void register_events(void)
         printf("E %s: invalid audio state %d\n", progname, as.state);
     }
 
-    // xxx comment
+    // yyy comment  move to above
     if (as.state == AUDIO_STATE_IDLE) {
         int y = y_files_list;
         get_list_of_files();
@@ -213,7 +225,7 @@ void register_events(void)
         }
     }
 
-    // xxx comment
+    // yyy comment
     color_organ_register_events();
 
     // register control event to end program
@@ -227,9 +239,9 @@ void get_list_of_files(void)
 {
     static long saved_mtime;
 
-    // if data_dir has been modified then
+    // if files_dir has been modified then
     // update list of mp3 and wav files
-    long mtime = util_file_mtime(data_dir, NULL);
+    long mtime = util_file_mtime(files_dir, NULL);
     if (mtime != saved_mtime) {
         saved_mtime = mtime;
         printf("I %s: generate list of mp3/wav files\n", progname);
@@ -242,9 +254,9 @@ void get_list_of_files(void)
         max_files = 0;
 
         // make new list
-        char s[200], cmd[200];
+        char s[200], cmd[300];
         FILE *fp;
-        sprintf(cmd, "/bin/ls -1 %s/*.wav %s/*.mp3", data_dir, data_dir);
+        sprintf(cmd, "/bin/ls -1 %s/*.wav %s/*.mp3", files_dir, files_dir);
         fp = popen(cmd, "r");
         while (fgets(s, sizeof(s), fp) != NULL) {
             char *bn;
@@ -259,10 +271,12 @@ void get_list_of_files(void)
 
 // -----------------  UTILS  -----------------------------------------
 
-char *state_str(void)
+char *get_state_str(bool *recording)
 {
     static char s[200];
     char buffer[100], *short_fn;
+
+    *recording = false;
 
     switch (as.state) {
     case AUDIO_STATE_IDLE:
@@ -270,8 +284,6 @@ char *state_str(void)
     case AUDIO_STATE_PLAY_FILE:
         strcpy(buffer, as.pathname);
         short_fn = basename(buffer);
-        //if ((p = strstr(short_fn, ".mp3")) != NULL) *p = '\0';
-        //if ((p = strstr(short_fn, ".wav")) != NULL) *p = '\0';
         if (!as.paused) {
             sprintf(s, "Playing %s", short_fn);
         } else {
@@ -280,6 +292,7 @@ char *state_str(void)
         return s;
     case AUDIO_STATE_RECORD_FROM_MIC:
         if (!as.paused) {
+            *recording = true;
             return "Recording MIC";
         } else {
             return "Monitoring MIC";
@@ -287,6 +300,7 @@ char *state_str(void)
         break;
     case AUDIO_STATE_RECORD_FROM_DEVICE:
         if (!as.paused) {
+            *recording = true;
             return "Recording DEV";
         } else {
             return "Monitoring DEV";
