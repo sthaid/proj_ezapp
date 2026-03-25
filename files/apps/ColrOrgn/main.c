@@ -71,9 +71,9 @@ int main(int argc, char **argv)
     sprintf(files_dir, "%s/files", data_dir);
 
     // init y locations
-    y_title = 950;
+    y_title = 500 + 2.0*sdlx_char_height_dflt;
     y_controls = y_title + 1.5*sdlx_char_height_dflt;
-    y_files_list = y_controls + 1.5*sdlx_char_height_dflt;
+    y_files_list = y_controls + 2.0*sdlx_char_height_dflt;
 
     // yyy
     color_organ_init();
@@ -105,9 +105,9 @@ int main(int argc, char **argv)
         // present the display
         sdlx_display_present();
 
-        // wait for event, with 20 ms timeout;
+        // wait for event, with 50 ms timeout;
         // if timedout then continue
-        sdlx_get_event(20000, &event);
+        sdlx_get_event(50000, &event);
         if (event.event_id == -1) {
             continue;
         }
@@ -185,9 +185,9 @@ void register_events(void)
 
     // yyy comment
     if (as.state == AUDIO_STATE_IDLE) {
-        loc = sdlx_render_printf(COL2X(0), y_controls, "%s", "dev");
+        loc = sdlx_render_printf(COL2X(0), y_controls, "%s", "DEVICE");
         sdlx_register_event(loc, EVID_DEV);
-        loc = sdlx_render_printf(sdlx_win_width-COL2X(3), y_controls, "%s", "mic");
+        loc = sdlx_render_printf(COL2X(10), y_controls, "%s", "MICROPHONE");
         sdlx_register_event(loc, EVID_MIC);
     } else if (as.state == AUDIO_STATE_RECORD_FROM_MIC ||
                as.state == AUDIO_STATE_RECORD_FROM_DEVICE) {
