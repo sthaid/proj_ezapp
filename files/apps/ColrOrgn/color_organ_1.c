@@ -23,62 +23,85 @@
 // - event to display params
 //       7 15 25   ?
 // - auto adjust params
+// - rename this file
 
 //
 // defines
 //
 
-#define EVID_RESET           1000
-#define EVID_RGB_FILTER      1001
-
-#define EVID_RED_INCREASE    1010
-#define EVID_RED_DECREASE    1011
-#define EVID_GREEN_INCREASE  1012
-#define EVID_GREEN_DECREASE  1013
-#define EVID_BLUE_INCREASE   1014
-#define EVID_BLUE_DECREASE   1015
-
 #define RED    0
 #define GREEN  1
 #define BLUE   2
 
-#define RGB_FILTER_NONE        0
-#define RGB_FILTER_EXP_SMOOTH  1
-#define RGB_FILTER_SNAP        2
-#define RGB_FILTER_DEFAULT     RGB_FILTER_EXP_SMOOTH
-#define MAX_RGB_FILTER         3
+#define CIRCLE_RADIUS  134   // 500 / (2 + sqrt(3))
+
+#define EVID_FILTER_SLCT      1001
+#define EVID_COLOR_ORGAN_SLCT 1002
+#define EVID_RED_INCREASE     1010
+#define EVID_RED_DECREASE     1011
+#define EVID_GREEN_INCREASE   1012
+#define EVID_GREEN_DECREASE   1013
+#define EVID_BLUE_INCREASE    1014
+#define EVID_BLUE_DECREASE    1015
+
+#define FILTER_NONE        0
+#define FILTER_EXP_SMOOTH  1
+#define FILTER_SNAP        2
+#define FILTER_DEFAULT     FILTER_EXP_SMOOTH
+#define MAX_FILTER         3
+
+#define COLOR_ORGAN_BARS     0
+#define COLOR_ORGAN_CIRCLES  1
+#define COLOR_ORGAN_DEFAULT  COLOR_ORGAN_BARS
+#define MAX_COLOR_ORGAN      2
 
 //
 // variables
 //
 
-int   rgb_filter = RGB_FILTER_DEFAULT;
-int   rgb_k[MAX_RGB_FILTER] = {20, 40, 100};
-int   rgb_k_default[MAX_RGB_FILTER] = {20, 40, 100};
-char *rgb_filter_name[MAX_RGB_FILTER] = {"NONE", "EXP", "SNAP"};
+int   which_color_organ = COLOR_ORGAN_DEFAULT;
+char *color_organ_name[MAX_COLOR_ORGAN] = {"BARS", "CIRCLES"};
+
+int   which_filter = FILTER_DEFAULT;
+char *filter_name[MAX_FILTER] = {"NONE", "EXP", "SNAP"};
+
+int   rgb_k[MAX_FILTER];
+//int   rgb_k_default[MAX_FILTER] = {15, 25, 50};
+int   rgb_k_default[MAX_FILTER] = {15, 30, 150};
 
 int   disp_k;
+
+sdlx_texture_t *red_circle_texture;
+sdlx_texture_t *green_circle_texture;
+sdlx_texture_t *blue_circle_texture;
 
 //
 // prototypes
 //
 
+sdlx_texture_t *create_circle_texture(sdlx_color_t color);
 void init_loc(sdlx_loc_t *loc, int x, int y, int w, int h);
 
 // -----------------  INIT & CLEANUP  --------------------------------
 
 void color_organ_init(void)
 {
-    rgb_k[RED]   = util_get_numeric_param(data_dir, "rgb_k_red", rgb_k_default[RED]);
-    rgb_k[GREEN] = util_get_numeric_param(data_dir, "rgb_k_green", rgb_k_default[GREEN]);
-    rgb_k[BLUE]  = util_get_numeric_param(data_dir, "rgb_k_blue", rgb_k_default[BLUE]);
+    rgb_k[RED]        = util_get_numeric_param(data_dir, "rgb_k_red",   rgb_k_default[RED]);
+    rgb_k[GREEN]      = util_get_numeric_param(data_dir, "rgb_k_green", rgb_k_default[GREEN]);
+    rgb_k[BLUE]       = util_get_numeric_param(data_dir, "rgb_k_blue",  rgb_k_default[BLUE]);
+    which_filter      = util_get_numeric_param(data_dir, "filter",      FILTER_DEFAULT);
+    which_color_organ = util_get_numeric_param(data_dir, "color_organ", COLOR_ORGAN_DEFAULT);
 
-    rgb_filter   = util_get_numeric_param(data_dir, "rgb_filter", RGB_FILTER_DEFAULT);
-
+    red_circle_texture   = create_circle_texture(COLOR_RED);
+    green_circle_texture = create_circle_texture(COLOR_GREEN);
+    blue_circle_texture  = create_circle_texture(COLOR_BLUE);
 }
 
 void color_organ_cleanup(void)
 {
+    sdlx_destroy_texture(red_circle_texture);
+    sdlx_destroy_texture(green_circle_texture);
+    sdlx_destroy_texture(blue_circle_texture);
 }
 
 // -----------------  COLOR ORGAN DISPLAY  ---------------------------
@@ -89,8 +112,6 @@ void color_organ_cleanup(void)
 #define MID_BAND_END     600
 #define HIGH_BAND_START  800
 #define HIGH_BAND_END    2200
-
-#define DECAY  0.0010  // xxx param
 
 #define DISP_K_DURATION 30
 
@@ -126,111 +147,180 @@ void color_organ_display(sdlx_audio_state_t *as)
     }
 
     if (disp_k > 0) {
+        int x_ctr, y_ctr, param_value;
+
         disp_k--;
-        sdlx_render_printf_ex2(333/2, 250, 
-                               FONT_NORMAL, COLOR_WHITE, FLAG_XY_CTR, WRAP_NONE,
-                               "%d", rgb_k[RED]); 
-        sdlx_render_printf_ex2(333/2+333, 250, 
-                               FONT_NORMAL, COLOR_WHITE, FLAG_XY_CTR, WRAP_NONE,
-                               "%d", rgb_k[GREEN]); 
-        sdlx_render_printf_ex2(333/2+666, 250, 
-                               FONT_NORMAL, COLOR_WHITE, FLAG_XY_CTR, WRAP_NONE,
-                               "%d", rgb_k[BLUE]); 
+
+        x_ctr = (which_color_organ == COLOR_ORGAN_BARS ? 333/2 : 500-CIRCLE_RADIUS);
+        y_ctr = (which_color_organ == COLOR_ORGAN_BARS ? 250   : 500-CIRCLE_RADIUS);
+        param_value = rgb_k[RED];
+        sdlx_render_printf_ex2(x_ctr, y_ctr, FONT_NORMAL, COLOR_WHITE, FLAG_XY_CTR, WRAP_NONE, "%d", param_value); 
+
+        x_ctr = (which_color_organ == COLOR_ORGAN_BARS ? 333/2+333 : 500+CIRCLE_RADIUS);
+        y_ctr = (which_color_organ == COLOR_ORGAN_BARS ? 250       : 500-CIRCLE_RADIUS);
+        param_value = rgb_k[GREEN];
+        sdlx_render_printf_ex2(x_ctr, y_ctr, FONT_NORMAL, COLOR_WHITE, FLAG_XY_CTR, WRAP_NONE, "%d", param_value); 
+
+        x_ctr = (which_color_organ == COLOR_ORGAN_BARS ? 333/2+666 : 500);
+        y_ctr = (which_color_organ == COLOR_ORGAN_BARS ? 250       : CIRCLE_RADIUS);
+        param_value = rgb_k[BLUE];
+        sdlx_render_printf_ex2(x_ctr, y_ctr, FONT_NORMAL, COLOR_WHITE, FLAG_XY_CTR, WRAP_NONE, "%d", param_value); 
     }
 }
 
 void display_band(int which, float band_volume)
 {
-    static int  h_smoothed[3];
-    int         h_unfiltered, x;
-    sdlx_color_t color;
+    static float smoothed[3];
+    float        scaled;
 
-    x = which * 333;
-    color = (which == RED ? COLOR_RED : (which == GREEN ? COLOR_GREEN : COLOR_BLUE));
+    scaled = band_volume * rgb_k[which];
+    if (scaled > 1) scaled = 1;
 
-    h_unfiltered = band_volume * rgb_k[which] * 500;
-    if (h_unfiltered > 500) h_unfiltered = 500;
-
-    if (rgb_filter == RGB_FILTER_NONE) {
-        h_smoothed[which] = h_unfiltered;
-    } else if (rgb_filter == RGB_FILTER_EXP_SMOOTH) {
-        h_smoothed[which] = h_smoothed[which] + 0.6 * (h_unfiltered - h_smoothed[which]);
-    } else if (rgb_filter == RGB_FILTER_SNAP) {
-        if (h_unfiltered > h_smoothed[which]) {
-            h_smoothed[which] = h_unfiltered;
+    if (which_filter == FILTER_NONE) {
+        smoothed[which] = scaled;
+    } else if (which_filter == FILTER_EXP_SMOOTH) {
+        smoothed[which] = smoothed[which] + 0.6 * (scaled - smoothed[which]);
+    } else if (which_filter == FILTER_SNAP) {
+        if (scaled > smoothed[which]) {
+            smoothed[which] = scaled;
         } else {
-            h_smoothed[which] -= 40;
-            if (h_smoothed[which] < h_unfiltered) h_smoothed[which] = h_unfiltered;
+            smoothed[which] -= 0.08;
+            if (smoothed[which] < scaled) smoothed[which] = scaled;
         }
     } else {
-        h_smoothed[which] = 0;
+        smoothed[which] = 0;
     }
 
-    sdlx_render_fill_rect(x, 500-h_smoothed[which], 333, h_smoothed[which], color);
+    if (which_color_organ == COLOR_ORGAN_BARS) {
+        int          x = which * 333;
+        int          h = 500*smoothed[which];
+        sdlx_color_t color;
+
+        color = (which == RED ? COLOR_RED : (which == GREEN ? COLOR_GREEN : COLOR_BLUE));
+        sdlx_render_fill_rect(x, 500-h, 333, h, color);
+    } else {
+        sdlx_texture_t *t;
+        int             x_ctr, y_ctr;
+        float           intensity;
+        float           k = 2.0;
+
+        if (which == RED) {
+            intensity = smoothed[RED] * k;
+            t = red_circle_texture;
+            x_ctr = 500 - CIRCLE_RADIUS;
+            y_ctr = 500 - CIRCLE_RADIUS;
+        } else if (which == GREEN) {
+            intensity = smoothed[GREEN] * k;
+            t = green_circle_texture;
+            x_ctr = 500 + CIRCLE_RADIUS;
+            y_ctr = 500 - CIRCLE_RADIUS;
+        } else {
+            intensity = smoothed[BLUE] * k;
+            t = blue_circle_texture;
+            x_ctr = 500;
+            y_ctr = CIRCLE_RADIUS;
+        }
+        sdlx_color_mod_texture(t, intensity, intensity, intensity);
+        sdlx_render_texture_ex1(t, x_ctr-CIRCLE_RADIUS, y_ctr-CIRCLE_RADIUS, 2*CIRCLE_RADIUS, 2*CIRCLE_RADIUS);
+    }
 }
 
-// -----------------  COLOR ORGAN EVENT HANDLING  --------------------
+// -----------------  COLOR ORGAN EVENT REGISTRATION  ----------------
 
 void color_organ_register_events(void)
 {
     sdlx_loc_t *locp;
     sdlx_loc_t loc;
 
-    locp = sdlx_render_printf(0, 500, "%s", rgb_filter_name[rgb_filter]);
-    sdlx_register_event(locp, EVID_RGB_FILTER);
+    locp = sdlx_render_printf(0, 500, "%s", filter_name[which_filter]);
+    sdlx_register_event(locp, EVID_FILTER_SLCT);
 
-    locp = sdlx_render_printf(sdlx_win_width-5*sdlx_char_width_dflt, 500, "%s", "RESET");
-    sdlx_register_event(locp, EVID_RESET);
+    locp = sdlx_render_printf(sdlx_win_width-4*sdlx_char_width_dflt, 500, "%s", "SLCT");
+    sdlx_register_event(locp, EVID_COLOR_ORGAN_SLCT);
 
-    init_loc(&loc, 0, 0, 333, 250);
-    sdlx_register_event(&loc, EVID_RED_INCREASE);
-    init_loc(&loc, 0, 250, 333, 250);
-    sdlx_register_event(&loc, EVID_RED_DECREASE);
+    if (which_color_organ == COLOR_ORGAN_BARS) {
+        init_loc(&loc, 0, 0, 333, 250);
+        sdlx_register_event(&loc, EVID_RED_INCREASE);
+        init_loc(&loc, 0, 250, 333, 250);
+        sdlx_register_event(&loc, EVID_RED_DECREASE);
 
-    init_loc(&loc, 333, 0, 333, 250);
-    sdlx_register_event(&loc, EVID_GREEN_INCREASE);
-    init_loc(&loc, 333, 250, 333, 250);
-    sdlx_register_event(&loc, EVID_GREEN_DECREASE);
+        init_loc(&loc, 333, 0, 333, 250);
+        sdlx_register_event(&loc, EVID_GREEN_INCREASE);
+        init_loc(&loc, 333, 250, 333, 250);
+        sdlx_register_event(&loc, EVID_GREEN_DECREASE);
 
-    init_loc(&loc, 666, 0, 333, 250);
-    sdlx_register_event(&loc, EVID_BLUE_INCREASE);
-    init_loc(&loc, 666, 250, 333, 250);
-    sdlx_register_event(&loc, EVID_BLUE_DECREASE);
+        init_loc(&loc, 666, 0, 333, 250);
+        sdlx_register_event(&loc, EVID_BLUE_INCREASE);
+        init_loc(&loc, 666, 250, 333, 250);
+        sdlx_register_event(&loc, EVID_BLUE_DECREASE);
+    } else {
+        int x_ctr, y_ctr, r;
+        r=134;
+        x_ctr = 500 - r;
+        y_ctr = 500 - r;
+        init_loc(&loc, x_ctr-r/2, y_ctr-r, r, r);
+        sdlx_register_event(&loc, EVID_RED_INCREASE);
+        init_loc(&loc, x_ctr-r/2, y_ctr, r, r);
+        sdlx_register_event(&loc, EVID_RED_DECREASE);
+
+        x_ctr = 500 + r;
+        y_ctr = 500 - r;
+        init_loc(&loc, x_ctr-r/2, y_ctr-r, r, r);
+        sdlx_register_event(&loc, EVID_GREEN_INCREASE);
+        init_loc(&loc, x_ctr-r/2, y_ctr, r, r);
+        sdlx_register_event(&loc, EVID_GREEN_DECREASE);
+
+        x_ctr = 500;
+        y_ctr = r;
+        init_loc(&loc, x_ctr-r/2, y_ctr-r, r, r);
+        sdlx_register_event(&loc, EVID_BLUE_INCREASE);
+        init_loc(&loc, x_ctr-r/2, y_ctr, r, r);
+        sdlx_register_event(&loc, EVID_BLUE_DECREASE);
+    }
 }
+
+// -----------------  COLOR ORGAN EVENT HANDLER  ---------------------
 
 void color_organ_process_event(sdlx_event_t *ev)
 {
     switch (ev->event_id) {
-    case EVID_RGB_FILTER:
-        rgb_filter = (rgb_filter + 1) % MAX_RGB_FILTER;
-        util_set_numeric_param(data_dir, "rgb_filter", rgb_filter);
+    case EVID_FILTER_SLCT:
+        which_filter = (which_filter + 1) % MAX_FILTER;
+        util_set_numeric_param(data_dir, "filter", which_filter);
+        break;
+    case EVID_COLOR_ORGAN_SLCT:
+        which_color_organ = (which_color_organ + 1) % MAX_COLOR_ORGAN;
+        util_set_numeric_param(data_dir, "color_organ", which_color_organ);
         break;
     case EVID_RED_INCREASE:
     case EVID_RED_DECREASE:
-        rgb_k[RED] += (ev->event_id == EVID_RED_INCREASE ? 1 : -1);
+        rgb_k[RED] += (ev->event_id == EVID_RED_INCREASE ? 5 : -5);
         disp_k = DISP_K_DURATION;
         util_set_numeric_param(data_dir, "rgb_k_red", rgb_k[RED]);
         break;
     case EVID_GREEN_INCREASE:
     case EVID_GREEN_DECREASE:
-        rgb_k[GREEN] += (ev->event_id == EVID_GREEN_INCREASE ? 1 : -1);
+        rgb_k[GREEN] += (ev->event_id == EVID_GREEN_INCREASE ? 5 : -5);
         disp_k = DISP_K_DURATION;
         util_set_numeric_param(data_dir, "rgb_k_green", rgb_k[GREEN]);
         break;
     case EVID_BLUE_INCREASE:
     case EVID_BLUE_DECREASE:
-        rgb_k[BLUE] += (ev->event_id == EVID_BLUE_INCREASE ? 1 : -1);
+        rgb_k[BLUE] += (ev->event_id == EVID_BLUE_INCREASE ? 5 : -5);
         disp_k = DISP_K_DURATION;
         util_set_numeric_param(data_dir, "rgb_k_blue", rgb_k[BLUE]);
         break;
-    case EVID_RESET: // xxx more resets
+    case EVID_RESET: // xxx more resets for the color organ params
         memcpy(rgb_k, rgb_k_default, sizeof(rgb_k));
         util_set_numeric_param(data_dir, "rgb_k_red",   rgb_k[RED]);
         util_set_numeric_param(data_dir, "rgb_k_green", rgb_k[GREEN]);
         util_set_numeric_param(data_dir, "rgb_k_blue",  rgb_k[BLUE]);
 
-        rgb_filter = RGB_FILTER_DEFAULT;
-        util_set_numeric_param(data_dir, "rgb_filter",  rgb_filter);
+        which_filter = FILTER_DEFAULT;
+        util_set_numeric_param(data_dir, "filter", which_filter);
+
+        which_color_organ = COLOR_ORGAN_DEFAULT;
+        util_set_numeric_param(data_dir, "color_organ", which_color_organ);
 
         disp_k  = DISP_K_DURATION;
         break;
@@ -239,7 +329,6 @@ void color_organ_process_event(sdlx_event_t *ev)
 
 // -----------------  UTILS  -----------------------------------------
 
-// xxx delete ?
 sdlx_texture_t *create_circle_texture(sdlx_color_t color)
 {
     sdlx_texture_t *t;

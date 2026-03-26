@@ -229,7 +229,7 @@ void register_events(void)
     color_organ_register_events();
 
     // register control event to end program
-    sdlx_register_control_events(0, NULL,
+    sdlx_register_control_events(EVID_RESET, "RESET",
                                  0, NULL,
                                  EVID_QUIT, "X",
                                  COLOR_WHITE, COLOR_BLACK);

@@ -4,7 +4,8 @@
 char *progname;
 char *data_dir;
 
-// xxx rename to color_organ_1
+#define EVID_RESET      50   // reset color organ params
+
 void color_organ_display(sdlx_audio_state_t *as);
 void color_organ_init(void);
 void color_organ_cleanup(void);
