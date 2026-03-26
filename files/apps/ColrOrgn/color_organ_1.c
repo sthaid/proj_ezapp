@@ -15,6 +15,14 @@
 // - use light blue
 // - horizontal orientation,  display left & right channels;  no params selections
 // - add params for decay and exp smooth
+// - need to make the files subdir if not already there
+// - ezput should copy subdirs too
+// - make a freq seep test file
+// - ctrls to rename and delete files
+// - negative rgb_k
+// - event to display params
+//       7 15 25   ?
+// - auto adjust params
 
 //
 // defines
