@@ -1341,6 +1341,9 @@ int sdlx_audio_play_file(char *dir, char *filename)
          play_file_spec.format, 
          play_file_spec.channels, 
          play_file_spec.freq);
+    if (play_file_spec.channels != 2 || play_file_spec.freq != FRAMES_PER_SEC) {
+        ERROR("expected channels=2 and freq=%d, continuing\n", FRAMES_PER_SEC);
+    }
 
     // get file duration
     duration_frames = MIX_GetAudioDuration(audio);

@@ -26,6 +26,8 @@
 // - show / hide - event to display params
 
 // xxx todo
+// - call to get_samples should return fps and possibly num_channels, and 
+//   caller should deal with the fps
 // - circles mode multiplier constant too large?
 // - horizontal orientation,  display left & right channels;  no params selections
 // - add params for decay and exp smooth
