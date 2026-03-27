@@ -7,23 +7,8 @@ if [ "$parent_dir" != apps -a "$parent_dir" != svcs ]; then
     exit 1
 fi
 
-# if no args provided then 
-#   set filename_list to all files in this directory, 
-#   plus layout file when in subdir of apps, or svcs when in subdir svcs
-# else
-#   else the filename_list are the args
-# endif
-if [ "$1" = "" ]; then
-  filename_list="*"
-  if [ "$parent_dir" = apps ]; then
-    filename_list="$filename_list ../layout"
-  fi
-  if [ "$parent_dir" = svcs ]; then
-    filename_list="$filename_list ../svcs"
-  fi
-else
-  filename_list="$*"
-fi
+# set filename_list equal to args
+filename_list="$*"
 
 # determine the destination dir (on android), and whether it exists
 this_dir="$(basename $PWD)"
@@ -52,11 +37,24 @@ if [ "$android_dir_exists" != YES ]; then
   ezsh "mkdir $android_dir"
 fi
 
-# loop over filename_list
-for filename in $filename_list; do
-  # copy the file to Android
-  echo "copying to android $android_dir/$filename"
-  ezsh "put $filename $android_dir/$filename"
-done
+# if filename_list is empty then
+#   xxx maybe add query to remove pre-existing files
+#   copy all files from this dir to Android
+# else
+#   copy filename_list
+# endif
+if [ "$filename_list" = "" ]; then
+  tar -C ../.. -cf /tmp/ezput.tar $android_dir apps/layout svcs/svcs
+  ezsh put /tmp/ezput.tar 
+  echo "Creating files on Android device ..."
+  ezsh tar -xvf ezput.tar
+  ezsh rm -f ezput.tar
+  rm -f /tmp/ezput.tar
+else
+  for filename in $filename_list; do
+    echo "copying to android $android_dir/$filename"
+    ezsh "put $filename $android_dir/$filename"
+  done
+fi
 
 exit 0

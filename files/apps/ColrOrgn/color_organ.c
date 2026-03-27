@@ -10,20 +10,20 @@
 #include "apps/ColrOrgn/common.h"
 
 // xxx inprog
-// - ezput the entire dir and subdir
-// - need to make the files subdir if not already there
-// - freq sweep
 // - scroll files
 // - negative rgb_k
 // - param values      7 15 25   ?
 // - use light blue
 
 // xxx DONE
+// - ezput the entire dir and subdir
 // - change SLCT to the name
 // - color organ with circles instead
 // - enable / disable box
 // - rename this file
 // - show / hide - event to display params
+// - need to make the files subdir if not already there
+// - freq sweep
 
 // xxx todo
 // - call to get_samples should return fps and possibly num_channels, and 
