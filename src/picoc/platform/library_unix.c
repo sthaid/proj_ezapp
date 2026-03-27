@@ -544,6 +544,19 @@ void Sdlx_audio_record_from_device(struct ParseState *Parser, struct Value *Retu
     ReturnValue->Val->Integer = retval;
 }
 
+void Sdlx_create_test_file(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
+{
+    char * dir           = (char *)Param[0]->Val->Pointer;
+    char * filename      = (char *)Param[1]->Val->Pointer;
+    int    which         = (int)Param[2]->Val->Integer;
+    int    freq1         = (int)Param[3]->Val->Integer;
+    int    freq2         = (int)Param[4]->Val->Integer;
+    int    duration_secs = (int)Param[5]->Val->Integer;
+
+    sdlx_create_test_file(dir, filename, which, freq1, freq2, duration_secs);
+}
+
 //
 // sensors
 //
@@ -791,6 +804,7 @@ struct LibraryFunction SdlFunctions[] = {
     { Sdlx_audio_play_buff,          "int sdlx_audio_play_buff(float *samples, int num_samples, int num_channels, int loops, bool free_samples_when_done);" },
     { Sdlx_audio_record_from_mic,    "int sdlx_audio_record_from_mic(char *dir, char *filename, int auto_stop_secs, bool append, bool start_paused);" },
     { Sdlx_audio_record_from_device, "int sdlx_audio_record_from_device(char *dir, char *filename, bool append, bool start_paused);" },
+    { Sdlx_create_test_file,         "void sdlx_create_test_file(char *dir, char *filename, int which, int freq1, int freq2, int duration_secs);" },
 
     // sensors
     { Sdlx_sensor_get_info_tbl,      "sdlx_sensor_info_t *sdlx_sensor_get_info_tbl(int *max);" },
@@ -885,6 +899,7 @@ typedef struct { \n\
 #define GET_SAMPLES_MONO          0 \n\
 #define GET_SAMPLES_LEFT_CHANNEL  1 \n\
 #define GET_SAMPLES_RIGHT_CHANNEL 2 \n\
+#define TEST_FILE_FREQ_SWEEP 1 \n\
 typedef struct { \n\
     short freq; \n\
     short intvl_ms; \n\

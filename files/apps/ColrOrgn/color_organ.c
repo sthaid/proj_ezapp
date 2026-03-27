@@ -9,21 +9,30 @@
 
 #include "apps/ColrOrgn/common.h"
 
-// xxx todo
-// - get rid of boxes, make it a setup option
-// - color organ with circles instead
+// xxx inprog
+// - ezput the entire dir and subdir
+// - need to make the files subdir if not already there
+// - freq sweep
+// - scroll files
+// - negative rgb_k
+// - param values      7 15 25   ?
 // - use light blue
+
+// xxx DONE
+// - change SLCT to the name
+// - color organ with circles instead
+// - enable / disable box
+// - rename this file
+// - show / hide - event to display params
+
+// xxx todo
+// - circles mode multiplier constant too large?
 // - horizontal orientation,  display left & right channels;  no params selections
 // - add params for decay and exp smooth
-// - need to make the files subdir if not already there
 // - ezput should copy subdirs too
 // - make a freq seep test file
 // - ctrls to rename and delete files
-// - negative rgb_k
-// - event to display params
-//       7 15 25   ?
 // - auto adjust params
-// - rename this file
 
 //
 // defines
@@ -106,13 +115,6 @@ void color_organ_cleanup(void)
 
 // -----------------  COLOR ORGAN DISPLAY  ---------------------------
 
-#define LOW_BAND_START   60
-#define LOW_BAND_END     150
-#define MID_BAND_START   200
-#define MID_BAND_END     600
-#define HIGH_BAND_START  800
-#define HIGH_BAND_END    2200
-
 #define DISP_K_DURATION 30
 
 void display_band(int which, float band_volume);
@@ -146,7 +148,7 @@ void color_organ_display(sdlx_audio_state_t *as)
         display_band(BLUE, high_band);
     }
 
-    if (disp_k > 0) {
+    if (show_params || disp_k > 0) {
         int x_ctr, y_ctr, param_value;
 
         disp_k--;
@@ -231,11 +233,13 @@ void color_organ_register_events(void)
 {
     sdlx_loc_t *locp;
     sdlx_loc_t loc;
+    char      *clr_orgn_name;
 
     locp = sdlx_render_printf(0, 500, "%s", filter_name[which_filter]);
     sdlx_register_event(locp, EVID_FILTER_SLCT);
 
-    locp = sdlx_render_printf(sdlx_win_width-4*sdlx_char_width_dflt, 500, "%s", "SLCT");
+    clr_orgn_name = color_organ_name[which_color_organ];
+    locp = sdlx_render_printf(sdlx_win_width-strlen(clr_orgn_name)*sdlx_char_width_dflt, 500, "%s", clr_orgn_name);
     sdlx_register_event(locp, EVID_COLOR_ORGAN_SLCT);
 
     if (which_color_organ == COLOR_ORGAN_BARS) {
@@ -323,6 +327,9 @@ void color_organ_process_event(sdlx_event_t *ev)
         util_set_numeric_param(data_dir, "color_organ", which_color_organ);
 
         disp_k  = DISP_K_DURATION;
+        break;
+    case EVID_SHOW_PARAMS:
+        show_params = !show_params;
         break;
     }
 }

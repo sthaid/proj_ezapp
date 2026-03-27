@@ -75,6 +75,18 @@ int main(int argc, char **argv)
     y_controls = y_title + 1.5*sdlx_char_height_dflt;
     y_files_list = y_controls + 2.0*sdlx_char_height_dflt;
 
+    // if sweep test file doesn't exist then create it; file duration is 10 secs
+    if (!util_file_exists(files_dir, "zz_sweep_all.mp3")) {
+        sdlx_create_test_file(files_dir, "zz_sweep_all.mp3", TEST_FILE_FREQ_SWEEP, 
+                              LOW_BAND_START, HIGH_BAND_END, 10);
+        sdlx_create_test_file(files_dir, "zz_sweep_low.mp3", TEST_FILE_FREQ_SWEEP, 
+                              LOW_BAND_START, LOW_BAND_END, 10);
+        sdlx_create_test_file(files_dir, "zz_sweep_mid.mp3", TEST_FILE_FREQ_SWEEP, 
+                              MID_BAND_START, MID_BAND_END, 10);
+        sdlx_create_test_file(files_dir, "zz_sweep_high.mp3", TEST_FILE_FREQ_SWEEP, 
+                              HIGH_BAND_START, HIGH_BAND_END, 10);
+    }
+
     // yyy
     color_organ_init();
 
@@ -230,7 +242,7 @@ void register_events(void)
 
     // register control event to end program
     sdlx_register_control_events(EVID_RESET, "RESET",
-                                 0, NULL,
+                                 EVID_SHOW_PARAMS, (!show_params ? "SHOW" : "HIDE"),
                                  EVID_QUIT, "X",
                                  COLOR_WHITE, COLOR_BLACK);
 }

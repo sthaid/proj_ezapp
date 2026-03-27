@@ -200,6 +200,13 @@ int sdlx_audio_play_buff(float *samples, int num_samples, int num_channels,
 int sdlx_audio_record_from_mic(char *dir, char *filename, int auto_stop_secs, bool append, bool start_paused);
 int sdlx_audio_record_from_device(char *dir, char *filename, bool append, bool start_paused);
 
+// - - - - - -
+// create test file
+// - - - - - -
+
+#define TEST_FILE_FREQ_SWEEP 1
+void sdlx_create_test_file(char *dir, char *filename, int which, int freq1, int freq2, int duration_secs);
+
 // --------------------
 // SENSORS
 // --------------------
@@ -343,6 +350,7 @@ void sdlx_sensor_quit(void);
 
 // sdlx_event.c
 void sdlx_reset_events(void);
+void sdlx_event_box_ctrl(bool event_box_enable);
 
 // sdlx_misc.c
 #define SUBSYS_VIDEO  1

@@ -35,7 +35,9 @@ static int          max_event;
 static bool         evid_motion_registered;
 static bool         evid_keybd_registered;
 
-static int          sdlx_event_quit_rcvd;
+static int          event_quit_rcvd;
+
+static bool         event_box_enable;
 
 //
 // prototypes
@@ -52,6 +54,11 @@ void sdlx_reset_events(void)
     max_event = 0;
     evid_motion_registered = false;
     evid_keybd_registered = false;
+}
+
+void sdlx_event_box_ctrl(bool enable)
+{
+    event_box_enable = enable;
 }
 
 void sdlx_register_event(sdlx_loc_t *loc, int event_id)
@@ -86,7 +93,9 @@ void sdlx_register_event(sdlx_loc_t *loc, int event_id)
     }
 
     // xxx temporary
-    sdlx_render_rect(loc2.x, loc2.y, loc2.w, loc2.h, 1, COLOR_WHITE);
+    if (event_box_enable) {
+        sdlx_render_rect(loc2.x, loc2.y, loc2.w, loc2.h, 1, COLOR_WHITE);
+    }
 
     event_tbl[max_event].loc = loc2;
     event_tbl[max_event].event_id  = event_id; 
@@ -152,8 +161,8 @@ void sdlx_get_event(long timeout_us, sdlx_event_t *event)
 
     // if SDL_QUIT has been received then
     // repeat returning EVID_QUIT
-    if (sdlx_event_quit_rcvd > 0) {
-        sdlx_event_quit_rcvd--;
+    if (event_quit_rcvd > 0) {
+        event_quit_rcvd--;
         event->event_id = EVID_QUIT;
         return;
     }
@@ -299,11 +308,11 @@ static void process_sdlx_event(SDL_Event *ev, sdlx_event_t *event)
         // not used
         break; }
     case SDL_EVENT_QUIT: { //xxx
-        // the sdlx_event_quit_rcvd variable is set so that 
+        // the event_quit_rcvd variable is set so that 
         // this routine will repeat returning EVID_QUIT, so that
         // a running app will first process the EVID_QUIT, and 
         // finally main will process EVID_QUIT
-        sdlx_event_quit_rcvd = 10;
+        event_quit_rcvd = 10;
         event->event_id = EVID_QUIT;
         break; }
 

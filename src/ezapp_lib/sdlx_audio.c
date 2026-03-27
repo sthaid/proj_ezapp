@@ -107,7 +107,7 @@ int sdlx_audio_init(void)
 
     lame_set_num_channels(gfp,2);
     lame_set_in_samplerate(gfp,FRAMES_PER_SEC);
-    lame_set_brate(gfp,64);
+    lame_set_brate(gfp,128);
     lame_set_mode(gfp,MP3_LAME_MODE_JOINT_STEREO);
     lame_set_quality(gfp,2);   // 2=high  5 = medium  7=low
 
@@ -369,7 +369,7 @@ void sdlx_audio_get_params(sdlx_audio_params_t *ap)
     *ap = audio_params;
 }
 
-// -----------------  UTILS  -----------------------------
+// -----------------  SAVE / GET AUDIO SAMPLES  ----------
 
 #define MAX_AUDIO_SAMPLES 65536
 typedef struct {
@@ -1334,7 +1334,7 @@ int sdlx_audio_play_file(char *dir, char *filename)
         return -1;
     }
 
-    // get audio format
+    // get audio format xxx print error if these are not expected
     MIX_GetAudioFormat(audio, &play_file_spec);
     INFO("format = %s 0x%x  channels=%d  freq = %d\n", 
          audio_fmt_str(play_file_spec.format), 
@@ -1392,7 +1392,7 @@ static void mixer_track_raw_callback(void *userdata, MIX_Track *track, const SDL
     save_audio_samples(samples, 
                        num_samples, 
                        play_file_spec.channels,
-                       play_file_spec.freq);
+                       play_file_spec.freq);  // xxx handle these ?
 }
 
 static void mixer_track_stopped_callback(void *userdata, MIX_Track *track)
@@ -1449,3 +1449,63 @@ int sdlx_audio_file_duration_secs(char *dir, char *filename)
     return duration_secs;
 }
 #endif
+
+// -----------------  CREATE TEST MP3 FILE  -------------------
+
+// xxx add to both Test and ColrOrgn ?
+
+#define TEST_FILE_FREQ_SWEEP 1
+
+void sdlx_create_test_file(char *dir, char *filename, int which, int freq1, int freq2, int duration_secs)
+{
+    #define MAX_DUR_SECS 10
+    #define TWO_PI       (2 * M_PI)
+
+    int    num_samples;
+    int    num_frames;
+    float *samples;
+    void  *cx;
+
+    // ensure duration is in range
+    if (duration_secs < 1 || duration_secs > MAX_DUR_SECS) {
+        ERROR("invalid duration %d secs, must be <= %d secs\n", duration_secs, MAX_DUR_SECS);
+        return;
+    }
+
+    // allocate memory for samples
+    num_frames = FRAMES_PER_SEC * duration_secs;
+    num_samples = 2 * num_frames;
+    samples = calloc(num_samples, sizeof(float));
+
+    // init buffer
+    switch (which) {
+    case TEST_FILE_FREQ_SWEEP: {
+        INFO("creating %s/%s - %d sec freq sweep %d-%d Hz\n", dir, filename, duration_secs, freq1, freq2);
+        if (freq1 < 20 || freq1 > 10000 || freq2 < 20 || freq2 > 10000 || freq1 > freq2) {
+            ERROR("invalid freq range %d - %d\n", freq1, freq2);
+            free(samples);
+            return;
+        }
+        double f=0, phase=0;
+        int    k = 0;
+        for (int i = 0; i < num_frames; i++) {
+            f = freq1 + ((double)i / num_frames) * (freq2 - freq1);
+            phase += (TWO_PI / FRAMES_PER_SEC) * f;
+            samples[k] = samples[k+1] = sin(phase);
+            k+=2;
+        }
+        break; }
+    default:
+        ERROR("which=%d is invalid\n", which);
+        free(samples);
+        return;
+    }
+
+    // create mp3 file from stereo samples
+    cx = mp3_file_open(dir, filename, 2, false);
+    mp3_file_write(cx, samples, num_samples);
+    mp3_file_close(cx);
+
+    // cleanup
+    free(samples);
+}

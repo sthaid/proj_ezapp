@@ -55,6 +55,7 @@ typedef struct {
     bool   foreground_enabled;
     double record_gain;
     double record_silence;
+    bool   event_box_enable;
 } params_t;
 
 //
@@ -144,14 +145,16 @@ static int init(void)
     util_android_utils_init();
 
     // get params, if they don't exist, set to default value
-    params.devel_mode = util_get_numeric_param(".", "devel_mode", 0);
+    params.devel_mode = util_get_numeric_param(".", "devel_mode", false);
     params.devel_port = util_get_numeric_param(".", "devel_port", DEFAULT_DEVEL_PORT);
     strcpy(params.devel_password, util_get_str_param(".", "devel_password", DEFAULT_DEVEL_PASSWORD));
     params.foreground_enabled = util_get_numeric_param(".", "foreground_enabled", 1);
     params.record_gain = util_get_numeric_param(".", "record_gain", DEFAULT_RECORD_GAIN);
     params.record_silence = util_get_numeric_param(".", "record_silence", DEFAULT_RECORD_SILENCE);
+    params.event_box_enable = util_get_numeric_param(".", "event_box_enable", false);
 
-    // provide the audio params to the sdlx_audio code
+    // provide params to other modules, when needed
+    sdlx_event_box_ctrl(params.event_box_enable);
     sdlx_audio_params_t ap = { params.record_gain, params.record_silence };
     sdlx_audio_set_params(&ap);
 
@@ -659,6 +662,7 @@ static void settings(void)
     #define EVID_RECORD_TEST          1008
     #define EVID_RESET_APPS_AND_SVCS  1020
     #define EVID_FOREGROUND           1021
+    #define EVID_EVENT_BOX_ENABLE     1022
 
     #define GET_Y2 ({ y2 += 2*sdlx_char_height_dflt; \
                       y2 >= y_top - 1.5 * sdlx_char_height_dflt && y2 <= y_bottom; })
@@ -767,6 +771,12 @@ static void settings(void)
         if (GET_Y2) {
             loc = sdlx_render_printf(0, y2, "Foreground = %s", params.foreground_enabled ? "ENABLED" : "DISABLED");
             sdlx_register_event(loc, EVID_FOREGROUND);
+        }
+
+        // display Event_Box
+        if (GET_Y2) {
+            loc = sdlx_render_printf(0, y2, "Event_Box = %s", params.event_box_enable ? "ENABLED" : "DISABLED");
+            sdlx_register_event(loc, EVID_EVENT_BOX_ENABLE);
         }
 
         // change print color back to white
@@ -900,6 +910,11 @@ static void settings(void)
             } else {
                 util_stop_foreground();
             }
+            break; }
+        case EVID_EVENT_BOX_ENABLE: {
+            params.event_box_enable = (params.event_box_enable ? false : true);
+            util_set_numeric_param(".", "event_box_enable", params.event_box_enable);
+            sdlx_event_box_ctrl(params.event_box_enable);
             break; }
         case EVID_MOTION:
             y += event.u.motion.yrel;
