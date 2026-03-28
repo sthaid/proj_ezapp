@@ -92,7 +92,7 @@ void sdlx_register_event(sdlx_loc_t *loc, int event_id)
         loc2.y -= delta/2;
     }
 
-    // xxx temporary
+    // xxx comment  
     if (event_box_enable) {
         sdlx_render_rect(loc2.x, loc2.y, loc2.w, loc2.h, 1, COLOR_WHITE);
     }
@@ -235,12 +235,12 @@ static void process_sdlx_event(SDL_Event *ev, sdlx_event_t *event)
 
             INFO("button released xy = %d %d, delta xy = %d %d\n", x, y, delta_x, delta_y);
 
-            for (i = 0; i < max_event; i++) {
+            for (i = max_event-1; i >= 0; i--) {
                 if (AT_LOC(x, y, event_tbl[i].loc)) {
                     break;
                 }
             }
-            if (i < max_event &&
+            if (i >= 0 &&
                 AT_LOC(last_pressed_x, last_pressed_y, event_tbl[i].loc))
             {
                 event->event_id = event_tbl[i].event_id;

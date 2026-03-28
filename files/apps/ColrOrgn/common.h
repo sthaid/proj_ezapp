@@ -5,6 +5,9 @@ char *progname;
 char *data_dir;
 char  files_dir[100];
 
+#define COLOR_ORGAN_H        800  
+#define COLOR_ORGAN_TOTAL_H  (COLOR_ORGAN_H + 82)  // includes one line below color organ
+
 #define LOW_BAND_START   60
 #define LOW_BAND_END     150
 #define MID_BAND_START   200

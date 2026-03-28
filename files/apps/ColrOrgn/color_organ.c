@@ -44,7 +44,7 @@
 #define GREEN  1
 #define BLUE   2
 
-#define CIRCLE_RADIUS  134   // 500 / (2 + sqrt(3))
+#define COH  COLOR_ORGAN_H  // abbreviation
 
 #define EVID_FILTER_SLCT      1001
 #define EVID_COLOR_ORGAN_SLCT 1002
@@ -85,6 +85,8 @@ sdlx_texture_t *red_circle_texture;
 sdlx_texture_t *green_circle_texture;
 sdlx_texture_t *blue_circle_texture;
 
+int circle_radius;
+
 //
 // prototypes
 //
@@ -106,8 +108,10 @@ void color_organ_init(void)
     green_circle_texture = create_circle_texture(COLOR_GREEN);
     blue_circle_texture  = create_circle_texture(COLOR_BLUE);
 
+    circle_radius = COH / (2 + sqrt(3));
+
     if (!util_file_exists(files_dir, "test_all.mp3")) {
-        printf("I %s: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX CREATING TEST FILES\n", progname);
+        printf("I %s: creating test files\n", progname);
         sdlx_create_test_file(files_dir, "test_all.mp3", TEST_FILE_FREQ_SWEEP, 
                               LOW_BAND_START, HIGH_BAND_END, 10);
         sdlx_create_test_file(files_dir, "test_low.mp3", TEST_FILE_FREQ_SWEEP,
@@ -166,18 +170,18 @@ void color_organ_display(sdlx_audio_state_t *as)
 
         disp_k--;
 
-        x_ctr = (which_color_organ == COLOR_ORGAN_BARS ? 333/2 : 500-CIRCLE_RADIUS);
-        y_ctr = (which_color_organ == COLOR_ORGAN_BARS ? 250   : 500-CIRCLE_RADIUS);
+        x_ctr = (which_color_organ == COLOR_ORGAN_BARS ? 333/2 : 500-circle_radius);
+        y_ctr = (which_color_organ == COLOR_ORGAN_BARS ? COH/2 : COH-circle_radius);
         param_value = rgb_k[RED];
         sdlx_render_printf_ex2(x_ctr, y_ctr, FONT_NORMAL, COLOR_WHITE, FLAG_XY_CTR, WRAP_NONE, "%d", param_value); 
 
-        x_ctr = (which_color_organ == COLOR_ORGAN_BARS ? 333/2+333 : 500+CIRCLE_RADIUS);
-        y_ctr = (which_color_organ == COLOR_ORGAN_BARS ? 250       : 500-CIRCLE_RADIUS);
+        x_ctr = (which_color_organ == COLOR_ORGAN_BARS ? 333/2+333 : 500+circle_radius);
+        y_ctr = (which_color_organ == COLOR_ORGAN_BARS ? COH/2     : COH-circle_radius);
         param_value = rgb_k[GREEN];
         sdlx_render_printf_ex2(x_ctr, y_ctr, FONT_NORMAL, COLOR_WHITE, FLAG_XY_CTR, WRAP_NONE, "%d", param_value); 
 
         x_ctr = (which_color_organ == COLOR_ORGAN_BARS ? 333/2+666 : 500);
-        y_ctr = (which_color_organ == COLOR_ORGAN_BARS ? 250       : CIRCLE_RADIUS);
+        y_ctr = (which_color_organ == COLOR_ORGAN_BARS ? COH/2     : circle_radius);
         param_value = rgb_k[BLUE];
         sdlx_render_printf_ex2(x_ctr, y_ctr, FONT_NORMAL, COLOR_WHITE, FLAG_XY_CTR, WRAP_NONE, "%d", param_value); 
     }
@@ -208,11 +212,11 @@ void display_band(int which, float band_volume)
 
     if (which_color_organ == COLOR_ORGAN_BARS) {
         int          x = which * 333;
-        int          h = 500*smoothed[which];
+        int          h = COH*smoothed[which];
         sdlx_color_t color;
 
         color = (which == RED ? COLOR_RED : (which == GREEN ? COLOR_GREEN : COLOR_BLUE));
-        sdlx_render_fill_rect(x, 500-h, 333, h, color);
+        sdlx_render_fill_rect(x, COH-h, 333, h, color);
     } else {
         sdlx_texture_t *t;
         int             x_ctr, y_ctr;
@@ -222,21 +226,21 @@ void display_band(int which, float band_volume)
         if (which == RED) {
             intensity = smoothed[RED] * k;
             t = red_circle_texture;
-            x_ctr = 500 - CIRCLE_RADIUS;
-            y_ctr = 500 - CIRCLE_RADIUS;
+            x_ctr = 500 - circle_radius;
+            y_ctr = COH - circle_radius;
         } else if (which == GREEN) {
             intensity = smoothed[GREEN] * k;
             t = green_circle_texture;
-            x_ctr = 500 + CIRCLE_RADIUS;
-            y_ctr = 500 - CIRCLE_RADIUS;
+            x_ctr = 500 + circle_radius;
+            y_ctr = COH - circle_radius;
         } else {
             intensity = smoothed[BLUE] * k;
             t = blue_circle_texture;
             x_ctr = 500;
-            y_ctr = CIRCLE_RADIUS;
+            y_ctr = circle_radius;
         }
         sdlx_color_mod_texture(t, intensity, intensity, intensity);
-        sdlx_render_texture_ex1(t, x_ctr-CIRCLE_RADIUS, y_ctr-CIRCLE_RADIUS, 2*CIRCLE_RADIUS, 2*CIRCLE_RADIUS);
+        sdlx_render_texture_ex1(t, x_ctr-circle_radius, y_ctr-circle_radius, 2*circle_radius, 2*circle_radius);
     }
 }
 
@@ -248,41 +252,42 @@ void color_organ_register_events(void)
     sdlx_loc_t loc;
     char      *clr_orgn_name;
 
-    locp = sdlx_render_printf_ex1(0, 500, FONT_NORMAL, COLOR_LIGHT_BLUE, "%s", filter_name[which_filter]);
+    locp = sdlx_render_printf_ex1(0, COH, FONT_NORMAL, COLOR_LIGHT_BLUE, "%s", filter_name[which_filter]);
     sdlx_register_event(locp, EVID_FILTER_SLCT);
 
     clr_orgn_name = color_organ_name[which_color_organ];
-    locp = sdlx_render_printf_ex1(sdlx_win_width-strlen(clr_orgn_name)*sdlx_char_width_dflt, 500, 
+    locp = sdlx_render_printf_ex1(sdlx_win_width-strlen(clr_orgn_name)*sdlx_char_width_dflt, COH, 
                                   FONT_NORMAL, COLOR_LIGHT_BLUE, "%s", clr_orgn_name);
     sdlx_register_event(locp, EVID_COLOR_ORGAN_SLCT);
 
     if (which_color_organ == COLOR_ORGAN_BARS) {
-        init_loc(&loc, 0, 0, 333, 250);
+        init_loc(&loc, 0, 0, 333, COH/2);
         sdlx_register_event(&loc, EVID_RED_INCREASE);
-        init_loc(&loc, 0, 250, 333, 250);
+        init_loc(&loc, 0, COH/2, 333, COH/2);
         sdlx_register_event(&loc, EVID_RED_DECREASE);
 
-        init_loc(&loc, 333, 0, 333, 250);
+        init_loc(&loc, 333, 0, 333, COH/2);
         sdlx_register_event(&loc, EVID_GREEN_INCREASE);
-        init_loc(&loc, 333, 250, 333, 250);
+        init_loc(&loc, 333, COH/2, 333, COH/2);
         sdlx_register_event(&loc, EVID_GREEN_DECREASE);
 
-        init_loc(&loc, 666, 0, 333, 250);
+        init_loc(&loc, 666, 0, 333, COH/2);
         sdlx_register_event(&loc, EVID_BLUE_INCREASE);
-        init_loc(&loc, 666, 250, 333, 250);
+        init_loc(&loc, 666, COH/2, 333, COH/2);
         sdlx_register_event(&loc, EVID_BLUE_DECREASE);
     } else {
-        int x_ctr, y_ctr, r;
-        r=134;
+        int x_ctr, y_ctr;
+        int r = circle_radius;
+
         x_ctr = 500 - r;
-        y_ctr = 500 - r;
+        y_ctr = COH - r;
         init_loc(&loc, x_ctr-r/2, y_ctr-r, r, r);
         sdlx_register_event(&loc, EVID_RED_INCREASE);
         init_loc(&loc, x_ctr-r/2, y_ctr, r, r);
         sdlx_register_event(&loc, EVID_RED_DECREASE);
 
         x_ctr = 500 + r;
-        y_ctr = 500 - r;
+        y_ctr = COH - r;
         init_loc(&loc, x_ctr-r/2, y_ctr-r, r, r);
         sdlx_register_event(&loc, EVID_GREEN_INCREASE);
         init_loc(&loc, x_ctr-r/2, y_ctr, r, r);

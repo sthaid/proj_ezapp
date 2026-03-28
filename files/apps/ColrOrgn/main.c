@@ -71,7 +71,7 @@ int main(int argc, char **argv)
     sprintf(files_dir, "%s/files", data_dir);
 
     // init y locations
-    y_state = 1000 + 1.5*sdlx_char_height_dflt;
+    y_state = COLOR_ORGAN_TOTAL_H + sdlx_char_height_dflt/2;
     y_controls = y_state + 1.5*sdlx_char_height_dflt;
     y_files_list_top = y_controls + 1.5*sdlx_char_height_dflt;
     y_files_list_bottom = sdlx_win_height - CONTROL_EVENTS_DISPLAY_HEIGHT;
@@ -235,8 +235,8 @@ void register_events(void)
     get_list_of_files();
     for (int i = 0; i < max_files; i++) {
         int y = y_files_list + i * (1.5*sdlx_char_height_dflt);
-        if (y < y_files_list_top) continue;
-        if (y > y_files_list_bottom) break;
+        if (y+30 < y_files_list_top) continue;
+        if (y+sdlx_char_height_dflt > y_files_list_bottom) break;
 
         loc = sdlx_render_printf_ex1(0, y, FONT_NORMAL, COLOR_LIGHT_BLUE, "%s", files[i]);
         sdlx_register_event(loc, EVID_PLAY_FILE+i);
