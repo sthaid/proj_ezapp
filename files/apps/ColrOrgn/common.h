@@ -3,6 +3,7 @@
 
 char *progname;
 char *data_dir;
+char  files_dir[100];
 
 #define LOW_BAND_START   60
 #define LOW_BAND_END     150

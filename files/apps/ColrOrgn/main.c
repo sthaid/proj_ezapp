@@ -31,14 +31,14 @@
 char *files[MAX_FILES];
 int   max_files;
 
-int y_title;
-int y_controls;
-int y_files_list;
+int   y_state;
+int   y_controls;
+int   y_files_list;
+int   y_files_list_top;
+int   y_files_list_bottom;
 
-sdlx_audio_state_t as;  // yyy move to common, and make a ptr
+sdlx_audio_state_t as;
 
-char files_dir[100];  // yyy move to common?
-    
 //
 // prototypes
 //
@@ -71,23 +71,13 @@ int main(int argc, char **argv)
     sprintf(files_dir, "%s/files", data_dir);
 
     // init y locations
-    y_title = 500 + 2.0*sdlx_char_height_dflt;
-    y_controls = y_title + 1.5*sdlx_char_height_dflt;
-    y_files_list = y_controls + 2.0*sdlx_char_height_dflt;
+    y_state = 1000 + 1.5*sdlx_char_height_dflt;
+    y_controls = y_state + 1.5*sdlx_char_height_dflt;
+    y_files_list_top = y_controls + 1.5*sdlx_char_height_dflt;
+    y_files_list_bottom = sdlx_win_height - CONTROL_EVENTS_DISPLAY_HEIGHT;
+    y_files_list = y_files_list_top;
 
-    // if sweep test file doesn't exist then create it; file duration is 10 secs
-    if (!util_file_exists(files_dir, "zz_sweep_all.mp3")) {
-        sdlx_create_test_file(files_dir, "zz_sweep_all.mp3", TEST_FILE_FREQ_SWEEP, 
-                              LOW_BAND_START, HIGH_BAND_END, 10);
-        sdlx_create_test_file(files_dir, "zz_sweep_low.mp3", TEST_FILE_FREQ_SWEEP, 
-                              LOW_BAND_START, LOW_BAND_END, 10);
-        sdlx_create_test_file(files_dir, "zz_sweep_mid.mp3", TEST_FILE_FREQ_SWEEP, 
-                              MID_BAND_START, MID_BAND_END, 10);
-        sdlx_create_test_file(files_dir, "zz_sweep_high.mp3", TEST_FILE_FREQ_SWEEP, 
-                              HIGH_BAND_START, HIGH_BAND_END, 10);
-    }
-
-    // yyy
+    // initialize color organ
     color_organ_init();
 
     // runtime loop
@@ -95,14 +85,12 @@ int main(int argc, char **argv)
         // init the backbuffer
         sdlx_display_init(COLOR_BLACK);
 
-        // get audio state yyy should return a pointer, not the copy?
-        // yyy call just once to get the ptr?
-        // yyy or new api to get the fft info (a copy of it)
+        // get audio state 
         sdlx_audio_get_state(&as);
 
-        // display title line  yyy display in red when recording
+        // display title line
         state_str = get_state_str(&recording);
-        sdlx_render_printf_ex2(sdlx_win_width/2, y_title,
+        sdlx_render_printf_ex2(sdlx_win_width/2, y_state,
                                FONT_NORMAL, 
                                (recording ? COLOR_RED : COLOR_WHITE),
                                FLAG_X_CTR, WRAP_NONE,
@@ -137,18 +125,20 @@ int main(int argc, char **argv)
                 break;
 
             // record or monitor device
+            // yyy better way to get the name at top
             case EVID_DEV:
                 // append         = false
                 // start_paused   = true
-                sdlx_audio_record_from_device(files_dir, "record_dev.mp3", false, true);
+                sdlx_audio_record_from_device(files_dir, "a1_rec_dev.mp3", false, true);
                 break;
 
             // record or monitor microphone
+            // yyy better way to get the name at top
             case EVID_MIC: {
                 // auto_stop_secs = 0
                 // append         = false
                 // start_paused   = true
-                sdlx_audio_record_from_mic(files_dir, "record_mic.mp3", 0, false, true);
+                sdlx_audio_record_from_mic(files_dir, "a1_rec_mic.mp3", 0, false, true);
                 break; }
 
             // these apply when recording from device or microphone
@@ -170,6 +160,14 @@ int main(int argc, char **argv)
             // end program
             case EVID_QUIT:
                 end_program = true;
+                break;
+
+            // scroll file list
+            case EVID_MOTION:
+                y_files_list += event.u.motion.yrel;
+                if (y_files_list >= y_files_list_top) {
+                    y_files_list = y_files_list_top;
+                }
                 break;
 
             // adjust color organ
@@ -195,52 +193,64 @@ void register_events(void)
 {
     sdlx_loc_t *loc;
 
-    // yyy comment
+    // register events:
+    // - EVID_DEV:     start monitor/record of device audio
+    // - EVID_MIC:     start monitor/record of microphone
+    // - EVID_STOP:    stop playback or recording
+    // - EVID_MONITOR: monitor microphone or device audio
+    // - EVID_REC:     record microphone, or device audio
+    // - EVID_PAUSE:   pause playback/record
+    // - EVID_CONT:    continue
     if (as.state == AUDIO_STATE_IDLE) {
-        loc = sdlx_render_printf(COL2X(0), y_controls, "%s", "DEVICE");
+        loc = sdlx_render_printf_ex1(0, y_controls, FONT_NORMAL, COLOR_LIGHT_BLUE, "%s", "DEV");
         sdlx_register_event(loc, EVID_DEV);
-        loc = sdlx_render_printf(COL2X(10), y_controls, "%s", "MICROPHONE");
+        loc = sdlx_render_printf_ex1(sdlx_win_width-3*sdlx_char_width_dflt, y_controls, FONT_NORMAL, COLOR_LIGHT_BLUE, "%s", "MIC");
         sdlx_register_event(loc, EVID_MIC);
     } else if (as.state == AUDIO_STATE_RECORD_FROM_MIC ||
                as.state == AUDIO_STATE_RECORD_FROM_DEVICE) {
-        loc = sdlx_render_printf(COL2X(0), y_controls, "%s", "STOP");
+        loc = sdlx_render_printf_ex1(0, y_controls, FONT_NORMAL, COLOR_LIGHT_BLUE, "%s", "STOP");
         sdlx_register_event(loc, EVID_STOP);
         if (!as.paused) {
-            loc = sdlx_render_printf(COL2X(10), y_controls, "%s", "MONITOR");
+            loc = sdlx_render_printf_ex1(sdlx_win_width-3*sdlx_char_width_dflt, y_controls, FONT_NORMAL, COLOR_LIGHT_BLUE, "%s", "MON");
             sdlx_register_event(loc, EVID_MONITOR);
         } else {
-            loc = sdlx_render_printf(COL2X(10), y_controls, "%s", "RECORD");
+            loc = sdlx_render_printf_ex1(sdlx_win_width-3*sdlx_char_width_dflt, y_controls, FONT_NORMAL, COLOR_LIGHT_BLUE, "%s", "REC");
             sdlx_register_event(loc, EVID_REC);
         }
     } else if (as.state == AUDIO_STATE_PLAY_FILE) {
-        loc = sdlx_render_printf(COL2X(0), y_controls, "%s", "STOP");
+        loc = sdlx_render_printf_ex1(COL2X(0), y_controls, FONT_NORMAL, COLOR_LIGHT_BLUE, "%s", "STOP");
         sdlx_register_event(loc, EVID_STOP);
         if (!as.paused) {
-            loc = sdlx_render_printf(COL2X(10), y_controls, "%s", "PAUSE");
+            loc = sdlx_render_printf_ex1(sdlx_win_width-5*sdlx_char_width_dflt, y_controls, FONT_NORMAL, COLOR_LIGHT_BLUE, "%s", "PAUSE");
             sdlx_register_event(loc, EVID_PAUSE);
         } else {
-            loc = sdlx_render_printf(COL2X(10), y_controls, "%s", "CONT");
+            loc = sdlx_render_printf_ex1(sdlx_win_width-4*sdlx_char_width_dflt, y_controls, FONT_NORMAL, COLOR_LIGHT_BLUE, "%s", "CONT");
             sdlx_register_event(loc, EVID_CONT);
         }
     } else {
         printf("E %s: invalid audio state %d\n", progname, as.state);
     }
 
-    // yyy comment  move to above
-    if (as.state == AUDIO_STATE_IDLE) {
-        int y = y_files_list;
-        get_list_of_files();
-        for (int i = 0; i < max_files; i++) {
-            loc = sdlx_render_printf(0, y, "%s", files[i]);
-            sdlx_register_event(loc, EVID_PLAY_FILE+i);
-            y += 1.5*sdlx_char_height_dflt;
-        }
+    // get list of mp3 files, and register events to play, rename, or delete each file
+    get_list_of_files();
+    for (int i = 0; i < max_files; i++) {
+        int y = y_files_list + i * (1.5*sdlx_char_height_dflt);
+        if (y < y_files_list_top) continue;
+        if (y > y_files_list_bottom) break;
+
+        loc = sdlx_render_printf_ex1(0, y, FONT_NORMAL, COLOR_LIGHT_BLUE, "%s", files[i]);
+        sdlx_register_event(loc, EVID_PLAY_FILE+i);
+        y += 1.5*sdlx_char_height_dflt;
     }
 
-    // yyy comment
+    // register motion event, which is used to scroll the file list
+    sdlx_register_event(NULL, EVID_MOTION);
+
+    // register color organ events
     color_organ_register_events();
 
     // register control event to end program
+    // yyy change EVID_RESET to EVID_SETTINGS
     sdlx_register_control_events(EVID_RESET, "RESET",
                                  EVID_SHOW_PARAMS, (!show_params ? "SHOW" : "HIDE"),
                                  EVID_QUIT, "X",
@@ -268,7 +278,7 @@ void get_list_of_files(void)
         // make new list
         char s[200], cmd[300];
         FILE *fp;
-        sprintf(cmd, "/bin/ls -1 %s/*.wav %s/*.mp3", files_dir, files_dir);
+        sprintf(cmd, "/bin/ls -1 %s/*.mp3", files_dir);
         fp = popen(cmd, "r");
         while (fgets(s, sizeof(s), fp) != NULL) {
             char *bn;
@@ -297,25 +307,25 @@ char *get_state_str(bool *recording)
         strcpy(buffer, as.pathname);
         short_fn = basename(buffer);
         if (!as.paused) {
-            sprintf(s, "Playing %s", short_fn);
+            sprintf(s, "PLAY %s", short_fn);
         } else {
-            sprintf(s, "Paused %s", short_fn);
+            sprintf(s, "PAUSE %s", short_fn);
         }
         return s;
     case AUDIO_STATE_RECORD_FROM_MIC:
         if (!as.paused) {
             *recording = true;
-            return "Recording MIC";
+            return "REC MIC";
         } else {
-            return "Monitoring MIC";
+            return "MON MIC";
         }
         break;
     case AUDIO_STATE_RECORD_FROM_DEVICE:
         if (!as.paused) {
             *recording = true;
-            return "Recording DEV";
+            return "REC DEV";
         } else {
-            return "Monitoring DEV";
+            return "MON DEV";
         }
         break;
     default:

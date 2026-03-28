@@ -10,7 +10,7 @@
 #include "apps/ColrOrgn/common.h"
 
 // xxx inprog
-// - scroll files
+// - scroll files    IN PROG
 // - negative rgb_k
 // - param values      7 15 25   ?
 // - use light blue
@@ -77,8 +77,7 @@ int   which_filter = FILTER_DEFAULT;
 char *filter_name[MAX_FILTER] = {"NONE", "EXP", "SNAP"};
 
 int   rgb_k[MAX_FILTER];
-//int   rgb_k_default[MAX_FILTER] = {15, 25, 50};
-int   rgb_k_default[MAX_FILTER] = {15, 30, 150};
+int   rgb_k_default[MAX_FILTER] = {10, 15, 25};
 
 int   disp_k;
 
@@ -106,6 +105,18 @@ void color_organ_init(void)
     red_circle_texture   = create_circle_texture(COLOR_RED);
     green_circle_texture = create_circle_texture(COLOR_GREEN);
     blue_circle_texture  = create_circle_texture(COLOR_BLUE);
+
+    if (!util_file_exists(files_dir, "test_all.mp3")) {
+        printf("I %s: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX CREATING TEST FILES\n", progname);
+        sdlx_create_test_file(files_dir, "test_all.mp3", TEST_FILE_FREQ_SWEEP, 
+                              LOW_BAND_START, HIGH_BAND_END, 10);
+        sdlx_create_test_file(files_dir, "test_low.mp3", TEST_FILE_FREQ_SWEEP,
+                              LOW_BAND_START, LOW_BAND_END, 10);
+        sdlx_create_test_file(files_dir, "test_mid.mp3", TEST_FILE_FREQ_SWEEP,
+                              MID_BAND_START, MID_BAND_END, 10);
+        sdlx_create_test_file(files_dir, "test_high.mp3", TEST_FILE_FREQ_SWEEP,
+                              HIGH_BAND_START, HIGH_BAND_END, 10);
+    }
 }
 
 void color_organ_cleanup(void)
@@ -237,11 +248,12 @@ void color_organ_register_events(void)
     sdlx_loc_t loc;
     char      *clr_orgn_name;
 
-    locp = sdlx_render_printf(0, 500, "%s", filter_name[which_filter]);
+    locp = sdlx_render_printf_ex1(0, 500, FONT_NORMAL, COLOR_LIGHT_BLUE, "%s", filter_name[which_filter]);
     sdlx_register_event(locp, EVID_FILTER_SLCT);
 
     clr_orgn_name = color_organ_name[which_color_organ];
-    locp = sdlx_render_printf(sdlx_win_width-strlen(clr_orgn_name)*sdlx_char_width_dflt, 500, "%s", clr_orgn_name);
+    locp = sdlx_render_printf_ex1(sdlx_win_width-strlen(clr_orgn_name)*sdlx_char_width_dflt, 500, 
+                                  FONT_NORMAL, COLOR_LIGHT_BLUE, "%s", clr_orgn_name);
     sdlx_register_event(locp, EVID_COLOR_ORGAN_SLCT);
 
     if (which_color_organ == COLOR_ORGAN_BARS) {
