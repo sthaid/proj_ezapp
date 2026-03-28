@@ -18,12 +18,15 @@ char  files_dir[100];
 #define EVID_RESET       50   // reset color organ params
 #define EVID_SHOW_PARAMS 51   // show / hide color organ params
 
+#define VERTICAL    0  // xxx move to utils
+#define HORIZONTAL  1
+
 bool show_params;
 
-void color_organ_display(sdlx_audio_state_t *as);
+void color_organ_display(sdlx_audio_state_t *as, int orientation);
 void color_organ_init(void);
 void color_organ_cleanup(void);
-void color_organ_register_events(void);
+void color_organ_register_events(int orientation);
 void color_organ_process_event(sdlx_event_t *ev);
 
 #endif

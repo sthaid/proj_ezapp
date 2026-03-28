@@ -124,8 +124,13 @@ void color_organ_cleanup(void)
 
 void display_band(int which, float band_volume);
 
-void color_organ_display(sdlx_audio_state_t *as)
+void color_organ_display(sdlx_audio_state_t *as, int orientation)
 {
+    // xxx todo
+    if (orientation == HORIZONTAL) {
+        return;
+    }
+
     if (as->state != AUDIO_STATE_IDLE) {
         int    num_downsample = 4;
         int    num_samples = nearbyint(FRAMES_PER_SEC / num_downsample * 0.050);  // equals 600
@@ -234,11 +239,16 @@ void display_band(int which, float band_volume)
 
 // -----------------  COLOR ORGAN EVENT REGISTRATION  ----------------
 
-void color_organ_register_events(void)
+void color_organ_register_events(int orientation)
 {
     sdlx_loc_t *locp;
     sdlx_loc_t loc;
     char      *clr_orgn_name;
+
+    // xxx todo
+    if (orientation == HORIZONTAL) {
+        return;
+    }
 
     locp = sdlx_render_printf_ex1(0, COH, FONT_NORMAL, COLOR_LIGHT_BLUE, "%s", filter_name[which_filter]);
     sdlx_register_event(locp, EVID_FILTER_SLCT);
