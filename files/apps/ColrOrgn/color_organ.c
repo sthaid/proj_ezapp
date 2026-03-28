@@ -10,30 +10,18 @@
 #include "apps/ColrOrgn/common.h"
 
 // xxx inprog
-// - scroll files    IN PROG
+// - horizontal orientation,  display left & right channels;  no params selections
+// - ctrls to rename and delete files
 // - negative rgb_k
-// - param values      7 15 25   ?
-// - use light blue
+// - print the duration of each cycle, and set event wait time to allow for the duration  INPROG
 
 // xxx DONE
-// - ezput the entire dir and subdir
-// - change SLCT to the name
-// - color organ with circles instead
-// - enable / disable box
-// - rename this file
-// - show / hide - event to display params
-// - need to make the files subdir if not already there
-// - freq sweep
 
 // xxx todo
 // - call to get_samples should return fps and possibly num_channels, and 
 //   caller should deal with the fps
 // - circles mode multiplier constant too large?
-// - horizontal orientation,  display left & right channels;  no params selections
 // - add params for decay and exp smooth
-// - ezput should copy subdirs too
-// - make a freq seep test file
-// - ctrls to rename and delete files
 // - auto adjust params
 
 //

@@ -57,6 +57,7 @@ int main(int argc, char **argv)
     bool         end_program = false;
     char        *state_str;
     bool         recording;
+    long         time_start=util_microsec_timer(), time_now, duration;
 
     // save args
     progname = argv[0];
@@ -105,9 +106,18 @@ int main(int argc, char **argv)
         // present the display
         sdlx_display_present();
 
+#if 0
+        // xxx comment
+        time_now = util_microsec_timer();
+        duration = time_now - time_start;
+        time_start = time_now;
+        printf("I %s: dur %ld ms\n", progname, duration/1000);
+#endif
+
         // wait for event, with 50 ms timeout;
         // if timedout then continue
-        sdlx_get_event(50000, &event);
+        // xxx comment
+        sdlx_get_event(45000, &event);
         if (event.event_id == -1) {
             continue;
         }
