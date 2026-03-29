@@ -11,11 +11,13 @@
 
 // xxx inprog
 // - horizontal orientation,  display left & right channels;  no params selections
+// - dont do stereo OR dont do circles
+// - add ctrl for testing hori/vert
+
+// xxx next
 // - ctrls to rename and delete files
 // - negative rgb_k
 // - print the duration of each cycle, and set event wait time to allow for the duration  INPROG
-
-// xxx DONE
 
 // xxx todo
 // - call to get_samples should return fps and possibly num_channels, and 
@@ -75,6 +77,8 @@ sdlx_texture_t *blue_circle_texture;
 
 int circle_radius;
 
+sdlx_texture_t *color_organ_texture;
+
 //
 // prototypes
 //
@@ -95,8 +99,9 @@ void color_organ_init(void)
     red_circle_texture   = create_circle_texture(COLOR_RED);
     green_circle_texture = create_circle_texture(COLOR_GREEN);
     blue_circle_texture  = create_circle_texture(COLOR_BLUE);
-
     circle_radius = COH / (2 + sqrt(3));
+
+    color_organ_texture = sdlx_create_texture(1000, COH);
 
     if (!util_file_exists(files_dir, "test_all.mp3")) {
         printf("I %s: creating test files\n", progname);
@@ -116,124 +121,135 @@ void color_organ_cleanup(void)
     sdlx_destroy_texture(red_circle_texture);
     sdlx_destroy_texture(green_circle_texture);
     sdlx_destroy_texture(blue_circle_texture);
+    sdlx_destroy_texture(color_organ_texture);
 }
 
 // -----------------  COLOR ORGAN DISPLAY  ---------------------------
 
 #define DISP_K_DURATION 30
 
-void display_band(int which, float band_volume);
+void display_band(int which_band, float band_volume);
 
-void color_organ_display(sdlx_audio_state_t *as, int orientation)
+void color_organ_display(int orientation, bool idle)
 {
-    // xxx todo
-    if (orientation == HORIZONTAL) {
-        return;
-    }
+    int    num_downsample = 4;
+    int    num_samples = nearbyint(FRAMES_PER_SEC / num_downsample * 0.050);  // equals 600
+    float  delta_f = ((double)FRAMES_PER_SEC/num_downsample) / num_samples;   // equals 20
+    float  samples[600], fft[301];
+    int    first_bin, last_bin;
+    float  low_band, mid_band, high_band;
 
-    if (as->state != AUDIO_STATE_IDLE) {
-        int    num_downsample = 4;
-        int    num_samples = nearbyint(FRAMES_PER_SEC / num_downsample * 0.050);  // equals 600
-        float  delta_f = ((double)FRAMES_PER_SEC/num_downsample) / num_samples;
-        float  samples[600], fft[301];
-        int    first_bin, last_bin;
-        float low_band=0, mid_band=0, high_band=0;
-
+    if (!idle) {
+        // get audio samples and perform fft
         sdlx_get_audio_samples(num_samples, num_downsample, GET_SAMPLES_MONO, samples);
         util_fft_real_to_real(num_samples, samples, fft, true);
 
+        // render to color_organ_texture
+        sdlx_set_render_target(color_organ_texture);
+        sdlx_clear_texture(color_organ_texture, COLOR_BLACK);
+
+        // calculate the band volume for each of the 3 bands
         first_bin = nearbyint(LOW_BAND_START/delta_f);
         last_bin = nearbyint(LOW_BAND_END/delta_f);
         low_band = util_rms_float(&fft[first_bin], last_bin-first_bin+1);// xxx picoc isue requires &fft[first_bin]
-        display_band(RED, low_band);
 
         first_bin = nearbyint(MID_BAND_START/delta_f);
         last_bin = nearbyint(MID_BAND_END/delta_f);
         mid_band = util_rms_float(&fft[first_bin], last_bin-first_bin+1);// xxx picoc isue requires &fft[first_bin]
-        display_band(GREEN, mid_band);
 
         first_bin = nearbyint(HIGH_BAND_START/delta_f);
         last_bin = nearbyint(HIGH_BAND_END/delta_f);
         high_band = util_rms_float(&fft[first_bin], last_bin-first_bin+1);// xxx picoc isue requires &fft[first_bin]
-        display_band(BLUE, high_band);
+    } else {
+        low_band = 0;
+        mid_band = 0;
+        high_band = 0;
     }
 
-    if (show_params || disp_k > 0) {
-        int x_ctr, y_ctr, param_value;
+    // render the band volume for the 3 bands
+    display_band(RED, low_band);
+    display_band(GREEN, mid_band);
+    display_band(BLUE, high_band);
 
-        disp_k--;
+    // restore render target to the display
+    sdlx_set_render_target(NULL);
 
-        x_ctr = (which_color_organ == COLOR_ORGAN_BARS ? 333/2 : 500-circle_radius);
-        y_ctr = (which_color_organ == COLOR_ORGAN_BARS ? COH/2 : COH-circle_radius);
-        param_value = rgb_k[RED];
-        sdlx_render_printf_ex2(x_ctr, y_ctr, FONT_NORMAL, COLOR_WHITE, FLAG_XY_CTR, WRAP_NONE, "%d", param_value); 
-
-        x_ctr = (which_color_organ == COLOR_ORGAN_BARS ? 333/2+333 : 500+circle_radius);
-        y_ctr = (which_color_organ == COLOR_ORGAN_BARS ? COH/2     : COH-circle_radius);
-        param_value = rgb_k[GREEN];
-        sdlx_render_printf_ex2(x_ctr, y_ctr, FONT_NORMAL, COLOR_WHITE, FLAG_XY_CTR, WRAP_NONE, "%d", param_value); 
-
-        x_ctr = (which_color_organ == COLOR_ORGAN_BARS ? 333/2+666 : 500);
-        y_ctr = (which_color_organ == COLOR_ORGAN_BARS ? COH/2     : circle_radius);
-        param_value = rgb_k[BLUE];
-        sdlx_render_printf_ex2(x_ctr, y_ctr, FONT_NORMAL, COLOR_WHITE, FLAG_XY_CTR, WRAP_NONE, "%d", param_value); 
+    // copy the color_organ_texture to the display, based on the caller provided display orientation
+    if (orientation == VERTICAL) {
+        sdlx_render_texture(color_organ_texture, 0, 0);
+    } else {
+        sdlx_render_texture_ex3(color_organ_texture, 
+                                0, sdlx_win_height/2 - 1000/2, 1000, COH,
+                                90, COH/2, COH/2);
     }
+
+    // decrement disp_k, this will stop the display of the band scaling constants
+    // after a short interval
+    if (disp_k > 0) disp_k--;
 }
 
-void display_band(int which, float band_volume)
+void display_band(int which_band, float band_volume)
 {
-    static float smoothed[3];
-    float        scaled;
+    static float smoothed_save[3];
+    float        scaled, smoothed;
 
-    scaled = band_volume * rgb_k[which];
+    scaled = band_volume * rgb_k[which_band];
     if (scaled > 1) scaled = 1;
 
+    smoothed = smoothed_save[which_band];
     if (which_filter == FILTER_NONE) {
-        smoothed[which] = scaled;
+        smoothed = scaled;
     } else if (which_filter == FILTER_EXP_SMOOTH) {
-        smoothed[which] = smoothed[which] + 0.6 * (scaled - smoothed[which]);
+        smoothed = smoothed + 0.6 * (scaled - smoothed);
     } else if (which_filter == FILTER_SNAP) {
-        if (scaled > smoothed[which]) {
-            smoothed[which] = scaled;
+        if (scaled > smoothed) {
+            smoothed = scaled;
         } else {
-            smoothed[which] -= 0.08;
-            if (smoothed[which] < scaled) smoothed[which] = scaled;
+            smoothed -= 0.08;
+            if (smoothed < scaled) smoothed = scaled;
         }
     } else {
-        smoothed[which] = 0;
+        smoothed = 0;
     }
+    smoothed_save[which_band] = smoothed;
 
     if (which_color_organ == COLOR_ORGAN_BARS) {
-        int          x = which * 333;
-        int          h = COH*smoothed[which];
+        int          x = which_band * 333;
+        int          h = COH*smoothed;
         sdlx_color_t color;
 
-        color = (which == RED ? COLOR_RED : (which == GREEN ? COLOR_GREEN : COLOR_BLUE));
+        color = (which_band == RED ? COLOR_RED : (which_band == GREEN ? COLOR_GREEN : COLOR_BLUE));
         sdlx_render_fill_rect(x, COH-h, 333, h, color);
+
+        if (show_params || disp_k > 0) {
+            sdlx_render_printf_ex2(x+333/2, COH/2, FONT_NORMAL, COLOR_WHITE, FLAG_XY_CTR, WRAP_NONE, "%d", rgb_k[which_band]); 
+        }
     } else {
         sdlx_texture_t *t;
         int             x_ctr, y_ctr;
         float           intensity;
         float           k = 2.0;
 
-        if (which == RED) {
-            intensity = smoothed[RED] * k;
+        intensity = smoothed * k;
+        if (which_band == RED) {
             t = red_circle_texture;
             x_ctr = 500 - circle_radius;
             y_ctr = COH - circle_radius;
-        } else if (which == GREEN) {
-            intensity = smoothed[GREEN] * k;
+        } else if (which_band == GREEN) {
             t = green_circle_texture;
             x_ctr = 500 + circle_radius;
             y_ctr = COH - circle_radius;
         } else {
-            intensity = smoothed[BLUE] * k;
             t = blue_circle_texture;
             x_ctr = 500;
             y_ctr = circle_radius;
         }
         sdlx_color_mod_texture(t, intensity, intensity, intensity);
         sdlx_render_texture_ex1(t, x_ctr-circle_radius, y_ctr-circle_radius, 2*circle_radius, 2*circle_radius);
+
+        if (show_params || disp_k > 0) {
+            sdlx_render_printf_ex2(x_ctr, y_ctr, FONT_NORMAL, COLOR_WHITE, FLAG_XY_CTR, WRAP_NONE, "%d", rgb_k[which_band]); 
+        }
     }
 }
 

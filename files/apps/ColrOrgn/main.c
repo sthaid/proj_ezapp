@@ -22,6 +22,7 @@
 #define EVID_REC        5    // select record mode
 #define EVID_PAUSE      6    // pause play file
 #define EVID_CONT       7    // continue play file
+#define EVID_HORI_OVERRIDE       8    // force horizontal orientation, for testing
 #define EVID_PLAY_FILE  100  // start play file, range 100-199
 
 //
@@ -33,11 +34,14 @@ int   max_files;
 
 int   y_state;
 int   y_controls;
+int   y_devel;
 int   y_files_list;
 int   y_files_list_top;
 int   y_files_list_bottom;
 
 sdlx_audio_state_t as;
+
+bool hori_override;
 
 //
 // prototypes
@@ -74,11 +78,12 @@ int main(int argc, char **argv)
     sprintf(files_dir, "%s/files", data_dir);
 
     // init y locations
-    y_state = COLOR_ORGAN_TOTAL_H + sdlx_char_height_dflt/2;
-    y_controls = y_state + 1.5*sdlx_char_height_dflt;
-    y_files_list_top = y_controls + 1.5*sdlx_char_height_dflt;
-    y_files_list_bottom = sdlx_win_height - CONTROL_EVENTS_DISPLAY_HEIGHT;
-    y_files_list = y_files_list_top;
+    y_state              = COLOR_ORGAN_TOTAL_H + sdlx_char_height_dflt/2;
+    y_controls           = y_state + 1.5*sdlx_char_height_dflt;
+    y_devel              = sdlx_win_height - CONTROL_EVENTS_DISPLAY_HEIGHT - sdlx_char_height_dflt;
+    y_files_list_top     = y_controls + 1.5*sdlx_char_height_dflt;
+    y_files_list_bottom  = y_devel;
+    y_files_list         = y_files_list_top;
 
     // initialize color organ
     color_organ_init();
@@ -95,6 +100,7 @@ int main(int argc, char **argv)
         sdlx_audio_get_state(&as);
 
         // when in vertical orientation, display state line
+        // xxx also display when horizontal
         if (orientation == VERTICAL) {
             state_str = get_state_str(&recording);
             sdlx_render_printf_ex2(sdlx_win_width/2, y_state,
@@ -105,7 +111,7 @@ int main(int argc, char **argv)
         }
 
         // display color organ
-        color_organ_display(&as, orientation);
+        color_organ_display(orientation, as.state == AUDIO_STATE_IDLE);
 
         // register events
         register_events(orientation);
@@ -186,6 +192,11 @@ int main(int argc, char **argv)
                 }
                 break;
 
+            // xxx devel
+            case EVID_HORI_OVERRIDE:
+                hori_override = !hori_override;
+                break;
+
             // adjust color organ
             default:
                 color_organ_process_event(&event);
@@ -263,6 +274,10 @@ void register_events(int orientation)
         // register motion event, which is used to scroll the file list
         sdlx_register_event(NULL, EVID_MOTION);
     }
+
+    // xxx devel
+    loc = sdlx_render_printf_ex1(0, y_devel, FONT_NORMAL, COLOR_LIGHT_BLUE, "%s", "HORI");
+    sdlx_register_event(loc, EVID_HORI_OVERRIDE);
 
     // register color organ events
     color_organ_register_events(orientation);
@@ -368,6 +383,10 @@ int get_orientation(void)
     int rc;
     static int orientation = VERTICAL;
     static bool printed;
+
+    if (hori_override) {
+        return HORIZONTAL;
+    }
 
     rc = sdlx_sensor_read_accelerometer(&ax, &ay, &az);
     if (rc != 0) {
