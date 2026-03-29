@@ -139,14 +139,19 @@ void color_organ_display(int orientation, bool idle)
     int    first_bin, last_bin;
     float  low_band, mid_band, high_band;
 
+    // render to color_organ_texture
+    sdlx_set_render_target(color_organ_texture);
+    sdlx_clear_texture(color_organ_texture, COLOR_BLACK);
+
+    // if not idle then
+    //   get band volumes from fft of audio samples
+    // else
+    //   set band volumes to zero
+    // endif
     if (!idle) {
         // get audio samples and perform fft
         sdlx_get_audio_samples(num_samples, num_downsample, GET_SAMPLES_MONO, samples);
         util_fft_real_to_real(num_samples, samples, fft, true);
-
-        // render to color_organ_texture
-        sdlx_set_render_target(color_organ_texture);
-        sdlx_clear_texture(color_organ_texture, COLOR_BLACK);
 
         // calculate the band volume for each of the 3 bands
         first_bin = nearbyint(LOW_BAND_START/delta_f);

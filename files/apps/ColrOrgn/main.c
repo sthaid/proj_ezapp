@@ -41,7 +41,13 @@ int   y_files_list_bottom;
 
 sdlx_audio_state_t as;
 
-bool hori_override;
+bool horizontal_override;
+
+#ifdef ANDROID
+bool devel = false;
+#else
+bool devel = true;;
+#endif
 
 //
 // prototypes
@@ -80,10 +86,14 @@ int main(int argc, char **argv)
     // init y locations
     y_state              = COLOR_ORGAN_TOTAL_H + sdlx_char_height_dflt/2;
     y_controls           = y_state + 1.5*sdlx_char_height_dflt;
-    y_devel              = sdlx_win_height - CONTROL_EVENTS_DISPLAY_HEIGHT - sdlx_char_height_dflt;
+    if (devel) {
+        y_devel          = sdlx_win_height - CONTROL_EVENTS_DISPLAY_HEIGHT - sdlx_char_height_dflt;
+    } else {
+        y_devel          = sdlx_win_height - CONTROL_EVENTS_DISPLAY_HEIGHT;
+    }
     y_files_list_top     = y_controls + 1.5*sdlx_char_height_dflt;
-    y_files_list_bottom  = y_devel;
     y_files_list         = y_files_list_top;
+    y_files_list_bottom  = y_devel;
 
     // initialize color organ
     color_organ_init();
@@ -194,7 +204,7 @@ int main(int argc, char **argv)
 
             // xxx devel
             case EVID_HORI_OVERRIDE:
-                hori_override = !hori_override;
+                horizontal_override = !horizontal_override;
                 break;
 
             // adjust color organ
@@ -276,8 +286,10 @@ void register_events(int orientation)
     }
 
     // xxx devel
-    loc = sdlx_render_printf_ex1(0, y_devel, FONT_NORMAL, COLOR_LIGHT_BLUE, "%s", "HORI");
-    sdlx_register_event(loc, EVID_HORI_OVERRIDE);
+    if (devel) {
+        loc = sdlx_render_printf_ex1(0, y_devel, FONT_NORMAL, COLOR_LIGHT_BLUE, "%s", "HORI");
+        sdlx_register_event(loc, EVID_HORI_OVERRIDE);
+    }
 
     // register color organ events
     color_organ_register_events(orientation);
@@ -384,7 +396,7 @@ int get_orientation(void)
     static int orientation = VERTICAL;
     static bool printed;
 
-    if (hori_override) {
+    if (horizontal_override) {
         return HORIZONTAL;
     }
 
