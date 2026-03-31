@@ -63,6 +63,9 @@ static void page_9_draw(void);
 
 static void page_10_draw(void);
 
+static void page_11_draw(void);
+static void page_11_process_event(sdlx_event_t *event);
+
 // -----------------  MAIN  ------------------------------------------
 
 int main(int argc, char **argv)
@@ -125,10 +128,11 @@ char *page_title[] = {     // Page
         "Sensor Info",     //   8
         "Sensor Values",   //   9
         "Location",        //  10
+        "Text Rotate",     //  11
             };
 static int pagenum = 0;
 
-#define LAST_PAGE 10
+#define LAST_PAGE 11
 
 #define EVID_PREV_PAGE 1
 #define EVID_NEXT_PAGE 2
@@ -177,6 +181,7 @@ static void page_hndlr()
         case 8: page_8_draw(); break;
         case 9: page_9_draw(); break;
         case 10: page_10_draw(); break;
+        case 11: page_11_draw(); break;
         default:
             printf("E %s: invalid pagenum %d\n", progname, pagenum);
             end_program = true;
@@ -224,6 +229,7 @@ static void page_hndlr()
         case 0: page_0_process_event(&event); break;
         case 3: page_3_process_event(&event); break;
         case 7: page_7_process_event(&event); break;
+        case 11: page_11_process_event(&event); break;
         }
     }
 
@@ -1139,5 +1145,87 @@ static char *num2str(double num, char *fmt, char *s)
         sprintf(s, fmt, num);
     }
     return s;
+}
+
+// -----------------  PAGE 11: TEXT ROTATION  -----------------
+
+#define EVID_ROT_NONE      10
+#define EVID_ROT_90        11
+#define EVID_ROT_90_FLIP   12
+#define EVID_ROT_CTR_90    13
+#define EVID_ROT_CTR_180   14
+#define EVID_ROT_CTR_270   15
+
+char *text = "hello";
+char *wrap_text = "this is line 1\nthis is line 2\nthis is line 3";
+
+int rot_flags = 0;
+
+static void page_11_draw(void)
+{
+    sdlx_loc_t *loc;
+    int y;
+
+    loc = sdlx_render_printf_ex2(500, 500,     
+                                 FONT_NORMAL, COLOR_WHITE,
+                                 rot_flags | FLAG_XY_CTR, WRAP_NEWLINE, 
+                                 "%s", wrap_text);
+    sdlx_render_rect(loc->x, loc->y, loc->w, loc->h, 2, COLOR_GREEN);
+
+    loc = sdlx_render_printf_ex2(500, sdlx_win_height/2,
+                                 FONT_NORMAL, COLOR_WHITE,
+                                 rot_flags, WRAP_NONE, 
+                                 "%s", text);
+    sdlx_render_rect(loc->x, loc->y, loc->w, loc->h, 2, COLOR_GREEN);
+
+    y = sdlx_win_height - CONTROL_EVENTS_DISPLAY_HEIGHT - 7 * (1.5 * sdlx_char_height_dflt);
+
+    loc = sdlx_render_printf_ex1(0, y, FONT_NORMAL, COLOR_LIGHT_BLUE, "ROT_NONE");
+    sdlx_register_event(loc, EVID_ROT_NONE);
+    y += 1.5 * sdlx_char_height_dflt;
+
+    loc = sdlx_render_printf_ex1(0, y, FONT_NORMAL, COLOR_LIGHT_BLUE, "ROT_90");
+    sdlx_register_event(loc, EVID_ROT_90);
+    y += 1.5 * sdlx_char_height_dflt;
+
+    loc = sdlx_render_printf_ex1(0, y, FONT_NORMAL, COLOR_LIGHT_BLUE, "ROT_90_FLIP");
+    sdlx_register_event(loc, EVID_ROT_90_FLIP);
+    y += 1.5 * sdlx_char_height_dflt;
+
+    loc = sdlx_render_printf_ex1(0, y, FONT_NORMAL, COLOR_LIGHT_BLUE, "ROT_CTR_90");
+    sdlx_register_event(loc, EVID_ROT_CTR_90);
+    y += 1.5 * sdlx_char_height_dflt;
+
+    loc = sdlx_render_printf_ex1(0, y, FONT_NORMAL, COLOR_LIGHT_BLUE, "ROT_CTR_180");
+    sdlx_register_event(loc, EVID_ROT_CTR_180);
+    y += 1.5 * sdlx_char_height_dflt;
+
+    loc = sdlx_render_printf_ex1(0, y, FONT_NORMAL, COLOR_LIGHT_BLUE, "ROT_CTR_270");
+    sdlx_register_event(loc, EVID_ROT_CTR_270);
+    y += 1.5 * sdlx_char_height_dflt;
+}
+
+static void page_11_process_event(sdlx_event_t *event)
+{
+    switch (event->event_id) {
+    case EVID_ROT_NONE:
+        rot_flags = 0;
+        break;
+    case EVID_ROT_90:
+        rot_flags = FLAG_ROT_90;
+        break;
+    case EVID_ROT_90_FLIP:
+        rot_flags = FLAG_ROT_90_FLIP;
+        break;
+    case EVID_ROT_CTR_90:
+        rot_flags = FLAG_ROT_CTR_90;
+        break;
+    case EVID_ROT_CTR_180:
+        rot_flags = FLAG_ROT_CTR_180;
+        break;
+    case EVID_ROT_CTR_270:
+        rot_flags = FLAG_ROT_CTR_270;
+        break;
+    }
 }
 

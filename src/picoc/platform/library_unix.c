@@ -879,10 +879,16 @@ typedef struct { \n\
 #define FONT_LARGE    10 \n\
 #define ROW2Y(r)      ((r) * sdlx_char_height_dflt) \n\
 #define COL2X(c)      ((c) * sdlx_char_width_dflt) \n\
-#define FLAG_NONE     0 \n\
-#define FLAG_X_CTR    1 \n\
-#define FLAG_Y_CTR    2 \n\
-#define FLAG_XY_CTR   3 \n\
+#define FLAG_NONE          0 \n\
+#define FLAG_X_CTR         1 \n\
+#define FLAG_Y_CTR         2 \n\
+#define FLAG_XY_CTR        3 \n\
+#define FLAG_ROT_90        0x10 \n\
+#define FLAG_ROT_90_FLIP   0x20 \n\
+#define FLAG_ROT_CTR_90    0x30 \n\
+#define FLAG_ROT_CTR_180   0x40 \n\
+#define FLAG_ROT_CTR_270   0x50 \n\
+#define FLAG_ROT_MASK      0xf0 \n\
 #define WRAP_NONE    -1 \n\
 #define WRAP_NEWLINE  0 \n\
 /* video misc */ \n\

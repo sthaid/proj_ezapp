@@ -438,6 +438,66 @@ typedef struct ht_entry_s {
     TAILQ_ENTRY(ht_entry_s) hash_list_entry;
 } ht_entry_t;
 
+static void render_text_texture(SDL_Texture *t, SDL_FRect *pos, int flags)
+{
+    #define SWAP_FLOAT(a,b) \
+        do { float tmp = (a); (a) = (b); (b) = tmp; } while (0)
+
+    if ((flags & FLAG_ROT_MASK) == 0) {
+        SDL_RenderTexture(renderer, t, NULL, pos);
+    } else if ((flags & FLAG_ROT_MASK) == FLAG_ROT_90) {
+        SDL_FPoint center = {pos->h/2, pos->h/2};
+        SDL_RenderTextureRotated(renderer,
+                                 t, 
+                                 NULL,      // source, NULL means the entire texture
+                                 pos,       // dest rectangle
+                                 90,        // rotation angle
+                                 &center,   // point around which dest will be rotated
+                                 SDL_FLIP_NONE);
+        SWAP_FLOAT(pos->w, pos->h);
+    } else if ((flags & FLAG_ROT_MASK) == FLAG_ROT_90_FLIP) {
+        SDL_FPoint center = {pos->h/2, pos->h/2};
+        SDL_RenderTextureRotated(renderer,
+                                 t, 
+                                 NULL,      // source, NULL means the entire texture
+                                 pos,       // dest rectangle
+                                 90,        // rotation angle
+                                 &center,   // point around which dest will be rotated
+                                 SDL_FLIP_HORIZONTAL_AND_VERTICAL);
+        SWAP_FLOAT(pos->w, pos->h);
+    } else if ((flags & FLAG_ROT_MASK) == FLAG_ROT_CTR_90) {
+        SDL_RenderTextureRotated(renderer,
+                                 t, 
+                                 NULL,      // source, NULL means the entire texture
+                                 pos,       // dest rectangle
+                                 90,       // rotation angle
+                                 NULL,      // point around which dest will be rotated
+                                 SDL_FLIP_NONE);
+        pos->x = pos->x + pos->w/2 - pos->h/2;
+        pos->y = pos->y + pos->h/2 - pos->w/2;
+        SWAP_FLOAT(pos->w, pos->h);
+    } else if ((flags & FLAG_ROT_MASK) == FLAG_ROT_CTR_180) {
+        SDL_RenderTextureRotated(renderer,
+                                 t, 
+                                 NULL,      // source, NULL means the entire texture
+                                 pos,       // dest rectangle
+                                 180,       // rotation angle
+                                 NULL,      // point around which dest will be rotated
+                                 SDL_FLIP_NONE);
+    } else if ((flags & FLAG_ROT_MASK) == FLAG_ROT_CTR_270) {
+        SDL_RenderTextureRotated(renderer,
+                                 t, 
+                                 NULL,      // source, NULL means the entire texture
+                                 pos,       // dest rectangle
+                                 270,       // rotation angle
+                                 NULL,      // point around which dest will be rotated
+                                 SDL_FLIP_NONE);
+        pos->x = pos->x + pos->w/2 - pos->h/2;
+        pos->y = pos->y + pos->h/2 - pos->w/2;
+        SWAP_FLOAT(pos->w, pos->h);
+    }
+}
+
 static unsigned int calc_hash_idx(char *key)
 {
     unsigned int hash_value = 0;
@@ -501,8 +561,7 @@ static sdlx_loc_t *render_text(int x, int y, int fontid, sdlx_color_t color, int
         pos.h = entry->surface_h;
         if (flags & FLAG_X_CTR) pos.x -= pos.w / 2;
         if (flags & FLAG_Y_CTR) pos.y -= pos.h / 2;
-
-        SDL_RenderTexture(renderer, entry->texture, NULL, &pos);
+        render_text_texture(entry->texture, &pos, flags);
 
         TAILQ_REMOVE(&age_list_head, entry, age_list_entry);
         TAILQ_INSERT_HEAD(&age_list_head, entry, age_list_entry);
@@ -566,7 +625,7 @@ static sdlx_loc_t *render_text(int x, int y, int fontid, sdlx_color_t color, int
     pos.h = surface->h;
     if (flags & FLAG_X_CTR) pos.x -= pos.w / 2;
     if (flags & FLAG_Y_CTR) pos.y -= pos.h / 2;
-    SDL_RenderTexture(renderer, texture, NULL, &pos);
+    render_text_texture(texture, &pos, flags);
 
     // the surface is no longer needed, destroy the surface
     SDL_DestroySurface(surface);
