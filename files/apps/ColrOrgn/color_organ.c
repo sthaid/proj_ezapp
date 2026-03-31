@@ -61,7 +61,7 @@
 //
 
 int   which_color_organ = COLOR_ORGAN_DEFAULT;
-char *color_organ_name[MAX_COLOR_ORGAN] = {"BARS", "CIRCLES"};
+char *color_organ_name[MAX_COLOR_ORGAN] = {"BARS", "CIRC"};
 
 int   which_filter = FILTER_DEFAULT;
 char *filter_name[MAX_FILTER] = {"NONE", "EXP", "SNAP"};
@@ -130,7 +130,7 @@ void color_organ_cleanup(void)
 
 void display_band(int which_band, float band_volume);
 
-void color_organ_display(int orientation, bool idle)
+void color_organ_display(bool idle)
 {
     int    num_downsample = 4;
     int    num_samples = nearbyint(FRAMES_PER_SEC / num_downsample * 0.050);  // equals 600
@@ -183,9 +183,13 @@ void color_organ_display(int orientation, bool idle)
     if (orientation == VERTICAL) {
         sdlx_render_texture(color_organ_texture, 0, 0);
     } else {
+        float scale = 1000.0 / COH;
+        int new_w = nearbyint(1000 * scale);
+        int new_h = nearbyint(COH * scale);
+        // xxx comment this
         sdlx_render_texture_ex3(color_organ_texture, 
-                                0, sdlx_win_height/2 - 1000/2, 1000, COH,
-                                90, COH/2, COH/2);
+                                0, sdlx_win_height/2 - new_w/2, new_w, new_h,
+                                90, new_h/2, new_h/2);
     }
 
     // decrement disp_k, this will stop the display of the band scaling constants
@@ -253,31 +257,23 @@ void display_band(int which_band, float band_volume)
         sdlx_render_texture_ex1(t, x_ctr-circle_radius, y_ctr-circle_radius, 2*circle_radius, 2*circle_radius);
 
         if (show_params || disp_k > 0) {
-            sdlx_render_printf_ex2(x_ctr, y_ctr, FONT_NORMAL, COLOR_WHITE, FLAG_XY_CTR, WRAP_NONE, "%d", rgb_k[which_band]); 
+            sdlx_render_printf_ex2(x_ctr, y_ctr, FONT_NORMAL, COLOR_WHITE, FLAG_XY_CTR, WRAP_NONE, "%d", rgb_k[which_band]);
         }
     }
 }
 
 // -----------------  COLOR ORGAN EVENT REGISTRATION  ----------------
 
-void color_organ_register_events(int orientation)
+// xxx update for horizontal
+void color_organ_register_events(int y_color_organ_controls)
 {
-    sdlx_loc_t *locp;
     sdlx_loc_t loc;
-    char      *clr_orgn_name;
 
-    // xxx todo
-    if (orientation == HORIZONTAL) {
-        return;
-    }
+    reg_event(0, y_color_organ_controls, filter_name[which_filter], EVID_FILTER_SLCT);
+    reg_event(5*sdlx_char_width_dflt, y_color_organ_controls, 
+              color_organ_name[which_color_organ], EVID_COLOR_ORGAN_SLCT);
 
-    locp = sdlx_render_printf_ex1(0, COH, FONT_NORMAL, COLOR_LIGHT_BLUE, "%s", filter_name[which_filter]);
-    sdlx_register_event(locp, EVID_FILTER_SLCT);
-
-    clr_orgn_name = color_organ_name[which_color_organ];
-    locp = sdlx_render_printf_ex1(sdlx_win_width-strlen(clr_orgn_name)*sdlx_char_width_dflt, COH, 
-                                  FONT_NORMAL, COLOR_LIGHT_BLUE, "%s", clr_orgn_name);
-    sdlx_register_event(locp, EVID_COLOR_ORGAN_SLCT);
+    if (orientation == HORIZONTAL) return; //xxx
 
     if (which_color_organ == COLOR_ORGAN_BARS) {
         init_loc(&loc, 0, 0, 333, COH/2);
