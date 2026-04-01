@@ -11,7 +11,7 @@
 #define HIGH_BAND_START  800
 #define HIGH_BAND_END    2200
 
-#define EVID_RESET       50   // reset color organ params
+#define EVID_SETTINGS    50   // show color organ settings 
 #define EVID_SHOW_PARAMS 51   // show / hide color organ params
 
 #define VERTICAL    0  // screen orientation

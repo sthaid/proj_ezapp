@@ -30,6 +30,8 @@
 #define EVID_HORIZONTAL_OVERRIDE 8 // force horizontal orientation, when testing on linux
 #define EVID_PLAY_FILE  100        // start play file, range 100-199
 
+#define LINE_SPACING 1.85
+
 //
 // variables
 //
@@ -50,9 +52,9 @@ sdlx_audio_state_t as;
 bool horizontal_override;
 
 #ifdef ANDROID // yyy fix picoc to use ifdef in code
-bool on_android = true;
+bool android = true;
 #else
-bool on_android = false;
+bool android = false;
 #endif
 
 //
@@ -89,15 +91,12 @@ int main(int argc, char **argv)
     sprintf(files_dir, "%s/files", data_dir);
 
     // init y locations
-    y_state                = sdlx_char_height_dflt/2;
-    y_main_controls        = y_state + 1.5*sdlx_char_height_dflt;
-    y_color_organ_controls = y_main_controls + 1.5*sdlx_char_height_dflt;
-    y_files_list           = y_color_organ_controls + 1.5*sdlx_char_height_dflt;
+    y_state                = 0;
+    y_main_controls        = y_state + sdlx_char_height_dflt;
+    y_color_organ_controls = y_main_controls + LINE_SPACING*sdlx_char_height_dflt;
+    y_files_list           = y_color_organ_controls + LINE_SPACING*sdlx_char_height_dflt;
     y_files_list_top       = y_files_list;
     y_files_list_bottom    = sdlx_win_height - CONTROL_EVENTS_DISPLAY_HEIGHT - COLOR_ORGAN_H;
-    if (!on_android) {
-        y_files_list_bottom -= sdlx_char_height_dflt;
-    }
 
     // initialize color organ
     color_organ_init();
@@ -113,7 +112,7 @@ int main(int argc, char **argv)
         // get audio state 
         sdlx_audio_get_state(&as);
 
-        // when in vertical orientation, display state line
+        // display state line
         state_str = get_state_str(&recording);
         print(0, y_state, (recording ? COLOR_RED : COLOR_WHITE), state_str);
 
@@ -126,7 +125,7 @@ int main(int argc, char **argv)
         // present the display
         sdlx_display_present();
 
-#if 1
+#if 0
         // yyy comment
         time_now = util_microsec_timer();
         duration = time_now - time_start;
@@ -142,6 +141,7 @@ int main(int argc, char **argv)
         }
 
         // process events
+        // xxx make a routine
         if (event.event_id >= EVID_PLAY_FILE && event.event_id < EVID_PLAY_FILE+MAX_FILES) {
             // play the selected file
             int idx = event.event_id - EVID_PLAY_FILE;
@@ -158,7 +158,7 @@ int main(int argc, char **argv)
             case EVID_DEV:
                 // append         = false
                 // start_paused   = true
-                sdlx_audio_record_from_device(files_dir, "rec_dev.mp3", false, true);
+                sdlx_audio_record_from_device(files_dir, "record.mp3", false, true);
                 break;
 
             // record or monitor microphone
@@ -167,7 +167,7 @@ int main(int argc, char **argv)
                 // auto_stop_secs = 0
                 // append         = false
                 // start_paused   = true
-                sdlx_audio_record_from_mic(files_dir, "rec_mic.mp3", 0, false, true);
+                sdlx_audio_record_from_mic(files_dir, "record.mp3", 0, false, true);
                 break; }
 
             // these apply when recording from device or microphone
@@ -266,22 +266,23 @@ void register_events(int orientation)
     // get list of mp3 files, and register events to play, rename, or delete each file
     get_list_of_files();
     for (int i = 0; i < max_files; i++) {
-        int y = y_files_list + i * (1.5*sdlx_char_height_dflt);
+        int y = y_files_list + i * (LINE_SPACING*sdlx_char_height_dflt);
         if (y+30 < y_files_list_top) continue;
         if (y+sdlx_char_height_dflt > y_files_list_bottom) break;
 
         reg_event(0, y, files_noext[i], EVID_PLAY_FILE+i);
 
-        y += 1.5*sdlx_char_height_dflt;
+        y += LINE_SPACING*sdlx_char_height_dflt;
     }
 
     // register motion event, which is used to scroll the file list
     sdlx_register_event(NULL, EVID_MOTION);
 
     // if not running on android then provide control to simulate horizontal orientation
-    if (!on_android) {
-        int y = sdlx_win_height - CONTROL_EVENTS_DISPLAY_HEIGHT - sdlx_char_height_dflt;
-        loc = sdlx_render_printf_ex1(0, y, FONT_NORMAL, COLOR_LIGHT_BLUE, "%s", "HORIZONTAL");
+    if (!android) {
+        int x = sdlx_win_width - 2*sdlx_char_width_dflt;
+        int y = sdlx_win_height - CONTROL_EVENTS_DISPLAY_HEIGHT - 1.50*sdlx_char_height_dflt;
+        loc = sdlx_render_printf_ex1(x, y, FONT_NORMAL, COLOR_LIGHT_BLUE, "%s", "H");
         sdlx_register_event(loc, EVID_HORIZONTAL_OVERRIDE);
     }
 
@@ -289,9 +290,7 @@ void register_events(int orientation)
     color_organ_register_events(y_color_organ_controls);
 
     // register control events
-    // yyy change EVID_RESET to EVID_SETTINGS ?
-    //     or incorporate settings access some other way
-    sdlx_register_control_events(EVID_RESET, "RESET",
+    sdlx_register_control_events(EVID_SETTINGS, "STG",
                                  EVID_SHOW_PARAMS, (!show_params ? "SHOW" : "HIDE"),
                                  EVID_QUIT, "X",
                                  COLOR_WHITE, COLOR_BLACK);
@@ -323,13 +322,29 @@ void get_list_of_files(void)
         }
         max_files = 0;
 
-        // make new list
+        // make new file list ...
+
+        // if record.mp3 exists then add it to the begining 
+        if (util_file_exists(files_dir, "record.mp3")) {
+            files[0] = strdup("record.mp3");
+            files_noext[0] = strdup("record");
+            max_files++;
+        }
+
+        // xxx comment ...
         sprintf(cmd, "/bin/ls -1 %s/*.mp3", files_dir);
         fp = popen(cmd, "r");
         while (fgets(s, sizeof(s), fp) != NULL) {
             remove_trailing_newline(s);
 
             bn = basename(s);
+
+            // if bn is record.mp3 then this name has already been added,
+            // so continue
+            if (strcmp(bn, "record.mp3") == 0) {
+                continue;
+            }
+
             files[max_files] = strdup(bn);
 
             if ((p = strstr(bn, ".mp3")) != NULL) *p = '\0';
