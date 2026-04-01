@@ -10,18 +10,9 @@
 #include "apps/ColrOrgn/common.h"
 
 // xxx new
-// - clean out old files                                 INPROG
-// - move horizontal display to the right                INPROG
-// - just one rec.mp3                                    INPROG
-// - record.mp3, at top of files list                    INPROG
-// - move RESET somewhere else                           INPROG
-// - replace RESET with STG       
 // - use the fps info
 // - Settings
-//   - create test files
-//   - exp smooth params
-//   - snap decay param
-//   - print duration of each cycle
+//   - print duration of each cycle  ???
 // - option to delete and rename files
 
 // xxx next
@@ -133,19 +124,6 @@ void color_organ_init(void)
 
     // create texture used to display the color organ either vertical or horizontal
     color_organ_texture = sdlx_create_texture(1000, COH);
-
-    // xxx move to settings
-    if (!util_file_exists(files_dir, "test_all.mp3")) {
-        printf("I %s: creating test files\n", progname);
-        sdlx_create_test_file(files_dir, "test_all.mp3", TEST_FILE_FREQ_SWEEP, 
-                              LOW_BAND_START, HIGH_BAND_END, 10);
-        sdlx_create_test_file(files_dir, "test_low.mp3", TEST_FILE_FREQ_SWEEP,
-                              LOW_BAND_START, LOW_BAND_END, 10);
-        sdlx_create_test_file(files_dir, "test_mid.mp3", TEST_FILE_FREQ_SWEEP,
-                              MID_BAND_START, MID_BAND_END, 10);
-        sdlx_create_test_file(files_dir, "test_high.mp3", TEST_FILE_FREQ_SWEEP,
-                              HIGH_BAND_START, HIGH_BAND_END, 10);
-    }
 }
 
 void color_organ_cleanup(void)
@@ -418,18 +396,21 @@ void settings_reset_to_dflt(void)
 }
 
 #define EVID_SETTINGS_RESET 2001
+#define EVID_SETTINGS_CREATE_TEST_FILES 2002
 
 void settings(void)
 {
-    bool done = false;
+    bool         done = false;
     sdlx_event_t event;
-    int y = 0;
+    int          y;
+    sdlx_loc_t  *loc;
 
     while (!done) {
         // init the backbuffer
         sdlx_display_init(COLOR_BLACK);
 
         // display settings
+        y = 0;
         sdlx_render_printf(0, y, "%-14s=%d",    "low_band_gain",   band_gain[LOW_BAND]);
         y += sdlx_char_height_dflt;
         sdlx_render_printf(0, y, "%-14s=%d",    "mid_band_gain",   band_gain[MID_BAND]);
@@ -443,7 +424,16 @@ void settings(void)
         sdlx_render_printf(0, y, "%-14s=%0.3f", "exp_fltr_k",      exp_filter_k);
         y += sdlx_char_height_dflt;
         sdlx_render_printf(0, y, "%-14s=%0.3f", "snap_fltr_k",     snap_filter_k);
-        y += sdlx_char_height_dflt;
+        y += 2*sdlx_char_height_dflt;
+
+        // register events
+        loc = sdlx_render_printf_ex1(0, y, FONT_NORMAL, COLOR_LIGHT_BLUE, "RESET");
+        sdlx_register_event(loc, EVID_SETTINGS_RESET);
+        y += 2*sdlx_char_height_dflt;
+
+        loc = sdlx_render_printf_ex1(0, y, FONT_NORMAL, COLOR_LIGHT_BLUE, "CREATE_TEST_FILES");
+        sdlx_register_event(loc, EVID_SETTINGS_CREATE_TEST_FILES);
+        y += 2*sdlx_char_height_dflt;
 
         // register events
         sdlx_register_control_events(0, NULL,
@@ -463,7 +453,19 @@ void settings(void)
         // process event
         switch (event.event_id) {
         case EVID_SETTINGS_RESET:
+            printf("I %s: resetting settings to default\n", progname);
             settings_reset_to_dflt();
+            break;
+        case EVID_SETTINGS_CREATE_TEST_FILES:
+            printf("I %s: creating test files\n", progname);
+            sdlx_create_test_file(files_dir, "test_all.mp3", TEST_FILE_FREQ_SWEEP, 
+                                  LOW_BAND_START, HIGH_BAND_END, 10);
+            sdlx_create_test_file(files_dir, "test_low.mp3", TEST_FILE_FREQ_SWEEP,
+                                  LOW_BAND_START, LOW_BAND_END, 10);
+            sdlx_create_test_file(files_dir, "test_mid.mp3", TEST_FILE_FREQ_SWEEP,
+                                  MID_BAND_START, MID_BAND_END, 10);
+            sdlx_create_test_file(files_dir, "test_high.mp3", TEST_FILE_FREQ_SWEEP,
+                                  HIGH_BAND_START, HIGH_BAND_END, 10);
             break;
         case EVID_QUIT:
             done = true;
