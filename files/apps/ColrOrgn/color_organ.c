@@ -9,7 +9,7 @@
 
 #include "apps/ColrOrgn/common.h"
 
-// xxx new
+// yyy new
 // - get rid of sample.mp3
 // - dont need mic
 // - if device recording is not established, previous file is deleted
@@ -20,12 +20,12 @@
 //   - print duration of each cycle  ???
 // - option to delete and rename files
 
-// xxx next
+// yyy next
 // - ctrls to rename and delete files
 // - negative rgb_k
 // - print the duration of each cycle, and set event wait time to allow for the duration  INPROG
 
-// xxx todo
+// yyy todo
 // - call to get_samples should return fps and possibly num_channels, and 
 //   caller should deal with the fps
 // - circles mode multiplier constant too large?
@@ -64,7 +64,7 @@
 
 // misc
 #define DISP_BAND_SCALE_DURATION 30
-#define COH                      COLOR_ORGAN_H  //xxx del?
+#define COH                      COLOR_ORGAN_H  //yyy del?
 
 // default param values
 #define DFLT_COLOR_ORGAN       COLOR_ORGAN_BARS
@@ -146,7 +146,8 @@ void display_band(int which_band, float band_volume);
 
 void color_organ_display(bool idle)
 {
-    // xxx FRAMES_PER_SEC?
+    // yyy FRAMES_PER_SEC?
+    // yyy probably dont return fps when getting samples
 
     int    num_downsample = 4;
     int    num_samples = nearbyint(FRAMES_PER_SEC / num_downsample * 0.050);  // equals 600
@@ -172,15 +173,15 @@ void color_organ_display(bool idle)
         // calculate the band volume for each of the 3 bands
         first_bin = nearbyint(LOW_BAND_START/delta_f);
         last_bin = nearbyint(LOW_BAND_END/delta_f);
-        low_band = util_rms_float(&fft[first_bin], last_bin-first_bin+1);// xxx picoc isue requires &fft[first_bin]
+        low_band = util_rms_float(&fft[first_bin], last_bin-first_bin+1);// yyy picoc isue requires &fft[first_bin]
 
         first_bin = nearbyint(MID_BAND_START/delta_f);
         last_bin = nearbyint(MID_BAND_END/delta_f);
-        mid_band = util_rms_float(&fft[first_bin], last_bin-first_bin+1);// xxx picoc isue requires &fft[first_bin]
+        mid_band = util_rms_float(&fft[first_bin], last_bin-first_bin+1);
 
         first_bin = nearbyint(HIGH_BAND_START/delta_f);
         last_bin = nearbyint(HIGH_BAND_END/delta_f);
-        high_band = util_rms_float(&fft[first_bin], last_bin-first_bin+1);// xxx picoc isue requires &fft[first_bin]
+        high_band = util_rms_float(&fft[first_bin], last_bin-first_bin+1);
     } else {
         low_band = 0;
         mid_band = 0;
@@ -199,11 +200,11 @@ void color_organ_display(bool idle)
     if (orientation == VERTICAL) {
         sdlx_render_texture(color_organ_texture, 0, 0);
     } else {
-        // xxx set scale incorporating the win height
+        // yxx set scale incorporating the win height
         float scale = 1000.0 / COH;
         int new_w = nearbyint(1000 * scale);
         int new_h = nearbyint(COH * scale);
-        // xxx comment this
+        // yxx comment this
         sdlx_render_texture_ex3(color_organ_texture, 
                                 0, 0.55*sdlx_win_height - new_w/2, new_w, new_h,
                                 90, new_h/2, new_h/2);
@@ -281,7 +282,6 @@ void display_band(int which_band, float band_volume)
 
 // -----------------  COLOR ORGAN EVENT REGISTRATION  ----------------
 
-// xxx update for horizontal
 void color_organ_register_events(int y_controls)
 {
     sdlx_loc_t loc;
@@ -349,7 +349,7 @@ void color_organ_process_event(sdlx_event_t *ev)
         which_color_organ = (which_color_organ + 1) % MAX_COLOR_ORGAN;
         util_set_numeric_param(data_dir, "color_organ", which_color_organ);
         break;
-    case EVID_RED_INCREASE: // xxx name
+    case EVID_RED_INCREASE: // yyy name
     case EVID_RED_DECREASE:
         band_gain[LOW_BAND] += (ev->event_id == EVID_RED_INCREASE ? 5 : -5);
         disp_band_scale = DISP_BAND_SCALE_DURATION;

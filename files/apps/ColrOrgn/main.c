@@ -9,7 +9,7 @@
 
 #include "apps/ColrOrgn/common.h"
 
-// xxx todo
+// yyy todo
 // - add events to rename and delete files
 // - use provided frames_per_sec
 // - review how FRAMES_PER_SEC is used
@@ -55,9 +55,9 @@ int   y_files_list_top;
 int   y_files_list_bottom;
 
 int   state = STATE_STOPPED;
-char  playing_file[100];  // xxx clear this when not playing or paused
-
-bool horizontal_override;
+char  playing_file[100];
+bool  end_program;
+bool  horizontal_override;
 
 #ifdef ANDROID // yyy fix picoc to use ifdef in code
 bool android = true;
@@ -69,8 +69,11 @@ bool android = false;
 // prototypes
 //
 
+// event handling
+void process_event(sdlx_event_t *ev);
 void register_events(int orientation);
 
+// utils
 void get_list_of_files(void);
 void remove_trailing_newline(char *s);
 char *get_state_str(void);
@@ -81,7 +84,6 @@ int get_device_orientation(void);
 int main(int argc, char **argv)
 {
     sdlx_event_t event;
-    bool         end_program = false;
     long         time_start=util_microsec_timer(), time_now, duration;
 
     // save args
@@ -93,7 +95,7 @@ int main(int argc, char **argv)
     data_dir = argv[1];
     printf("I %s: starting, data_dir=%s\n", progname, data_dir);
 
-    // init files_dir
+    // init files_directory string
     sprintf(files_dir, "%s/files", data_dir);
 
     // init y locations
@@ -142,102 +144,111 @@ int main(int argc, char **argv)
         }
 
         // process events
-        // xxx make a routine
-        if (event.event_id >= EVID_PLAY_FILE && event.event_id < EVID_PLAY_FILE+MAX_FILES) {
-            // play the selected file
-            int idx = event.event_id - EVID_PLAY_FILE;
-            sdlx_audio_play_file(files_dir, files[idx]);
-            state = STATE_PLAYING_FILE;
-            strcpy(playing_file, files[idx]);  // xxx clear this
-        } else {
-            switch (event.event_id) {
-            // stop audio
-            case EVID_STOP:
-                sdlx_audio_stop();
-                state = STATE_STOPPED;
-                break;
-
-            // monitor or record device, applies when in STATE_ATOPPED
-            case EVID_MON_REC:  //xxx is just monitor ?
-                sdlx_audio_record_from_device(files_dir, ".record.mp3", NO_APPEND, START_PAUSED);
-                state = STATE_MONITORING_DEV;
-                break;
-
-            // these apply when monitoring or recording the android device
-            case EVID_MONITOR:
-                sdlx_audio_pause();
-                state = STATE_MONITORING_DEV;
-                break;
-            case EVID_RECORD:
-                sdlx_audio_resume();
-                state = STATE_RECORDING_DEV;
-                break;
-
-            // this apply when playing a file
-            case EVID_PAUSE:
-                sdlx_audio_pause();
-                state = STATE_PLAYING_FILE_PAUSED;
-                break;
-            case EVID_CONT:
-                sdlx_audio_resume();
-                state = STATE_PLAYING_FILE;
-                break;
-
-            // end program
-            case EVID_QUIT:
-                end_program = true;
-                break;
-
-            // scroll file list
-            case EVID_MOTION:
-                if (orientation == VERTICAL) {
-                    y_files_list += event.u.motion.yrel;
-                } else {
-                    y_files_list -= event.u.motion.xrel;
-                }
-                if (y_files_list >= y_files_list_top) {
-                    y_files_list = y_files_list_top;
-                }
-                break;
-
-            // This event is only registered when this program is being tested on linux;
-            // and will toggle override of the orientation so that horizontal orientation
-            // can be tested on linux. Linux does not have the acceleration sensor that is
-            // available on android to detect the orientation.
-            case EVID_HORIZONTAL_OVERRIDE:
-                horizontal_override = !horizontal_override;
-                break;
-
-            // adjust color organ
-            default:
-                color_organ_process_event(&event);
-                break;
-            }
-        }
+        process_event(&event);
     }
 
     // cleanup
     sdlx_audio_stop();
     color_organ_cleanup();
     state = STATE_STOPPED;
+    playing_file[0] = '\0';
 
     // terminate
     printf("I %s: terminating\n", progname);
     return 0;
 }
 
-// -----------------  EVENT REGISTRATION  ----------------------------
+// -----------------  EVENT HANDLING  --------------------------------
+
+void process_event(sdlx_event_t *ev)
+{
+    if (ev->event_id >= EVID_PLAY_FILE && ev->event_id < EVID_PLAY_FILE+MAX_FILES) {
+        // play the selected file
+        int idx = ev->event_id - EVID_PLAY_FILE;
+        sdlx_audio_play_file(files_dir, files[idx]);
+        state = STATE_PLAYING_FILE;
+        strcpy(playing_file, files[idx]);
+    } else {
+        switch (ev->event_id) {
+        // stop audio
+        case EVID_STOP:
+            sdlx_audio_stop();
+            state = STATE_STOPPED;
+            playing_file[0] = '\0';
+            break;
+
+        // monitor or record device, applies when in STATE_ATOPPED
+        case EVID_MON_REC:  //yyy is just monitor ?
+            sdlx_audio_record_from_device(files_dir, ".record.mp3", NO_APPEND, START_PAUSED);
+            state = STATE_MONITORING_DEV;
+            playing_file[0] = '\0';
+            break;
+
+        // these apply when monitoring or recording the android device
+        case EVID_MONITOR:
+            sdlx_audio_pause();
+            state = STATE_MONITORING_DEV;
+            playing_file[0] = '\0';
+            break;
+        case EVID_RECORD:
+            sdlx_audio_resume();
+            state = STATE_RECORDING_DEV;
+            playing_file[0] = '\0';
+            break;
+
+        // this apply when playing a file
+        case EVID_PAUSE:
+            sdlx_audio_pause();
+            state = STATE_PLAYING_FILE_PAUSED;
+            break;
+        case EVID_CONT:
+            sdlx_audio_resume();
+            state = STATE_PLAYING_FILE;
+            break;
+
+        // end program
+        case EVID_QUIT:
+            end_program = true;
+            break;
+
+        // scroll file list
+        case EVID_MOTION:
+            if (orientation == VERTICAL) {
+                y_files_list += event.u.motion.yrel;
+            } else {
+                y_files_list -= event.u.motion.xrel;
+            }
+            if (y_files_list >= y_files_list_top) {
+                y_files_list = y_files_list_top;
+            }
+            break;
+
+        // This event is only registered when this program is being tested on linux;
+        // and will toggle override of the orientation so that horizontal orientation
+        // can be tested on linux. Linux does not have the acceleration sensor that is
+        // available on android to detect the orientation.
+        case EVID_HORIZONTAL_OVERRIDE:
+            horizontal_override = !horizontal_override;
+            break;
+
+        // adjust color organ
+        default:
+            color_organ_process_event(&event);
+            break;
+        }
+    }
+}
 
 void register_events(int orientation)
 {
     sdlx_loc_t *loc;
 
-    // xxx comment
+    // yyy comment
     if (state != STATE_STOPPED) {
         reg_event(0, y_controls, COLOR_LIGHT_BLUE, "STOP", EVID_STOP);
     }
 
-    // xxx
+    // yyy
     if (state == STATE_STOPPED) {
         reg_event(0, y_controls, COLOR_LIGHT_BLUE, "MON/REC", EVID_MON_REC);
     } else if (state == STATE_MONITORING_DEV) {

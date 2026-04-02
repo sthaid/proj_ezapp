@@ -22,7 +22,7 @@ char *progname;
 char *data_dir;
 char  files_dir[100];
 int   orientation;
-bool  show_params;  // xxx use this to show everything when on color organ horizontal display
+bool  show_params;  // yyy use this to show everything when on color organ horizontal display
 
 // prototypes of routiens defined in color_organ.c
 void color_organ_init(void);
