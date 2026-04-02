@@ -10,6 +10,11 @@
 #include "apps/ColrOrgn/common.h"
 
 // xxx new
+// - get rid of sample.mp3
+// - dont need mic
+// - if device recording is not established, previous file is deleted
+// - add band limits to settings,
+// - settings should be able to modify all the settings
 // - use the fps info
 // - Settings
 //   - print duration of each cycle  ???
@@ -277,13 +282,15 @@ void display_band(int which_band, float band_volume)
 // -----------------  COLOR ORGAN EVENT REGISTRATION  ----------------
 
 // xxx update for horizontal
-void color_organ_register_events(int y_color_organ_controls)
+void color_organ_register_events(int y_controls)
 {
     sdlx_loc_t loc;
 
-    reg_event(0, y_color_organ_controls, filter_name[which_filter], EVID_FILTER_SLCT);
-    reg_event(5*sdlx_char_width_dflt, y_color_organ_controls, 
-              color_organ_name[which_color_organ], EVID_COLOR_ORGAN_SLCT);
+    if (orientation == VERTICAL) {
+        reg_event(COL2X(11), y_controls, COLOR_LIGHT_BLUE, filter_name[which_filter], EVID_FILTER_SLCT);
+        reg_event(COL2X(16), y_controls, COLOR_LIGHT_BLUE,
+                color_organ_name[which_color_organ], EVID_COLOR_ORGAN_SLCT);
+    }
 
     if (orientation == HORIZONTAL) return; //xxx
 

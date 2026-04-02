@@ -18,19 +18,27 @@
 // defines
 //
 
+#define EVID_STOP                1     // stop 
+#define EVID_MON_REC             2     // monitor or record from device
+#define EVID_MONITOR             3     // select monitor mode
+#define EVID_RECORD              4     // select record mode
+#define EVID_PAUSE               5     // pause play file
+#define EVID_CONT                6     // continue play file
+#define EVID_HORIZONTAL_OVERRIDE 7     // force horizontal orientation, when testing on linux
+#define EVID_PLAY_FILE           100   // start play file, range 100-199
+
+#define STATE_STOPPED               0
+#define STATE_PLAYING_FILE          1
+#define STATE_PLAYING_FILE_PAUSED   2
+#define STATE_MONITORING_DEV        3
+#define STATE_RECORDING_DEV         4
+
 #define MAX_FILES 100
 
-#define EVID_STOP       1          // stop 
-#define EVID_DEV        2          // record or monitor device
-#define EVID_MIC        3          // record or monitor microphone
-#define EVID_MONITOR    4          // select monitor mode
-#define EVID_REC        5          // select record mode
-#define EVID_PAUSE      6          // pause play file
-#define EVID_CONT       7          // continue play file
-#define EVID_HORIZONTAL_OVERRIDE 8 // force horizontal orientation, when testing on linux
-#define EVID_PLAY_FILE  100        // start play file, range 100-199
-
 #define LINE_SPACING 1.85
+
+#define NO_APPEND    false
+#define START_PAUSED true
 
 //
 // variables
@@ -41,13 +49,13 @@ char *files_noext[MAX_FILES];
 int   max_files;
 
 int   y_state;
-int   y_main_controls;
-int   y_color_organ_controls;
+int   y_controls;
 int   y_files_list;
 int   y_files_list_top;
 int   y_files_list_bottom;
 
-sdlx_audio_state_t as;
+int   state = STATE_STOPPED;
+char  playing_file[100];  // xxx clear this when not playing or paused
 
 bool horizontal_override;
 
@@ -65,8 +73,8 @@ void register_events(int orientation);
 
 void get_list_of_files(void);
 void remove_trailing_newline(char *s);
-char *get_state_str(bool *recording);
-int get_orientation(void);
+char *get_state_str(void);
+int get_device_orientation(void);
 
 // -----------------  MAIN  ------------------------------------------
     
@@ -74,8 +82,6 @@ int main(int argc, char **argv)
 {
     sdlx_event_t event;
     bool         end_program = false;
-    char        *state_str;
-    bool         recording;
     long         time_start=util_microsec_timer(), time_now, duration;
 
     // save args
@@ -91,12 +97,11 @@ int main(int argc, char **argv)
     sprintf(files_dir, "%s/files", data_dir);
 
     // init y locations
-    y_state                = 0;
-    y_main_controls        = y_state + sdlx_char_height_dflt;
-    y_color_organ_controls = y_main_controls + LINE_SPACING*sdlx_char_height_dflt;
-    y_files_list           = y_color_organ_controls + LINE_SPACING*sdlx_char_height_dflt;
-    y_files_list_top       = y_files_list;
-    y_files_list_bottom    = sdlx_win_height - CONTROL_EVENTS_DISPLAY_HEIGHT - COLOR_ORGAN_H;
+    y_state             = 0;
+    y_controls          = y_state + LINE_SPACING*sdlx_char_height_dflt;
+    y_files_list        = y_controls + LINE_SPACING*sdlx_char_height_dflt;
+    y_files_list_top    = y_files_list;
+    y_files_list_bottom = sdlx_win_height - CONTROL_EVENTS_DISPLAY_HEIGHT - COLOR_ORGAN_H;
 
     // initialize color organ
     color_organ_init();
@@ -104,20 +109,16 @@ int main(int argc, char **argv)
     // runtime loop
     while (!end_program) {
         // get device orientation
-        orientation = get_orientation();
+        orientation = get_device_orientation();
 
         // init the backbuffer
         sdlx_display_init(COLOR_BLACK);
 
-        // get audio state 
-        sdlx_audio_get_state(&as);
-
         // display state line
-        state_str = get_state_str(&recording);
-        print(0, y_state, (recording ? COLOR_RED : COLOR_WHITE), state_str);
+        print(0, y_state, (state==STATE_RECORDING_DEV ? COLOR_RED : COLOR_WHITE), get_state_str());
 
         // display color organ
-        color_organ_display(as.state == AUDIO_STATE_IDLE);
+        color_organ_display(state == STATE_STOPPED);
 
         // register events
         register_events(orientation);
@@ -146,44 +147,40 @@ int main(int argc, char **argv)
             // play the selected file
             int idx = event.event_id - EVID_PLAY_FILE;
             sdlx_audio_play_file(files_dir, files[idx]);
+            state = STATE_PLAYING_FILE;
+            strcpy(playing_file, files[idx]);  // xxx clear this
         } else {
             switch (event.event_id) {
             // stop audio
             case EVID_STOP:
                 sdlx_audio_stop();
+                state = STATE_STOPPED;
                 break;
 
-            // record or monitor device
-            // yyy better way to get the name at top than using a1
-            case EVID_DEV:
-                // append         = false
-                // start_paused   = true
-                sdlx_audio_record_from_device(files_dir, "record.mp3", false, true);
+            // monitor or record device, applies when in STATE_ATOPPED
+            case EVID_MON_REC:  //xxx is just monitor ?
+                sdlx_audio_record_from_device(files_dir, ".record.mp3", NO_APPEND, START_PAUSED);
+                state = STATE_MONITORING_DEV;
                 break;
 
-            // record or monitor microphone
-            // yyy better way to get the name at top than using a1
-            case EVID_MIC: {
-                // auto_stop_secs = 0
-                // append         = false
-                // start_paused   = true
-                sdlx_audio_record_from_mic(files_dir, "record.mp3", 0, false, true);
-                break; }
-
-            // these apply when recording from device or microphone
+            // these apply when monitoring or recording the android device
             case EVID_MONITOR:
                 sdlx_audio_pause();
+                state = STATE_MONITORING_DEV;
                 break;
-            case EVID_REC:
+            case EVID_RECORD:
                 sdlx_audio_resume();
+                state = STATE_RECORDING_DEV;
                 break;
 
             // this apply when playing a file
             case EVID_PAUSE:
                 sdlx_audio_pause();
+                state = STATE_PLAYING_FILE_PAUSED;
                 break;
             case EVID_CONT:
                 sdlx_audio_resume();
+                state = STATE_PLAYING_FILE;
                 break;
 
             // end program
@@ -222,6 +219,7 @@ int main(int argc, char **argv)
     // cleanup
     sdlx_audio_stop();
     color_organ_cleanup();
+    state = STATE_STOPPED;
 
     // terminate
     printf("I %s: terminating\n", progname);
@@ -234,48 +232,48 @@ void register_events(int orientation)
 {
     sdlx_loc_t *loc;
 
-    // register events:
-    // - EVID_DEV:     start monitor/record of device audio
-    // - EVID_MIC:     start monitor/record of microphone
-    // - EVID_STOP:    stop playback or recording
-    // - EVID_MONITOR: monitor microphone or device audio
-    // - EVID_REC:     record microphone, or device audio
-    // - EVID_PAUSE:   pause playback/record
-    // - EVID_CONT:    continue
-    if (as.state == AUDIO_STATE_IDLE) {
-        reg_event(0, y_main_controls, "DEV", EVID_DEV);
-        reg_event(5*sdlx_char_width_dflt, y_main_controls, "MIC", EVID_MIC);
-    } else if (as.state == AUDIO_STATE_RECORD_FROM_MIC || as.state == AUDIO_STATE_RECORD_FROM_DEVICE) {
-        reg_event(0, y_main_controls, "STOP", EVID_STOP);
-        if (!as.paused) {
-            reg_event(5*sdlx_char_width_dflt, y_main_controls, "MON", EVID_MONITOR);
-        } else {
-            reg_event(5*sdlx_char_width_dflt, y_main_controls, "REC", EVID_REC);
-        }
-    } else if (as.state == AUDIO_STATE_PLAY_FILE) {
-        reg_event(0, y_main_controls, "STOP", EVID_STOP);
-        if (!as.paused) {
-            reg_event(5*sdlx_char_width_dflt, y_main_controls, "PAUSE", EVID_PAUSE);
-        } else {
-            reg_event(5*sdlx_char_width_dflt, y_main_controls, "CONT", EVID_CONT);
-        }
+    // xxx comment
+    if (state != STATE_STOPPED) {
+        reg_event(0, y_controls, COLOR_LIGHT_BLUE, "STOP", EVID_STOP);
+    }
+
+    // xxx
+    if (state == STATE_STOPPED) {
+        reg_event(0, y_controls, COLOR_LIGHT_BLUE, "MON/REC", EVID_MON_REC);
+    } else if (state == STATE_MONITORING_DEV) {
+        reg_event(5*sdlx_char_width_dflt, y_controls, COLOR_LIGHT_BLUE, "REC", EVID_RECORD);
+    } else if (state == STATE_RECORDING_DEV) {
+        reg_event(5*sdlx_char_width_dflt, y_controls, COLOR_LIGHT_BLUE, "MON", EVID_MONITOR);
+    } else if (state == STATE_PLAYING_FILE) {
+        reg_event(5*sdlx_char_width_dflt, y_controls, COLOR_LIGHT_BLUE, "PAUSE", EVID_PAUSE);
+    } else if (state == STATE_PLAYING_FILE_PAUSED) {
+        reg_event(5*sdlx_char_width_dflt, y_controls, COLOR_LIGHT_BLUE, "CONT", EVID_CONT);
     } else {
-        printf("E %s: invalid audio state %d\n", progname, as.state);
+        printf("E %s: invalid state %d\n", progname, state);
     }
 
     // get list of mp3 files, and register events to play, rename, or delete each file
     get_list_of_files();
     for (int i = 0; i < max_files; i++) {
-        int y = y_files_list + i * (LINE_SPACING*sdlx_char_height_dflt);
+        sdlx_color_t color;
+        int          y;
+
+        y = y_files_list + i * (LINE_SPACING*sdlx_char_height_dflt);
         if (y+30 < y_files_list_top) continue;
         if (y+sdlx_char_height_dflt > y_files_list_bottom) break;
 
-        reg_event(0, y, files_noext[i], EVID_PLAY_FILE+i);
+        if (state == STATE_PLAYING_FILE && strcmp(playing_file, files[i]) == 0) {
+            color = COLOR_GREEN;
+        } else {
+            color = COLOR_LIGHT_BLUE;
+        }
+
+        reg_event(0, y, color, files_noext[i], EVID_PLAY_FILE+i);
 
         y += LINE_SPACING*sdlx_char_height_dflt;
     }
 
-    // register motion event, which is used to scroll the file list
+    // register motion event, this is used to scroll the file list
     sdlx_register_event(NULL, EVID_MOTION);
 
     // if not running on android then provide control to simulate horizontal orientation
@@ -287,7 +285,7 @@ void register_events(int orientation)
     }
 
     // register color organ events
-    color_organ_register_events(y_color_organ_controls);
+    color_organ_register_events(y_controls);
 
     // register control events
     sdlx_register_control_events(EVID_SETTINGS, "STG",
@@ -322,29 +320,13 @@ void get_list_of_files(void)
         }
         max_files = 0;
 
-        // make new file list ...
-
-        // if record.mp3 exists then add it to the begining 
-        if (util_file_exists(files_dir, "record.mp3")) {
-            files[0] = strdup("record.mp3");
-            files_noext[0] = strdup("record");
-            max_files++;
-        }
-
-        // xxx comment ...
+        // create new list of files
         sprintf(cmd, "/bin/ls -1 %s/*.mp3", files_dir);
         fp = popen(cmd, "r");
         while (fgets(s, sizeof(s), fp) != NULL) {
             remove_trailing_newline(s);
 
             bn = basename(s);
-
-            // if bn is record.mp3 then this name has already been added,
-            // so continue
-            if (strcmp(bn, "record.mp3") == 0) {
-                continue;
-            }
-
             files[max_files] = strdup(bn);
 
             if ((p = strstr(bn, ".mp3")) != NULL) *p = '\0';
@@ -357,44 +339,21 @@ void get_list_of_files(void)
     }
 }
 
-char *get_state_str(bool *recording)
+char *get_state_str(void)
 {
-    static char s[200];
-    char buffer[100], *short_fn, *p;
-
-    *recording = false;
-
-    switch (as.state) {
-    case AUDIO_STATE_IDLE:
+    switch (state) {
+    case STATE_STOPPED:
         return "Stopped";
-    case AUDIO_STATE_PLAY_FILE:
-        strcpy(buffer, as.pathname);
-        short_fn = basename(buffer);
-        if ((p = strstr(short_fn, ".mp3")) != NULL) *p = '\0';
-        if (!as.paused) {
-            sprintf(s, "%s", short_fn);
-        } else {
-            sprintf(s, "%s", short_fn);
-        }
-        return s;
-    case AUDIO_STATE_RECORD_FROM_MIC:
-        if (!as.paused) {
-            *recording = true;
-            return "REC MIC";
-        } else {
-            return "MON MIC";
-        }
-        break;
-    case AUDIO_STATE_RECORD_FROM_DEVICE:
-        if (!as.paused) {
-            *recording = true;
-            return "REC DEV";
-        } else {
-            return "MON DEV";
-        }
-        break;
+    case STATE_PLAYING_FILE:
+        return "Playing";
+    case STATE_PLAYING_FILE_PAUSED:
+        return "Paused";
+    case STATE_MONITORING_DEV:
+        return "MonDev";
+    case STATE_RECORDING_DEV:
+        return "RecDev";
     default:
-        return "INVALID STATE";
+        return "???";
     }
 }
 
@@ -407,7 +366,7 @@ void remove_trailing_newline(char *s)
     }
 }
 
-int get_orientation(void)
+int get_device_orientation(void)
 {
     double ax, ay, az;
     int rc;
@@ -440,19 +399,19 @@ int get_orientation(void)
     return orientation;
 }
 
-void reg_event(int x, int y, char *name, int event_id)
+void reg_event(int x, int y, sdlx_color_t color, char *name, int event_id)
 {
     sdlx_loc_t *loc;
 
     if (orientation == VERTICAL) {
         loc = sdlx_render_printf_ex2(x, y+COLOR_ORGAN_H,
-                                     FONT_NORMAL, COLOR_LIGHT_BLUE, FLAG_NONE, WRAP_NONE,
+                                     FONT_NORMAL, color, FLAG_NONE, WRAP_NONE,
                                      "%s", name);
     } else {
         int x1 = sdlx_win_width - sdlx_char_height_dflt - y;
         int y1 = x;
         loc = sdlx_render_printf_ex2(x1, y1,
-                                     FONT_NORMAL, COLOR_LIGHT_BLUE, FLAG_ROT_90, WRAP_NONE,
+                                     FONT_NORMAL, color, FLAG_ROT_90, WRAP_NONE,
                                      "%s", name);
     }
     sdlx_register_event(loc, event_id);
