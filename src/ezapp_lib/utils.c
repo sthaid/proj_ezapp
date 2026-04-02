@@ -155,9 +155,20 @@ void util_delete_file(char *dir, char *fn)
     char path[200];
 
     concat(dir, fn, path);
-    INFO("deleting file %s\n", path);
 
+    INFO("deleting file %s\n", path);
     unlink(path);
+}
+
+void util_rename_file(char *old_dir, char *old_fn, char *new_dir, char *new_fn)
+{
+    char old_path[200], new_path[200];
+
+    concat(old_dir, old_fn, old_path);
+    concat(new_dir, new_fn, new_path);
+
+    INFO("renaming %s to %s\n", old_path, new_path);
+    rename(old_path, new_path);
 }
 
 bool util_file_exists(char *dir, char *fn)

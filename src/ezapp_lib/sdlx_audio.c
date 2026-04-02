@@ -828,7 +828,9 @@ static int record_mic_thread(void *cx_arg)
 // -----------------  RECORD ANDROID DEVICE AUDIO TO STEREO MP3 FILE  -------------
 
 typedef struct {
-    void *mp3_cx;
+    char dir[100];
+    char filename[100];
+    bool append;
 } record_dev_cx_t;
 
 static int record_dev_thread(void *cx);
@@ -836,7 +838,6 @@ static int record_dev_thread(void *cx);
 int sdlx_audio_record_from_device(char *dir, char *filename, bool append, bool start_paused)
 {
     record_dev_cx_t *cx = NULL;
-    void            *mp3_cx = NULL;
     int              rc;
 
     // call sdlx_audio_stop, which will:
@@ -848,22 +849,17 @@ int sdlx_audio_record_from_device(char *dir, char *filename, bool append, bool s
         return -1;
     }
 
-    // if filename is provided then open mp3 file
-    if (filename != NULL && filename[0] != '\0') {
-        mp3_cx = mp3_file_open(dir, filename, 2, append);
-        if (mp3_cx == NULL) {
-            ERROR("failed to open %s/%s append=%d\n", dir, filename, append);
-            return -1;
-        }
+    // if filename provided it must have mp3 extension
+    // xxx make this check elsewhere too
+    if (filename && strstr(filename, ".mp3") == NULL) {
+        ERROR("filename '%s' must have mp3 ext\n", filename);
+        return -1;
     }
 
     // call java to start playback capture
     rc = util_start_playbackcapture();
     if (rc != 0) {
         ERROR("util_start_playbackcapture failed\n");
-        if (mp3_cx) {
-            mp3_file_close(mp3_cx);
-        }
         return -1;
     }
 
@@ -873,7 +869,7 @@ int sdlx_audio_record_from_device(char *dir, char *filename, bool append, bool s
     state.record_secs = 0;
     state.volume      = 0;
     state.paused      = start_paused;
-    if (mp3_cx != NULL) {
+    if (dir && filename) {
         sprintf(state.pathname, "%s/%s", dir, filename);
     }
 
@@ -883,8 +879,12 @@ int sdlx_audio_record_from_device(char *dir, char *filename, bool append, bool s
     }
 
     // create record_dev_thread
-    cx = malloc(sizeof(record_dev_cx_t));
-    cx->mp3_cx = mp3_cx;
+    cx = calloc(1, sizeof(record_dev_cx_t));
+    if (dir && filename) {
+        strcpy(cx->dir, dir);
+        strcpy(cx->filename, filename);
+        cx->append = append;
+    }
     sdlx_create_detached_thread(record_dev_thread, cx);
 
     // return success
@@ -899,6 +899,7 @@ static int record_dev_thread(void *cx_arg)
     float            samples[MAX_SAMPLES];
     int              rc;
     double           record_secs = 0;
+    void            *mp3_cx = NULL;
 
     while (true) {
         // if in stopping state then goto done;
@@ -922,11 +923,18 @@ static int record_dev_thread(void *cx_arg)
         state.volume = calc_volume(samples, MAX_SAMPLES);
 
         // if not paused then perform recording  
-        if (!state.paused && cx->mp3_cx) {
-            // write samples to the mp3 file
-            if (cx->mp3_cx) {
-                mp3_file_write(cx->mp3_cx, samples, MAX_SAMPLES);
+        if (!state.paused && cx->dir[0] != '\0' && cx->filename[0] != '\0') {
+            // open mp3 file, if not already opened
+            if (mp3_cx == NULL) {
+                mp3_cx = mp3_file_open(cx->dir, cx->filename, 2, cx->append);
+                if (mp3_cx == NULL) {
+                    ERROR("failed to open %s/%s append=%d\n", cx->dir, cx->filename, cx->append);
+                    break;
+                }
             }
+
+            // write samples to the mp3 file
+            mp3_file_write(mp3_cx, samples, MAX_SAMPLES);
 
             // keep track of how long the recording has been in progress
             record_secs += ((double)MAX_SAMPLES / 2) / FRAMES_PER_SEC;
@@ -943,8 +951,8 @@ static int record_dev_thread(void *cx_arg)
     // close mp3 file,
     // return success
     util_stop_playbackcapture();
-    if (cx->mp3_cx) {
-        mp3_file_close(cx->mp3_cx);
+    if (mp3_cx) {
+        mp3_file_close(mp3_cx);
     }
     free(cx);
     state.state = AUDIO_STATE_IDLE;

@@ -37,7 +37,7 @@ static bool         evid_keybd_registered;
 
 static int          event_quit_rcvd;
 
-static bool         event_box_enable;
+static bool         event_box_enable=0; //xxx
 
 //
 // prototypes

@@ -26,6 +26,7 @@
 #define EVID_CONT                6     // continue play file
 #define EVID_HORIZONTAL_OVERRIDE 7     // force horizontal orientation, when testing on linux
 #define EVID_PLAY_FILE           100   // start play file, range 100-199
+#define EVID_DELETE_FILE         200   // delete file, range 200-299
 
 #define STATE_STOPPED               0
 #define STATE_PLAYING_FILE          1
@@ -168,6 +169,10 @@ void process_event(sdlx_event_t *ev)
         sdlx_audio_play_file(files_dir, files[idx]);
         state = STATE_PLAYING_FILE;
         strcpy(playing_file, files[idx]);
+    } else if (ev->event_id >= EVID_DELETE_FILE && ev->event_id < EVID_DELETE_FILE+MAX_FILES) {
+        // delete the selected file
+        int idx = ev->event_id - EVID_DELETE_FILE;
+        util_delete_file(files_dir, files[idx]);
     } else {
         switch (ev->event_id) {
         // stop audio
@@ -175,6 +180,18 @@ void process_event(sdlx_event_t *ev)
             sdlx_audio_stop();
             state = STATE_STOPPED;
             playing_file[0] = '\0';
+
+            // if recorded file exists then rename it
+            if (util_file_exists(files_dir, ".record.mp3")) {
+                char *input = sdlx_get_input_str("RecordedFileName", NULL, false, COLOR_BLACK);
+                char  new_name[100];
+                if (input[0] != '\0') {
+                    sprintf(new_name, "%s.mp3", input);
+                } else {
+                    strcpy(new_name, "New.mp3");
+                }
+                util_rename_file(files_dir, ".record.mp3", files_dir, new_name);
+            }
             break;
 
         // monitor or record device, applies when in STATE_ATOPPED
@@ -214,9 +231,9 @@ void process_event(sdlx_event_t *ev)
         // scroll file list
         case EVID_MOTION:
             if (orientation == VERTICAL) {
-                y_files_list += event.u.motion.yrel;
+                y_files_list += ev->u.motion.yrel;
             } else {
-                y_files_list -= event.u.motion.xrel;
+                y_files_list -= ev->u.motion.xrel;
             }
             if (y_files_list >= y_files_list_top) {
                 y_files_list = y_files_list_top;
@@ -233,7 +250,7 @@ void process_event(sdlx_event_t *ev)
 
         // adjust color organ
         default:
-            color_organ_process_event(&event);
+            color_organ_process_event(ev);
             break;
         }
     }
@@ -269,18 +286,27 @@ void register_events(int orientation)
         sdlx_color_t color;
         int          y;
 
+        // handle scrolling of the files list
         y = y_files_list + i * (LINE_SPACING*sdlx_char_height_dflt);
         if (y+30 < y_files_list_top) continue;
         if (y+sdlx_char_height_dflt > y_files_list_bottom) break;
 
+        // register event to play the file
         if (state == STATE_PLAYING_FILE && strcmp(playing_file, files[i]) == 0) {
             color = COLOR_GREEN;
         } else {
             color = COLOR_LIGHT_BLUE;
         }
-
         reg_event(0, y, color, files_noext[i], EVID_PLAY_FILE+i);
 
+        // register event to delete the file;
+        // - don't allow delete of file if it is being played
+        // - supported only in vertical orientation
+        if (color == COLOR_LIGHT_BLUE && orientation == VERTICAL) {
+            reg_event(sdlx_win_width-4*sdlx_char_width_dflt, y, COLOR_LIGHT_BLUE, " DEL", EVID_DELETE_FILE+i);
+        }
+
+        // advance to next file
         y += LINE_SPACING*sdlx_char_height_dflt;
     }
 

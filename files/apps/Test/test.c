@@ -621,8 +621,6 @@ static void alpha_test(int idx, char *test_name, sdlx_color_t bg_color, sdlx_col
 #define EVID_AUDIO_PLAY_WHITE_NOISE        24
 #define EVID_AUDIO_PLAY_MIC_MP3            25
 #define EVID_AUDIO_PLAY_DEV_MP3            26
-#define EVID_AUDIO_PLAY_BLUESKY_WAV        27
-#define EVID_AUDIO_PLAY_SAMPLE_9S_MP3      28
 
 #define TONE_BOTH_CHANNELS 0
 #define TONE_LEFT_CHANNEL  1
@@ -793,21 +791,13 @@ static void page_7_draw(void)
     sdlx_register_event(loc, EVID_AUDIO_PLAY_MIC_MP3);
     loc = sdlx_render_printf_ex1(COL2X(10), ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "dev.mp3");
     sdlx_register_event(loc, EVID_AUDIO_PLAY_DEV_MP3);
-    row += 2;      
-
-    // controls: play provided sample files
-    loc = sdlx_render_printf_ex1(0, ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "sky.wav");
-    sdlx_register_event(loc, EVID_AUDIO_PLAY_BLUESKY_WAV);
-    loc = sdlx_render_printf_ex1(COL2X(10), ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, "smpl.mp3");
-    sdlx_register_event(loc, EVID_AUDIO_PLAY_SAMPLE_9S_MP3);
-    row += 2;      
+    row += 2;
 
     // display volume bar
     int y, w;
     if (state.state != AUDIO_STATE_IDLE) {
         y = sdlx_win_height - CONTROL_EVENTS_DISPLAY_HEIGHT - 2*sdlx_char_height_dflt - 10;
         w = state.volume * 1000;
-        printf("VOLUME W %d\n", w);
         sdlx_render_fill_rect(0, y, w, sdlx_char_height_dflt, COLOR_WHITE);
     }
 
@@ -991,12 +981,6 @@ static void page_7_process_event(sdlx_event_t *ev)
         break;
     case EVID_AUDIO_PLAY_DEV_MP3:
         sdlx_audio_play_file(data_dir, "dev.mp3");
-        break;
-    case EVID_AUDIO_PLAY_BLUESKY_WAV:
-        sdlx_audio_play_file(data_dir, "bluesky.wav");
-        break;
-    case EVID_AUDIO_PLAY_SAMPLE_9S_MP3:
-        sdlx_audio_play_file(data_dir, "sample-9s.mp3");
         break;
     }
 }

@@ -1052,6 +1052,17 @@ void Util_delete_file (struct ParseState *Parser, struct Value *ReturnValue,
     util_delete_file(dir, fn);
 }
 
+void Util_rename_file(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
+{
+    char * old_dir = (char *)Param[0]->Val->Pointer;
+    char * old_fn  = (char *)Param[1]->Val->Pointer;
+    char * new_dir = (char *)Param[2]->Val->Pointer;
+    char * new_fn  = (char *)Param[3]->Val->Pointer;
+
+    util_rename_file(old_dir, old_fn, new_dir, new_fn);
+}
+
 void Util_file_exists (struct ParseState *Parser, struct Value *ReturnValue,
 	struct Value **Param, int NumArgs)
 {
@@ -1446,6 +1457,7 @@ struct LibraryFunction UtilsFunctions[] = {
     { Util_write_file,       "int util_write_file(char *dir, char *fn, void *data, int len);" },
     { Util_read_file,        "void *util_read_file(char *dir, char *fn, int *len);" },
     { Util_delete_file,      "void *util_delete_file(char *dir, char *fn);" },
+    { Util_rename_file,      "void util_rename_file(char *old_dir, char *old_fn, char *new_dir, char *new_fn);" },
     { Util_file_exists,      "bool util_file_exists(char *dir, char *fn);" },
     { Util_file_mtime,       "long util_file_mtime(char *dir, char *fn);" },
     { Util_file_size,        "long util_file_size(char *dir, char *fn);" },
