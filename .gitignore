@@ -2,6 +2,9 @@ src/SDL
 src/SDL_mixer
 src/SDL_ttf
 src/ezapp/version.h
+src/picoc/devel/libgen_out1.h
+src/picoc/devel/libgen_out2.h
+src/picoc/devel/libgen
 
 linux/build
 linux/local
@@ -24,6 +27,3 @@ bin/ezlogfilter
 cscope.files
 cscope.out
 tags
-
-
-

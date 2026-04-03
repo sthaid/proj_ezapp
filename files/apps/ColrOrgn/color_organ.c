@@ -9,12 +9,9 @@
 
 #include "apps/ColrOrgn/common.h"
 
+// xxx at end of playing the state does nt xfer to stopped
+
 // yyy new
-// - get rid of sample.mp3
-// - dont need mic
-// - if device recording is not established, previous file is deleted
-// - add band limits to settings,
-// - settings should be able to modify all the settings
 // - use the fps info
 // - Settings
 //   - print duration of each cycle  ???
@@ -30,7 +27,6 @@
 //   caller should deal with the fps
 // - circles mode multiplier constant too large?
 // - add params for decay and exp smooth
-// - auto adjust params
 
 //
 // defines
@@ -64,7 +60,7 @@
 
 // misc
 #define DISP_BAND_SCALE_DURATION 30
-#define COH                      COLOR_ORGAN_H  //yyy del?
+#define COH                      COLOR_ORGAN_H  // abbreviation
 
 // default param values
 #define DFLT_COLOR_ORGAN       COLOR_ORGAN_BARS
@@ -84,7 +80,7 @@ int   which_color_organ;
 int   which_filter;
 int   band_gain[3];
 float exp_filter_k;
-float snap_filter_k;
+float snap_filter_k;  // xxx rename back to _decay
 
 // names
 char *color_organ_name[MAX_COLOR_ORGAN] = {"BARS", "CIRC"};

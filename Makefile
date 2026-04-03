@@ -30,4 +30,4 @@ clobber: clean
 install_on_android:
 	make -C android install_debug
 
-.PHONY: build clean
+.PHONY: build apps svcs clean clobber install_on_android
