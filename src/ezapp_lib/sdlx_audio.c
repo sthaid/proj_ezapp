@@ -651,8 +651,10 @@ static void mp3_file_close(void *cx_arg)
 // -----------------  RECORD MICROPHONE  ------------------
 
 typedef struct {
-    void *mp3_cx;
-    int   auto_stop_secs;
+    char dir[100];
+    char filename[100];
+    bool append;
+    int  auto_stop_secs;
 } record_mic_cx_t;
 
 static int record_mic_thread(void *cx_arg);
@@ -660,12 +662,17 @@ static int record_mic_thread(void *cx_arg);
 int sdlx_audio_record_from_mic(char *dir, char *filename, int auto_stop_secs, bool append, bool start_paused)
 {
     record_mic_cx_t    *cx = NULL;
-    void               *mp3_cx = NULL;
     const SDL_AudioSpec record_spec = { SDL_AUDIO_F32, 1, FRAMES_PER_SEC };
 
     // reset audio
     if (audio_reset() != 0) {
         ERROR("failed to reset audio\n");
+        return -1;
+    }
+
+    // if filename provided it must have mp3 extension
+    if (filename && strstr(filename, ".mp3") == NULL) {
+        ERROR("filename '%s' must have mp3 ext\n", filename);
         return -1;
     }
 
@@ -676,28 +683,23 @@ int sdlx_audio_record_from_mic(char *dir, char *filename, int auto_stop_secs, bo
         return -1;
     }
 
-    // if filename is provided then open mp3 file
-    if (filename != NULL && filename[0] != '\0') {
-        mp3_cx = mp3_file_open(dir, filename, 2, append);
-        if (mp3_cx == NULL) {
-            ERROR("failed to open %s/%s append=%d\n", dir, filename, append);
-            return -1;
-        }
-    }
-
     // init state
     memset(&state, 0, sizeof(state));
     state.state       = AUDIO_STATE_RECORD_FROM_MIC;
     state.record_secs = 0;
     state.volume      = 0;
     state.paused      = start_paused;
-    if (mp3_cx != NULL) {
+    if (dir && filename) {
         sprintf(state.pathname, "%s/%s", dir, filename);
     }
 
     // create thread to xfer microphone data to mp3 file
-    cx = malloc(sizeof(record_mic_cx_t));
-    cx->mp3_cx         = mp3_cx;
+    cx = calloc(1, sizeof(record_mic_cx_t));
+    if (dir && filename) {
+        strcpy(cx->dir, dir);
+        strcpy(cx->filename, filename);
+        cx->append = append;
+    }
     cx->auto_stop_secs = auto_stop_secs;
     sdlx_create_detached_thread(record_mic_thread, cx);
 
@@ -714,9 +716,10 @@ static int record_mic_thread(void *cx_arg)
     int          mono_buff_samples, stereo_buff_samples;
     double       silence_secs = 0;
     double       record_secs = 0;
+    void        *mp3_cx = NULL;
 
     // start audio stream;
-    // the audio stream is running even when state is paused, to provide fft
+    // the audio stream is running even when state is paused, to provide saved audio samples
     SDL_ResumeAudioStreamDevice(audio_stream);  
 
     while (true) {
@@ -752,10 +755,19 @@ static int record_mic_thread(void *cx_arg)
         // calculate volume of the samples just obtained
         state.volume = calc_volume(mono_buff, mono_buff_samples);
 
-        // if not paused then record the samples
-        if (!state.paused && cx->mp3_cx) {
+        // if not paused then perform recording  
+        if (!state.paused && cx->dir[0] != '\0' && cx->filename[0] != '\0') {
+            // open mp3 file, if not already opened
+            if (mp3_cx == NULL) {
+                mp3_cx = mp3_file_open(cx->dir, cx->filename, 2, cx->append);
+                if (mp3_cx == NULL) {
+                    ERROR("failed to open %s/%s append=%d\n", cx->dir, cx->filename, cx->append);
+                    break;
+                }
+            }
+
             // write the data to the mp3 file
-            mp3_file_write(cx->mp3_cx, stereo_buff, stereo_buff_samples);
+            mp3_file_write(mp3_cx, stereo_buff, stereo_buff_samples);
 
             // keep track of how long the recording has been in progress
             record_secs += ((double)mono_buff_samples / FRAMES_PER_SEC);
@@ -765,7 +777,6 @@ static int record_mic_thread(void *cx_arg)
             if (cx->auto_stop_secs > 0) {
                 //INFO("VOL %f  SILENCE %f  SECS %f\n", 
                 //       state.volume,  audio_params.record_silence, silence_secs);
-                // xxx test this
                 if (state.volume < audio_params.record_silence) {
                     silence_secs += ((double)mono_buff_samples / FRAMES_PER_SEC);
                 } else {
@@ -803,13 +814,13 @@ static int record_mic_thread(void *cx_arg)
             tone[2*j] = tone[2*j+1] = AMPLITUDE * sin((2*M_PI) * ((double)j / N_ONE_SIN_WAVE));
         }
     }
-    if (cx->mp3_cx) {
-        mp3_file_write(cx->mp3_cx, tone, 2*N_TOTAL);
+    if (mp3_cx) {
+        mp3_file_write(mp3_cx, tone, 2*N_TOTAL);
     }
 
     // cleanup and return
-    if (cx->mp3_cx) {
-        mp3_file_close(cx->mp3_cx);
+    if (mp3_cx) {
+        mp3_file_close(mp3_cx);
     }
     SDL_DestroyAudioStream(audio_stream);
     audio_stream = NULL;
@@ -844,7 +855,6 @@ int sdlx_audio_record_from_device(char *dir, char *filename, bool append, bool s
     }
 
     // if filename provided it must have mp3 extension
-    // xxx make this check elsewhere too
     if (filename && strstr(filename, ".mp3") == NULL) {
         ERROR("filename '%s' must have mp3 ext\n", filename);
         return -1;
