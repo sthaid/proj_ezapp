@@ -196,13 +196,14 @@ void color_organ_display(bool idle)
     if (orientation == VERTICAL) {
         sdlx_render_texture(color_organ_texture, 0, 0);
     } else {
-        // yxx set scale incorporating the win height
+        // yyy set scale incorporating the win height
         float scale = 1000.0 / COH;
         int new_w = nearbyint(1000 * scale);
         int new_h = nearbyint(COH * scale);
-        // yxx comment this
+        // yyy comment this
+        // yyy was 0.55
         sdlx_render_texture_ex3(color_organ_texture, 
-                                0, 0.55*sdlx_win_height - new_w/2, new_w, new_h,
+                                0, 0.5*sdlx_win_height - new_w/2, new_w, new_h,
                                 90, new_h/2, new_h/2);
     }
 

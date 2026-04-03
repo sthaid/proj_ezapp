@@ -84,8 +84,9 @@ int get_device_orientation(void);
     
 int main(int argc, char **argv)
 {
-    sdlx_event_t event;
-    long         time_start=util_microsec_timer(), time_now, duration;
+    sdlx_event_t       event;
+    long               time_start=util_microsec_timer(), time_now, duration;
+    sdlx_audio_state_t as;
 
     // save args
     progname = argv[0];
@@ -111,6 +112,13 @@ int main(int argc, char **argv)
 
     // runtime loop
     while (!end_program) {
+        // if audio_state is idle then set state stopped
+        sdlx_audio_get_state(&as);
+        if (as.state == AUDIO_STATE_IDLE) {
+            state = STATE_STOPPED;
+            playing_file[0] = '\0';
+        }
+
         // get device orientation
         orientation = get_device_orientation();
 
