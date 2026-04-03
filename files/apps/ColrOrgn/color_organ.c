@@ -9,22 +9,11 @@
 
 #include "apps/ColrOrgn/common.h"
 
-// xxx at end of playing the state does nt xfer to stopped
-
-// yyy new
-// - use the fps info
+// xxx         
 // - Settings
 //   - print duration of each cycle  ???
-// - option to delete and rename files
-
-// yyy next
-// - ctrls to rename and delete files
+//   - change values
 // - negative rgb_k
-// - print the duration of each cycle, and set event wait time to allow for the duration  INPROG
-
-// yyy todo
-// - call to get_samples should return fps and possibly num_channels, and 
-//   caller should deal with the fps
 // - circles mode multiplier constant too large?
 // - add params for decay and exp smooth
 
@@ -59,8 +48,8 @@
 #define COLOR_ORGAN_CIRCLES  1
 
 // misc
-#define DISP_BAND_SCALE_DURATION 30
-#define COH                      COLOR_ORGAN_H  // abbreviation
+#define DISP_BAND_GAIN_DURATION 30
+#define COH  COLOR_ORGAN_H  // abbreviation
 
 // default param values
 #define DFLT_COLOR_ORGAN       COLOR_ORGAN_BARS
@@ -80,7 +69,7 @@ int   which_color_organ;
 int   which_filter;
 int   band_gain[3];
 float exp_filter_k;
-float snap_filter_k;  // xxx rename back to _decay
+float snap_filter_k;  // yyy rename back to _decay
 
 // names
 char *color_organ_name[MAX_COLOR_ORGAN] = {"BARS", "CIRC"};
@@ -96,7 +85,7 @@ sdlx_texture_t *blue_circle_texture;
 sdlx_texture_t *color_organ_texture;
 
 // used to display band scaling values for a short time interval
-int disp_band_scale;
+int disp_band_gain;
 
 //
 // prototypes
@@ -104,8 +93,6 @@ int disp_band_scale;
 
 // settings
 void settings_init(void);
-void settings_reset_to_dflt(void);
-void settings(void);
 
 // utils
 sdlx_texture_t *create_circle_texture(sdlx_color_t color);
@@ -115,6 +102,7 @@ void init_loc(sdlx_loc_t *loc, int x, int y, int w, int h);
 
 void color_organ_init(void)
 {
+    // initialize settings from params file
     settings_init();
 
     // create textures used by COLOR_ORGAN_CIRCLES
@@ -142,9 +130,6 @@ void display_band(int which_band, float band_volume);
 
 void color_organ_display(bool idle)
 {
-    // yyy FRAMES_PER_SEC?
-    // yyy probably dont return fps when getting samples
-
     int    num_downsample = 4;
     int    num_samples = nearbyint(FRAMES_PER_SEC / num_downsample * 0.050);  // equals 600
     float  delta_f = ((double)FRAMES_PER_SEC/num_downsample) / num_samples;   // equals 20
@@ -207,9 +192,9 @@ void color_organ_display(bool idle)
                                 90, new_h/2, new_h/2);
     }
 
-    // decrement disp_band_scale, this will stop the display of the band scaling constants
+    // decrement disp_band_gain, this will stop the display of the band scaling constants
     // after a short interval
-    if (disp_band_scale > 0) disp_band_scale--;
+    if (disp_band_gain > 0) disp_band_gain--;
 }
 
 void display_band(int which_band, float band_volume)
@@ -245,7 +230,7 @@ void display_band(int which_band, float band_volume)
         color = (which_band == LOW_BAND ? COLOR_RED : (which_band == MID_BAND ? COLOR_GREEN : COLOR_BLUE));
         sdlx_render_fill_rect(x, COH-h, 333, h, color);
 
-        if (show_params || disp_band_scale > 0) {
+        if (disp_band_gain > 0) {
             sdlx_render_printf_ex2(x+333/2, COH/2, FONT_NORMAL, COLOR_WHITE, FLAG_XY_CTR, WRAP_NONE, "%d", band_gain[which_band]); 
         }
     } else {
@@ -271,25 +256,67 @@ void display_band(int which_band, float band_volume)
         sdlx_color_mod_texture(t, intensity, intensity, intensity);
         sdlx_render_texture_ex1(t, x_ctr-circle_radius, y_ctr-circle_radius, 2*circle_radius, 2*circle_radius);
 
-        if (show_params || disp_band_scale > 0) {
+        if (disp_band_gain > 0) {
             sdlx_render_printf_ex2(x_ctr, y_ctr, FONT_NORMAL, COLOR_WHITE, FLAG_XY_CTR, WRAP_NONE, "%d", band_gain[which_band]);
         }
     }
 }
 
-// -----------------  COLOR ORGAN EVENT REGISTRATION  ----------------
+// -----------------  COLOR ORGAN EVENT HANDLING  --------------------
 
-void color_organ_register_events(int y_controls)
+void color_organ_process_event(sdlx_event_t *ev)
+{
+    switch (ev->event_id) {
+    case EVID_FILTER_SLCT:
+        which_filter = (which_filter + 1) % MAX_FILTER;
+        util_set_numeric_param(data_dir, "filter", which_filter);
+        break;
+    case EVID_COLOR_ORGAN_SLCT:
+        which_color_organ = (which_color_organ + 1) % MAX_COLOR_ORGAN;
+        util_set_numeric_param(data_dir, "color_organ", which_color_organ);
+        break;
+    case EVID_RED_INCREASE: // yyy name
+    case EVID_RED_DECREASE:
+        if (disp_band_gain == 0) {
+            disp_band_gain = DISP_BAND_GAIN_DURATION;
+            break;
+        }
+        band_gain[LOW_BAND] += (ev->event_id == EVID_RED_INCREASE ? 5 : -5);
+        disp_band_gain = DISP_BAND_GAIN_DURATION;
+        util_set_numeric_param(data_dir, "low_band_gain", band_gain[LOW_BAND]);
+        break;
+    case EVID_GREEN_INCREASE:
+    case EVID_GREEN_DECREASE:
+        if (disp_band_gain == 0) {
+            disp_band_gain = DISP_BAND_GAIN_DURATION;
+            break;
+        }
+        band_gain[MID_BAND] += (ev->event_id == EVID_GREEN_INCREASE ? 5 : -5);
+        disp_band_gain = DISP_BAND_GAIN_DURATION;
+        util_set_numeric_param(data_dir, "mid_band_gain", band_gain[MID_BAND]);
+        break;
+    case EVID_BLUE_INCREASE:
+    case EVID_BLUE_DECREASE:
+        if (disp_band_gain == 0) {
+            disp_band_gain = DISP_BAND_GAIN_DURATION;
+            break;
+        }
+        band_gain[HIGH_BAND] += (ev->event_id == EVID_BLUE_INCREASE ? 5 : -5);
+        disp_band_gain = DISP_BAND_GAIN_DURATION;
+        util_set_numeric_param(data_dir, "high_band_gain", band_gain[HIGH_BAND]);
+        break;
+    }
+}
+
+void color_organ_register_events(int y_controls_2)
 {
     sdlx_loc_t loc;
 
-    if (orientation == VERTICAL) {
-        reg_event(COL2X(11), y_controls, COLOR_LIGHT_BLUE, filter_name[which_filter], EVID_FILTER_SLCT);
-        reg_event(COL2X(16), y_controls, COLOR_LIGHT_BLUE,
-                color_organ_name[which_color_organ], EVID_COLOR_ORGAN_SLCT);
-    }
+    reg_event(COL2X(0), y_controls_2, COLOR_LIGHT_BLUE,
+            color_organ_name[which_color_organ], EVID_COLOR_ORGAN_SLCT);
+    reg_event(COL2X(5), y_controls_2, COLOR_LIGHT_BLUE, filter_name[which_filter], EVID_FILTER_SLCT);
 
-    if (orientation == HORIZONTAL) return; //xxx
+    if (orientation != VERTICAL) return;
 
     if (which_color_organ == COLOR_ORGAN_BARS) {
         init_loc(&loc, 0, 0, 333, COH/2);
@@ -333,46 +360,6 @@ void color_organ_register_events(int y_controls)
     }
 }
 
-// -----------------  COLOR ORGAN EVENT HANDLER  ---------------------
-
-void color_organ_process_event(sdlx_event_t *ev)
-{
-    switch (ev->event_id) {
-    case EVID_FILTER_SLCT:
-        which_filter = (which_filter + 1) % MAX_FILTER;
-        util_set_numeric_param(data_dir, "filter", which_filter);
-        break;
-    case EVID_COLOR_ORGAN_SLCT:
-        which_color_organ = (which_color_organ + 1) % MAX_COLOR_ORGAN;
-        util_set_numeric_param(data_dir, "color_organ", which_color_organ);
-        break;
-    case EVID_RED_INCREASE: // yyy name
-    case EVID_RED_DECREASE:
-        band_gain[LOW_BAND] += (ev->event_id == EVID_RED_INCREASE ? 5 : -5);
-        disp_band_scale = DISP_BAND_SCALE_DURATION;
-        util_set_numeric_param(data_dir, "low_band_gain", band_gain[LOW_BAND]);
-        break;
-    case EVID_GREEN_INCREASE:
-    case EVID_GREEN_DECREASE:
-        band_gain[MID_BAND] += (ev->event_id == EVID_GREEN_INCREASE ? 5 : -5);
-        disp_band_scale = DISP_BAND_SCALE_DURATION;
-        util_set_numeric_param(data_dir, "mid_band_gain", band_gain[MID_BAND]);
-        break;
-    case EVID_BLUE_INCREASE:
-    case EVID_BLUE_DECREASE:
-        band_gain[HIGH_BAND] += (ev->event_id == EVID_BLUE_INCREASE ? 5 : -5);
-        disp_band_scale = DISP_BAND_SCALE_DURATION;
-        util_set_numeric_param(data_dir, "high_band_gain", band_gain[HIGH_BAND]);
-        break;
-    case EVID_SHOW_PARAMS:
-        show_params = !show_params;
-        break;
-    case EVID_SETTINGS:
-        settings();
-        break;
-    }
-}
-
 // -----------------  COLOR ORGAN SETTINGS  --------------------------
 
 void settings_init(void)
@@ -402,7 +389,7 @@ void settings_reset_to_dflt(void)
 #define EVID_SETTINGS_RESET 2001
 #define EVID_SETTINGS_CREATE_TEST_FILES 2002
 
-void settings(void)
+void color_organ_settings(void)
 {
     bool         done = false;
     sdlx_event_t event;

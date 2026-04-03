@@ -10,23 +10,24 @@
 #include "apps/ColrOrgn/common.h"
 
 // yyy todo
-// - add events to rename and delete files
-// - use provided frames_per_sec
 // - review how FRAMES_PER_SEC is used
 
 //
 // defines
 //
 
-#define EVID_STOP                1     // stop 
-#define EVID_MON_REC             2     // monitor or record from device
-#define EVID_MONITOR             3     // select monitor mode
-#define EVID_RECORD              4     // select record mode
-#define EVID_PAUSE               5     // pause play file
-#define EVID_CONT                6     // continue play file
-#define EVID_HORIZONTAL_OVERRIDE 7     // force horizontal orientation, when testing on linux
-#define EVID_PLAY_FILE           100   // start play file, range 100-199
-#define EVID_DELETE_FILE         200   // delete file, range 200-299
+#define EVID_STOP                  1     // stop 
+#define EVID_MON_REC               2     // monitor or record from device
+#define EVID_MONITOR               3     // select monitor mode
+#define EVID_RECORD                4     // select record mode
+#define EVID_PAUSE                 5     // pause play file
+#define EVID_CONT                  6     // continue play file
+#define EVID_SHOW_HORIZONTAL       7     // show/hide controls when in horizontal orientation
+#define EVID_SETTINGS              8     // color organ settings display
+#define EVID_TEST_FORCE_HORIZONTAL 9     // force horizontal orientation, when testing on linux
+#define EVID_PLAY_FILE           100     // start play file, range 100-199
+#define EVID_DELETE_FILE         200     // delete file, range 200-299
+#define EVID_RENAME_FILE         300     // delete file, range 300-399
 
 #define STATE_STOPPED               0
 #define STATE_PLAYING_FILE          1
@@ -50,7 +51,8 @@ char *files_noext[MAX_FILES];
 int   max_files;
 
 int   y_state;
-int   y_controls;
+int   y_controls_1;
+int   y_controls_2;
 int   y_files_list;
 int   y_files_list_top;
 int   y_files_list_bottom;
@@ -58,7 +60,8 @@ int   y_files_list_bottom;
 int   state = STATE_STOPPED;
 char  playing_file[100];
 bool  end_program;
-bool  horizontal_override;
+bool  test_force_horizontal;
+bool  show_horizontal;
 
 #ifdef ANDROID // yyy fix picoc to use ifdef in code
 bool android = true;
@@ -72,7 +75,7 @@ bool android = false;
 
 // event handling
 void process_event(sdlx_event_t *ev);
-void register_events(int orientation);
+void register_events(void);
 
 // utils
 void get_list_of_files(void);
@@ -102,8 +105,9 @@ int main(int argc, char **argv)
 
     // init y locations
     y_state             = 0;
-    y_controls          = y_state + LINE_SPACING*sdlx_char_height_dflt;
-    y_files_list        = y_controls + LINE_SPACING*sdlx_char_height_dflt;
+    y_controls_1          = y_state + LINE_SPACING*sdlx_char_height_dflt;
+    y_controls_2        = y_controls_1 + LINE_SPACING*sdlx_char_height_dflt;
+    y_files_list        = y_controls_2 + LINE_SPACING*sdlx_char_height_dflt;
     y_files_list_top    = y_files_list;
     y_files_list_bottom = sdlx_win_height - CONTROL_EVENTS_DISPLAY_HEIGHT - COLOR_ORGAN_H;
 
@@ -132,7 +136,7 @@ int main(int argc, char **argv)
         color_organ_display(state == STATE_STOPPED);
 
         // register events
-        register_events(orientation);
+        register_events();
 
         // present the display
         sdlx_display_present();
@@ -181,6 +185,15 @@ void process_event(sdlx_event_t *ev)
         // delete the selected file
         int idx = ev->event_id - EVID_DELETE_FILE;
         util_delete_file(files_dir, files[idx]);
+    } else if (ev->event_id >= EVID_RENAME_FILE && ev->event_id < EVID_RENAME_FILE+MAX_FILES) {
+        // rename the selected file
+        int idx = ev->event_id - EVID_RENAME_FILE;
+        char *input = sdlx_get_input_str("RecordedFileName", NULL, false, COLOR_BLACK);
+        char  new_name[100];
+        if (input[0] != '\0') {
+            sprintf(new_name, "%s.mp3", input);
+            util_rename_file(files_dir, files[idx], files_dir, new_name);
+        }
     } else {
         switch (ev->event_id) {
         // stop audio
@@ -203,7 +216,7 @@ void process_event(sdlx_event_t *ev)
             break;
 
         // monitor or record device, applies when in STATE_ATOPPED
-        case EVID_MON_REC:  //yyy is just monitor ?
+        case EVID_MON_REC:
             sdlx_audio_record_from_device(files_dir, ".record.mp3", NO_APPEND, START_PAUSED);
             state = STATE_MONITORING_DEV;
             playing_file[0] = '\0';
@@ -248,12 +261,22 @@ void process_event(sdlx_event_t *ev)
             }
             break;
 
+        // toggle flag to show or hide the controls when in horizontal orientation
+        case EVID_SHOW_HORIZONTAL:
+            show_horizontal = !show_horizontal;
+            break;
+
+        // activate the color organ settings display
+        case EVID_SETTINGS:
+            color_organ_settings();
+            break;
+
         // This event is only registered when this program is being tested on linux;
         // and will toggle override of the orientation so that horizontal orientation
         // can be tested on linux. Linux does not have the acceleration sensor that is
         // available on android to detect the orientation.
-        case EVID_HORIZONTAL_OVERRIDE:
-            horizontal_override = !horizontal_override;
+        case EVID_TEST_FORCE_HORIZONTAL:
+            test_force_horizontal = !test_force_horizontal;
             break;
 
         // adjust color organ
@@ -264,79 +287,88 @@ void process_event(sdlx_event_t *ev)
     }
 }
 
-void register_events(int orientation)
+void register_events(void)
 {
     sdlx_loc_t *loc;
 
-    // yyy comment
-    if (state != STATE_STOPPED) {
-        reg_event(0, y_controls, COLOR_LIGHT_BLUE, "STOP", EVID_STOP);
-    }
-
-    // yyy
-    if (state == STATE_STOPPED) {
-        reg_event(0, y_controls, COLOR_LIGHT_BLUE, "MON/REC", EVID_MON_REC);
-    } else if (state == STATE_MONITORING_DEV) {
-        reg_event(5*sdlx_char_width_dflt, y_controls, COLOR_LIGHT_BLUE, "REC", EVID_RECORD);
-    } else if (state == STATE_RECORDING_DEV) {
-        reg_event(5*sdlx_char_width_dflt, y_controls, COLOR_LIGHT_BLUE, "MON", EVID_MONITOR);
-    } else if (state == STATE_PLAYING_FILE) {
-        reg_event(5*sdlx_char_width_dflt, y_controls, COLOR_LIGHT_BLUE, "PAUSE", EVID_PAUSE);
-    } else if (state == STATE_PLAYING_FILE_PAUSED) {
-        reg_event(5*sdlx_char_width_dflt, y_controls, COLOR_LIGHT_BLUE, "CONT", EVID_CONT);
-    } else {
-        printf("E %s: invalid state %d\n", progname, state);
-    }
-
-    // get list of mp3 files, and register events to play, rename, or delete each file
-    get_list_of_files();
-    for (int i = 0; i < max_files; i++) {
-        sdlx_color_t color;
-        int          y;
-
-        // handle scrolling of the files list
-        y = y_files_list + i * (LINE_SPACING*sdlx_char_height_dflt);
-        if (y+30 < y_files_list_top) continue;
-        if (y+sdlx_char_height_dflt > y_files_list_bottom) break;
-
-        // register event to play the file
-        if (state == STATE_PLAYING_FILE && strcmp(playing_file, files[i]) == 0) {
-            color = COLOR_GREEN;
+    if (orientation == VERTICAL || show_horizontal) {
+        // register EVID_MON_REC or EVID_STOP on control line 1, col 0
+        if (state == STATE_STOPPED) {
+            reg_event(0, y_controls_1, COLOR_LIGHT_BLUE, "MON/REC", EVID_MON_REC);
         } else {
-            color = COLOR_LIGHT_BLUE;
-        }
-        reg_event(0, y, color, files_noext[i], EVID_PLAY_FILE+i);
-
-        // register event to delete the file;
-        // - don't allow delete of file if it is being played
-        // - supported only in vertical orientation
-        if (color == COLOR_LIGHT_BLUE && orientation == VERTICAL) {
-            reg_event(sdlx_win_width-4*sdlx_char_width_dflt, y, COLOR_LIGHT_BLUE, " DEL", EVID_DELETE_FILE+i);
+            reg_event(0, y_controls_1, COLOR_LIGHT_BLUE, "STP", EVID_STOP);
         }
 
-        // advance to next file
-        y += LINE_SPACING*sdlx_char_height_dflt;
+        // register EVID RECORD, MONITOR, PAUSE, or CONT on control line 1 col 4
+        if (state == STATE_MONITORING_DEV) {
+            reg_event(4*sdlx_char_width_dflt, y_controls_1, COLOR_LIGHT_BLUE, "REC", EVID_RECORD);
+        } else if (state == STATE_RECORDING_DEV) {
+            reg_event(4*sdlx_char_width_dflt, y_controls_1, COLOR_LIGHT_BLUE, "MON", EVID_MONITOR);
+        } else if (state == STATE_PLAYING_FILE) {
+            reg_event(4*sdlx_char_width_dflt, y_controls_1, COLOR_LIGHT_BLUE, "PAUS", EVID_PAUSE);
+        } else if (state == STATE_PLAYING_FILE_PAUSED) {
+            reg_event(4*sdlx_char_width_dflt, y_controls_1, COLOR_LIGHT_BLUE, "CONT", EVID_CONT);
+        }
+
+        // get list of mp3 files, and register events to play, rename, or delete each file
+        get_list_of_files();
+        for (int i = 0; i < max_files; i++) {
+            sdlx_color_t color;
+            int          y;
+
+            // handle scrolling of the files list
+            y = y_files_list + i * (LINE_SPACING*sdlx_char_height_dflt);
+            if (y+30 < y_files_list_top) continue;
+            if (y+sdlx_char_height_dflt > y_files_list_bottom) break;
+
+            // register event to play the file
+            if (state == STATE_PLAYING_FILE && strcmp(playing_file, files[i]) == 0) {
+                color = COLOR_GREEN;
+            } else {
+                color = COLOR_LIGHT_BLUE;
+            }
+            reg_event(0, y, color, files_noext[i], EVID_PLAY_FILE+i);
+
+            // register event to rename and delete the file;
+            // - don't allow delete of file if it is being played
+            // - supported only in vertical orientation
+            if (color == COLOR_LIGHT_BLUE && orientation == VERTICAL) {
+                reg_event(sdlx_win_width-8*sdlx_char_width_dflt, y, COLOR_LIGHT_BLUE, " REN", EVID_RENAME_FILE+i);
+                reg_event(sdlx_win_width-4*sdlx_char_width_dflt, y, COLOR_LIGHT_BLUE, " DEL", EVID_DELETE_FILE+i);
+            }
+
+            // advance to next file
+            y += LINE_SPACING*sdlx_char_height_dflt;
+        }
+
+        // register motion event, this is used to scroll the file list
+        sdlx_register_event(NULL, EVID_MOTION);
+
+        // register color organ events
+        color_organ_register_events(y_controls_2);
     }
-
-    // register motion event, this is used to scroll the file list
-    sdlx_register_event(NULL, EVID_MOTION);
-
-    // if not running on android then provide control to simulate horizontal orientation
-    if (!android) {
-        int x = sdlx_win_width - 2*sdlx_char_width_dflt;
-        int y = sdlx_win_height - CONTROL_EVENTS_DISPLAY_HEIGHT - 1.50*sdlx_char_height_dflt;
-        loc = sdlx_render_printf_ex1(x, y, FONT_NORMAL, COLOR_LIGHT_BLUE, "%s", "H");
-        sdlx_register_event(loc, EVID_HORIZONTAL_OVERRIDE);
-    }
-
-    // register color organ events
-    color_organ_register_events(y_controls);
 
     // register control events
-    sdlx_register_control_events(EVID_SETTINGS, "STG",
-                                 EVID_SHOW_PARAMS, (!show_params ? "SHOW" : "HIDE"),
-                                 EVID_QUIT, "X",
-                                 COLOR_WHITE, COLOR_BLACK);
+    if (orientation == VERTICAL) {
+        sdlx_register_control_events(EVID_SETTINGS, "STG",
+                                     0, NULL,
+                                     EVID_QUIT, "X",
+                                     COLOR_WHITE, COLOR_BLACK);
+    } else {
+        sdlx_register_control_events(EVID_SETTINGS, "STG",
+                                     EVID_SHOW_HORIZONTAL, (!show_horizontal ? "SHOW" : "HIDE"),
+                                     EVID_QUIT, "X",
+                                     COLOR_WHITE, COLOR_BLACK);
+    }
+
+    // if not running on android then provide control to simulate horizontal orientation;
+    // this feature is provided for development testing
+    if (!android) {
+        int x = sdlx_win_width - 1*sdlx_char_width_dflt;
+        int y = sdlx_win_height - (CONTROL_EVENTS_DISPLAY_HEIGHT /2);
+        loc = sdlx_render_printf_ex2(x, y, FONT_NORMAL, COLOR_LIGHT_BLUE, FLAG_Y_CTR, WRAP_NONE, "%s", "H");
+        sdlx_register_event(loc, EVID_TEST_FORCE_HORIZONTAL);
+    }
 }
 
 // -----------------  UTILS  -----------------------------------------
@@ -418,7 +450,7 @@ int get_device_orientation(void)
     static int orientation = VERTICAL;
     static bool printed;
 
-    if (horizontal_override) {
+    if (test_force_horizontal) {
         return HORIZONTAL;
     }
 

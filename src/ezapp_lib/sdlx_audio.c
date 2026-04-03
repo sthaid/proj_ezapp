@@ -373,8 +373,6 @@ void sdlx_audio_get_params(sdlx_audio_params_t *ap)
 
 #define MAX_AUDIO_SAMPLES 65536
 typedef struct {
-    int           frames_per_sec;
-    int           num_channels;
     unsigned long total;
     float         left[MAX_AUDIO_SAMPLES];
     float         right[MAX_AUDIO_SAMPLES];
@@ -383,14 +381,10 @@ typedef struct {
 
 sdlx_audio_samples_t audio_samples;
 
-void save_audio_samples(float *samples, int num_samples, int num_channels, int frames_per_sec)
+void save_audio_samples(float *samples, int num_samples, int num_channels)
 {
     float *l, *r, *m, *l_end;
     int   idx, i;
-
-    // save frames_per_sec and num_channels in the audio_samples struct
-    audio_samples.frames_per_sec = frames_per_sec;
-    audio_samples.num_channels   = num_channels;
 
     // init
     idx = (audio_samples.total % MAX_AUDIO_SAMPLES);
@@ -411,8 +405,8 @@ void save_audio_samples(float *samples, int num_samples, int num_channels, int f
             }
         }
     } else if (num_channels == 2) {
-        // stereo case: left and right samples are interleaved, and the
-        // mono value is set to the average of left and right
+        // stereo case: set left and right from the interleaved input;
+        // set mono value to the average of left and right
         for (i = 0; i < num_samples; i += 2) {
             *l++ = samples[i];
             *r++ = samples[i+1];
@@ -753,7 +747,7 @@ static int record_mic_thread(void *cx_arg)
 
         // save audio samples, these samples can be obtained and used by an app,
         // for example to compute fft
-        save_audio_samples(mono_buff, mono_buff_samples, 1, FRAMES_PER_SEC);
+        save_audio_samples(mono_buff, mono_buff_samples, 1);
 
         // calculate volume of the samples just obtained
         state.volume = calc_volume(mono_buff, mono_buff_samples);
@@ -916,7 +910,7 @@ static int record_dev_thread(void *cx_arg)
         }
 
         // save audio samples, for optional use by an app, such as to compute fft
-        save_audio_samples(samples, MAX_SAMPLES, 2, FRAMES_PER_SEC);
+        save_audio_samples(samples, MAX_SAMPLES, 2);
 
         // calculate volume
         // yyx should there be a different routine to calc_volume for stereo
@@ -1195,7 +1189,7 @@ static void play_buff(float *samples, int num_samples, int num_channels, int *to
         state.volume = calc_volume(samples, num_xfer_samples);
 
         // save audio samples
-        save_audio_samples(samples, num_xfer_samples, num_channels, FRAMES_PER_SEC);
+        save_audio_samples(samples, num_xfer_samples, num_channels);
 
         // sleep while there is more than 40 ms queued;
         // break out of this sleep loop if audio state has become stopping or paused
@@ -1400,10 +1394,7 @@ static void mixer_track_raw_callback(void *userdata, MIX_Track *track, const SDL
     //     num_samples, state.volume, state.play_current_secs);
 
     // save audio samples
-    save_audio_samples(samples, 
-                       num_samples, 
-                       play_file_spec.channels,
-                       play_file_spec.freq);  // xxx handle these ?
+    save_audio_samples(samples, num_samples, play_file_spec.channels);
 }
 
 static void mixer_track_stopped_callback(void *userdata, MIX_Track *track)
