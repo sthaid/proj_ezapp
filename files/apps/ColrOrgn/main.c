@@ -61,7 +61,7 @@ int   state = STATE_STOPPED;
 char  playing_file[100];
 bool  end_program;
 bool  test_force_horizontal;
-bool  show_horizontal;
+bool  show_horizontal = true;
 
 #ifdef ANDROID // yyy fix picoc to use ifdef in code
 bool android = true;
@@ -90,6 +90,7 @@ int main(int argc, char **argv)
     sdlx_event_t       event;
     long               time_start=util_microsec_timer(), time_now, duration;
     sdlx_audio_state_t as;
+    int                new_orientation;
 
     // save args
     progname = argv[0];
@@ -123,8 +124,13 @@ int main(int argc, char **argv)
             playing_file[0] = '\0';
         }
 
-        // get device orientation
-        orientation = get_device_orientation();
+        // get device orientation;
+        // if orientation has changed then reset display file list to the top
+        new_orientation = get_device_orientation();
+        if (new_orientation != orientation) {
+            y_files_list = y_controls_2 + LINE_SPACING*sdlx_char_height_dflt;
+            orientation = new_orientation;
+        }
 
         // init the backbuffer
         sdlx_display_init(COLOR_BLACK);
