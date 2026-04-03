@@ -96,7 +96,6 @@ void settings_init(void);
 
 // utils
 sdlx_texture_t *create_circle_texture(sdlx_color_t color);
-void init_loc(sdlx_loc_t *loc, int x, int y, int w, int h);
 
 // -----------------  INIT & CLEANUP  --------------------------------
 
@@ -308,6 +307,8 @@ void color_organ_process_event(sdlx_event_t *ev)
     }
 }
 
+void init_loc(sdlx_loc_t *loc, int x, int y, int w, int h);
+
 void color_organ_register_events(int y_controls_2)
 {
     sdlx_loc_t loc;
@@ -315,8 +316,6 @@ void color_organ_register_events(int y_controls_2)
     reg_event(COL2X(0), y_controls_2, COLOR_LIGHT_BLUE,
             color_organ_name[which_color_organ], EVID_COLOR_ORGAN_SLCT);
     reg_event(COL2X(5), y_controls_2, COLOR_LIGHT_BLUE, filter_name[which_filter], EVID_FILTER_SLCT);
-
-    if (orientation != VERTICAL) return;
 
     if (which_color_organ == COLOR_ORGAN_BARS) {
         init_loc(&loc, 0, 0, 333, COH/2);
@@ -357,6 +356,23 @@ void color_organ_register_events(int y_controls_2)
         sdlx_register_event(&loc, EVID_BLUE_INCREASE);
         init_loc(&loc, x_ctr-r/2, y_ctr, r, r);
         sdlx_register_event(&loc, EVID_BLUE_DECREASE);
+    }
+}
+
+void init_loc(sdlx_loc_t *loc, int x, int y, int w, int h)
+{
+    if (orientation == VERTICAL) {
+        loc->x = x;
+        loc->y = y;
+        loc->w = w;
+        loc->h = h;
+    } else {
+        float scale = 1000.0 / COH;
+        int   y_top = sdlx_win_height/2 - (1000*scale)/2;
+        loc->h = w * scale;
+        loc->w = h * scale;
+        loc->y = x * scale + y_top;
+        loc->x = sdlx_win_width - y * scale - loc->w;
     }
 }
 
@@ -477,12 +493,4 @@ sdlx_texture_t *create_circle_texture(sdlx_color_t color)
     sdlx_set_render_target(NULL);
 
     return t;
-}
-
-void init_loc(sdlx_loc_t *loc, int x, int y, int w, int h)
-{
-    loc->x = x;
-    loc->y = y;
-    loc->w = w;
-    loc->h = h;
 }
