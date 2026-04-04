@@ -26,6 +26,14 @@
 #define MID_BAND    1   // green
 #define HIGH_BAND   2   // blue
 
+// xxxxxxx
+#define LOW_BAND_START   60
+#define LOW_BAND_END     150
+#define MID_BAND_START   200
+#define MID_BAND_END     600
+#define HIGH_BAND_START  800
+#define HIGH_BAND_END    2200
+
 // events
 #define EVID_FILTER_SLCT      1001
 #define EVID_COLOR_ORGAN_SLCT 1002
@@ -49,7 +57,7 @@
 #define COLOR_ORGAN_FFT      2
 
 // misc
-#define DISP_BAND_GAIN_DURATION 30
+#define DISP_BAND_GAIN_DURATION 50
 #define COH  COLOR_ORGAN_H  // abbreviation
 
 // default param values
@@ -72,6 +80,10 @@ int   band_gain[3];
 float exp_filter_k;
 float snap_filter_k;  // yyy rename back to _decay
 
+// color organ band freq ranges
+int band_start_freq[3] = {LOW_BAND_START, MID_BAND_START, HIGH_BAND_START};
+int band_end_freq[3]   = {LOW_BAND_END, MID_BAND_END, HIGH_BAND_END};
+
 // names
 char *color_organ_name[MAX_COLOR_ORGAN] = {"BARS", "CIRC", "FFT"};
 char *filter_name[MAX_FILTER] = {"NONE", "EXP", "SNAP"};
@@ -92,13 +104,11 @@ int disp_band_gain;
 // prototypes
 //
 
-// settings
 void settings_init(void);
 
-// utils
-sdlx_texture_t *create_circle_texture(sdlx_color_t color);
-
 // -----------------  INIT & CLEANUP  --------------------------------
+
+sdlx_texture_t *create_circle_texture(sdlx_color_t color);
 
 void color_organ_init(void)
 {
@@ -124,72 +134,59 @@ void color_organ_cleanup(void)
     sdlx_destroy_texture(color_organ_texture);
 }
 
+sdlx_texture_t *create_circle_texture(sdlx_color_t color)
+{
+    sdlx_texture_t *t;
+
+    t = sdlx_create_texture(200,200);
+    sdlx_set_render_target(t);
+    sdlx_render_fill_circle(100, 100, 100, color);
+    sdlx_set_render_target(NULL);
+
+    return t;
+}
+
 // -----------------  COLOR ORGAN DISPLAY  ---------------------------
 
+void filter(float *val, float new_val);
 void display_band(int which_band, float band_volume);
 
-void color_organ_display(bool idle)
+void color_organ_display(void)
 {
     int    num_downsample = 4;
     int    num_samples = nearbyint(FRAMES_PER_SEC / num_downsample * 0.050);  // equals 600
     float  delta_f = ((double)FRAMES_PER_SEC/num_downsample) / num_samples;   // equals 20
     float  samples[600], fft[301];
-    int    first_bin, last_bin;
-    float  low_band, mid_band, high_band;
+
+    static float filtered_vol[3];
 
     // render to color_organ_texture
     sdlx_set_render_target(color_organ_texture);
     sdlx_clear_texture(color_organ_texture, COLOR_BLACK);
 
-    // if not idle then
-    //   get band volumes from fft of audio samples
-    // else
-    //   set band volumes to zero
-    // endif
-    if (!idle) {
-        // get audio samples and perform fft
-        sdlx_get_audio_samples(num_samples, num_downsample, GET_SAMPLES_MONO, samples);
-        util_fft_real_to_real(num_samples, samples, fft, true);
+    // get audio samples and perform fft
+    sdlx_get_audio_samples(num_samples, num_downsample, GET_SAMPLES_MONO, samples);
+    util_fft_real_to_real(num_samples, samples, fft, true);
 
-        // calculate the band volume for each of the 3 bands
-        first_bin = nearbyint(LOW_BAND_START/delta_f);
-        last_bin = nearbyint(LOW_BAND_END/delta_f);
-        low_band = util_rms_float(&fft[first_bin], last_bin-first_bin+1);// yyy picoc isue requires &fft[first_bin]
+    // loop over the 3 bands
+    for (int band = 0; band < 3; band++) {
+        int   first_bin, last_bin;
+        float raw_new_vol;
 
-        first_bin = nearbyint(MID_BAND_START/delta_f);
-        last_bin = nearbyint(MID_BAND_END/delta_f);
-        mid_band = util_rms_float(&fft[first_bin], last_bin-first_bin+1);
+        // determine raw_new_vol for this band
+        first_bin = nearbyint(band_start_freq[band] / delta_f);
+        last_bin = nearbyint(band_end_freq[band] / delta_f);
+        raw_new_vol = util_rms_float(&fft[first_bin], last_bin-first_bin+1);// yyy picoc isue requires &fft[first_bin]
 
-        first_bin = nearbyint(HIGH_BAND_START/delta_f);
-        last_bin = nearbyint(HIGH_BAND_END/delta_f);
-        high_band = util_rms_float(&fft[first_bin], last_bin-first_bin+1);
-    } else {
-        low_band = 0;
-        mid_band = 0;
-        high_band = 0;
-    }
+        // apply scale factor
+        raw_new_vol *= band_gain[band];
+        if (raw_new_vol > 1) raw_new_vol = 1;
 
-    if (which_color_organ == COLOR_ORGAN_FFT) {
-        if (!idle) {
-            for (int i = 1; i < 301; i++) {
-                int rect_height = fft[i] * 10000;
-                int x = 3*i;
-                int y = COH - rect_height;
-                int w = 3;
-                int h = rect_height;
+        // apply filter
+        filter(&filtered_vol[band], raw_new_vol);
 
-                // range 380 to 750 nm
-                int wavelength = 700 - i;
-                sdlx_color_t color;
-                color = sdlx_wavelength_to_color(wavelength);
-                sdlx_render_fill_rect(x, y, w, h, color);
-            }
-        }
-    } else {
-        // render the band volume for the 3 bands
-        display_band(LOW_BAND, low_band);
-        display_band(MID_BAND, mid_band);
-        display_band(HIGH_BAND, high_band);
+        // display the band
+        display_band(band, filtered_vol[band]);
     }
 
     // restore render target to the display
@@ -199,65 +196,48 @@ void color_organ_display(bool idle)
     if (orientation == VERTICAL) {
         sdlx_render_texture(color_organ_texture, 0, 0);
     } else {
-        // yyy set scale incorporating the win height
+        // yyy comment
         float scale = 1000.0 / COH;
         int new_w = nearbyint(1000 * scale);
         int new_h = nearbyint(COH * scale);
-        // yyy comment this
-        // yyy was 0.55
         sdlx_render_texture_ex3(color_organ_texture, 
                                 0, 0.5*sdlx_win_height - new_w/2, new_w, new_h,
                                 90, new_h/2, new_h/2);
     }
+}
 
-    // decrement disp_band_gain, this will stop the display of the band scaling constants
-    // after a short interval
-    if (disp_band_gain > 0) disp_band_gain--;
+void filter(float *val, float new_val)
+{
+    if (which_filter == FILTER_NONE) {
+        *val = new_val;
+    } else if (which_filter == FILTER_EXP_SMOOTH) {
+        *val = *val + exp_filter_k * (new_val - *val);
+    } else if (which_filter == FILTER_SNAP) {
+        if (new_val > *val) {
+            *val = new_val;
+        } else {
+            *val -= snap_filter_k;
+            if (*val < new_val) *val = new_val;
+        }
+    } else {
+        *val = 0;
+    }
 }
 
 void display_band(int which_band, float band_volume)
 {
-    static float smoothed_save[3];
-    float        scaled, smoothed;
-
-    scaled = band_volume * band_gain[which_band];
-    if (scaled > 1) scaled = 1;
-
-    smoothed = smoothed_save[which_band];
-    if (which_filter == FILTER_NONE) {
-        smoothed = scaled;
-    } else if (which_filter == FILTER_EXP_SMOOTH) {
-        smoothed = smoothed + exp_filter_k * (scaled - smoothed);
-    } else if (which_filter == FILTER_SNAP) {
-        if (scaled > smoothed) {
-            smoothed = scaled;
-        } else {
-            smoothed -= snap_filter_k;
-            if (smoothed < scaled) smoothed = scaled;
-        }
-    } else {
-        smoothed = 0;
-    }
-    smoothed_save[which_band] = smoothed;
-
     if (which_color_organ == COLOR_ORGAN_BARS) {
         int          x = which_band * 333;
-        int          h = COH*smoothed;
+        int          h = COH*band_volume;
         sdlx_color_t color;
 
         color = (which_band == LOW_BAND ? COLOR_RED : (which_band == MID_BAND ? COLOR_GREEN : COLOR_BLUE));
         sdlx_render_fill_rect(x, COH-h, 333, h, color);
-
-        if (disp_band_gain > 0) {
-            sdlx_render_printf_ex2(x+333/2, COH/2, FONT_NORMAL, COLOR_WHITE, FLAG_XY_CTR, WRAP_NONE, "%d", band_gain[which_band]); 
-        }
     } else {
         sdlx_texture_t *t;
         int             x_ctr, y_ctr;
-        float           intensity;
-        float           k = 2.0;
+        float           k = 2.0;  // xxx param ?  OR eliminate somehow
 
-        intensity = smoothed * k;
         if (which_band == LOW_BAND) {
             t = red_circle_texture;
             x_ctr = 500 - circle_radius;
@@ -271,16 +251,16 @@ void display_band(int which_band, float band_volume)
             x_ctr = 500;
             y_ctr = circle_radius;
         }
-        sdlx_color_mod_texture(t, intensity, intensity, intensity);
-        sdlx_render_texture_ex1(t, x_ctr-circle_radius, y_ctr-circle_radius, 2*circle_radius, 2*circle_radius);
 
-        if (disp_band_gain > 0) {
-            sdlx_render_printf_ex2(x_ctr, y_ctr, FONT_NORMAL, COLOR_WHITE, FLAG_XY_CTR, WRAP_NONE, "%d", band_gain[which_band]);
-        }
+        band_volume *= k;
+        sdlx_color_mod_texture(t, band_volume, band_volume, band_volume);
+        sdlx_render_texture_ex1(t, x_ctr-circle_radius, y_ctr-circle_radius, 2*circle_radius, 2*circle_radius);
     }
 }
 
 // -----------------  COLOR ORGAN EVENT HANDLING  --------------------
+
+void init_loc(sdlx_loc_t *loc, int x, int y, int w, int h);
 
 void color_organ_process_event(sdlx_event_t *ev)
 {
@@ -326,31 +306,49 @@ void color_organ_process_event(sdlx_event_t *ev)
     }
 }
 
-void init_loc(sdlx_loc_t *loc, int x, int y, int w, int h);
-
 void color_organ_register_events(int y_controls_2)
 {
     sdlx_loc_t loc;
+    int flags = FLAG_XY_CTR | (orientation == HORIZONTAL ? FLAG_ROT_90 : 0);
 
     reg_event(COL2X(0), y_controls_2, COLOR_LIGHT_BLUE,
             color_organ_name[which_color_organ], EVID_COLOR_ORGAN_SLCT);
     reg_event(COL2X(5), y_controls_2, COLOR_LIGHT_BLUE, filter_name[which_filter], EVID_FILTER_SLCT);
 
     if (which_color_organ == COLOR_ORGAN_BARS) {
+        // xxx make a loop
         init_loc(&loc, 0, 0, 333, COH/2);
         sdlx_register_event(&loc, EVID_RED_INCREASE);
         init_loc(&loc, 0, COH/2, 333, COH/2);
         sdlx_register_event(&loc, EVID_RED_DECREASE);
+        if (disp_band_gain) {
+            init_loc(&loc, 333/2, COH/2, 0, 0);
+            sdlx_render_printf_ex2(loc.x, loc.y,
+                                   FONT_NORMAL, COLOR_WHITE, flags, WRAP_NONE,
+                                   "%d", band_gain[LOW_BAND]);
+        }
 
         init_loc(&loc, 333, 0, 333, COH/2);
         sdlx_register_event(&loc, EVID_GREEN_INCREASE);
         init_loc(&loc, 333, COH/2, 333, COH/2);
         sdlx_register_event(&loc, EVID_GREEN_DECREASE);
+        if (disp_band_gain) {
+            init_loc(&loc, 333+333/2, COH/2, 0, 0);
+            sdlx_render_printf_ex2(loc.x, loc.y,
+                                   FONT_NORMAL, COLOR_WHITE, flags, WRAP_NONE,
+                                   "%d", band_gain[MID_BAND]);
+        }
 
         init_loc(&loc, 666, 0, 333, COH/2);
         sdlx_register_event(&loc, EVID_BLUE_INCREASE);
         init_loc(&loc, 666, COH/2, 333, COH/2);
         sdlx_register_event(&loc, EVID_BLUE_DECREASE);
+        if (disp_band_gain) {
+            init_loc(&loc, 666+333/2, COH/2, 0, 0);
+            sdlx_render_printf_ex2(loc.x, loc.y,
+                                   FONT_NORMAL, COLOR_WHITE, flags, WRAP_NONE,
+                                   "%d", band_gain[HIGH_BAND]);
+        }
     } else {
         int x_ctr, y_ctr;
         int r = circle_radius;
@@ -375,6 +373,10 @@ void color_organ_register_events(int y_controls_2)
         sdlx_register_event(&loc, EVID_BLUE_INCREASE);
         init_loc(&loc, x_ctr-r/2, y_ctr, r, r);
         sdlx_register_event(&loc, EVID_BLUE_DECREASE);
+    }
+
+    if (disp_band_gain) {
+        disp_band_gain--;
     }
 }
 
@@ -500,16 +502,3 @@ void color_organ_settings(void)
     }
 }
 
-// -----------------  UTILS  -----------------------------------------
-
-sdlx_texture_t *create_circle_texture(sdlx_color_t color)
-{
-    sdlx_texture_t *t;
-
-    t = sdlx_create_texture(200,200);
-    sdlx_set_render_target(t);
-    sdlx_render_fill_circle(100, 100, 100, color);
-    sdlx_set_render_target(NULL);
-
-    return t;
-}

@@ -136,10 +136,13 @@ int main(int argc, char **argv)
         sdlx_display_init(COLOR_BLACK);
 
         // display state line
+        // xxx dont display when hiding
         print(0, y_state, (state==STATE_RECORDING_DEV ? COLOR_RED : COLOR_WHITE), get_state_str());
 
         // display color organ
-        color_organ_display(state == STATE_STOPPED);
+        if (state != STATE_STOPPED) {
+            color_organ_display();
+        }
 
         // register events
         register_events();
@@ -147,7 +150,7 @@ int main(int argc, char **argv)
         // present the display
         sdlx_display_present();
 
-#if 1
+#if 0
         // yyy comment
         time_now = util_microsec_timer();
         duration = time_now - time_start;
@@ -481,6 +484,9 @@ int get_device_orientation(void)
 
     return orientation;
 }
+
+// xxx only call sdlx_render_printf from these
+//   ????????????
 
 void reg_event(int x, int y, sdlx_color_t color, char *name, int event_id)
 {
