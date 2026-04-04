@@ -43,9 +43,10 @@
 #define FILTER_SNAP        2
 
 // color organ display formats
-#define MAX_COLOR_ORGAN      2
+#define MAX_COLOR_ORGAN      3
 #define COLOR_ORGAN_BARS     0
 #define COLOR_ORGAN_CIRCLES  1
+#define COLOR_ORGAN_FFT      2
 
 // misc
 #define DISP_BAND_GAIN_DURATION 30
@@ -72,7 +73,7 @@ float exp_filter_k;
 float snap_filter_k;  // yyy rename back to _decay
 
 // names
-char *color_organ_name[MAX_COLOR_ORGAN] = {"BARS", "CIRC"};
+char *color_organ_name[MAX_COLOR_ORGAN] = {"BARS", "CIRC", "FFT"};
 char *filter_name[MAX_FILTER] = {"NONE", "EXP", "SNAP"};
 
 // circles used in COLOR_ORGAN_CIRCLES mode
@@ -168,10 +169,28 @@ void color_organ_display(bool idle)
         high_band = 0;
     }
 
-    // render the band volume for the 3 bands
-    display_band(LOW_BAND, low_band);
-    display_band(MID_BAND, mid_band);
-    display_band(HIGH_BAND, high_band);
+    if (which_color_organ == COLOR_ORGAN_FFT) {
+        if (!idle) {
+            for (int i = 1; i < 301; i++) {
+                int rect_height = fft[i] * 10000;
+                int x = 3*i;
+                int y = COH - rect_height;
+                int w = 3;
+                int h = rect_height;
+
+                // range 380 to 750 nm
+                int wavelength = 700 - i;
+                sdlx_color_t color;
+                color = sdlx_wavelength_to_color(wavelength);
+                sdlx_render_fill_rect(x, y, w, h, color);
+            }
+        }
+    } else {
+        // render the band volume for the 3 bands
+        display_band(LOW_BAND, low_band);
+        display_band(MID_BAND, mid_band);
+        display_band(HIGH_BAND, high_band);
+    }
 
     // restore render target to the display
     sdlx_set_render_target(NULL);
