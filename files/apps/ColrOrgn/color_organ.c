@@ -316,63 +316,37 @@ void color_organ_register_events(int y_controls_2)
     reg_event(COL2X(5), y_controls_2, COLOR_LIGHT_BLUE, filter_name[which_filter], EVID_FILTER_SLCT);
 
     if (which_color_organ == COLOR_ORGAN_BARS) {
-        // xxx make a loop
-        init_loc(&loc, 0, 0, 333, COH/2);
-        sdlx_register_event(&loc, EVID_RED_INCREASE);
-        init_loc(&loc, 0, COH/2, 333, COH/2);
-        sdlx_register_event(&loc, EVID_RED_DECREASE);
-        if (disp_band_gain) {
-            init_loc(&loc, 333/2, COH/2, 0, 0);
-            sdlx_render_printf_ex2(loc.x, loc.y,
-                                   FONT_NORMAL, COLOR_WHITE, flags, WRAP_NONE,
-                                   "%d", band_gain[LOW_BAND]);
+        for (int band = 0; band < 3; band++) {
+            init_loc(&loc, 333*band, 0, 333, COH/2);
+            sdlx_register_event(&loc, band == 0 ? EVID_RED_INCREASE : (band == 1 ? EVID_GREEN_INCREASE : EVID_BLUE_INCREASE));
+            init_loc(&loc, 333*band, COH/2, 333, COH/2);
+            sdlx_register_event(&loc, band == 0 ? EVID_RED_DECREASE : (band == 1 ? EVID_GREEN_DECREASE : EVID_BLUE_DECREASE));
+            if (disp_band_gain) {
+                init_loc(&loc, 333*band+166, COH/2, 0, 0);
+                sdlx_render_printf_ex2(loc.x, loc.y,
+                                       FONT_NORMAL, COLOR_WHITE, flags, WRAP_NONE,
+                                       "%d", band_gain[band]);
+            }
         }
+    } else if (which_color_organ == COLOR_ORGAN_CIRCLES) {
+        int r = circle_radius;
+        int x_ctr[3] = {500-r, 500+r, 500};
+        int y_ctr[3] = {COH-r, COH-r, r};
 
-        init_loc(&loc, 333, 0, 333, COH/2);
-        sdlx_register_event(&loc, EVID_GREEN_INCREASE);
-        init_loc(&loc, 333, COH/2, 333, COH/2);
-        sdlx_register_event(&loc, EVID_GREEN_DECREASE);
-        if (disp_band_gain) {
-            init_loc(&loc, 333+333/2, COH/2, 0, 0);
-            sdlx_render_printf_ex2(loc.x, loc.y,
-                                   FONT_NORMAL, COLOR_WHITE, flags, WRAP_NONE,
-                                   "%d", band_gain[MID_BAND]);
-        }
-
-        init_loc(&loc, 666, 0, 333, COH/2);
-        sdlx_register_event(&loc, EVID_BLUE_INCREASE);
-        init_loc(&loc, 666, COH/2, 333, COH/2);
-        sdlx_register_event(&loc, EVID_BLUE_DECREASE);
-        if (disp_band_gain) {
-            init_loc(&loc, 666+333/2, COH/2, 0, 0);
-            sdlx_render_printf_ex2(loc.x, loc.y,
-                                   FONT_NORMAL, COLOR_WHITE, flags, WRAP_NONE,
-                                   "%d", band_gain[HIGH_BAND]);
+        for (int band = 0; band < 3; band++) {
+            init_loc(&loc, x_ctr[band]-r/2, y_ctr[band]-r, r, r);
+            sdlx_register_event(&loc, band == 0 ? EVID_RED_INCREASE : (band == 1 ? EVID_GREEN_INCREASE : EVID_BLUE_INCREASE));
+            init_loc(&loc, x_ctr[band]-r/2, y_ctr[band], r, r);
+            sdlx_register_event(&loc, band == 0 ? EVID_RED_DECREASE : (band == 1 ? EVID_GREEN_DECREASE : EVID_BLUE_DECREASE));
+            if (disp_band_gain) {
+                init_loc(&loc, x_ctr[band], y_ctr[band], 0, 0);
+                sdlx_render_printf_ex2(loc.x, loc.y,
+                                       FONT_NORMAL, COLOR_WHITE, flags, WRAP_NONE,
+                                       "%d", band_gain[band]);
+            }
         }
     } else {
-        int x_ctr, y_ctr;
-        int r = circle_radius;
-
-        x_ctr = 500 - r;
-        y_ctr = COH - r;
-        init_loc(&loc, x_ctr-r/2, y_ctr-r, r, r);
-        sdlx_register_event(&loc, EVID_RED_INCREASE);
-        init_loc(&loc, x_ctr-r/2, y_ctr, r, r);
-        sdlx_register_event(&loc, EVID_RED_DECREASE);
-
-        x_ctr = 500 + r;
-        y_ctr = COH - r;
-        init_loc(&loc, x_ctr-r/2, y_ctr-r, r, r);
-        sdlx_register_event(&loc, EVID_GREEN_INCREASE);
-        init_loc(&loc, x_ctr-r/2, y_ctr, r, r);
-        sdlx_register_event(&loc, EVID_GREEN_DECREASE);
-
-        x_ctr = 500;
-        y_ctr = r;
-        init_loc(&loc, x_ctr-r/2, y_ctr-r, r, r);
-        sdlx_register_event(&loc, EVID_BLUE_INCREASE);
-        init_loc(&loc, x_ctr-r/2, y_ctr, r, r);
-        sdlx_register_event(&loc, EVID_BLUE_DECREASE);
+        // xxx fft 
     }
 
     if (disp_band_gain) {
