@@ -61,7 +61,6 @@ int   state = STATE_STOPPED;
 char  playing_file[100];
 bool  end_program;
 bool  test_force_horizontal;
-bool  show_horizontal = true;
 
 #ifdef ANDROID // yyy fix picoc to use ifdef in code
 bool android = true;
@@ -101,8 +100,9 @@ int main(int argc, char **argv)
     data_dir = argv[1];
     printf("I %s: starting, data_dir=%s\n", progname, data_dir);
 
-    // init files_directory string
+    // init misc variables
     sprintf(files_dir, "%s/files", data_dir);
+    show_horizontal = true;
 
     // init y locations
     y_state             = 0;
@@ -136,8 +136,9 @@ int main(int argc, char **argv)
         sdlx_display_init(COLOR_BLACK);
 
         // display state line
-        // xxx dont display when hiding
-        print(0, y_state, (state==STATE_RECORDING_DEV ? COLOR_RED : COLOR_WHITE), get_state_str());
+        if (orientation == VERTICAL || show_horizontal) {
+            print(0, y_state, (state==STATE_RECORDING_DEV ? COLOR_RED : COLOR_WHITE), get_state_str());
+        }
 
         // display color organ
         if (state != STATE_STOPPED) {
@@ -150,7 +151,7 @@ int main(int argc, char **argv)
         // present the display
         sdlx_display_present();
 
-#if 1
+#if 0
         // yyy comment
         time_now = util_microsec_timer();
         duration = time_now - time_start;
@@ -352,10 +353,10 @@ void register_events(void)
 
         // register motion event, this is used to scroll the file list
         sdlx_register_event(NULL, EVID_MOTION);
-
-        // register color organ events
-        color_organ_register_events(y_controls_2);
     }
+
+    // register color organ events
+    color_organ_register_events(y_controls_2);
 
     // register control events
     if (orientation == VERTICAL) {

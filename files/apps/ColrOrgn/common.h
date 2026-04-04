@@ -12,6 +12,7 @@ char *progname;
 char *data_dir;
 char  files_dir[100];
 int   orientation;
+bool  show_horizontal;
 
 // prototypes of routiens defined in color_organ.c
 void color_organ_init(void);

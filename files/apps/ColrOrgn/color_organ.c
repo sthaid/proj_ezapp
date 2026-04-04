@@ -191,12 +191,13 @@ void color_organ_display(void)
             display_band(band, filtered_vol[band]);
         }
     } else {  // handle COLOR_ORGAN_FFT
+        // loop over the fft output array
         for (int i = 1; i < 301; i++) {
             int rect_height, x, y, w, h, wavelength;
             sdlx_color_t color;
 
-            // visible light range is 380 to 750 nm;
-            // wavelength variable range is from 699 down to 400
+            // visible light range is 380 (violet) to 750 (red) nm;
+            // wavelength variable range is from 699 (red) down to 400 (violet)
 
             rect_height = fft[i] * 10000;  //xxx
             if (rect_height > COH) rect_height = COH;
@@ -204,6 +205,10 @@ void color_organ_display(void)
             y = COH - rect_height;
             w = 3;
             h = rect_height;
+
+            // xxx apply filtering 
+            // xxx init color table on first call
+            // xxx recheck performance
 
             wavelength = 700 - i;
             color = sdlx_wavelength_to_color(wavelength);
@@ -246,6 +251,7 @@ void filter(float *val, float new_val)
     }
 }
 
+// this routine is called for COLOR_ORGAN_BARS and COLOR_ORGAN_CIRCLES
 void display_band(int which_band, float band_volume)
 {
     if (which_color_organ == COLOR_ORGAN_BARS) {
@@ -333,10 +339,14 @@ void color_organ_register_events(int y_controls_2)
     sdlx_loc_t loc;
     int flags = FLAG_XY_CTR | (orientation == HORIZONTAL ? FLAG_ROT_90 : 0);
 
-    reg_event(COL2X(0), y_controls_2, COLOR_LIGHT_BLUE,
-            color_organ_name[which_color_organ], EVID_COLOR_ORGAN_SLCT);
-    reg_event(COL2X(5), y_controls_2, COLOR_LIGHT_BLUE, filter_name[which_filter], EVID_FILTER_SLCT);
+    // yyy comment
+    if (orientation == VERTICAL || show_horizontal) {
+        reg_event(COL2X(0), y_controls_2, COLOR_LIGHT_BLUE,
+                  color_organ_name[which_color_organ], EVID_COLOR_ORGAN_SLCT);
+        reg_event(COL2X(5), y_controls_2, COLOR_LIGHT_BLUE, filter_name[which_filter], EVID_FILTER_SLCT);
+    }
 
+    // yyy comment
     if (which_color_organ == COLOR_ORGAN_BARS) {
         for (int band = 0; band < 3; band++) {
             init_loc(&loc, 333*band, 0, 333, COH/2);
@@ -371,6 +381,7 @@ void color_organ_register_events(int y_controls_2)
         // xxx todo
     }
 
+    // stop displaying the band gain values after a short time interval
     if (disp_band_gain) {
         disp_band_gain--;
     }
