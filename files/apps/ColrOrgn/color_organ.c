@@ -168,25 +168,47 @@ void color_organ_display(void)
     sdlx_get_audio_samples(num_samples, num_downsample, GET_SAMPLES_MONO, samples);
     util_fft_real_to_real(num_samples, samples, fft, true);
 
-    // loop over the 3 bands
-    for (int band = 0; band < 3; band++) {
-        int   first_bin, last_bin;
-        float raw_new_vol;
+    // handle COLOR_ORGAN_BARS and COLOR_ORGAN_CIRCLES
+    if (which_color_organ == COLOR_ORGAN_BARS || which_color_organ == COLOR_ORGAN_CIRCLES) {
+        // loop over the 3 bands
+        for (int band = 0; band < 3; band++) {
+            int   first_bin, last_bin;
+            float raw_new_vol;
 
-        // determine raw_new_vol for this band
-        first_bin = nearbyint(band_start_freq[band] / delta_f);
-        last_bin = nearbyint(band_end_freq[band] / delta_f);
-        raw_new_vol = util_rms_float(&fft[first_bin], last_bin-first_bin+1);// yyy picoc isue requires &fft[first_bin]
+            // determine raw_new_vol for this band
+            first_bin = nearbyint(band_start_freq[band] / delta_f);
+            last_bin = nearbyint(band_end_freq[band] / delta_f);
+            raw_new_vol = util_rms_float(&fft[first_bin], last_bin-first_bin+1);// yyy picoc isue requires &fft[first_bin]
 
-        // apply scale factor
-        raw_new_vol *= band_gain[band];
-        if (raw_new_vol > 1) raw_new_vol = 1;
+            // apply scale factor
+            raw_new_vol *= band_gain[band];
+            if (raw_new_vol > 1) raw_new_vol = 1;
 
-        // apply filter
-        filter(&filtered_vol[band], raw_new_vol);
+            // apply filter
+            filter(&filtered_vol[band], raw_new_vol);
 
-        // display the band
-        display_band(band, filtered_vol[band]);
+            // display the band
+            display_band(band, filtered_vol[band]);
+        }
+    } else {  // handle COLOR_ORGAN_FFT
+        for (int i = 1; i < 301; i++) {
+            int rect_height, x, y, w, h, wavelength;
+            sdlx_color_t color;
+
+            // visible light range is 380 to 750 nm;
+            // wavelength variable range is from 699 down to 400
+
+            rect_height = fft[i] * 10000;  //xxx
+            if (rect_height > COH) rect_height = COH;
+            x = 3*(i-1) + 50;
+            y = COH - rect_height;
+            w = 3;
+            h = rect_height;
+
+            wavelength = 700 - i;
+            color = sdlx_wavelength_to_color(wavelength);
+            sdlx_render_fill_rect(x, y, w, h, color);
+        }
     }
 
     // restore render target to the display
@@ -345,8 +367,8 @@ void color_organ_register_events(int y_controls_2)
                                        "%d", band_gain[band]);
             }
         }
-    } else {
-        // xxx fft 
+    } else {  // which_color_organ == COLOR_ORGAN_FFT
+        // xxx todo
     }
 
     if (disp_band_gain) {
@@ -378,8 +400,8 @@ void settings_init(void)
     band_gain[LOW_BAND]  = util_get_numeric_param(data_dir, "low_band_gain",     DFLT_LOW_BAND_GAIN);
     band_gain[MID_BAND]  = util_get_numeric_param(data_dir, "mid_band_gain",     DFLT_MID_BAND_GAIN);
     band_gain[HIGH_BAND] = util_get_numeric_param(data_dir, "high_band_gain",    DFLT_HIGH_BAND_GAIN);
-    which_color_organ    = util_get_numeric_param(data_dir, "which_color_organ", DFLT_COLOR_ORGAN);
-    which_filter         = util_get_numeric_param(data_dir, "which_filter",      DFLT_FILTER);
+    which_color_organ    = util_get_numeric_param(data_dir, "color_organ",       DFLT_COLOR_ORGAN);
+    which_filter         = util_get_numeric_param(data_dir, "filter",            DFLT_FILTER);
     exp_filter_k         = util_get_numeric_param(data_dir, "exp_filter_k",      DFLT_EXP_FILTER_K);
     snap_filter_k        = util_get_numeric_param(data_dir, "snap_filter_k",     DFLT_SNAP_FILTER_K);
 }
@@ -389,8 +411,8 @@ void settings_reset_to_dflt(void)
     util_set_numeric_param(data_dir, "low_band_gain",     DFLT_LOW_BAND_GAIN);
     util_set_numeric_param(data_dir, "mid_band_gain",     DFLT_MID_BAND_GAIN);
     util_set_numeric_param(data_dir, "high_band_gain",    DFLT_HIGH_BAND_GAIN);
-    util_set_numeric_param(data_dir, "which_color_organ", DFLT_COLOR_ORGAN);
-    util_set_numeric_param(data_dir, "which_filter",      DFLT_FILTER);
+    util_set_numeric_param(data_dir, "color_organ",       DFLT_COLOR_ORGAN);
+    util_set_numeric_param(data_dir, "filter",            DFLT_FILTER);
     util_set_numeric_param(data_dir, "exp_filter_k",      DFLT_EXP_FILTER_K);
     util_set_numeric_param(data_dir, "snap_filter_k",     DFLT_SNAP_FILTER_K);
 

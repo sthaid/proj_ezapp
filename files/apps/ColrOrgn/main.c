@@ -150,7 +150,7 @@ int main(int argc, char **argv)
         // present the display
         sdlx_display_present();
 
-#if 0
+#if 1
         // yyy comment
         time_now = util_microsec_timer();
         duration = time_now - time_start;
