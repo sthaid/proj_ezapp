@@ -1466,9 +1466,7 @@ int sdlx_audio_file_duration_secs(char *dir, char *filename)
 
 // xxx add to both Test and ColrOrgn ?
 
-#define TEST_FILE_FREQ_SWEEP 1
-
-void sdlx_create_test_file(char *dir, char *filename, int which, int freq1, int freq2, int duration_secs)
+void sdlx_create_test_file(char *dir, char *filename, int freq1, int freq2, int duration_secs)
 {
     #define MAX_DUR_SECS 10
     #define TWO_PI       (2 * M_PI)
@@ -1490,27 +1488,19 @@ void sdlx_create_test_file(char *dir, char *filename, int which, int freq1, int 
     samples = calloc(num_samples, sizeof(float));
 
     // init buffer
-    switch (which) {
-    case TEST_FILE_FREQ_SWEEP: {
-        INFO("creating %s/%s - %d sec freq sweep %d-%d Hz\n", dir, filename, duration_secs, freq1, freq2);
-        if (freq1 < 20 || freq1 > 10000 || freq2 < 20 || freq2 > 10000 || freq1 > freq2) {
-            ERROR("invalid freq range %d - %d\n", freq1, freq2);
-            free(samples);
-            return;
-        }
-        double f=0, phase=0;
-        int    k = 0;
-        for (int i = 0; i < num_frames; i++) {
-            f = freq1 + ((double)i / num_frames) * (freq2 - freq1);
-            phase += (TWO_PI / FRAMES_PER_SEC) * f;
-            samples[k] = samples[k+1] = sin(phase);
-            k+=2;
-        }
-        break; }
-    default:
-        ERROR("which=%d is invalid\n", which);
+    INFO("creating %s/%s - %d sec freq sweep %d-%d Hz\n", dir, filename, duration_secs, freq1, freq2);
+    if (freq1 < 20 || freq1 > 10000 || freq2 < 20 || freq2 > 10000 || freq1 > freq2) {
+        ERROR("invalid freq range %d - %d\n", freq1, freq2);
         free(samples);
         return;
+    }
+    double f=0, phase=0;
+    int    k = 0;
+    for (int i = 0; i < num_frames; i++) {
+        f = freq1 + ((double)i / num_frames) * (freq2 - freq1);
+        phase += (TWO_PI / FRAMES_PER_SEC) * f;
+        samples[k] = samples[k+1] = sin(phase);
+        k+=2;
     }
 
     // create mp3 file from stereo samples

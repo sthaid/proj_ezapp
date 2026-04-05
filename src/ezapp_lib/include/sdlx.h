@@ -210,8 +210,7 @@ int sdlx_audio_record_from_device(char *dir, char *filename, bool append, bool s
 // create test file
 // - - - - - -
 
-#define TEST_FILE_FREQ_SWEEP 1
-void sdlx_create_test_file(char *dir, char *filename, int which, int freq1, int freq2, int duration_secs);
+void sdlx_create_test_file(char *dir, char *filename, int freq1, int freq2, int duration_secs);
 
 // --------------------
 // SENSORS

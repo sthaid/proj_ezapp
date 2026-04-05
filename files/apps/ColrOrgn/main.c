@@ -160,7 +160,7 @@ int main(int argc, char **argv)
 #endif
 
         // wait for event, with 50 ms timeout;
-        // if timedout then continue   yyy comment on 45 vs 50
+        // if timedout then continue   yyy comment on 45 vs 50; maybe 45 shuld be lower
         sdlx_get_event(45000, &event);
         if (event.event_id == -1) {
             continue;
