@@ -9,9 +9,6 @@
 
 #include "apps/ColrOrgn/common.h"
 
-// xxx todo
-// - review how FRAMES_PER_SEC is used
-
 //
 // defines
 //
@@ -159,7 +156,7 @@ int main(int argc, char **argv)
         // present the display
         sdlx_display_present();
 
-#if 0
+#if 1
         // xxx comment
         time_now = util_microsec_timer();
         duration = time_now - time_start;

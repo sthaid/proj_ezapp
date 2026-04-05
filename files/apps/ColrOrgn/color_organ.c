@@ -9,11 +9,6 @@
 
 #include "apps/ColrOrgn/common.h"
 
-// xxx         
-// - Settings
-//   - print duration of each cycle  ???
-// - tune the duration dynamically
-
 //
 // defines
 //
@@ -171,7 +166,7 @@ void color_organ_display(void)
     sdlx_get_audio_samples(num_samples, num_downsample, GET_SAMPLES_MONO, samples);
     util_fft_real_to_real(num_samples, samples, fft, true);
 
-    // handle COLOR_ORGAN_BARS and COLOR_ORGAN_CIRCLES
+    // display color organ in format: COLOR_ORGAN_BARS and COLOR_ORGAN_CIRCLES
     if (which_color_organ == COLOR_ORGAN_BARS || which_color_organ == COLOR_ORGAN_CIRCLES) {
         // loop over the 3 bands
         for (int band = 0; band < 3; band++) {
@@ -181,7 +176,7 @@ void color_organ_display(void)
             // determine raw_new_vol for this band
             first_bin = nearbyint(band_start_freq[band] / delta_f);
             last_bin = nearbyint(band_end_freq[band] / delta_f);
-            raw_new_vol = util_rms_float(&fft[first_bin], last_bin-first_bin+1);// xxx picoc isue requires &fft[first_bin]
+            raw_new_vol = util_rms_float(&fft[first_bin], last_bin-first_bin+1);
 
             // apply scale factor
             raw_new_vol *= band_scale[band];
@@ -193,7 +188,7 @@ void color_organ_display(void)
             // display the band
             display_band(band, filtered_vol[band]);
         }
-    } else {  // handle COLOR_ORGAN_FFT
+    } else {  // display COLOR_ORGAN_FFT
         color_organ_display_fft(fft);
     }
 
@@ -204,7 +199,6 @@ void color_organ_display(void)
     if (orientation == VERTICAL) {
         sdlx_render_texture(color_organ_texture, 0, 0);
     } else {
-        // xxx comment
         float scale = 1000.0 / COH;
         int new_w = nearbyint(1000 * scale);
         int new_h = nearbyint(COH * scale);
@@ -224,8 +218,9 @@ void color_organ_display_fft(float *fft)
     // visible light range is 380 (violet) to 750 (red) nm;
     // wavelength variable range is from 699 (red) down to 400 (violet)
 
-    // loop over the fft output array
-    // xxx comments
+    // loop over the fft output array;
+    // display each fft bin value as a rectangle, w=3, and 
+    // h indicating the fft bin value
     for (int i = 1; i < MAX_FFT; i++) {
         raw_scaled = fft[i] * fft_scale; 
         if (raw_scaled > 1) raw_scaled = 1;
@@ -366,14 +361,14 @@ void color_organ_register_events(int y_controls_2)
     sdlx_loc_t loc;
     int flags = FLAG_XY_CTR | (orientation == HORIZONTAL ? FLAG_ROT_90 : 0);
 
-    // xxx comment
+    // register events to select the color organ display format and filter 
     if (orientation == VERTICAL || show_horizontal) {
         reg_event(COL2X(0), y_controls_2, COLOR_LIGHT_BLUE,
                   color_organ_name[which_color_organ], EVID_COLOR_ORGAN_SLCT);
         reg_event(COL2X(5), y_controls_2, COLOR_LIGHT_BLUE, filter_name[which_filter], EVID_FILTER_SLCT);
     }
 
-    // xxx comment
+    // register events to adjust the color organ display scale
     if (which_color_organ == COLOR_ORGAN_BARS) {
         for (int band = 0; band < 3; band++) {
             init_loc(&loc, 333*band, 0, 333, COH/2);
@@ -424,6 +419,9 @@ void color_organ_register_events(int y_controls_2)
     }
 }
 
+// Return display location of the color organ controls, based on the screen orientation.
+// When vertical, the color organ controls are located on the lower 2/3 of the display.
+// When horizontal, the color organ controls are located on the left side of the display.
 void init_loc(sdlx_loc_t *loc, int x, int y, int w, int h)
 {
     if (orientation == VERTICAL) {

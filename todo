@@ -1,7 +1,8 @@
-picoc issues  
-- "if 0" or ifdef NOTDEF
-- low_band = util_rms_float(&fft[first_bin], last_bin-first_bin+1);// yyy picoc isue requires &fft[first_bin]
+color organ
+- // xxx tune the duration dynamically
 
+picoc issues  
+- low_band = util_rms_float(&fft[first_bin], last_bin-first_bin+1);// yyy picoc isue requires &fft[first_bin]
 
 upgrade to Ubuntu 25.10
 
