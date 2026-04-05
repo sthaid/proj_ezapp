@@ -825,7 +825,7 @@ void ExpressionPrefixOperator(struct ParseState *Parser,
                 ProgramFail(Parser, "invalid operation");
                 break;
             }
-            ExpressionPushInt(Parser, StackTop, ResultInt);
+            ExpressionPushLongInt(Parser, StackTop, ResultInt);
         } else if (TopValue->Typ->Base == TypePointer) {
             /* pointer prefix arithmetic */
             int Size = TypeSize(TopValue->Typ->FromType, 0, true);
