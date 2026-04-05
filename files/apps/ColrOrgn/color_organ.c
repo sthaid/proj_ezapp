@@ -148,6 +148,8 @@ sdlx_texture_t *create_circle_texture(sdlx_color_t color)
 
 // -----------------  COLOR ORGAN DISPLAY  ---------------------------
 
+// xxx define for MAX samples/fft
+void color_organ_display_fft(float *fft);
 void filter(float *val, float new_val);
 void display_band(int which_band, float band_volume);
 
@@ -181,7 +183,7 @@ void color_organ_display(void)
             raw_new_vol = util_rms_float(&fft[first_bin], last_bin-first_bin+1);// yyy picoc isue requires &fft[first_bin]
 
             // apply scale factor
-            raw_new_vol *= band_gain[band];
+            raw_new_vol *= band_gain[band];  // xxx rename band_scale
             if (raw_new_vol > 1) raw_new_vol = 1;
 
             // apply filter
@@ -191,29 +193,7 @@ void color_organ_display(void)
             display_band(band, filtered_vol[band]);
         }
     } else {  // handle COLOR_ORGAN_FFT
-        // loop over the fft output array
-        for (int i = 1; i < 301; i++) {
-            int rect_height, x, y, w, h, wavelength;
-            sdlx_color_t color;
-
-            // visible light range is 380 (violet) to 750 (red) nm;
-            // wavelength variable range is from 699 (red) down to 400 (violet)
-
-            rect_height = fft[i] * 10000;  //xxx
-            if (rect_height > COH) rect_height = COH;
-            x = 3*(i-1) + 50;
-            y = COH - rect_height;
-            w = 3;
-            h = rect_height;
-
-            // xxx apply filtering 
-            // xxx init color table on first call
-            // xxx recheck performance
-
-            wavelength = 700 - i;
-            color = sdlx_wavelength_to_color(wavelength);
-            sdlx_render_fill_rect(x, y, w, h, color);
-        }
+        color_organ_display_fft(fft);
     }
 
     // restore render target to the display
@@ -230,6 +210,34 @@ void color_organ_display(void)
         sdlx_render_texture_ex3(color_organ_texture, 
                                 0, 0.5*sdlx_win_height - new_w/2, new_w, new_h,
                                 90, new_h/2, new_h/2);
+    }
+}
+
+void color_organ_display_fft(float *fft)
+{
+    int          x, y, w, h, wavelength;
+    sdlx_color_t color;
+    float        raw_scaled;
+    static float filtered[301];
+
+    // visible light range is 380 (violet) to 750 (red) nm;
+    // wavelength variable range is from 699 (red) down to 400 (violet)
+
+    // loop over the fft output array
+    for (int i = 1; i < 301; i++) {
+        raw_scaled = fft[i] * 10;  //xxx
+        if (raw_scaled > 1) raw_scaled = 1;
+
+        filter(&filtered[i], raw_scaled);
+
+        x = 3*(i-1) + 50;
+        y = COH - COH * filtered[i];
+        w = 3;
+        h = COH * filtered[i];
+
+        wavelength = 700 - i;
+        color = sdlx_wavelength_to_color(wavelength);
+        sdlx_render_fill_rect(x, y, w, h, color);
     }
 }
 
