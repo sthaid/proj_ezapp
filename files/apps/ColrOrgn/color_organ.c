@@ -451,6 +451,7 @@ void settings_init(void)
     which_filter          = util_get_numeric_param(data_dir, "filter",            DFLT_FILTER);
     exp_fltr_k            = util_get_numeric_param(data_dir, "exp_fltr_k",        DFLT_EXP_FLTR_K);
     snap_fltr_decay       = util_get_numeric_param(data_dir, "snap_fltr_decay",   DFLT_SNAP_FLTR_K);
+    debug_flags           = util_get_numeric_param(data_dir, "debug_flags",       0);
 }
 
 void settings_reset_to_dflt(void)
@@ -463,6 +464,7 @@ void settings_reset_to_dflt(void)
     util_set_numeric_param(data_dir, "filter",            DFLT_FILTER);
     util_set_numeric_param(data_dir, "exp_fltr_k",        DFLT_EXP_FLTR_K);
     util_set_numeric_param(data_dir, "snap_fltr_decay",   DFLT_SNAP_FLTR_K);
+    util_set_numeric_param(data_dir, "debug_flags",       0);
 
     settings_init();
 }
@@ -471,6 +473,7 @@ void settings_reset_to_dflt(void)
 #define EVID_SETTINGS_CREATE_TEST_FILES 2002
 #define EVID_SETTINGS_EXP_FLTR_K        2003
 #define EVID_SETTINGS_SNAP_FLTR_DECAY   2004
+#define EVID_SETTINGS_DEBUG_FLAGS       2005
 
 void color_organ_settings(void)
 {
@@ -478,7 +481,6 @@ void color_organ_settings(void)
     sdlx_event_t event;
     int          y;
     sdlx_loc_t  *loc;
-    float        val;
     char        *str;
 
     while (!done) {
@@ -503,8 +505,10 @@ void color_organ_settings(void)
         sdlx_render_printf(0, y, "%-15s = %0.3f", "exp_fltr_k",       exp_fltr_k);
         y += sdlx_char_height_dflt;
         sdlx_render_printf(0, y, "%-15s = %0.3f", "snap_fltr_decay",  snap_fltr_decay);
-        y += 2*sdlx_char_height_dflt;
+        y += sdlx_char_height_dflt;
+        sdlx_render_printf(0, y, "%-15s = %04x",  "debug_flags",      debug_flags);
         sdlx_print_set_default(FONT_NORMAL, COLOR_WHITE);
+        y += 2*sdlx_char_height_dflt;
 
         // register events
         loc = sdlx_render_printf_ex1(0, y, FONT_NORMAL, COLOR_LIGHT_BLUE, "RESET");
@@ -521,6 +525,10 @@ void color_organ_settings(void)
 
         loc = sdlx_render_printf_ex1(0, y, FONT_NORMAL, COLOR_LIGHT_BLUE, "SNAP_FLTR_DECAY");
         sdlx_register_event(loc, EVID_SETTINGS_SNAP_FLTR_DECAY);
+        y += 2*sdlx_char_height_dflt;
+
+        loc = sdlx_render_printf_ex1(0, y, FONT_NORMAL, COLOR_LIGHT_BLUE, "DEBUG_FLAGS");
+        sdlx_register_event(loc, EVID_SETTINGS_DEBUG_FLAGS);
         y += 2*sdlx_char_height_dflt;
 
         // register events
@@ -562,15 +570,18 @@ void color_organ_settings(void)
             break;
         case EVID_SETTINGS_EXP_FLTR_K:
             str = sdlx_get_input_str("exp_fltr_k", "", true, COLOR_BLACK);
-            if (sscanf(str, "%f", &val) != 1) break;
-            exp_fltr_k = val;
+            if (sscanf(str, "%f", &exp_fltr_k) != 1) break;
             util_set_numeric_param(data_dir, "exp_fltr_k", exp_fltr_k);
             break;
         case EVID_SETTINGS_SNAP_FLTR_DECAY:
             str = sdlx_get_input_str("snap_fltr_decay", "", true, COLOR_BLACK);
-            if (sscanf(str, "%f", &val) != 1) break;
-            snap_fltr_decay = val;
+            if (sscanf(str, "%f", &snap_fltr_decay) != 1) break;
             util_set_numeric_param(data_dir, "snap_fltr_decay", snap_fltr_decay);
+            break;
+        case EVID_SETTINGS_DEBUG_FLAGS:
+            str = sdlx_get_input_str("debug_flags", "", true, COLOR_BLACK);
+            if (sscanf(str, "%x", &debug_flags) != 1) break;
+            util_set_numeric_param(data_dir, "debug_flags", debug_flags);
             break;
         case EVID_QUIT:
             done = true;

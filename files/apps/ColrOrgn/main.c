@@ -78,9 +78,9 @@ int get_device_orientation(void);
 int main(int argc, char **argv)
 {
     sdlx_event_t       event;
-    long               time_start=util_microsec_timer(), time_now, duration;
     sdlx_audio_state_t as;
     int                new_orientation;
+    long               time_start=0, time_now, cycle_dur;
 
     // save args
     progname = argv[0];
@@ -156,16 +156,20 @@ int main(int argc, char **argv)
         // present the display
         sdlx_display_present();
 
-#if 1
-        // xxx comment
-        time_now = util_microsec_timer();
-        duration = time_now - time_start;
-        time_start = time_now;
-        printf("I %s: dur %ld ms\n", progname, duration/1000);
-#endif
+        // periodically debug print the cycle duration, 
+        if (debug_flags & DEBUG_FLAG_CYCLE_DUR) {
+            time_now = util_microsec_timer();
+            cycle_dur = time_now - time_start;
+            time_start = time_now;
+            if (cycle_dur < 1000000) {
+                printf("I %s: cycle_dur %ld ms\n", progname, cycle_dur/1000);
+            }
+        }
 
-        // wait for event, with 50 ms timeout;
-        // if timedout then continue   xxx comment on 45 vs 50; maybe 45 shuld be lower
+        // Wait for event, use 45 ms event wait timeout to allow for processing time.
+        // Ideally the cycle duration should be close to 50 ms because that is
+        //  the time duration of the fft.
+        // If the event wait timedout then continue.
         sdlx_get_event(45000, &event);
         if (event.event_id == -1) {
             continue;
