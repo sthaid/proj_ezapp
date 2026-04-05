@@ -32,5 +32,45 @@ int main()
     #endif
 #endif
 
+#if 1
+    if (1) printf("should print 6\n");
+#endif
+
+#if 0
+    if (1) printf("should not print 7\n");
+#endif
+
+#if 1
+    if (1) printf("should print 8\n");
+#else
+    if (1) printf("should not print 9\n");
+#endif
+
+#if 0
+    if (1) printf("should not print 10\n");
+#else
+    if (1) printf("should print 11\n");
+#endif
+
+#if 1
+    #ifdef DEFINED
+        if (1) printf("should print 12\n");
+    #endif
+#else
+    #ifdef DEFINED
+        if (1) printf("should not print 13\n");
+    #endif
+#endif
+
+#if 0
+    #ifdef DEFINED
+        if (1) printf("should print 14\n");
+    #endif
+#else
+    #ifdef DEFINED
+        if (1) printf("should not print 15\n");
+    #endif
+#endif
+
     return 0;
 }

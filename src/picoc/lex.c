@@ -1147,7 +1147,7 @@ enum LexToken LexGetToken(struct ParseState *Parser, struct Value **Value,
             pointer to the next one */
         TryNextToken = (Parser->HashIfEvaluateToLevel < Parser->HashIfLevel &&
                 Token != TokenEOF) || WasPreProcToken;
-        if (!IncPos && TryNextToken)
+        if (!IncPos && TryNextToken && !WasPreProcToken)
             LexGetRawToken(Parser, NULL, true);
 
     } while (TryNextToken);
