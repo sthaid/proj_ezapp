@@ -26,23 +26,17 @@
 #define MID_BAND    1   // green
 #define HIGH_BAND   2   // blue
 
-// xxxxxxx
-#define LOW_BAND_START   60
-#define LOW_BAND_END     150
-#define MID_BAND_START   200
-#define MID_BAND_END     600
-#define HIGH_BAND_START  800
-#define HIGH_BAND_END    2200
-
 // events
 #define EVID_FILTER_SLCT      1001
 #define EVID_COLOR_ORGAN_SLCT 1002
-#define EVID_RED_INCREASE     1010
+#define EVID_RED_INCREASE     1010  // xxx rename
 #define EVID_RED_DECREASE     1011
 #define EVID_GREEN_INCREASE   1012
 #define EVID_GREEN_DECREASE   1013
 #define EVID_BLUE_INCREASE    1014
 #define EVID_BLUE_DECREASE    1015
+#define EVID_FFT_INCREASE     1016
+#define EVID_FFT_DECREASE     1017
 
 // filters used to reduce color organ jitter
 #define MAX_FILTER         3
@@ -57,15 +51,16 @@
 #define COLOR_ORGAN_FFT      2
 
 // misc
-#define DISP_BAND_GAIN_DURATION 50
+#define DISP_SCALE_FACTOR_DURATION 50
 #define COH  COLOR_ORGAN_H  // abbreviation
 
 // default param values
 #define DFLT_COLOR_ORGAN       COLOR_ORGAN_BARS
 #define DFLT_FILTER            FILTER_EXP_SMOOTH
-#define DFLT_LOW_BAND_GAIN     10
-#define DFLT_MID_BAND_GAIN     15
-#define DFLT_HIGH_BAND_GAIN    25
+#define DFLT_LOW_BAND_SCALE     10
+#define DFLT_MID_BAND_SCALE     15
+#define DFLT_HIGH_BAND_SCALE    25
+#define DFLT_FFT_SCALE          10
 #define DFLT_EXP_FILTER_K      0.6
 #define DFLT_SNAP_FILTER_K     0.08
 
@@ -76,13 +71,14 @@
 // params
 int   which_color_organ;
 int   which_filter;
-int   band_gain[3];
+int   band_scale[3];
+int   fft_scale;
 float exp_filter_k;
-float snap_filter_k;  // yyy rename back to _decay
+float snap_filter_k;  // xxx rename back to _decay
 
 // color organ band freq ranges
-int band_start_freq[3] = {LOW_BAND_START, MID_BAND_START, HIGH_BAND_START};
-int band_end_freq[3]   = {LOW_BAND_END, MID_BAND_END, HIGH_BAND_END};
+int band_start_freq[3] = {  60, 200,  800 };
+int band_end_freq[3]   = { 150, 600, 2200 };
 
 // names
 char *color_organ_name[MAX_COLOR_ORGAN] = {"BARS", "CIRC", "FFT"};
@@ -98,7 +94,7 @@ sdlx_texture_t *blue_circle_texture;
 sdlx_texture_t *color_organ_texture;
 
 // used to display band scaling values for a short time interval
-int disp_band_gain;
+int disp_scale_factor;
 
 //
 // prototypes
@@ -148,6 +144,9 @@ sdlx_texture_t *create_circle_texture(sdlx_color_t color)
 
 // -----------------  COLOR ORGAN DISPLAY  ---------------------------
 
+#define MAX_SAMPLES 600
+#define MAX_FFT     301
+
 // xxx define for MAX samples/fft
 void color_organ_display_fft(float *fft);
 void filter(float *val, float new_val);
@@ -158,9 +157,11 @@ void color_organ_display(void)
     int    num_downsample = 4;
     int    num_samples = nearbyint(FRAMES_PER_SEC / num_downsample * 0.050);  // equals 600
     float  delta_f = ((double)FRAMES_PER_SEC/num_downsample) / num_samples;   // equals 20
-    float  samples[600], fft[301];
+    float  samples[MAX_SAMPLES], fft[MAX_FFT];
 
     static float filtered_vol[3];
+
+    // xxx check MAX_SAMPLES
 
     // render to color_organ_texture
     sdlx_set_render_target(color_organ_texture);
@@ -180,10 +181,10 @@ void color_organ_display(void)
             // determine raw_new_vol for this band
             first_bin = nearbyint(band_start_freq[band] / delta_f);
             last_bin = nearbyint(band_end_freq[band] / delta_f);
-            raw_new_vol = util_rms_float(&fft[first_bin], last_bin-first_bin+1);// yyy picoc isue requires &fft[first_bin]
+            raw_new_vol = util_rms_float(&fft[first_bin], last_bin-first_bin+1);// xxx picoc isue requires &fft[first_bin]
 
             // apply scale factor
-            raw_new_vol *= band_gain[band];  // xxx rename band_scale
+            raw_new_vol *= band_scale[band];  // xxx rename band_scale
             if (raw_new_vol > 1) raw_new_vol = 1;
 
             // apply filter
@@ -203,7 +204,7 @@ void color_organ_display(void)
     if (orientation == VERTICAL) {
         sdlx_render_texture(color_organ_texture, 0, 0);
     } else {
-        // yyy comment
+        // xxx comment
         float scale = 1000.0 / COH;
         int new_w = nearbyint(1000 * scale);
         int new_h = nearbyint(COH * scale);
@@ -218,14 +219,14 @@ void color_organ_display_fft(float *fft)
     int          x, y, w, h, wavelength;
     sdlx_color_t color;
     float        raw_scaled;
-    static float filtered[301];
+    static float filtered[MAX_FFT];
 
     // visible light range is 380 (violet) to 750 (red) nm;
     // wavelength variable range is from 699 (red) down to 400 (violet)
 
     // loop over the fft output array
-    for (int i = 1; i < 301; i++) {
-        raw_scaled = fft[i] * 10;  //xxx
+    for (int i = 1; i < MAX_FFT; i++) {
+        raw_scaled = fft[i] * fft_scale;  //xxx
         if (raw_scaled > 1) raw_scaled = 1;
 
         filter(&filtered[i], raw_scaled);
@@ -259,7 +260,7 @@ void filter(float *val, float new_val)
     }
 }
 
-// this routine is called for COLOR_ORGAN_BARS and COLOR_ORGAN_CIRCLES
+// this routine is called only for COLOR_ORGAN_BARS and COLOR_ORGAN_CIRCLES
 void display_band(int which_band, float band_volume)
 {
     if (which_color_organ == COLOR_ORGAN_BARS) {
@@ -309,35 +310,45 @@ void color_organ_process_event(sdlx_event_t *ev)
         which_color_organ = (which_color_organ + 1) % MAX_COLOR_ORGAN;
         util_set_numeric_param(data_dir, "color_organ", which_color_organ);
         break;
-    case EVID_RED_INCREASE: // yyy name
+    case EVID_RED_INCREASE: // xxx name
     case EVID_RED_DECREASE:
-        if (disp_band_gain == 0) {
-            disp_band_gain = DISP_BAND_GAIN_DURATION;
+        if (disp_scale_factor == 0) {
+            disp_scale_factor = DISP_SCALE_FACTOR_DURATION;
             break;
         }
-        band_gain[LOW_BAND] += (ev->event_id == EVID_RED_INCREASE ? 5 : -5);
-        disp_band_gain = DISP_BAND_GAIN_DURATION;
-        util_set_numeric_param(data_dir, "low_band_gain", band_gain[LOW_BAND]);
+        band_scale[LOW_BAND] += (ev->event_id == EVID_RED_INCREASE ? 5 : -5);
+        disp_scale_factor = DISP_SCALE_FACTOR_DURATION;
+        util_set_numeric_param(data_dir, "low_band_scale", band_scale[LOW_BAND]);
         break;
     case EVID_GREEN_INCREASE:
     case EVID_GREEN_DECREASE:
-        if (disp_band_gain == 0) {
-            disp_band_gain = DISP_BAND_GAIN_DURATION;
+        if (disp_scale_factor == 0) {
+            disp_scale_factor = DISP_SCALE_FACTOR_DURATION;
             break;
         }
-        band_gain[MID_BAND] += (ev->event_id == EVID_GREEN_INCREASE ? 5 : -5);
-        disp_band_gain = DISP_BAND_GAIN_DURATION;
-        util_set_numeric_param(data_dir, "mid_band_gain", band_gain[MID_BAND]);
+        band_scale[MID_BAND] += (ev->event_id == EVID_GREEN_INCREASE ? 5 : -5);
+        disp_scale_factor = DISP_SCALE_FACTOR_DURATION;
+        util_set_numeric_param(data_dir, "mid_band_scale", band_scale[MID_BAND]);
         break;
     case EVID_BLUE_INCREASE:
     case EVID_BLUE_DECREASE:
-        if (disp_band_gain == 0) {
-            disp_band_gain = DISP_BAND_GAIN_DURATION;
+        if (disp_scale_factor == 0) {
+            disp_scale_factor = DISP_SCALE_FACTOR_DURATION;
             break;
         }
-        band_gain[HIGH_BAND] += (ev->event_id == EVID_BLUE_INCREASE ? 5 : -5);
-        disp_band_gain = DISP_BAND_GAIN_DURATION;
-        util_set_numeric_param(data_dir, "high_band_gain", band_gain[HIGH_BAND]);
+        band_scale[HIGH_BAND] += (ev->event_id == EVID_BLUE_INCREASE ? 5 : -5);
+        disp_scale_factor = DISP_SCALE_FACTOR_DURATION;
+        util_set_numeric_param(data_dir, "high_band_scale", band_scale[HIGH_BAND]);
+        break;
+    case EVID_FFT_INCREASE:
+    case EVID_FFT_DECREASE:
+        if (disp_scale_factor == 0) {
+            disp_scale_factor = DISP_SCALE_FACTOR_DURATION;
+            break;
+        }
+        fft_scale += (ev->event_id == EVID_FFT_INCREASE ? 5 : -5);
+        disp_scale_factor = DISP_SCALE_FACTOR_DURATION;
+        util_set_numeric_param(data_dir, "fft_scale", fft_scale);
         break;
     }
 }
@@ -347,25 +358,25 @@ void color_organ_register_events(int y_controls_2)
     sdlx_loc_t loc;
     int flags = FLAG_XY_CTR | (orientation == HORIZONTAL ? FLAG_ROT_90 : 0);
 
-    // yyy comment
+    // xxx comment
     if (orientation == VERTICAL || show_horizontal) {
         reg_event(COL2X(0), y_controls_2, COLOR_LIGHT_BLUE,
                   color_organ_name[which_color_organ], EVID_COLOR_ORGAN_SLCT);
         reg_event(COL2X(5), y_controls_2, COLOR_LIGHT_BLUE, filter_name[which_filter], EVID_FILTER_SLCT);
     }
 
-    // yyy comment
+    // xxx comment
     if (which_color_organ == COLOR_ORGAN_BARS) {
         for (int band = 0; band < 3; band++) {
             init_loc(&loc, 333*band, 0, 333, COH/2);
             sdlx_register_event(&loc, band == 0 ? EVID_RED_INCREASE : (band == 1 ? EVID_GREEN_INCREASE : EVID_BLUE_INCREASE));
             init_loc(&loc, 333*band, COH/2, 333, COH/2);
             sdlx_register_event(&loc, band == 0 ? EVID_RED_DECREASE : (band == 1 ? EVID_GREEN_DECREASE : EVID_BLUE_DECREASE));
-            if (disp_band_gain) {
+            if (disp_scale_factor) {
                 init_loc(&loc, 333*band+166, COH/2, 0, 0);
                 sdlx_render_printf_ex2(loc.x, loc.y,
                                        FONT_NORMAL, COLOR_WHITE, flags, WRAP_NONE,
-                                       "%d", band_gain[band]);
+                                       "%d", band_scale[band]);
             }
         }
     } else if (which_color_organ == COLOR_ORGAN_CIRCLES) {
@@ -378,20 +389,31 @@ void color_organ_register_events(int y_controls_2)
             sdlx_register_event(&loc, band == 0 ? EVID_RED_INCREASE : (band == 1 ? EVID_GREEN_INCREASE : EVID_BLUE_INCREASE));
             init_loc(&loc, x_ctr[band]-r/2, y_ctr[band], r, r);
             sdlx_register_event(&loc, band == 0 ? EVID_RED_DECREASE : (band == 1 ? EVID_GREEN_DECREASE : EVID_BLUE_DECREASE));
-            if (disp_band_gain) {
+            if (disp_scale_factor) {
                 init_loc(&loc, x_ctr[band], y_ctr[band], 0, 0);
                 sdlx_render_printf_ex2(loc.x, loc.y,
                                        FONT_NORMAL, COLOR_WHITE, flags, WRAP_NONE,
-                                       "%d", band_gain[band]);
+                                       "%d", band_scale[band]);
             }
         }
     } else {  // which_color_organ == COLOR_ORGAN_FFT
+        init_loc(&loc, 0, 0, 1000, COH/2);
+        sdlx_register_event(&loc, EVID_FFT_INCREASE);
+        init_loc(&loc, 0, COH/2, 1000, COH/2);
+        sdlx_register_event(&loc, EVID_FFT_DECREASE);
+
         // xxx todo
+        if (disp_scale_factor) { // xxx name
+            init_loc(&loc, 500, COH/2, 0, 0);
+            sdlx_render_printf_ex2(loc.x, loc.y,
+                                   FONT_NORMAL, COLOR_WHITE, flags, WRAP_NONE,
+                                   "%d", fft_scale);
+        }
     }
 
-    // stop displaying the band gain values after a short time interval
-    if (disp_band_gain) {
-        disp_band_gain--;
+    // stop displaying the scale values after a short time interval
+    if (disp_scale_factor) {
+        disp_scale_factor--;
     }
 }
 
@@ -416,20 +438,22 @@ void init_loc(sdlx_loc_t *loc, int x, int y, int w, int h)
 
 void settings_init(void)
 {
-    band_gain[LOW_BAND]  = util_get_numeric_param(data_dir, "low_band_gain",     DFLT_LOW_BAND_GAIN);
-    band_gain[MID_BAND]  = util_get_numeric_param(data_dir, "mid_band_gain",     DFLT_MID_BAND_GAIN);
-    band_gain[HIGH_BAND] = util_get_numeric_param(data_dir, "high_band_gain",    DFLT_HIGH_BAND_GAIN);
-    which_color_organ    = util_get_numeric_param(data_dir, "color_organ",       DFLT_COLOR_ORGAN);
-    which_filter         = util_get_numeric_param(data_dir, "filter",            DFLT_FILTER);
-    exp_filter_k         = util_get_numeric_param(data_dir, "exp_filter_k",      DFLT_EXP_FILTER_K);
-    snap_filter_k        = util_get_numeric_param(data_dir, "snap_filter_k",     DFLT_SNAP_FILTER_K);
+    band_scale[LOW_BAND]  = util_get_numeric_param(data_dir, "low_band_scale",    DFLT_LOW_BAND_SCALE);
+    band_scale[MID_BAND]  = util_get_numeric_param(data_dir, "mid_band_scale",    DFLT_MID_BAND_SCALE);
+    band_scale[HIGH_BAND] = util_get_numeric_param(data_dir, "high_band_scale",   DFLT_HIGH_BAND_SCALE);
+    fft_scale             = util_get_numeric_param(data_dir, "fft_scale",         DFLT_FFT_SCALE);
+    which_color_organ     = util_get_numeric_param(data_dir, "color_organ",       DFLT_COLOR_ORGAN);
+    which_filter          = util_get_numeric_param(data_dir, "filter",            DFLT_FILTER);
+    exp_filter_k          = util_get_numeric_param(data_dir, "exp_filter_k",      DFLT_EXP_FILTER_K);
+    snap_filter_k         = util_get_numeric_param(data_dir, "snap_filter_k",     DFLT_SNAP_FILTER_K);
 }
 
 void settings_reset_to_dflt(void)
 {
-    util_set_numeric_param(data_dir, "low_band_gain",     DFLT_LOW_BAND_GAIN);
-    util_set_numeric_param(data_dir, "mid_band_gain",     DFLT_MID_BAND_GAIN);
-    util_set_numeric_param(data_dir, "high_band_gain",    DFLT_HIGH_BAND_GAIN);
+    util_set_numeric_param(data_dir, "low_band_scale",    DFLT_LOW_BAND_SCALE);
+    util_set_numeric_param(data_dir, "mid_band_scale",    DFLT_MID_BAND_SCALE);
+    util_set_numeric_param(data_dir, "high_band_scale",   DFLT_HIGH_BAND_SCALE);
+    util_set_numeric_param(data_dir, "fft_scale",         DFLT_FFT_SCALE);
     util_set_numeric_param(data_dir, "color_organ",       DFLT_COLOR_ORGAN);
     util_set_numeric_param(data_dir, "filter",            DFLT_FILTER);
     util_set_numeric_param(data_dir, "exp_filter_k",      DFLT_EXP_FILTER_K);
@@ -441,6 +465,7 @@ void settings_reset_to_dflt(void)
 #define EVID_SETTINGS_RESET 2001
 #define EVID_SETTINGS_CREATE_TEST_FILES 2002
 
+// xxx more work needed
 void color_organ_settings(void)
 {
     bool         done = false;
@@ -454,19 +479,21 @@ void color_organ_settings(void)
 
         // display settings
         y = 0;
-        sdlx_render_printf(0, y, "%-14s=%d",    "low_band_gain",   band_gain[LOW_BAND]);
+        sdlx_render_printf(0, y, "%-14s=%d",    "low_band_scale",   band_scale[LOW_BAND]);
         y += sdlx_char_height_dflt;
-        sdlx_render_printf(0, y, "%-14s=%d",    "mid_band_gain",   band_gain[MID_BAND]);
+        sdlx_render_printf(0, y, "%-14s=%d",    "mid_band_scale",   band_scale[MID_BAND]);
         y += sdlx_char_height_dflt;
-        sdlx_render_printf(0, y, "%-14s=%d",    "high_band_gain",  band_gain[HIGH_BAND]);
+        sdlx_render_printf(0, y, "%-14s=%d",    "high_band_scale",  band_scale[HIGH_BAND]);
         y += sdlx_char_height_dflt;
-        sdlx_render_printf(0, y, "%-14s=%s",    "color_organ",     color_organ_name[which_color_organ]);
+        sdlx_render_printf(0, y, "%-14s=%d",    "fft_scale",        fft_scale);
         y += sdlx_char_height_dflt;
-        sdlx_render_printf(0, y, "%-14s=%s",    "filter",          filter_name[which_filter]);
+        sdlx_render_printf(0, y, "%-14s=%s",    "color_organ",      color_organ_name[which_color_organ]);
         y += sdlx_char_height_dflt;
-        sdlx_render_printf(0, y, "%-14s=%0.3f", "exp_fltr_k",      exp_filter_k);
+        sdlx_render_printf(0, y, "%-14s=%s",    "filter",           filter_name[which_filter]);
         y += sdlx_char_height_dflt;
-        sdlx_render_printf(0, y, "%-14s=%0.3f", "snap_fltr_k",     snap_filter_k);
+        sdlx_render_printf(0, y, "%-14s=%0.3f", "exp_fltr_k",       exp_filter_k);
+        y += sdlx_char_height_dflt;
+        sdlx_render_printf(0, y, "%-14s=%0.3f", "snap_fltr_k",      snap_filter_k);
         y += 2*sdlx_char_height_dflt;
 
         // register events
@@ -501,14 +528,19 @@ void color_organ_settings(void)
             break;
         case EVID_SETTINGS_CREATE_TEST_FILES:
             printf("I %s: creating test files\n", progname);
-            sdlx_create_test_file(files_dir, "test_all.mp3", TEST_FILE_FREQ_SWEEP, 
-                                  LOW_BAND_START, HIGH_BAND_END, 10);
+
+            // create test files for the color organ bands
             sdlx_create_test_file(files_dir, "test_low.mp3", TEST_FILE_FREQ_SWEEP,
-                                  LOW_BAND_START, LOW_BAND_END, 10);
+                                  band_start_freq[LOW_BAND], band_end_freq[LOW_BAND], 10);
             sdlx_create_test_file(files_dir, "test_mid.mp3", TEST_FILE_FREQ_SWEEP,
-                                  MID_BAND_START, MID_BAND_END, 10);
+                                  band_start_freq[MID_BAND], band_end_freq[MID_BAND], 10);
             sdlx_create_test_file(files_dir, "test_high.mp3", TEST_FILE_FREQ_SWEEP,
-                                  HIGH_BAND_START, HIGH_BAND_END, 10);
+                                  band_start_freq[HIGH_BAND], band_end_freq[HIGH_BAND], 10);
+            sdlx_create_test_file(files_dir, "test_bands.mp3", TEST_FILE_FREQ_SWEEP, 
+                                  band_start_freq[LOW_BAND], band_end_freq[HIGH_BAND], 10);
+
+            // create test file for the fft span
+            sdlx_create_test_file(files_dir, "test_span.mp3", TEST_FILE_FREQ_SWEEP, 100, 6000, 10);
             break;
         case EVID_QUIT:
             done = true;
