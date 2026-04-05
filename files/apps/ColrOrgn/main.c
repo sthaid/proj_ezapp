@@ -62,12 +62,6 @@ char  playing_file[100];
 bool  end_program;
 bool  test_force_horizontal;
 
-#ifdef ANDROID // xxx fix picoc to use ifdef in code
-bool android = true;
-#else
-bool android = false;
-#endif
-
 //
 // prototypes
 //
@@ -295,6 +289,7 @@ void process_event(sdlx_event_t *ev)
             color_organ_settings();
             break;
 
+#ifndef ANDROID
         // This event is only registered when this program is being tested on linux;
         // and will toggle override of the orientation so that horizontal orientation
         // can be tested on linux. Linux does not have the acceleration sensor that is
@@ -302,6 +297,7 @@ void process_event(sdlx_event_t *ev)
         case EVID_TEST_FORCE_HORIZONTAL:
             test_force_horizontal = !test_force_horizontal;
             break;
+#endif
 
         // adjust color organ
         default:
@@ -385,14 +381,14 @@ void register_events(void)
                                      COLOR_WHITE, COLOR_BLACK);
     }
 
+#ifndef ANDROID
     // if not running on android then provide control to simulate horizontal orientation;
     // this feature is provided for development testing
-    if (!android) {
-        int x = sdlx_win_width - 1*sdlx_char_width_dflt;
-        int y = sdlx_win_height - (CONTROL_EVENTS_DISPLAY_HEIGHT /2);
-        loc = sdlx_render_printf_ex2(x, y, FONT_NORMAL, COLOR_LIGHT_BLUE, FLAG_Y_CTR, WRAP_NONE, "%s", "H");
-        sdlx_register_event(loc, EVID_TEST_FORCE_HORIZONTAL);
-    }
+    int x = sdlx_win_width - 1*sdlx_char_width_dflt;
+    int y = sdlx_win_height - (CONTROL_EVENTS_DISPLAY_HEIGHT /2);
+    loc = sdlx_render_printf_ex2(x, y, FONT_NORMAL, COLOR_LIGHT_BLUE, FLAG_Y_CTR, WRAP_NONE, "%s", "H");
+    sdlx_register_event(loc, EVID_TEST_FORCE_HORIZONTAL);
+#endif
 }
 
 void reg_event(int x, int y, sdlx_color_t color, char *name, int event_id)
