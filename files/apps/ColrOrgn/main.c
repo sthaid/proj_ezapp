@@ -9,7 +9,7 @@
 
 #include "apps/ColrOrgn/common.h"
 
-// yyy todo
+// xxx todo
 // - review how FRAMES_PER_SEC is used
 
 //
@@ -62,7 +62,7 @@ char  playing_file[100];
 bool  end_program;
 bool  test_force_horizontal;
 
-#ifdef ANDROID // yyy fix picoc to use ifdef in code
+#ifdef ANDROID // xxx fix picoc to use ifdef in code
 bool android = true;
 #else
 bool android = false;
@@ -137,7 +137,21 @@ int main(int argc, char **argv)
 
         // display state line
         if (orientation == VERTICAL || show_horizontal) {
-            print(0, y_state, (state==STATE_RECORDING_DEV ? COLOR_RED : COLOR_WHITE), get_state_str());
+            sdlx_color_t color = (state==STATE_RECORDING_DEV ? COLOR_RED : COLOR_WHITE);
+            int          x     = 0;
+            int          y     = y_state;
+
+            if (orientation == VERTICAL) {
+                sdlx_render_printf_ex2(x, y+COLOR_ORGAN_H,
+                                       FONT_NORMAL, color, FLAG_NONE, WRAP_NONE,
+                                       "%s", get_state_str());
+            } else {
+                int x1 = sdlx_win_width - sdlx_char_height_dflt - y;
+                int y1 = x;
+                sdlx_render_printf_ex2(x1, y1,
+                                       FONT_NORMAL, color, FLAG_ROT_90, WRAP_NONE,
+                                       "%s", get_state_str());
+            }
         }
 
         // display color organ
@@ -152,7 +166,7 @@ int main(int argc, char **argv)
         sdlx_display_present();
 
 #if 0
-        // yyy comment
+        // xxx comment
         time_now = util_microsec_timer();
         duration = time_now - time_start;
         time_start = time_now;
@@ -160,7 +174,7 @@ int main(int argc, char **argv)
 #endif
 
         // wait for event, with 50 ms timeout;
-        // if timedout then continue   yyy comment on 45 vs 50; maybe 45 shuld be lower
+        // if timedout then continue   xxx comment on 45 vs 50; maybe 45 shuld be lower
         sdlx_get_event(45000, &event);
         if (event.event_id == -1) {
             continue;
@@ -381,6 +395,24 @@ void register_events(void)
     }
 }
 
+void reg_event(int x, int y, sdlx_color_t color, char *name, int event_id)
+{
+    sdlx_loc_t *loc;
+
+    if (orientation == VERTICAL) {
+        loc = sdlx_render_printf_ex2(x, y+COLOR_ORGAN_H,
+                                     FONT_NORMAL, color, FLAG_NONE, WRAP_NONE,
+                                     "%s", name);
+    } else {
+        int x1 = sdlx_win_width - sdlx_char_height_dflt - y;
+        int y1 = x;
+        loc = sdlx_render_printf_ex2(x1, y1,
+                                     FONT_NORMAL, color, FLAG_ROT_90, WRAP_NONE,
+                                     "%s", name);
+    }
+    sdlx_register_event(loc, event_id);
+}
+
 // -----------------  UTILS  -----------------------------------------
 
 void get_list_of_files(void)
@@ -484,40 +516,4 @@ int get_device_orientation(void)
     }
 
     return orientation;
-}
-
-// xxx only call sdlx_render_printf from these
-//   ????????????
-
-void reg_event(int x, int y, sdlx_color_t color, char *name, int event_id)
-{
-    sdlx_loc_t *loc;
-
-    if (orientation == VERTICAL) {
-        loc = sdlx_render_printf_ex2(x, y+COLOR_ORGAN_H,
-                                     FONT_NORMAL, color, FLAG_NONE, WRAP_NONE,
-                                     "%s", name);
-    } else {
-        int x1 = sdlx_win_width - sdlx_char_height_dflt - y;
-        int y1 = x;
-        loc = sdlx_render_printf_ex2(x1, y1,
-                                     FONT_NORMAL, color, FLAG_ROT_90, WRAP_NONE,
-                                     "%s", name);
-    }
-    sdlx_register_event(loc, event_id);
-}
-
-void print(int x, int y, sdlx_color_t color, char *str)
-{
-    if (orientation == VERTICAL) {
-        sdlx_render_printf_ex2(x, y+COLOR_ORGAN_H,
-                               FONT_NORMAL, color, FLAG_NONE, WRAP_NONE,
-                               "%s", str);
-    } else {
-        int x1 = sdlx_win_width - sdlx_char_height_dflt - y;
-        int y1 = x;
-        sdlx_render_printf_ex2(x1, y1,
-                               FONT_NORMAL, color, FLAG_ROT_90, WRAP_NONE,
-                               "%s", str);
-    }
 }

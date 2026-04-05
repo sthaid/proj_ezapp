@@ -12,10 +12,7 @@
 // xxx         
 // - Settings
 //   - print duration of each cycle  ???
-//   - change values
-// - negative rgb_k
-// - circles mode multiplier constant too large?
-// - add params for decay and exp smooth
+// - tune the duration dynamically
 
 //
 // defines
@@ -277,7 +274,10 @@ void display_band(int which_band, float band_volume)
     } else {
         sdlx_texture_t *t;
         int             x_ctr, y_ctr;
-        float           k = 2.0;  // xxx param ?  OR eliminate somehow
+
+        // Note that the value of 'k' was determined empirically 
+        // to give good visual result of the circle intensities.
+        float k = 2.0;
 
         if (which_band == LOW_BAND) {
             t = red_circle_texture;
@@ -321,6 +321,7 @@ void color_organ_process_event(sdlx_event_t *ev)
             break;
         }
         band_scale[LOW_BAND] += (ev->event_id == EVID_LOW_BAND_INCREASE ? 5 : -5);
+        if (band_scale[LOW_BAND] < 5) band_scale[LOW_BAND] = 5;
         disp_scale_factor = DISP_SCALE_FACTOR_DURATION;
         util_set_numeric_param(data_dir, "low_band_scale", band_scale[LOW_BAND]);
         break;
@@ -331,6 +332,7 @@ void color_organ_process_event(sdlx_event_t *ev)
             break;
         }
         band_scale[MID_BAND] += (ev->event_id == EVID_MID_BAND_INCREASE ? 5 : -5);
+        if (band_scale[MID_BAND] < 5) band_scale[MID_BAND] = 5;
         disp_scale_factor = DISP_SCALE_FACTOR_DURATION;
         util_set_numeric_param(data_dir, "mid_band_scale", band_scale[MID_BAND]);
         break;
@@ -341,6 +343,7 @@ void color_organ_process_event(sdlx_event_t *ev)
             break;
         }
         band_scale[HIGH_BAND] += (ev->event_id == EVID_HIGH_BAND_INCREASE ? 5 : -5);
+        if (band_scale[HIGH_BAND] < 5) band_scale[HIGH_BAND] = 5;
         disp_scale_factor = DISP_SCALE_FACTOR_DURATION;
         util_set_numeric_param(data_dir, "high_band_scale", band_scale[HIGH_BAND]);
         break;
@@ -351,6 +354,7 @@ void color_organ_process_event(sdlx_event_t *ev)
             break;
         }
         fft_scale += (ev->event_id == EVID_FFT_INCREASE ? 5 : -5);
+        if (fft_scale < 5) fft_scale = 5;
         disp_scale_factor = DISP_SCALE_FACTOR_DURATION;
         util_set_numeric_param(data_dir, "fft_scale", fft_scale);
         break;
@@ -465,39 +469,44 @@ void settings_reset_to_dflt(void)
     settings_init();
 }
 
-#define EVID_SETTINGS_RESET 2001
+#define EVID_SETTINGS_RESET             2001
 #define EVID_SETTINGS_CREATE_TEST_FILES 2002
+#define EVID_SETTINGS_EXP_FLTR_K        2003
+#define EVID_SETTINGS_SNAP_FLTR_DECAY   2004
 
-// XXX xxx more work needed
 void color_organ_settings(void)
 {
     bool         done = false;
     sdlx_event_t event;
     int          y;
     sdlx_loc_t  *loc;
+    float        val;
+    char        *str;
 
     while (!done) {
         // init the backbuffer
         sdlx_display_init(COLOR_BLACK);
 
         // display settings
+        sdlx_print_set_default(24, COLOR_WHITE);
         y = 0;
-        sdlx_render_printf(0, y, "%-14s=%d",    "low_band_scale",   band_scale[LOW_BAND]);
+        sdlx_render_printf(0, y, "%-15s = %d",    "low_band_scale",   band_scale[LOW_BAND]);
         y += sdlx_char_height_dflt;
-        sdlx_render_printf(0, y, "%-14s=%d",    "mid_band_scale",   band_scale[MID_BAND]);
+        sdlx_render_printf(0, y, "%-15s = %d",    "mid_band_scale",   band_scale[MID_BAND]);
         y += sdlx_char_height_dflt;
-        sdlx_render_printf(0, y, "%-14s=%d",    "high_band_scale",  band_scale[HIGH_BAND]);
+        sdlx_render_printf(0, y, "%-15s = %d",    "high_band_scale",  band_scale[HIGH_BAND]);
         y += sdlx_char_height_dflt;
-        sdlx_render_printf(0, y, "%-14s=%d",    "fft_scale",        fft_scale);
+        sdlx_render_printf(0, y, "%-15s = %d",    "fft_scale",        fft_scale);
         y += sdlx_char_height_dflt;
-        sdlx_render_printf(0, y, "%-14s=%s",    "color_organ",      color_organ_name[which_color_organ]);
+        sdlx_render_printf(0, y, "%-15s = %s",    "color_organ",      color_organ_name[which_color_organ]);
         y += sdlx_char_height_dflt;
-        sdlx_render_printf(0, y, "%-14s=%s",    "filter",           filter_name[which_filter]);
+        sdlx_render_printf(0, y, "%-15s = %s",    "filter",           filter_name[which_filter]);
         y += sdlx_char_height_dflt;
-        sdlx_render_printf(0, y, "%-14s=%0.3f", "exp_fltr_k",       exp_fltr_k);
+        sdlx_render_printf(0, y, "%-15s = %0.3f", "exp_fltr_k",       exp_fltr_k);
         y += sdlx_char_height_dflt;
-        sdlx_render_printf(0, y, "%-14s=%0.3f", "snap_fltr_decay",  snap_fltr_decay);
+        sdlx_render_printf(0, y, "%-15s = %0.3f", "snap_fltr_decay",  snap_fltr_decay);
         y += 2*sdlx_char_height_dflt;
+        sdlx_print_set_default(FONT_NORMAL, COLOR_WHITE);
 
         // register events
         loc = sdlx_render_printf_ex1(0, y, FONT_NORMAL, COLOR_LIGHT_BLUE, "RESET");
@@ -506,6 +515,14 @@ void color_organ_settings(void)
 
         loc = sdlx_render_printf_ex1(0, y, FONT_NORMAL, COLOR_LIGHT_BLUE, "CREATE_TEST_FILES");
         sdlx_register_event(loc, EVID_SETTINGS_CREATE_TEST_FILES);
+        y += 2*sdlx_char_height_dflt;
+
+        loc = sdlx_render_printf_ex1(0, y, FONT_NORMAL, COLOR_LIGHT_BLUE, "EXP_FLTR_K");
+        sdlx_register_event(loc, EVID_SETTINGS_EXP_FLTR_K);
+        y += 2*sdlx_char_height_dflt;
+
+        loc = sdlx_render_printf_ex1(0, y, FONT_NORMAL, COLOR_LIGHT_BLUE, "SNAP_FLTR_DECAY");
+        sdlx_register_event(loc, EVID_SETTINGS_SNAP_FLTR_DECAY);
         y += 2*sdlx_char_height_dflt;
 
         // register events
@@ -544,6 +561,18 @@ void color_organ_settings(void)
 
             // create test file for the fft span
             sdlx_create_test_file(files_dir, "test_span.mp3", 100, 6000, 10);
+            break;
+        case EVID_SETTINGS_EXP_FLTR_K:
+            str = sdlx_get_input_str("exp_fltr_k", "", true, COLOR_BLACK);
+            if (sscanf(str, "%f", &val) != 1) break;
+            exp_fltr_k = val;
+            util_set_numeric_param(data_dir, "exp_fltr_k", exp_fltr_k);
+            break;
+        case EVID_SETTINGS_SNAP_FLTR_DECAY:
+            str = sdlx_get_input_str("snap_fltr_decay", "", true, COLOR_BLACK);
+            if (sscanf(str, "%f", &val) != 1) break;
+            snap_fltr_decay = val;
+            util_set_numeric_param(data_dir, "snap_fltr_decay", snap_fltr_decay);
             break;
         case EVID_QUIT:
             done = true;
