@@ -8,7 +8,7 @@ int main()
     printf("sizoef(short)          = %zd\n", sizeof(short));
     printf("sizoef(int)            = %zd\n", sizeof(int));
     printf("sizoef(long)           = %zd\n", sizeof(long));
-    //printf("sizoef(float)          = %zd\n", sizeof(float));  //xxx
+    printf("sizoef(float)          = %zd\n", sizeof(float));
     printf("sizoef(double)         = %zd\n", sizeof(double));
 
     printf("sizoef(size_t)         = %zd\n", sizeof(size_t));
