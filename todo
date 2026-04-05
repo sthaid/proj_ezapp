@@ -1,29 +1,62 @@
-color organ
-- // xxx tune the duration dynamically
-
-picoc issues  
-- low_band = util_rms_float(&fft[first_bin], last_bin-first_bin+1);// yyy picoc isue requires &fft[first_bin]
-
 upgrade to Ubuntu 25.10
 
 cleanup this list
 
-APP COLOR ORGAN
-  - horizontal orientation
-     - left and right channels
-  - cleanup code
-  -try exponential scaling
-  - try faster decay time
-  - auto adjust params
-  - maybe a longer data sample interval - 40 ms?
-  - fft color organ
-- STEP COUNT
-  - StepCount  Svc keeps track of when app is running and steps
+apps issues
+- Location Altitude problem
 
-APP STEPS
-- steps
+picoc issues  
+- low_band = util_rms_float(&fft[first_bin], last_bin-first_bin+1);// yyy picoc isue requires &fft[first_bin]
+- picoc ptr math
+    vol = rms_float(fft+bin, 1);    fft+bin not working
+- picoc sizeof(x) not working, when x is an array of struct
+- other picoc restriction - short circuit
+- deal with xxx in picoc tests
+- library_unix.c, search xxx
+- search FIXME 
+- picoc numbers .333,  needs leading 0
+- ifdef code for ANDROID, check apps for other places ifdef ANDROID used
 
-APP TONE SEQ
+issues with open source ...
+- kissfft does not use O2 ????????
+- SDL record volume issue:
+  - maybe add to this - https://github.com/libsdl-org/sdl/issues/13402
+  - "org.sthaid.ezApp/app/jni/SDL/src/audio/aaudio/SDL_aaudio.c"
+     ctx.AAudioStreamBuilder_setInputPreset(builder, AAUDIO_INPUT_PRESET_CAMCORDER);
+  - SDL/build/org.sthaid.ezApp/app/jni/SDL/src/audio/aaudio/SDL_aaudio.c
+  - AAUDIO_INPUT_PRESET_CAMCORDER
+      //ctx.AAudioStreamBuilder_setInputPreset(builder, AAUDIO_INPUT_PRESET_CAMCORDER);
+  - Logical Presentation
+      - ask SDL team bout LogicalPresentation issues
+- picoc, many issues
+
+build & install
+- icon
+- should a fresh install wipe existing files; including top level params
+- checkout specific commit in sdl dirs
+- get rid of Light and Template ?
+- license and credits
+- help
+- reneme Templates to SvcDemo  ??
+- git checkout the ttf and mixer too
+   - ask question to the mixer team
+   - check if they have tagged versions now
+
+BUGS
+- when an ezapp, running an ap, is brought back to foreground, the display is not updated
+- sdl return codes are now boolean
+
+CODE REVIEWS
+- mmap / munmap - code reveiw,  make sure fd is closed
+
+----------
+-- APPS --
+----------
+
+Steps
+- StepCount  Svc keeps track of when app is running and steps
+
+Tonals
 - twinkle little star
 - close encounters
 - "what are common musical tone sequence such as twinke twinkle or Close encounters"
@@ -32,105 +65,16 @@ APP TONE SEQ
      beethoven
      imperial march
      twinkle twinkle:
-       alphabet song
-       bah baa black sheep
-       head shoulders keens and toes
+     alphabet song
+     bah baa black sheep
+     head shoulders keens and toes
 
-CAMERA MAGNIFY APP
+magnifier
+- use camera to magnify
 
-Location Altitude problem
-
-ISSUES ...
-- kissfft does not use O2 ????????
-- record volume issue:
-  - maybe add to this - https://github.com/libsdl-org/sdl/issues/13402
-  - "org.sthaid.ezApp/app/jni/SDL/src/audio/aaudio/SDL_aaudio.c"
-     ctx.AAudioStreamBuilder_setInputPreset(builder, AAUDIO_INPUT_PRESET_CAMCORDER);
-  - SDL/build/org.sthaid.ezApp/app/jni/SDL/src/audio/aaudio/SDL_aaudio.c
-  - AAUDIO_INPUT_PRESET_CAMCORDER
-      //ctx.AAudioStreamBuilder_setInputPreset(builder, AAUDIO_INPUT_PRESET_CAMCORDER);
-
-install issues:
-- maybe the params files should be cleared when reinstalling
-
-PICOC 
-- where is the real list of issues?
-- issue ...
-  - picoc ptr math
-    vol = rms_float(fft+bin, 1);    fft+bin not working
-  - picoc sizeof(x) not working, when x is an array of struct
-  - other picoc restriction - short circuit
-  - fix problem in 22_float test 
-- deal with xxx in picoc tests
-- xxx in library_unix.c
-- search FIXME
-- ANDORID vs ANDROID_HOST
-- picoc numbers .333
-- search for xxx
-- ifdef code for ANDROID
-- check prints of d i u o x X fmts for ints and longs 
-- review expression.c
-- // EZAPP TODO xxx why is this needed?
-    struct __sFILE {
-      char __private[152];
-    } __attribute__((aligned(sizeof(void*))));
-
-more tests ....
-- use tone generator on phone to test the mic record fft
-
-building
-- checkout specific commit in sdl dirs
-
-More Apps
-- License
-- Help
-- File explorer
-  . these can all have adjustable font size and horizontail and vert scrolling
-- Demo app for services
-- get rid of Light and Template ?
-
-Misc Stuff
-- reneme Templates to SvcDemo
-
-====================
-====================
-====================
-
-support verbose logging 
-Use Log.isLoggable(): This method checks the system property for a specific tag's log level before executing the log, though it has its own slight performance cost.
-
-when an ezapp, running an ap, is brought back to foreground, the display is not updated
-
-issues to monitor:
-- maybe foreground did not start after app was re-instaled
-
--------------
-2nd priority 
--------------
-
-add SDL version to Setup, and print when starting
-
-git checkout the ttf and mixer too
-- ask question to the mixer team
-- check if they have tagged versions now
-
-mmap / munmap
-- code reveiw,  make sure fd is closed
-
-monitor these issues:
-- hangs on first run after install, hang at tar -xvf files.tar
-- layout file is not preserved when reloading ??
-
-Logical Presentation
-- ask SDL team bout LogicalPresentation issues
-- test this on Android build
-
-SDL updates
-- sdl return codes are now boolean
-
----------------------------------
-----LATER -----------------------
----------------------------------
+===========================================================
+====================  LATER  ==============================
+===========================================================
 
 what API level and API_PLATFORM, are needed for
 - audio capture
