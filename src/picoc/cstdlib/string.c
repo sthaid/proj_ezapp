@@ -34,6 +34,13 @@ void StringStrcasecmp(struct ParseState *Parser, struct Value *ReturnValue,
         Param[1]->Val->Pointer);
 }
 
+void StringStrncasecmp(struct ParseState *Parser, struct Value *ReturnValue,
+    struct Value **Param, int NumArgs)
+{
+    ReturnValue->Val->Integer = strncasecmp(Param[0]->Val->Pointer,
+        Param[1]->Val->Pointer, Param[2]->Val->Integer);
+}
+
 void StringStrncmp(struct ParseState *Parser, struct Value *ReturnValue,
     struct Value **Param, int NumArgs)
 {
@@ -220,8 +227,9 @@ struct LibraryFunction StringFunctions[] =
     {StringStrchr,  "char *strchr(char *,int);"},
     {StringStrrchr, "char *strrchr(char *,int);"},
     {StringStrcmp,  "int strcmp(char *,char *);"},
-    {StringStrcasecmp,  "int strcasecmp(char *,char *);"},
     {StringStrncmp, "int strncmp(char *,char *,int);"},
+    {StringStrcasecmp,  "int strcasecmp(char *,char *);"},
+    {StringStrncasecmp,  "int strncasecmp(char *,char *, int);"},
     {StringStrcoll, "int strcoll(char *,char *);"},
     {StringStrcpy,  "char *strcpy(char *,char *);"},
     {StringStrncpy, "char *strncpy(char *,char *,int);"},

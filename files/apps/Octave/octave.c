@@ -3,6 +3,7 @@
 #include <math.h>
 #include <unistd.h>
 #include <string.h>
+#include <errno.h>
 
 #include <sdlx.h>
 #include <utils.h>
@@ -80,10 +81,18 @@ char  *data_dir;
 double piano_key_freq[89];  // starts at [1]
 
 // prototypes
+void read_tone_seq_files(char *filename);
 void play_tone_seq(char *items);
 void init_piano_key_freq_tbl(void);
 int get_piano_keynum_spn(char *item);
 int get_piano_keynum_solfege(char *item, int octave);
+
+#define MAX_TONE_SEQ 100
+struct {
+    char *title;
+    char *seq;
+} tone_seq_tbl[MAX_TONE_SEQ];
+int max_tone_seq;
 
 // -----------------  MAIN  ------------------------------------------
 
@@ -104,6 +113,10 @@ int main(int argc, char **argv)
     data_dir = argv[1];
     printf("I %s: starting, data_dir=%s\n", progname, data_dir);
 
+    // xxx test
+    //printf("END\n");
+    //return 0;
+
     // init, and test
     init_piano_key_freq_tbl();
     test(); // xxx comment out
@@ -111,7 +124,9 @@ int main(int argc, char **argv)
     //play_tone_seq("Do do sol sol pause  la la la la sol pause  Fa fa mi mi re re do Sol Sol sol fa fa mi mi mi re Sol Sol sol fa fa mi mi mi re Do do sol sol pause  la la la la sol pause fa fa mi mi re re do ");
 
     // read tone sequence files
-    read_tone_seq_files();
+    read_tone_seq_files("tones.seq");
+
+    play_tone_seq(tone_seq_tbl[0].seq);
 
     // runtime loop
     while (!done) {
@@ -182,30 +197,58 @@ void test(void)
 
 // -----------------  PLAY  ------------------------------------------
 
-#define MAX_TONE_SEQ 100
 
-struct {
-    char *title;
-    char *seq;
-} tone_seq[MAX_TONE_SEQ];
 
-int max_tone_seq;
-
-void read_tone_seq_files(void)
+void read_tone_seq_files(char *filename)
 {
-    char *filename = "tones.seq";
     FILE *fp;
-    char s[1000];
+    char  s[1000], pathname[100], *p;
+    int   len, i;
 
-    while (fgets(, sizeof(s), fp) != NULL) {
+    char title[100];
+    char tone_seq[10000];
+
+        title[0] = '\0';
+        tone_seq[0] = '\0';
+
+    sprintf(pathname, "%s/%s", data_dir, filename);
+    fp = fopen(pathname, "r");
+    if (fp == NULL) {
+        printf("E %s: failed to open %s, %s\n", progname, pathname, strerror(errno));
+        return;
+    }
+
+    while (fgets(s, sizeof(s), fp) != NULL) {
         // pre-process line
+        // xxx make a routine
         // - remove trailing newline
+        len = strlen(s);
+        if (len > 0 && s[len-1] == '\n') s[len-1] = '\0';
         // - remove comments
-        // - remove leading and trailing spaces
+        p = strchr(s, '#');
+        if (p) *p = '\0';
+        // - remove leading spaces
+        i = 0;
+        while (s[i] == ' ' && s[i] != '\0') {
+            i++;
+        }
+        memmove(s, &s[i], strlen(&s[i]));
+        // - remove trailing spaces
+        i = strlen(s) - 1;
+        while (i >= 0) {
+            if (s[i] == ' ') 
+                s[i] = '\0'; 
+            else 
+                break;
+            i--;
+        }
 
         // if blank line then continue
+        if (s[0] == '\0') {
+            continue;
+        }
 
-        // if title line then 
+        // if 's' is a title line then 
         //   if a title and seq is currently under construction
         //     save the title and seq
         //     increment max_tone_seq
@@ -213,28 +256,38 @@ void read_tone_seq_files(void)
         //   make copy of the new tilte
         //   continue
         // endif
-        if (strcasecmp("title", line, 5) == 0) {
-            if (construct_title_buff[0] && construct_tone_seq_buff[0]) {
-                tone_seq[max_tone_seq].title = strdup(construct_title_buff);
-                tone_seq[max_tone_seq].seq = strdup(construct_tone_seq_buff);
+        if (strncasecmp(s, "title ", 6) == 0) {
+            printf("got tile %s\n", &s[6]);
+            if (title[0] && tone_seq[0]) {
+                tone_seq_tbl[max_tone_seq].title = strdup(title);
+                tone_seq_tbl[max_tone_seq].seq   = strdup(tone_seq);
+                printf("XXXXXXXX '%s' = '%s'\n", tone_seq_tbl[max_tone_seq].title,
+                                                 tone_seq_tbl[max_tone_seq].seq);
+                max_tone_seq++;
             }
-            strcpy(construct_title_buff, new_title);
-            construct_tone_seq_buff[0] = '\0';
+            strcpy(title, &s[6]); 
+            tone_seq[0] = '\0';
             continue;
         }
 
         // the line contains tone sequence items, so save it
-        strcat(construct_tone_seq_buff, line);
-        strcat(construct_tone_seq_buff, " ");
+        strcat(tone_seq, s);
+        strcat(tone_seq, " ");
+    }
+
+    if (title[0] && tone_seq[0]) {
+        tone_seq_tbl[max_tone_seq].title = strdup(title);
+        tone_seq_tbl[max_tone_seq].seq   = strdup(tone_seq);
+        printf("XXXXXXXX '%s' = '%s'\n", tone_seq_tbl[max_tone_seq].title,
+                                         tone_seq_tbl[max_tone_seq].seq);
+        max_tone_seq++;
     }
 
     fclose(fp);
 
-        //  
-
- make copy of the title
-
-        // if 
+    printf("--------------------------------\n");
+    for (i = 0; i < max_tone_seq; i++) {
+        printf("I %s: '%s' = '%s'\n", progname, tone_seq_tbl[i].title, tone_seq_tbl[i].seq);
     }
 }
 
