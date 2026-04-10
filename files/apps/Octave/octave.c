@@ -75,6 +75,9 @@ Key Aspects of Solfege
     In "fixed do," Do is always the note C, regardless of the key.
 #endif
 
+// defines
+#define EVID_PLAY_TONE_SEQ 100
+
 // variables
 char  *progname;
 char  *data_dir;
@@ -102,7 +105,9 @@ int main(int argc, char **argv)
 {
     sdlx_event_t event;
     bool         done = false;
-    int          i;
+    sdlx_loc_t *loc;
+
+    int i, y;
 
     // save args
     progname = argv[0];
@@ -113,25 +118,30 @@ int main(int argc, char **argv)
     data_dir = argv[1];
     printf("I %s: starting, data_dir=%s\n", progname, data_dir);
 
-    // xxx test
-    //printf("END\n");
-    //return 0;
-
     // init, and test
     init_piano_key_freq_tbl();
-    test(); // xxx comment out
-    //play_tone_seq("do re mi fa sol la ti pause up C D E F G A B pause C6 D6 E6 F6 G6 A6 B6");
-    //play_tone_seq("Do do sol sol pause  la la la la sol pause  Fa fa mi mi re re do Sol Sol sol fa fa mi mi mi re Sol Sol sol fa fa mi mi mi re Do do sol sol pause  la la la la sol pause fa fa mi mi re re do ");
-
-    // read tone sequence files
+    //test(); // xxx comment out
     read_tone_seq_files("tones.seq");
 
-    play_tone_seq(tone_seq_tbl[0].seq);
+
+    //play_tone_seq("do re mi fa sol la ti pause up C D E F G A B pause C6 D6 E6 F6 G6 A6 B6");
+    //play_tone_seq("Do do sol sol pause  la la la la sol pause  Fa fa mi mi re re do Sol Sol sol fa fa mi mi mi re Sol Sol sol fa fa mi mi mi re Do do sol sol pause  la la la la sol pause fa fa mi mi re re do ");
+    // read tone sequence files
+    // xxx read from other files too
+    //play_tone_seq(tone_seq_tbl[0].seq);
 
     // runtime loop
     while (!done) {
         // init the backbuffer
         sdlx_display_init(COLOR_BLACK);
+
+        // register events to play tone sequence
+        y = sdlx_char_height(FONT_NORMAL);
+        for (i = 0; i < max_tone_seq; i++) {
+            loc = sdlx_render_printf_ex1(0, y, FONT_NORMAL, COLOR_LIGHT_BLUE, "%s", tone_seq_tbl[i].title);
+            sdlx_register_event(loc, EVID_PLAY_TONE_SEQ+i);
+            y += 2 * sdlx_char_height(FONT_NORMAL);
+        }
 
         // register control event to end program
         sdlx_register_control_events(0, NULL,
@@ -146,10 +156,15 @@ int main(int argc, char **argv)
         sdlx_get_event(-1, &event);
 
         // process events
-        switch (event.event_id) {
-        case EVID_QUIT:
-            done = true;
-            break;
+        if (event.event_id >= EVID_PLAY_TONE_SEQ && event.event_id < EVID_PLAY_TONE_SEQ + MAX_TONE_SEQ) {
+            int which = event.event_id - EVID_PLAY_TONE_SEQ;
+            play_tone_seq(tone_seq_tbl[which].seq);
+        } else {
+            switch (event.event_id) {
+            case EVID_QUIT:
+                done = true;
+                break;
+            }
         }
     }
 
@@ -196,8 +211,6 @@ void test(void)
 }
 
 // -----------------  PLAY  ------------------------------------------
-
-
 
 void read_tone_seq_files(char *filename)
 {

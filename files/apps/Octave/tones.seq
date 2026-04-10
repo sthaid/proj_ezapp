@@ -9,7 +9,7 @@ TITLE bbbs
 do do sol sol                 # Baa baa black sheep
 la la la la sol pause         # Have you any wool
 fa fa mi mi re re do pause    # Yes sir Yes sir three bags full
-sol Sol sol fa fa pause       # One for my master
+sol Sol sol fa fa             # One for my master
 mi mi mi re pause             # One for my dame
 sol Sol sol fa fa             # One for the little boy
 mi mi mi re pause             # who lives down the lane
@@ -18,9 +18,9 @@ la la la la sol pause         # Have you any wool
 fa fa mi mi re re do pause    # Yes sir Yes sir three bags full
 
 TITLE do_re_mi 
-4  do re mi fa sol la ti pause
-5  do re mi fa sol la ti pause
+2  C D E F G A B pause
+3  C D E F G A B pause
+4  C D E F G A B pause
+5  C D E F G A B pause
 6  C D E F G A B pause
-7  C D E F G A B pause
-
 
