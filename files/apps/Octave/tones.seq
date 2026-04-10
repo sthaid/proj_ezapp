@@ -1,0 +1,21 @@
+
+
+TITLE do_re_mi 
+4 do re mi fa sol la ti do pause
+up do re mi fa sol la ti do pause
+up C D E F G A B pause
+C4 D4 E4 F4 G4 A4 B4
+.
+
+TITLE bbbs
+do do sol sol                 # Baa baa black sheep
+la la la la so pause          # Have you any wool
+fa fa mi mi re re do pause    # Yes sir Yes sir three bags full
+sol Sol sol fa fa pause       # One for my master
+mi mi mi re pause             # One for my dame
+sol Sol sol fa fa             # One for the little boy
+mi mi mi re pause             # who lives down the lane
+do do sol sol                 # Baa baa black sheep
+la la la la sol               # Have you any wool
+fa fa mi mi re re do pause    # Yes sir Yes sir three bags full
+.
