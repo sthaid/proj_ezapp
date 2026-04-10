@@ -48,7 +48,7 @@
 #define MP3_LAME_MODE_DUAL_CHANNEL     2
 #define MP3_LAME_MODE_MONO             3
 
-#define MAX_RECORD_SECS 3600
+#define MAX_RECORD_SECS (12 * 3600)   // xxx perhaps a diffeent approach 
 
 //
 // typedefs

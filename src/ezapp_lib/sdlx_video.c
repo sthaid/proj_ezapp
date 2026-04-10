@@ -170,6 +170,9 @@ int sdlx_video_init(void)
     // this is needed so that the first actual display present works
     sdlx_display_init(COLOR_BLACK);
     sdlx_display_present();
+    usleep(50000);  // xxx comment
+    sdlx_event_t event;
+    sdlx_get_event(0, &event);
 
     // return success
     INFO("success\n");

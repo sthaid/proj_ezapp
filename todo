@@ -1,3 +1,8 @@
+picoc - add strncasecmp
+
+issues:
+- get event with infinite timeout not working;  this happens just with eztest?
+
 upgrade to Ubuntu 25.10
 
 cleanup this list
