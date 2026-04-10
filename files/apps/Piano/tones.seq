@@ -18,9 +18,8 @@ la la la la sol pause         # Have you any wool
 fa fa mi mi re re do pause    # Yes sir Yes sir three bags full
 
 TITLE do_re_mi 
-2  C D E F G A B pause
-3  C D E F G A B pause
-4  C D E F G A B pause
-5  C D E F G A B pause
-6  C D E F G A B pause
+3  C D E F G A B up C pause
+4  C D E F G A B up C pause
+5  C D E F G A B up C pause
+6  C D E F G A B up C pause
 

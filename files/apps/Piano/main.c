@@ -168,7 +168,11 @@ int main(int argc, char **argv)
         }
     }
 
-    // cleanup and end program
+    // cleanup 
+    // xxx free
+    sdlx_audio_stop();
+
+    // end program
     printf("I %s: terminating\n", progname);
     return 0;
 }
