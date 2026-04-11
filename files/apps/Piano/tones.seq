@@ -1,5 +1,14 @@
 # xxx no error print so vs sol
 
+TITLE ttls
+5
+do do sol sol la la sol pause
+fa fa mi mi re re do pause
+sol sol fa fa mi mi re pause
+sol sol fa fa mi mi re pause
+do do sol sol la la sol pause
+fa fa mi mi re re do
+
 TITLE bbbs
 5
 do do sol sol                 # Baa baa black sheep
@@ -12,15 +21,6 @@ mi mi mi re pause             # who lives down the lane
 do do sol sol                 # Baa baa black sheep
 la la la la sol pause         # Have you any wool
 fa fa mi mi re re do pause    # Yes sir Yes sir three bags full
-
-TITLE ttls
-5
-do do sol sol la la sol pause
-fa fa mi mi re re do pause
-sol sol fa fa mi mi re pause
-sol sol fa fa mi mi re pause
-do do sol sol la la sol pause
-fa fa mi mi re re do
 
 TITLE ce3k
 5 re mi do down do sol pause

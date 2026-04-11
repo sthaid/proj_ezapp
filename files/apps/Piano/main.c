@@ -1,101 +1,42 @@
 #include <stdio.h>
 #include <stdbool.h>
-#include <math.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
 #include <errno.h>
+#include <math.h>
 
 #include <sdlx.h>
 #include <utils.h>
 
-#if 0
---- OCTAVE ---
-
-An octave spans 12 semitones, where the top note is exactly double the frequency 
-of the bottom note. Using equal temperament (A4 = 440 Hz), each note is 12th root 
-of 2 (approx. 1.05946) times higher than the previous. 
-For example, in the 4th octave, C4 is 261.63 Hz and C5 is 523.25 Hz.
-
---- PIANO ---
-
-https://en.wikipedia.org/wiki/Piano_key_frequencies
-
-standard modern piano has 88 keys, 
-- first freq is 27.5 (A0)  
-- last freq 4186
-
-A0 = 27.5 Hz
-A4 = 440  Hz
-
---- SPN ---
-
-https://en.wikipedia.org/wiki/Scientific_pitch_notation
-
-Scientific Pitch Notation (SPN) is a system for identifying specific musical 
-pitches by combining a note name (A-G, plus sharps/flats) with a number 
-indicating its octave. It is widely used to define instrument ranges and 
-MIDI note numbers, with Middle C designated as C4 and the octave number 
-increasing at every C.
-
-In Scientific Pitch Notation (SPN), the seven natural note pitch classes 
-are named using the letters A, B, C, D, E, F, and G. These letters are 
-combined with an Arabic number indicating the specific octave, such as C4 
-(Middle C) or A4 (tuning pitch).
-
-Examples:
-- A4: The concert pitch standard (A440), located above middle C.
-- C1: - The lowest C on a standard 88-key piano.
-- C4: Middle C.
-
-Musical Notes:
-- The foundational names for pitches in Western music are the first seven 
-  letters of the alphabet: A, B, C, D, E, F, G
-- These represent the "natural" notes (white keys on a piano).
-- When raised or lowered, they use accidentals: Sharp (#) or Flat (b).
-
-Octave 1:
-                  White Keys
-  Note    Freq    Piano Key Num
-  C1     261.63 Hz      4
-  D1     293.66 Hz      6
-  E1     329.63 Hz      8
-  F1     349.23 Hz      9
-  G1     392.00 Hz      11   
-  A1     440.00 Hz      13
-  B1     493.88 Hz      15
-
---- SOLFEGE ---
-
-Key Aspects of Solfege
-- The Syllables: 
-    The standard major scale uses Do, Re, Mi, Fa, Sol, La, Ti, and a final Do.
-- Movable Do vs. Fixed Do: 
-    In "moveable do," Do is always the tonic (first note) of any key, 
-      helping with relative pitch. 
-    In "fixed do," Do is always the note C, regardless of the key.
-#endif
+// xxx
+// - check for overflow of tone_seq_tbl
+// - check for overflow of items string
 
 // defines
 #define EVID_PLAY_TONE_SEQ 100
 
+#define MAX_ITEMS_STR 10000
+#define MAX_TONE_SEQ  100
+
 // variables
 char  *progname;
 char  *data_dir;
+
 double piano_key_freq[89];  // starts at [1]
 
+int max_tone_seq;
+struct {
+    char *title;
+    char *items;
+} tone_seq_tbl[MAX_TONE_SEQ];
+
 // prototypes
-void read_tone_seq_files(char *filename);
+void read_tone_seq_file(char *filename);
 void play_tone_seq(char *items);
 void init_piano_key_freq_tbl(void);
 int get_piano_keynum_spn(char *item);
 int get_piano_keynum_solfege(char *item, int octave);
-
-#define MAX_TONE_SEQ 100
-struct {
-    char *title;
-    char *seq;
-} tone_seq_tbl[MAX_TONE_SEQ];
-int max_tone_seq;
 
 // -----------------  MAIN  ------------------------------------------
 
@@ -106,8 +47,7 @@ int main(int argc, char **argv)
     sdlx_event_t event;
     bool         done = false;
     sdlx_loc_t *loc;
-
-    int i, y;
+    int         i, y;
 
     // save args
     progname = argv[0];
@@ -118,17 +58,9 @@ int main(int argc, char **argv)
     data_dir = argv[1];
     printf("I %s: starting, data_dir=%s\n", progname, data_dir);
 
-    // init, and test
+    // initialize
     init_piano_key_freq_tbl();
-    //test(); // xxx comment out
-    read_tone_seq_files("tones.seq");
-
-
-    //play_tone_seq("do re mi fa sol la ti pause up C D E F G A B pause C6 D6 E6 F6 G6 A6 B6");
-    //play_tone_seq("Do do sol sol pause  la la la la sol pause  Fa fa mi mi re re do Sol Sol sol fa fa mi mi mi re Sol Sol sol fa fa mi mi mi re Do do sol sol pause  la la la la sol pause fa fa mi mi re re do ");
-    // read tone sequence files
-    // xxx read from other files too
-    //play_tone_seq(tone_seq_tbl[0].seq);
+    read_tone_seq_file("tones.seq");
 
     // runtime loop
     while (!done) {
@@ -158,7 +90,7 @@ int main(int argc, char **argv)
         // process events
         if (event.event_id >= EVID_PLAY_TONE_SEQ && event.event_id < EVID_PLAY_TONE_SEQ + MAX_TONE_SEQ) {
             int which = event.event_id - EVID_PLAY_TONE_SEQ;
-            play_tone_seq(tone_seq_tbl[which].seq);
+            play_tone_seq(tone_seq_tbl[which].items);
         } else {
             switch (event.event_id) {
             case EVID_QUIT:
@@ -168,34 +100,24 @@ int main(int argc, char **argv)
         }
     }
 
-    // cleanup 
-    // xxx free
+    // stop audio
     sdlx_audio_stop();
+
+    // cleanup 
+    for (i = 0; i < max_tone_seq; i++) {
+        free(tone_seq_tbl[i].title);
+        free(tone_seq_tbl[i].items);
+    }
 
     // end program
     printf("I %s: terminating\n", progname);
     return 0;
 }
 
-#if 0 // xxx save for later
-char *spn_seq[] = { "C4", "D4", "E4", "F4", "G4", "A4", "B4", "C5", NULL };
-char *ce3k[] = { "D6", "E6", "C6", "C5", "G5", NULL };  //xxx okay
-
-    play_do_re_me("Do do sol sol , la la la la sol , Fa fa mi mi re re do Sol Sol sol fa fa mi mi mi re Sol Sol sol fa fa mi mi mi re Do do sol sol , la la la la sol , fa fa mi mi re re do ");
-
-    // xxx temp
-    while (true) {
-        sdlx_audio_state_t as;
-        sdlx_audio_get_state(&as);
-        if (as.state == AUDIO_STATE_IDLE) break;
-        sleep(1);
-    }
-
-#endif
-
 void test(void)
 {
     printf("I %s: test starting\n", progname);
+
     printf("I %s: C1 %d\n", progname, get_piano_keynum_spn("C1"));
     printf("I %s: D1 %d\n", progname, get_piano_keynum_spn("D1"));
     printf("I %s: E1 %d\n", progname, get_piano_keynum_spn("E1"));
@@ -211,23 +133,25 @@ void test(void)
     printf("I %s: sol %d\n", progname, get_piano_keynum_solfege("sol",4));
     printf("I %s: la  %d\n", progname, get_piano_keynum_solfege("la",4));
     printf("I %s: ti  %d\n", progname, get_piano_keynum_solfege("ti",4));
+
     printf("I %s: test complete\n", progname);
 }
 
-// -----------------  PLAY  ------------------------------------------
+// -----------------  READ TONE SEQ FILE  ----------------------------
 
-void read_tone_seq_files(char *filename)
+void sanitize_input(char *s);
+
+void read_tone_seq_file(char *filename)
 {
     FILE *fp;
     char  s[1000], pathname[100], *p;
-    int   len, i;
+    char  title[100];
+    char  items[MAX_ITEMS_STR];
 
-    char title[100];
-    char tone_seq[10000];
+    title[0] = '\0';
+    items[0] = '\0';
 
-        title[0] = '\0';
-        tone_seq[0] = '\0';
-
+    // open filename
     sprintf(pathname, "%s/%s", data_dir, filename);
     fp = fopen(pathname, "r");
     if (fp == NULL) {
@@ -236,29 +160,12 @@ void read_tone_seq_files(char *filename)
     }
 
     while (fgets(s, sizeof(s), fp) != NULL) {
-        // pre-process line
-        // xxx make a routine
+        // sanitize input string
         // - remove trailing newline
-        len = strlen(s);
-        if (len > 0 && s[len-1] == '\n') s[len-1] = '\0';
         // - remove comments
-        p = strchr(s, '#');
-        if (p) *p = '\0';
         // - remove leading spaces
-        i = 0;
-        while (s[i] == ' ' && s[i] != '\0') {
-            i++;
-        }
-        memmove(s, &s[i], strlen(&s[i]));
         // - remove trailing spaces
-        i = strlen(s) - 1;
-        while (i >= 0) {
-            if (s[i] == ' ') 
-                s[i] = '\0'; 
-            else 
-                break;
-            i--;
-        }
+        sanitize_input(s);
 
         // if blank line then continue
         if (s[0] == '\0') {
@@ -267,49 +174,79 @@ void read_tone_seq_files(char *filename)
 
         // if 's' is a title line then 
         //   if a title and seq is currently under construction
-        //     save the title and seq
+        //     save the in progress title and items
         //     increment max_tone_seq
         //   endif
-        //   make copy of the new tilte
+        //   make copy of the new title
         //   continue
         // endif
         if (strncasecmp(s, "title ", 6) == 0) {
-            printf("got tile %s\n", &s[6]);
-            if (title[0] && tone_seq[0]) {
+            if (title[0] && items[0]) {
                 tone_seq_tbl[max_tone_seq].title = strdup(title);
-                tone_seq_tbl[max_tone_seq].seq   = strdup(tone_seq);
-                printf("XXXXXXXX '%s' = '%s'\n", tone_seq_tbl[max_tone_seq].title,
-                                                 tone_seq_tbl[max_tone_seq].seq);
+                tone_seq_tbl[max_tone_seq].items = strdup(items);
+                printf("I %s: tone_seq '%s' = '%s'\n", 
+                       progname,
+                       tone_seq_tbl[max_tone_seq].title,
+                       tone_seq_tbl[max_tone_seq].items);
                 max_tone_seq++;
             }
             strcpy(title, &s[6]); 
-            tone_seq[0] = '\0';
+            items[0] = '\0';
             continue;
         }
 
         // the line contains tone sequence items, so save it
-        strcat(tone_seq, s);
-        strcat(tone_seq, " ");
+        strcat(items, s);
+        strcat(items, " ");
     }
 
-    if (title[0] && tone_seq[0]) {
+    // reached EOF, save the last title/items
+    if (title[0] && items[0]) {
         tone_seq_tbl[max_tone_seq].title = strdup(title);
-        tone_seq_tbl[max_tone_seq].seq   = strdup(tone_seq);
-        printf("XXXXXXXX '%s' = '%s'\n", tone_seq_tbl[max_tone_seq].title,
-                                         tone_seq_tbl[max_tone_seq].seq);
+        tone_seq_tbl[max_tone_seq].items = strdup(items);
+        printf("I %s: tone_seq '%s' = '%s'\n", 
+               progname,
+               tone_seq_tbl[max_tone_seq].title,
+               tone_seq_tbl[max_tone_seq].items);
         max_tone_seq++;
     }
 
+    // close file
     fclose(fp);
+}
 
-    printf("--------------------------------\n");
-    for (i = 0; i < max_tone_seq; i++) {
-        printf("I %s: '%s' = '%s'\n", progname, tone_seq_tbl[i].title, tone_seq_tbl[i].seq);
+void sanitize_input(char *s)
+{
+    int len, i;
+    char *p;
+
+    // remove trailing newline
+    len = strlen(s);
+    if (len > 0 && s[len-1] == '\n') s[len-1] = '\0';
+
+    // remove comments
+    p = strchr(s, '#');
+    if (p) *p = '\0';
+
+    // remove leading spaces
+    i = 0;
+    while (s[i] == ' ' && s[i] != '\0') {
+        i++;
+    }
+    memmove(s, &s[i], strlen(&s[i]));
+
+    // remove trailing spaces
+    i = strlen(s) - 1;
+    while (i >= 0) {
+        if (s[i] == ' ') 
+            s[i] = '\0'; 
+        else 
+            break;
+        i--;
     }
 }
 
-
-// -----------------  PLAY  ------------------------------------------
+// -----------------  PLAY TONE SEQ  ---------------------------------
 
 #define MAX_TONE        2000
 #define TONE_INTVL_MS   500
@@ -327,14 +264,15 @@ void play_tone_seq(char *items)
 {
     int   keynum;
     int   octave = 4;
-    char  items_copy[10000];  // xxx use malloc
+    char  items_copy[MAX_ITEMS_STR];
     char *strtok_arg, *item;
 
     // make copy of items arg, because strtok is used
     strcpy(items_copy, items);
-
-    max_tones = 0;
     strtok_arg = items_copy;
+
+    // init max_tones to 0
+    max_tones = 0;
 
     while (true) {
         // get next item
@@ -357,7 +295,6 @@ void play_tone_seq(char *items)
         }
         if (octave < 0 || octave > 8) {
             printf("E %s: octave %d out of range\n", progname, octave);
-            // xxx cleanup
             return;
         }
 
@@ -377,8 +314,9 @@ void play_tone_seq(char *items)
 
         // handle scientific pitch notation (spn) item
         if (item[0] >= 'A' && item[0] <= 'G') {
-            char spn[10];  // xxx use strncpy
-            strcpy(spn, item);
+            char spn[10];
+            strncpy(spn, item, sizeof(spn));
+            spn[sizeof(spn)-1] = '\0';
             if (spn[1] == '\0') {
                 spn[1] = octave + '0';
                 spn[2] = '\0';
@@ -390,6 +328,10 @@ void play_tone_seq(char *items)
                 continue;
             }
         }
+
+        // item is invalid
+        printf("E %s: invalid item '%s'\n", progname, item);
+        return;
     }
 
     // add terminator
@@ -429,11 +371,12 @@ void init_piano_key_freq_tbl(void)
 
     printf("I %s: factor %f\n", progname, factor);
 
-    piano_key_freq[0] = 0;  // not used
-    piano_key_freq[1] = 27.5;
+    piano_key_freq[0] = 0;      // 0 is not used
+    piano_key_freq[1] = 27.5;   // 1 is the first piano key
     for (i = 2; i <= 88; i++) {
         piano_key_freq[i] = piano_key_freq[i-1] * factor;
     }
+
 #if 0
     for (i = 1; i <= 88; i++) {
         printf("I %s: keynum,freq = %2d %8.3f\n", progname, i, piano_key_freq[i]);
@@ -446,6 +389,10 @@ int spn_tbl[7] = { 9, 11, 0, 2, 4, 5, 7 };
 int get_piano_keynum_spn(char *item)
 {
     int note, octave, key;
+
+    if (item[2] != '\0') {
+        return 0;
+    }
 
     note   = item[0] - 'A';
     octave = item[1] - '0';
@@ -479,8 +426,6 @@ int get_piano_keynum_solfege(char *item, int octave)
     if (spn[0] > 'G') spn[0] -= 7;
     spn[1] = '0' + octave;
     spn[2] = '\0';
-
-    //printf("%s  %s\n", item, spn);
 
     return get_piano_keynum_spn(spn);
 }

@@ -1,4 +1,6 @@
-picoc - add strncasecmp
+picoc - 
+- add strncasecmp
+- ptr operations ?
 
 issues:
 - get event with infinite timeout not working;  this happens just with eztest?
