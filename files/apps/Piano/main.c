@@ -38,6 +38,12 @@ void init_piano_key_freq_tbl(void);
 int get_piano_keynum_spn(char *item);
 int get_piano_keynum_solfege(char *item, int octave);
 
+// xxx new
+void display_update(void);
+
+//int texture_w, texture_h;
+//sdlx_texture_t *texture;
+
 // -----------------  MAIN  ------------------------------------------
 
 void test(void);
@@ -46,8 +52,6 @@ int main(int argc, char **argv)
 {
     sdlx_event_t event;
     bool         done = false;
-    sdlx_loc_t *loc;
-    int         i, y;
 
     // save args
     progname = argv[0];
@@ -61,19 +65,16 @@ int main(int argc, char **argv)
     // initialize
     init_piano_key_freq_tbl();
     read_tone_seq_file("tones.seq");
+    //texture_w = sdlx_win_height - CONTROL_EVENTS_DISPLAY_HEIGHT;
+    //texture_h = sdlx_win_width;
+    //texture = sdlx_create_texture(texture_w,texture_h);
 
     // runtime loop
     while (!done) {
         // init the backbuffer
         sdlx_display_init(COLOR_BLACK);
 
-        // register events to play tone sequence
-        y = sdlx_char_height(FONT_NORMAL);
-        for (i = 0; i < max_tone_seq; i++) {
-            loc = sdlx_render_printf_ex1(0, y, FONT_NORMAL, COLOR_LIGHT_BLUE, "%s", tone_seq_tbl[i].title);
-            sdlx_register_event(loc, EVID_PLAY_TONE_SEQ+i);
-            y += 2 * sdlx_char_height(FONT_NORMAL);
-        }
+        display_update();
 
         // register control event to end program
         sdlx_register_control_events(0, NULL,
@@ -104,10 +105,11 @@ int main(int argc, char **argv)
     sdlx_audio_stop();
 
     // cleanup 
-    for (i = 0; i < max_tone_seq; i++) {
+    for (int i = 0; i < max_tone_seq; i++) {
         free(tone_seq_tbl[i].title);
         free(tone_seq_tbl[i].items);
     }
+    //sdlx_destroy_texture(texture);
 
     // end program
     printf("I %s: terminating\n", progname);
@@ -136,6 +138,56 @@ void test(void)
 
     printf("I %s: test complete\n", progname);
 }
+
+// -----------------  xxxxxxxxxxxxxx  --------------------------------
+
+void register_event(sdlx_loc_t *loc, int evid);
+
+void display_update(void)
+{
+    int y;
+    sdlx_loc_t *loc;
+
+    //sdlx_set_render_target(texture);
+
+    // register events to play tone sequence
+    y = 0;
+    for (int i = 0; i < max_tone_seq; i++) {
+        loc = sdlx_render_printf_ex1(0, y, FONT_NORMAL, COLOR_LIGHT_BLUE, "%s", tone_seq_tbl[i].title);
+        sdlx_register_event(loc, EVID_PLAY_TONE_SEQ+i);
+        y += 2 * sdlx_char_height(FONT_NORMAL);
+    }
+
+    //sdlx_set_render_target(NULL);
+
+    //sdlx_render_texture_ex3(texture, 
+                            //0, 0, texture_w, texture_h,   // x,y,widht,height
+                            //90,           // clockwise rotation angle
+                            //texture_h/2, texture_h/2);    // texture point to rotate about
+}
+
+#if 0
+void register_event(sdlx_loc_t *loc, int evid)
+{
+    int x, y, w, h;
+
+    //sdlx_render_rect(loc->x, loc->y, loc->w, loc->h, 2, COLOR_WHITE);
+
+    // rotate the loc
+    x = texture_h - loc->y - loc->h;
+    y = loc->x;
+    w = loc->h;
+    h = loc->w;
+
+    loc->x = x;
+    loc->y = y;
+    loc->w = w;
+    loc->h = h;
+
+    // register event
+    sdlx_register_event(loc, evid);
+}
+#endif
 
 // -----------------  READ TONE SEQ FILE  ----------------------------
 

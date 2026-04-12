@@ -37,7 +37,7 @@ static bool         evid_keybd_registered;
 
 static int          event_quit_rcvd;
 
-static bool         event_box_enable=0; //xxx
+static bool         event_box_enable=1; //xxx
 
 //
 // prototypes
@@ -61,6 +61,7 @@ void sdlx_event_box_ctrl(bool enable)
     event_box_enable = enable;
 }
 
+extern bool portrait_flag; //xxx
 void sdlx_register_event(sdlx_loc_t *loc, int event_id)
 {
     sdlx_loc_t loc2;
@@ -94,7 +95,21 @@ void sdlx_register_event(sdlx_loc_t *loc, int event_id)
 
     // xxx comment  
     if (event_box_enable) {
-        sdlx_render_rect(loc2.x, loc2.y, loc2.w, loc2.h, 1, COLOR_WHITE);
+        sdlx_render_rect(loc2.x, loc2.y, loc2.w, loc2.h, 3, COLOR_WHITE);
+    }
+
+    // rotate the loc2  xxx
+    if (!portrait_flag) { 
+        int x,y,w,h;
+        x = sdlx_win_width - loc2.y - loc2.h;
+        y = loc2.x;
+        w = loc2.h;
+        h = loc2.w;
+
+        loc2.x = x;
+        loc2.y = y;
+        loc2.w = w;
+        loc2.h = h;
     }
 
     event_tbl[max_event].loc = loc2;
@@ -121,8 +136,14 @@ void sdlx_register_control_events(int evid1, char *evstr1,
     evid[2] = evid3;
 
     // fill entire control events area with bg_color
-    y = sdlx_win_height - CONTROL_EVENTS_DISPLAY_HEIGHT;
-    sdlx_render_fill_rect(0, y, sdlx_win_width, sdlx_win_height-y, bg_color);
+    if (portrait_flag) {
+        y = sdlx_win_height - CONTROL_EVENTS_DISPLAY_HEIGHT;
+        sdlx_render_fill_rect(0, y, sdlx_win_width, sdlx_win_height-y, bg_color);
+    } else {
+        sdlx_render_fill_rect(2166 - CONTROL_EVENTS_DISPLAY_HEIGHT, 0,  // x,y
+                              CONTROL_EVENTS_DISPLAY_HEIGHT, 1000,      // w,h
+                              bg_color);
+    }
 
     // display the 3 control events at the display bottom
     for (i = 0; i < 3; i++) {
@@ -140,7 +161,13 @@ void sdlx_register_control_events(int evid1, char *evstr1,
             x = sdlx_win_width - (strlen(evstr[2]) * chw / 2);
         }
         y = sdlx_win_height - (CONTROL_EVENTS_DISPLAY_HEIGHT / 2);
-        loc = sdlx_render_printf_ex2(x, y, FONT_NORMAL, print_color, FLAG_XY_CTR, WRAP_NONE, "%s", evstr[i]);
+        if (portrait_flag) {
+            loc = sdlx_render_printf_ex2(x, y, FONT_NORMAL, print_color, FLAG_XY_CTR, WRAP_NONE, "%s", evstr[i]);
+        } else {
+            loc = sdlx_render_printf_ex2(
+                    y, 1000 - x,  //xxx 1000
+                    FONT_NORMAL, print_color, FLAG_XY_CTR|FLAG_ROT_CTR_90|FLAG_FLIP, WRAP_NONE, "%s", evstr[i]);
+        }
         sdlx_register_event(loc, evid[i]);
     }
 }
@@ -361,7 +388,7 @@ char *sdlx_get_input_str(char *prompt1, char *prompt2, bool numeric_keybd, sdlx_
     //  xxx comment
     while (true) {
         // clear backbuffer to bg_color
-        sdlx_display_init(bg_color);
+        sdlx_display_init(bg_color, true);  // xxx what about when in landscape mode?
 
         // display prompt line(s)
         row = 0;

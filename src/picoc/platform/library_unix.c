@@ -44,8 +44,9 @@ void Sdlx_display_init(struct ParseState *Parser, struct Value *ReturnValue,
         struct Value **Param, int NumArgs)
 {
     sdlx_color_t color = (sdlx_color_t)Param[0]->Val->UnsignedInteger;
+    bool portrait      = Param[1]->Val->Integer;
 
-    sdlx_display_init(color);
+    sdlx_display_init(color, portrait);
 }
 
 void Sdlx_display_present(struct ParseState *Parser, struct Value *ReturnValue,
@@ -750,7 +751,7 @@ struct LibraryFunction SdlFunctions[] = {
     { Sdlx_quit,                     "void sdlx_quit(int subsys);" },
 
     // video - display init and present
-    { Sdlx_display_init,             "void sdlx_display_init(sdlx_color_t color);" },
+    { Sdlx_display_init,             "void sdlx_display_init(sdlx_color_t color, bool portrait);" },
     { Sdlx_display_present,          "void sdlx_display_present(void);" },
 
     // video - colors
@@ -882,12 +883,10 @@ typedef struct { \n\
 #define FLAG_X_CTR         1 \n\
 #define FLAG_Y_CTR         2 \n\
 #define FLAG_XY_CTR        3 \n\
-#define FLAG_ROT_90        0x10 \n\
-#define FLAG_ROT_90_FLIP   0x20 \n\
-#define FLAG_ROT_CTR_90    0x30 \n\
+#define FLAG_FLIP          0x10 \n\
+#define FLAG_ROT_CTR_90    0x20 \n\
 #define FLAG_ROT_CTR_180   0x40 \n\
-#define FLAG_ROT_CTR_270   0x50 \n\
-#define FLAG_ROT_MASK      0xf0 \n\
+#define FLAG_ROT_CTR_270   0x80 \n\
 #define WRAP_NONE    -1 \n\
 #define WRAP_NEWLINE  0 \n\
 /* video misc */ \n\

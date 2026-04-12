@@ -24,7 +24,7 @@
 #define MIN_FONT_PTSIZE  10
 #define MAX_FONT_PTSIZE  400
 
-//#define USE_SET_RENDER_LOGICAL_PRESENTATION
+#define USE_SET_RENDER_LOGICAL_PRESENTATION  //xxx
 
 //
 // typedefs
@@ -108,6 +108,7 @@ int sdlx_video_init(void)
         INFO("   %s\n",  SDL_GetVideoDriver(i));
     }
 
+    // xxx   1080 x 2340    2.1666    = 19.5/9
     // create SDL Window and Renderer
 #ifdef ANDROID
     if (!SDL_CreateWindowAndRenderer("ezApp", 0, 0, SDL_WINDOW_FULLSCREEN, &window, &renderer)) {
@@ -137,11 +138,13 @@ int sdlx_video_init(void)
     scale_render_save = scale_render;
     scale_events = (double)real_win_width / sdlx_win_width;
 #else
+    // xxx remove scaling
+    INFO("XXXXXXXXXXXXXXXXXXXX USE_SET_RENDER_LOGICAL_PRESENTATION\n");
     scale_render = 1;
     scale_render_save = scale_render;
     scale_events = (double)real_win_width / sdlx_win_width;
-    SDL_SetRenderLogicalPresentation(renderer, sdlx_win_width, sdlx_win_height, 
-                                      SDL_LOGICAL_PRESENTATION_STRETCH);
+    //SDL_SetRenderLogicalPresentation(renderer, sdlx_win_width, sdlx_win_height, 
+                                      //SDL_LOGICAL_PRESENTATION_STRETCH);
 #endif
     INFO("logical sdlx_win_width x height = %d %d  scale = %f %f\n", 
          sdlx_win_width, sdlx_win_height, scale_render, scale_events);
@@ -168,7 +171,7 @@ int sdlx_video_init(void)
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 
     // this is needed so that the first actual display present works
-    sdlx_display_init(COLOR_BLACK);
+    sdlx_display_init(COLOR_BLACK, true);
     sdlx_display_present();
     usleep(50000);  // xxx comment
     sdlx_event_t event;
@@ -250,17 +253,73 @@ static bool event_watcher(void* userdata, SDL_Event* event)
 #endif
 
 // ----------------- DISPLAY INIT / PRESENT ---------------
+//xxx cleanup needed here
+sdlx_texture_t *landscape;
+int landscape_w;
+int landscape_h;
 
-void sdlx_display_init(sdlx_color_t color)
+sdlx_texture_t *portrait;
+int portrait_w;
+int portrait_h;
+
+bool portrait_flag;
+
+void sdlx_display_init(sdlx_color_t color, bool portrait_orientation)
 {
+    portrait_flag = portrait_orientation;
+
     sdlx_reset_events();
 
+#if 0
+    // xxx orig
     set_render_draw_color(color);
     SDL_RenderClear(renderer);
+#endif
+
+    // xxx create and destroy texture
+    if (portrait_flag) {
+        if (portrait == NULL) {
+            portrait_w = sdlx_win_width;
+            portrait_h = sdlx_win_height;
+            portrait = sdlx_create_texture(portrait_w, portrait_h);
+        }
+
+        if (portrait) {
+            sdlx_set_render_target(portrait);
+            sdlx_clear_texture(portrait, COLOR_PURPLE);
+        }
+    } else {
+        if (landscape == NULL) {
+            landscape_w = sdlx_win_height;
+            landscape_h = sdlx_win_width;
+            landscape = sdlx_create_texture(landscape_w, landscape_h);
+            printf("XXXXXXXXXXXXX LAND W h %d %d\n", landscape_w, landscape_h);
+        }
+
+        if (landscape) {
+            sdlx_set_render_target(landscape);
+            sdlx_clear_texture(landscape, COLOR_PURPLE);
+        }
+    }
 }
+
+//void commit_register_control_events(void);
 
 void sdlx_display_present(void)
 {
+    sdlx_set_render_target(NULL);
+
+    if (landscape) {
+        sdlx_render_texture_ex3(landscape,
+                                0, 0, 975, 450,
+                                90,           // clockwise rotation angle
+                                450/2, 450/2);
+    } else if (portrait) {
+        sdlx_render_texture_ex1(portrait, 0, 0, 450, 975);
+    }
+
+    //commit_register_control_events();
+
     SDL_RenderPresent(renderer);
 }
 
@@ -446,58 +505,49 @@ static void render_text_texture(SDL_Texture *t, SDL_FRect *pos, int flags)
     #define SWAP_FLOAT(a,b) \
         do { float tmp = (a); (a) = (b); (b) = tmp; } while (0)
 
-    if ((flags & FLAG_ROT_MASK) == 0) {
-        SDL_RenderTexture(renderer, t, NULL, pos);
-    } else if ((flags & FLAG_ROT_MASK) == FLAG_ROT_90) {
-        SDL_FPoint center = {pos->h/2, pos->h/2};
+    bool flip = (flags & FLAG_FLIP);
+
+    if (flags & FLAG_ROT_CTR_90) {
         SDL_RenderTextureRotated(renderer,
                                  t, 
                                  NULL,      // source, NULL means the entire texture
                                  pos,       // dest rectangle
                                  90,        // rotation angle
-                                 &center,   // point around which dest will be rotated
-                                 SDL_FLIP_NONE);
-        SWAP_FLOAT(pos->w, pos->h);
-    } else if ((flags & FLAG_ROT_MASK) == FLAG_ROT_90_FLIP) {
-        SDL_FPoint center = {pos->h/2, pos->h/2};
-        SDL_RenderTextureRotated(renderer,
-                                 t, 
-                                 NULL,      // source, NULL means the entire texture
-                                 pos,       // dest rectangle
-                                 90,        // rotation angle
-                                 &center,   // point around which dest will be rotated
-                                 SDL_FLIP_HORIZONTAL_AND_VERTICAL);
-        SWAP_FLOAT(pos->w, pos->h);
-    } else if ((flags & FLAG_ROT_MASK) == FLAG_ROT_CTR_90) {
-        SDL_RenderTextureRotated(renderer,
-                                 t, 
-                                 NULL,      // source, NULL means the entire texture
-                                 pos,       // dest rectangle
-                                 90,       // rotation angle
                                  NULL,      // point around which dest will be rotated
-                                 SDL_FLIP_NONE);
+                                 flip ? SDL_FLIP_HORIZONTAL_AND_VERTICAL : SDL_FLIP_NONE);
         pos->x = pos->x + pos->w/2 - pos->h/2;
         pos->y = pos->y + pos->h/2 - pos->w/2;
         SWAP_FLOAT(pos->w, pos->h);
-    } else if ((flags & FLAG_ROT_MASK) == FLAG_ROT_CTR_180) {
+    } else if (flags & FLAG_ROT_CTR_180) {
         SDL_RenderTextureRotated(renderer,
                                  t, 
                                  NULL,      // source, NULL means the entire texture
                                  pos,       // dest rectangle
                                  180,       // rotation angle
                                  NULL,      // point around which dest will be rotated
-                                 SDL_FLIP_NONE);
-    } else if ((flags & FLAG_ROT_MASK) == FLAG_ROT_CTR_270) {
+                                 flip ? SDL_FLIP_HORIZONTAL_AND_VERTICAL : SDL_FLIP_NONE);
+    } else if (flags & FLAG_ROT_CTR_270) {
         SDL_RenderTextureRotated(renderer,
                                  t, 
                                  NULL,      // source, NULL means the entire texture
                                  pos,       // dest rectangle
                                  270,       // rotation angle
                                  NULL,      // point around which dest will be rotated
-                                 SDL_FLIP_NONE);
+                                 flip ? SDL_FLIP_HORIZONTAL_AND_VERTICAL : SDL_FLIP_NONE);
         pos->x = pos->x + pos->w/2 - pos->h/2;
         pos->y = pos->y + pos->h/2 - pos->w/2;
         SWAP_FLOAT(pos->w, pos->h);
+    } else if (flip) {
+        // flip with 0 rotation
+        SDL_RenderTextureRotated(renderer,
+                                 t, 
+                                 NULL,      // source, NULL means the entire texture
+                                 pos,       // dest rectangle
+                                 0,         // rotation angle
+                                 NULL,      // point around which dest will be rotated
+                                 SDL_FLIP_HORIZONTAL_AND_VERTICAL);
+    } else {
+        SDL_RenderTexture(renderer, t, NULL, pos);
     }
 }
 

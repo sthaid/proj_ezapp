@@ -28,7 +28,7 @@ extern int sdlx_win_height;
 // display init and present
 // - - - - - - - - - - - - - 
 
-void sdlx_display_init(sdlx_color_t color);
+void sdlx_display_init(sdlx_color_t color, bool portrait);
 void sdlx_display_present(void);
 
 // - - - - - 
@@ -86,12 +86,10 @@ sdlx_loc_t *sdlx_render_printf(int x, int y, char *fmt, ...) __attribute__ ((for
 #define FLAG_X_CTR         1
 #define FLAG_Y_CTR         2
 #define FLAG_XY_CTR        (FLAG_X_CTR | FLAG_Y_CTR)
-#define FLAG_ROT_90        0x10
-#define FLAG_ROT_90_FLIP   0x20
-#define FLAG_ROT_CTR_90    0x30
+#define FLAG_FLIP          0x10
+#define FLAG_ROT_CTR_90    0x20
 #define FLAG_ROT_CTR_180   0x40
-#define FLAG_ROT_CTR_270   0x50
-#define FLAG_ROT_MASK      0xf0
+#define FLAG_ROT_CTR_270   0x80
 #define WRAP_NONE    -1
 #define WRAP_NEWLINE  0
 int sdlx_char_width(int fontid);

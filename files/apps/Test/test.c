@@ -66,6 +66,8 @@ static void page_10_draw(void);
 static void page_11_draw(void);
 static void page_11_process_event(sdlx_event_t *event);
 
+static void page_12_draw(void);
+
 // -----------------  MAIN  ------------------------------------------
 
 int main(int argc, char **argv)
@@ -129,10 +131,11 @@ char *page_title[] = {     // Page
         "Sensor Values",   //   9
         "Location",        //  10
         "Text Rotate",     //  11
+        "Landscape",       //  12
             };
 static int pagenum = 0;
 
-#define LAST_PAGE 11
+#define LAST_PAGE 12
 
 #define EVID_PREV_PAGE 1
 #define EVID_NEXT_PAGE 2
@@ -153,20 +156,12 @@ static void page_hndlr()
 
     while (true) {
         // init the backbuffer, and print font/color
-        sdlx_display_init(COLOR_BLACK);
+        // xxx better way to select landscape
+        sdlx_display_init(COLOR_BLACK, pagenum != 12);
         sdlx_print_set_default(FONT_NORMAL, COLOR_WHITE);
 
         // draw title line
         sdlx_render_printf_ex2(sdlx_win_width/2, 0, FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE, "%s", page_title[pagenum]);
-
-        // register control events
-        // "<" - previous page
-        // ">" - next page
-        // 'X' - end prorgram
-        sdlx_register_control_events(EVID_PREV_PAGE, "<",
-                                     EVID_NEXT_PAGE, ">",
-                                     EVID_QUIT, "X",
-                                     COLOR_WHITE, COLOR_BLACK);
 
         // draw display
         switch (pagenum) {
@@ -182,11 +177,21 @@ static void page_hndlr()
         case 9: page_9_draw(); break;
         case 10: page_10_draw(); break;
         case 11: page_11_draw(); break;
+        case 12: page_12_draw(); break;
         default:
             printf("E %s: invalid pagenum %d\n", progname, pagenum);
             end_program = true;
             return;
         }
+
+        // register control events
+        // "<" - previous page
+        // ">" - next page
+        // 'X' - end prorgram
+        sdlx_register_control_events(EVID_PREV_PAGE, "<",
+                                     EVID_NEXT_PAGE, ">",
+                                     EVID_QUIT, "X",
+                                     COLOR_WHITE, COLOR_BLACK);
 
         // present the display
         sdlx_display_present();
@@ -1133,12 +1138,14 @@ static char *num2str(double num, char *fmt, char *s)
 
 // -----------------  PAGE 11: TEXT ROTATION  -----------------
 
-#define EVID_ROT_NONE      10
-#define EVID_ROT_90        11
-#define EVID_ROT_90_FLIP   12
-#define EVID_ROT_CTR_90    13
-#define EVID_ROT_CTR_180   14
-#define EVID_ROT_CTR_270   15
+#define EVID_ROT_NONE           10
+#define EVID_FLIP               11
+#define EVID_ROT_CTR_90         12
+#define EVID_ROT_CTR_90_FLIP    13
+#define EVID_ROT_CTR_180        14
+#define EVID_ROT_CTR_180_FLIP   15
+#define EVID_ROT_CTR_270        16
+#define EVID_ROT_CTR_270_FLIP   17
 
 char *text = "hello";
 char *wrap_text = "this is line 1\nthis is line 2\nthis is line 3";
@@ -1156,36 +1163,38 @@ static void page_11_draw(void)
                                  "%s", wrap_text);
     sdlx_render_rect(loc->x, loc->y, loc->w, loc->h, 2, COLOR_GREEN);
 
-    loc = sdlx_render_printf_ex2(500, sdlx_win_height/2,
-                                 FONT_NORMAL, COLOR_WHITE,
-                                 rot_flags, WRAP_NONE, 
-                                 "%s", text);
-    sdlx_render_rect(loc->x, loc->y, loc->w, loc->h, 2, COLOR_GREEN);
-
-    y = sdlx_win_height - CONTROL_EVENTS_DISPLAY_HEIGHT - 7 * (1.5 * sdlx_char_height_dflt);
+    y = sdlx_win_height - CONTROL_EVENTS_DISPLAY_HEIGHT - 8 * (1.5 * sdlx_char_height_dflt);
 
     loc = sdlx_render_printf_ex1(0, y, FONT_NORMAL, COLOR_LIGHT_BLUE, "ROT_NONE");
     sdlx_register_event(loc, EVID_ROT_NONE);
     y += 1.5 * sdlx_char_height_dflt;
 
-    loc = sdlx_render_printf_ex1(0, y, FONT_NORMAL, COLOR_LIGHT_BLUE, "ROT_90");
-    sdlx_register_event(loc, EVID_ROT_90);
-    y += 1.5 * sdlx_char_height_dflt;
-
-    loc = sdlx_render_printf_ex1(0, y, FONT_NORMAL, COLOR_LIGHT_BLUE, "ROT_90_FLIP");
-    sdlx_register_event(loc, EVID_ROT_90_FLIP);
+    loc = sdlx_render_printf_ex1(0, y, FONT_NORMAL, COLOR_LIGHT_BLUE, "FLIP");
+    sdlx_register_event(loc, EVID_FLIP);
     y += 1.5 * sdlx_char_height_dflt;
 
     loc = sdlx_render_printf_ex1(0, y, FONT_NORMAL, COLOR_LIGHT_BLUE, "ROT_CTR_90");
     sdlx_register_event(loc, EVID_ROT_CTR_90);
     y += 1.5 * sdlx_char_height_dflt;
 
+    loc = sdlx_render_printf_ex1(0, y, FONT_NORMAL, COLOR_LIGHT_BLUE, "ROT_CTR_90_FLIP");
+    sdlx_register_event(loc, EVID_ROT_CTR_90_FLIP);
+    y += 1.5 * sdlx_char_height_dflt;
+
     loc = sdlx_render_printf_ex1(0, y, FONT_NORMAL, COLOR_LIGHT_BLUE, "ROT_CTR_180");
     sdlx_register_event(loc, EVID_ROT_CTR_180);
     y += 1.5 * sdlx_char_height_dflt;
 
+    loc = sdlx_render_printf_ex1(0, y, FONT_NORMAL, COLOR_LIGHT_BLUE, "ROT_CTR_180_FLIP");
+    sdlx_register_event(loc, EVID_ROT_CTR_180_FLIP);
+    y += 1.5 * sdlx_char_height_dflt;
+
     loc = sdlx_render_printf_ex1(0, y, FONT_NORMAL, COLOR_LIGHT_BLUE, "ROT_CTR_270");
     sdlx_register_event(loc, EVID_ROT_CTR_270);
+    y += 1.5 * sdlx_char_height_dflt;
+
+    loc = sdlx_render_printf_ex1(0, y, FONT_NORMAL, COLOR_LIGHT_BLUE, "ROT_CTR_270_FLIP");
+    sdlx_register_event(loc, EVID_ROT_CTR_270_FLIP);
     y += 1.5 * sdlx_char_height_dflt;
 }
 
@@ -1195,21 +1204,39 @@ static void page_11_process_event(sdlx_event_t *event)
     case EVID_ROT_NONE:
         rot_flags = 0;
         break;
-    case EVID_ROT_90:
-        rot_flags = FLAG_ROT_90;
-        break;
-    case EVID_ROT_90_FLIP:
-        rot_flags = FLAG_ROT_90_FLIP;
+    case EVID_FLIP:
+        rot_flags = FLAG_FLIP;
         break;
     case EVID_ROT_CTR_90:
         rot_flags = FLAG_ROT_CTR_90;
         break;
+    case EVID_ROT_CTR_90_FLIP:
+        rot_flags = FLAG_ROT_CTR_90 | FLAG_FLIP;
+        break;
     case EVID_ROT_CTR_180:
         rot_flags = FLAG_ROT_CTR_180;
+        break;
+    case EVID_ROT_CTR_180_FLIP:
+        rot_flags = FLAG_ROT_CTR_180 | FLAG_FLIP;
         break;
     case EVID_ROT_CTR_270:
         rot_flags = FLAG_ROT_CTR_270;
         break;
+    case EVID_ROT_CTR_270_FLIP:
+        rot_flags = FLAG_ROT_CTR_270 | FLAG_FLIP;
+        break;
     }
 }
 
+// -----------------  PAGE 12: LANDSCAPE ----------------------
+
+// xxx better test
+// xxx use sdlx_win_width/height
+// xxx test SetRenderTarget when in landscape
+static void page_12_draw(void)
+{
+    sdlx_render_printf_ex2(500, 500,     
+                           FONT_NORMAL, COLOR_WHITE,
+                           FLAG_XY_CTR, WRAP_NONE, 
+                           "HELLO FROM LANDSCAPE");
+}
