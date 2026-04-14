@@ -11,9 +11,6 @@
 #define COW_P 1000
 #define COW_L 1200
 
-#define VERTICAL    0  // screen orientation  xxx use portrait xxx move these
-#define HORIZONTAL  1
-
 #define DEBUG_FLAG_CYCLE_DUR  1
 
 // variables
@@ -21,7 +18,7 @@ char *progname;
 char *data_dir;
 char  files_dir[100];
 int   orientation;
-bool  show_horizontal;
+bool  show_controls;
 int   debug_flags;
 
 // prototypes of routiens defined in color_organ.c

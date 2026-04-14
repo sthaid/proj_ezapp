@@ -22,9 +22,9 @@
 #define EVID_RECORD                4     // select record mode
 #define EVID_PAUSE                 5     // pause play file
 #define EVID_CONT                  6     // continue play file
-#define EVID_SHOW_HORIZONTAL       7     // show/hide controls when in horizontal orientation
+#define EVID_SHOW_CONTROLS         7     // show/hide controls
 #define EVID_SETTINGS              8     // color organ settings display
-#define EVID_TEST_FORCE_HORIZONTAL 9     // force horizontal orientation, when testing on linux
+#define EVID_TEST_FORCE_LANDSCAPE  9     // force landscape orientation, used when testing on linux
 #define EVID_PLAY_FILE           100     // start play file, range 100-199
 #define EVID_DELETE_FILE         200     // delete file, range 200-299
 #define EVID_RENAME_FILE         300     // delete file, range 300-399
@@ -60,7 +60,7 @@ int   y_files_list_bottom;
 int   state = STATE_STOPPED;
 char  playing_file[100];
 bool  end_program;
-bool  test_force_horizontal;
+bool  test_force_landscape;
 
 //
 // prototypes
@@ -97,10 +97,9 @@ int main(int argc, char **argv)
 
     // init misc variables
     sprintf(files_dir, "%s/files", data_dir);
-    show_horizontal = true;
+    show_controls = true;
 
     // init y locations
-    // xxx are these just for VERTICAL?
     y_state             = 0;
     y_controls_1        = y_state + LINE_SPACING*sdlx_char_height_dflt;
     y_controls_2        = y_controls_1 + LINE_SPACING*sdlx_char_height_dflt;
@@ -129,12 +128,12 @@ int main(int argc, char **argv)
         }
 
         // init the backbuffer
-        sdlx_display_init(COLOR_BLACK, orientation==VERTICAL);
+        sdlx_display_init(COLOR_BLACK, orientation);
 
         // display state line
-        if (orientation == VERTICAL || show_horizontal) {
+        if (show_controls) {
             sdlx_color_t color = (state==STATE_RECORDING_DEV ? COLOR_RED : COLOR_WHITE);
-            int y = (orientation == VERTICAL ? COH_P+y_state : 0);
+            int y = (orientation == PORTRAIT ? COH_P+y_state : 0);
             sdlx_render_printf_ex2(0, y,
                                    FONT_NORMAL, color, FLAG_NONE, WRAP_NONE,
                                    "%s", get_state_str());
@@ -265,7 +264,7 @@ void process_event(sdlx_event_t *ev)
 
         // scroll file list
         case EVID_MOTION:
-            if (orientation == VERTICAL) {
+            if (orientation == PORTRAIT) {  // xxx flip in event.c
                 y_files_list += ev->u.motion.yrel;
             } else {
                 y_files_list -= ev->u.motion.xrel;
@@ -275,9 +274,9 @@ void process_event(sdlx_event_t *ev)
             }
             break;
 
-        // toggle flag to show or hide the controls when in horizontal orientation
-        case EVID_SHOW_HORIZONTAL:
-            show_horizontal = !show_horizontal;
+        // toggle flag to show or hide the controls
+        case EVID_SHOW_CONTROLS:
+            show_controls = !show_controls;
             break;
 
         // activate the color organ settings display
@@ -287,11 +286,11 @@ void process_event(sdlx_event_t *ev)
 
 #ifndef ANDROID
         // This event is only registered when this program is being tested on linux;
-        // and will toggle override of the orientation so that horizontal orientation
-        // can be tested on linux. Linux does not have the acceleration sensor that is
-        // available on android to detect the orientation.
-        case EVID_TEST_FORCE_HORIZONTAL:
-            test_force_horizontal = !test_force_horizontal;
+        // and will toggle override of the orientation so that landscape orientation
+        // can be tested on linux. Linux does not have the acceleration sensor shich is
+        // used on android to detect the orientation.
+        case EVID_TEST_FORCE_LANDSCAPE:
+            test_force_landscape = !test_force_landscape;
             break;
 #endif
 
@@ -307,7 +306,7 @@ void register_events(void)
 {
     sdlx_loc_t *loc;
 
-    if (orientation == VERTICAL || show_horizontal) {
+    if (show_controls) {
         // register EVID_MON_REC or EVID_STOP on control line 1, col 0
         if (state == STATE_STOPPED) {
             reg_event(0, y_controls_1, COLOR_LIGHT_BLUE, "MON/REC", EVID_MON_REC);
@@ -348,7 +347,7 @@ void register_events(void)
             // register event to rename and delete the file;
             // - don't allow delete of file if it is being played
             // - supported only in vertical orientation
-            if (color == COLOR_LIGHT_BLUE && orientation == VERTICAL) {
+            if (color == COLOR_LIGHT_BLUE && orientation == PORTRAIT) {
                 reg_event(sdlx_win_width-8*sdlx_char_width_dflt, y, COLOR_LIGHT_BLUE, " REN", EVID_RENAME_FILE+i);
                 reg_event(sdlx_win_width-4*sdlx_char_width_dflt, y, COLOR_LIGHT_BLUE, " DEL", EVID_DELETE_FILE+i);
             }
@@ -359,43 +358,26 @@ void register_events(void)
 
         // register motion event, this is used to scroll the file list
         sdlx_register_event(NULL, EVID_MOTION);
-    }
-
-    // register color organ events
-    //xxx color_organ_register_events(y_controls_2);
-
-    // register control events
-    // xxx allow hide in veritcal too
-    // xxx rename VERTICAL TO PORTRAIT
-    if (orientation == VERTICAL) {
-        sdlx_register_control_events(EVID_SETTINGS, "STG",
-                                     0, NULL,
-                                     EVID_QUIT, "X",
-                                     COLOR_WHITE, COLOR_BLACK);
-    } else {
-        sdlx_register_control_events(EVID_SETTINGS, "STG",
-                                     EVID_SHOW_HORIZONTAL, (!show_horizontal ? "SHOW" : "HIDE"),
-                                     EVID_QUIT, "X",
-                                     COLOR_WHITE, COLOR_BLACK);
-    }
 
 #ifndef ANDROID
-    // if not running on android then provide control to simulate horizontal orientation;
-    // this feature is provided for development testing
-    //int x = sdlx_win_width - 1*sdlx_char_width_dflt;
-    //int y = sdlx_win_height - (CONTROL_EVENTS_DISPLAY_HEIGHT /2);
-    //loc = sdlx_render_printf_ex2(x, y, FONT_NORMAL, COLOR_LIGHT_BLUE, FLAG_Y_CTR, WRAP_NONE, "%s", "H");
-    //sdlx_register_event(loc, EVID_TEST_FORCE_HORIZONTAL);
-
-    reg_event(COL2X(8), 0, COLOR_LIGHT_BLUE, "H", EVID_TEST_FORCE_HORIZONTAL);
+        // if not running on android then provide control to simulate landscape orientation;
+        // this feature is provided for development testing
+        reg_event(COL2X(8), 0, COLOR_LIGHT_BLUE, "H", EVID_TEST_FORCE_LANDSCAPE);
 #endif
+    }
+
+    // register control events
+    sdlx_register_control_events(EVID_SETTINGS, "STG",
+                                 EVID_SHOW_CONTROLS, (!show_controls ? "SHOW" : "HIDE"),
+                                 EVID_QUIT, "X",
+                                 COLOR_WHITE, COLOR_BLACK);
 }
 
 void reg_event(int x, int y, sdlx_color_t color, char *name, int event_id)
 {
     sdlx_loc_t *loc;
 
-    if (orientation == VERTICAL) {
+    if (orientation == PORTRAIT) {
         y += COH_P;
     }
 
@@ -481,11 +463,11 @@ int get_device_orientation(void)
 {
     double ax, ay, az;
     int rc;
-    static int orientation = VERTICAL;
+    static int orient = PORTRAIT;
     static bool printed;
 
-    if (test_force_horizontal) {
-        return HORIZONTAL;
+    if (test_force_landscape) {
+        return LANDSCAPE;
     }
 
     rc = sdlx_sensor_read_accelerometer(&ax, &ay, &az);
@@ -494,18 +476,18 @@ int get_device_orientation(void)
             printf("E %s: failed to read accelerometer\n", progname);
             printed = true;
         }
-        return orientation;
+        return orient;
     }
 
-    if (ay > 7 && orientation != VERTICAL) {
-        printf("I %s: orientation is now VERTICAL\n", progname);
-        orientation = VERTICAL;
+    if (ay > 7 && orient != PORTRAIT) {
+        printf("I %s: orientation is now PORTRAIT\n", progname);
+        orient = PORTRAIT;
     }
 
-    if (ax > 7 && orientation != HORIZONTAL) {
-        printf("I %s: orientation is now HORIZONTAL\n", progname);
-        orientation = HORIZONTAL;
+    if (ax > 7 && orient != LANDSCAPE) {
+        printf("I %s: orientation is now LANDSCAPE\n", progname);
+        orient = LANDSCAPE;
     }
 
-    return orientation;
+    return orient;
 }

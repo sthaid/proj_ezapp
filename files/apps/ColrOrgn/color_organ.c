@@ -80,9 +80,6 @@ sdlx_texture_t *red_circle_texture;
 sdlx_texture_t *green_circle_texture;
 sdlx_texture_t *blue_circle_texture;
 
-// texture used to display color organ in either vertical or horizontal orientation
-//sdlx_texture_t *color_organ_texture;
-
 // used to display band scaling values for a short time interval
 int disp_scale_factor;
 
@@ -105,9 +102,6 @@ void color_organ_init(void)
     red_circle_texture   = create_circle_texture(COLOR_RED);
     green_circle_texture = create_circle_texture(COLOR_GREEN);
     blue_circle_texture  = create_circle_texture(COLOR_BLUE);
-
-    // create texture used to display the color organ either vertical or horizontal
-    //color_organ_texture = sdlx_create_texture(1000, COH);
 }
 
 void color_organ_cleanup(void)
@@ -116,7 +110,6 @@ void color_organ_cleanup(void)
     sdlx_destroy_texture(red_circle_texture);
     sdlx_destroy_texture(green_circle_texture);
     sdlx_destroy_texture(blue_circle_texture);
-    //sdlx_destroy_texture(color_organ_texture);
 }
 
 sdlx_texture_t *create_circle_texture(sdlx_color_t color)
@@ -179,7 +172,7 @@ void color_organ_display(int y_controls_2)
     }
 
     // register events to select the color organ display format and filter 
-    if (orientation == VERTICAL || show_horizontal) {
+    if (show_controls) {
         reg_event(COL2X(0), y_controls_2, COLOR_LIGHT_BLUE,
                   color_organ_name[which_color_organ], EVID_COLOR_ORGAN_SLCT);
         reg_event(COL2X(5), y_controls_2, COLOR_LIGHT_BLUE, 
@@ -212,14 +205,14 @@ void color_organ_display_bars(float *fft)
         filter(&filtered_vol[band], raw_new_vol);
 
         // display the band volume
-        cow = (orientation == VERTICAL ? COW_P : COW_L);
-        coh = (orientation == VERTICAL ? COH_P : COH_L);
+        cow = (orientation == PORTRAIT ? COW_P : COW_L);
+        coh = (orientation == PORTRAIT ? COH_P : COH_L);
 
         w = cow / 3;;
         h = coh * filtered_vol[band];
         x = band * w;
         y = coh - h;
-        if (orientation == HORIZONTAL) { //xxx use LANDSCAPE
+        if (orientation == LANDSCAPE) {
             x += (sdlx_win_height - COW_L) / 2;
         }
 
@@ -272,9 +265,9 @@ void color_organ_display_circles(float *fft)
         int             cow, coh, win_ctr, radius, x_ctr, y_ctr;
         float           k, band_volume;
 
-        cow     = (orientation == VERTICAL ? COW_P : COW_L);
-        coh     = (orientation == VERTICAL ? COH_P : COH_L);
-        win_ctr = (orientation == VERTICAL ? 500 : 2166/2);  // xxx review for numeric 
+        cow     = (orientation == PORTRAIT ? COW_P : COW_L);
+        coh     = (orientation == PORTRAIT ? COH_P : COH_L);
+        win_ctr = (orientation == PORTRAIT ? 500 : 2166/2);  // xxx review for numeric 
         radius  = coh / (2 + sqrt(3));
         k       = 2.0;  // determined emppirically for good visual
 
@@ -297,7 +290,6 @@ void color_organ_display_circles(float *fft)
         sdlx_render_texture_ex1(t, x_ctr-radius, y_ctr-radius, 2*radius, 2*radius);
 
         // register events to adjust scale factor
-        sdlx_loc_t loc;
         init_loc(&loc, x_ctr - radius/2, y_ctr-radius, radius, radius);
         sdlx_register_event(&loc, band == 0 ? EVID_LOW_BAND_INCREASE : 
                                  (band == 1 ? EVID_MID_BAND_INCREASE : 
@@ -335,7 +327,7 @@ void color_organ_display_fft(float *fft)
 
         filter(&filtered[i], raw_scaled);
 
-        if (orientation == VERTICAL) {  // xxxx fix
+        if (orientation == PORTRAIT) {
             w = 3;
             h = COH_P * filtered[i];
             x = 3*(i-1) + 50;
@@ -487,7 +479,7 @@ void color_organ_settings(void)
 
     while (!done) {
         // init the backbuffer
-        sdlx_display_init(COLOR_BLACK, true);
+        sdlx_display_init(COLOR_BLACK, PORTRAIT);
 
         // display settings
         sdlx_print_set_default(24, COLOR_WHITE);
