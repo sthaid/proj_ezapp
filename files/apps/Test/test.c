@@ -157,7 +157,7 @@ static void page_hndlr()
     while (true) {
         // init the backbuffer, and print font/color
         // xxx better way to select landscape
-        sdlx_display_init(COLOR_BLACK, pagenum != 12);
+        sdlx_display_init(COLOR_BLACK, pagenum == 12 ? LANDSCAPE : PORTRAIT);
         sdlx_print_set_default(FONT_NORMAL, COLOR_WHITE);
 
         // draw title line
@@ -475,30 +475,6 @@ static void page_5_init(void)
     int w, h, i;
 
     //
-    // create texture content using sdlx_set_render_target
-    //
-
-    // create texture1
-    texture1 = sdlx_create_texture(1000, 1000);
-
-    // query texture1
-    sdlx_query_texture(texture1, &w, &h);
-    printf("I %s: texture1 w,h = %d %d\n", progname, w, h);
-
-    // set render target to texture1
-    printf("I %s: setting render target to texture1\n", progname);
-    sdlx_set_render_target(texture1);
-
-    // draw to texture1
-    sdlx_render_rect(0, 0, w, h, 5, COLOR_WHITE);
-    sdlx_render_fill_circle(w/2, h/2, w/2, COLOR_YELLOW);
-    sdlx_render_printf_ex2(w/2, h/2, FONT_NORMAL, COLOR_RED, FLAG_XY_CTR, WRAP_NONE, "%s", "Hello");
-
-    // set render target back to the display
-    printf("I %s: setting render target to display\n", progname);
-    sdlx_set_render_target(NULL);
-
-    //
     // test set/get textrue pixels
     //
 
@@ -545,13 +521,39 @@ static void page_5_exit(void)
 
 static void page_5_draw(void)
 {
+    int w, h;
+
+    // note: creating texture1 here is not efficient, the texture would 
+    // normally be initialized just once; it is done this way for testing
+
+    // create texture1
+    texture1 = sdlx_create_texture(1000, 1000);
+    // - query texture1, and validate
+    sdlx_query_texture(texture1, &w, &h);
+    xxx
+    // - set render target to texture1
+    sdlx_set_render_target(texture1);
+    // - draw to texture1
+    sdlx_render_rect(0, 0, w, h, 5, COLOR_WHITE);
+    sdlx_render_fill_circle(w/2, h/2, w/2, COLOR_YELLOW);
+    sdlx_render_printf_ex2(w/2, h/2, FONT_NORMAL, COLOR_RED, FLAG_XY_CTR, WRAP_NONE, "%s", "Hello");
+    // - set render target back to the display
+    sdlx_set_render_target(NULL);
+
+    // render textur1 to the display coords 0,100, without scaling
     sdlx_render_texture(texture1, 0, 100);
 
+    // render texture1 to the display coords 0, 1200, scaling to half size
     sdlx_render_texture_ex1(texture1, 0, 1200, 500, 500);
 
+    // render texture 2, a blue square, just to the right of the 
+    // previous rendering of textur1
     sdlx_render_texture(texture2, 500, 1200);
-}
 
+    // destroy texture1
+    sdlx_destroy_texture(texture1);
+    texture1 = NULL;
+}
 
 // -----------------  PAGE 6: COLORS  -------------------------
 

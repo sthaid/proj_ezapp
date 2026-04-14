@@ -305,7 +305,7 @@ static void processing(void)
 
     while (true) {
         // clear the display, and set the font to default
-        sdlx_display_init(BG_COLOR, true);
+        sdlx_display_init(BG_COLOR, PORTRAIT);
         sdlx_print_set_default(FONT_NORMAL, COLOR_WHITE);
 
         // display menu, and register for events
@@ -693,7 +693,7 @@ static void settings(void)
     // handle the setting display
     while (true) {
         // init display and font size/color
-        sdlx_display_init(BG_COLOR, true);
+        sdlx_display_init(BG_COLOR, PORTRAIT);
 
         // display Copyright
         sdlx_print_set_default(FONT_NORMAL, COLOR_LIGHT_BLUE);
@@ -983,7 +983,7 @@ static void copyright(void)
     // display copyright
     while (true) {
         // display copyright and register for motion (scrolling) & exit events
-        sdlx_display_init(BG_COLOR, true);
+        sdlx_display_init(BG_COLOR, PORTRAIT);
         sdlx_render_multiline_text(0, y, y_top, y_bottom, FONT_TINY, lines, NULL, 1);
         sdlx_register_control_events(0, NULL, 0, NULL, EVID_QUIT, "X", COLOR_WHITE, BG_COLOR);
         sdlx_register_event(NULL, EVID_MOTION);
