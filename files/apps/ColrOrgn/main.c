@@ -9,6 +9,9 @@
 
 #include "apps/ColrOrgn/common.h"
 
+// xxx
+// - MON/REC core dump
+
 //
 // defines
 //
@@ -66,6 +69,7 @@ bool  test_force_horizontal;
 // event handling
 void process_event(sdlx_event_t *ev);
 void register_events(void);
+//void reg_event(int x, int y, sdlx_color_t color, char *name, int event_id);
 
 // utils
 void get_list_of_files(void);
@@ -96,12 +100,13 @@ int main(int argc, char **argv)
     show_horizontal = true;
 
     // init y locations
+    // xxx are these just for VERTICAL?
     y_state             = 0;
-    y_controls_1          = y_state + LINE_SPACING*sdlx_char_height_dflt;
+    y_controls_1        = y_state + LINE_SPACING*sdlx_char_height_dflt;
     y_controls_2        = y_controls_1 + LINE_SPACING*sdlx_char_height_dflt;
     y_files_list        = y_controls_2 + LINE_SPACING*sdlx_char_height_dflt;
     y_files_list_top    = y_files_list;
-    y_files_list_bottom = sdlx_win_height - CONTROL_EVENTS_DISPLAY_HEIGHT - COLOR_ORGAN_H;
+    y_files_list_bottom = sdlx_win_height - CONTROL_EVENTS_DISPLAY_HEIGHT - COH_P;
 
     // initialize color organ
     color_organ_init();
@@ -124,30 +129,20 @@ int main(int argc, char **argv)
         }
 
         // init the backbuffer
-        sdlx_display_init(COLOR_BLACK);
+        sdlx_display_init(COLOR_BLACK, orientation==VERTICAL);
 
         // display state line
         if (orientation == VERTICAL || show_horizontal) {
             sdlx_color_t color = (state==STATE_RECORDING_DEV ? COLOR_RED : COLOR_WHITE);
-            int          x     = 0;
-            int          y     = y_state;
-
-            if (orientation == VERTICAL) {
-                sdlx_render_printf_ex2(x, y+COLOR_ORGAN_H,
-                                       FONT_NORMAL, color, FLAG_NONE, WRAP_NONE,
-                                       "%s", get_state_str());
-            } else {
-                int x1 = sdlx_win_width - sdlx_char_height_dflt - y;
-                int y1 = x;
-                sdlx_render_printf_ex2(x1, y1,
-                                       FONT_NORMAL, color, FLAG_ROT_90, WRAP_NONE,
-                                       "%s", get_state_str());
-            }
+            int y = (orientation == VERTICAL ? COH_P+y_state : 0);
+            sdlx_render_printf_ex2(0, y,
+                                   FONT_NORMAL, color, FLAG_NONE, WRAP_NONE,
+                                   "%s", get_state_str());
         }
 
         // display color organ
         if (state != STATE_STOPPED) {
-            color_organ_display();
+            color_organ_display(y_controls_2);
         }
 
         // register events
@@ -156,7 +151,7 @@ int main(int argc, char **argv)
         // present the display
         sdlx_display_present();
 
-        // periodically debug print the cycle duration, 
+        // debug print the cycle duration, 
         if (debug_flags & DEBUG_FLAG_CYCLE_DUR) {
             time_now = util_microsec_timer();
             cycle_dur = time_now - time_start;
@@ -234,7 +229,7 @@ void process_event(sdlx_event_t *ev)
             }
             break;
 
-        // monitor or record device, applies when in STATE_ATOPPED
+        // monitor or record device, applies when in STATE_STOPPED
         case EVID_MON_REC:
             sdlx_audio_record_from_device(files_dir, ".record.mp3", NO_APPEND, START_PAUSED);
             state = STATE_MONITORING_DEV;
@@ -367,9 +362,11 @@ void register_events(void)
     }
 
     // register color organ events
-    color_organ_register_events(y_controls_2);
+    //xxx color_organ_register_events(y_controls_2);
 
     // register control events
+    // xxx allow hide in veritcal too
+    // xxx rename VERTICAL TO PORTRAIT
     if (orientation == VERTICAL) {
         sdlx_register_control_events(EVID_SETTINGS, "STG",
                                      0, NULL,
@@ -385,10 +382,12 @@ void register_events(void)
 #ifndef ANDROID
     // if not running on android then provide control to simulate horizontal orientation;
     // this feature is provided for development testing
-    int x = sdlx_win_width - 1*sdlx_char_width_dflt;
-    int y = sdlx_win_height - (CONTROL_EVENTS_DISPLAY_HEIGHT /2);
-    loc = sdlx_render_printf_ex2(x, y, FONT_NORMAL, COLOR_LIGHT_BLUE, FLAG_Y_CTR, WRAP_NONE, "%s", "H");
-    sdlx_register_event(loc, EVID_TEST_FORCE_HORIZONTAL);
+    //int x = sdlx_win_width - 1*sdlx_char_width_dflt;
+    //int y = sdlx_win_height - (CONTROL_EVENTS_DISPLAY_HEIGHT /2);
+    //loc = sdlx_render_printf_ex2(x, y, FONT_NORMAL, COLOR_LIGHT_BLUE, FLAG_Y_CTR, WRAP_NONE, "%s", "H");
+    //sdlx_register_event(loc, EVID_TEST_FORCE_HORIZONTAL);
+
+    reg_event(COL2X(8), 0, COLOR_LIGHT_BLUE, "H", EVID_TEST_FORCE_HORIZONTAL);
 #endif
 }
 
@@ -397,16 +396,12 @@ void reg_event(int x, int y, sdlx_color_t color, char *name, int event_id)
     sdlx_loc_t *loc;
 
     if (orientation == VERTICAL) {
-        loc = sdlx_render_printf_ex2(x, y+COLOR_ORGAN_H,
-                                     FONT_NORMAL, color, FLAG_NONE, WRAP_NONE,
-                                     "%s", name);
-    } else {
-        int x1 = sdlx_win_width - sdlx_char_height_dflt - y;
-        int y1 = x;
-        loc = sdlx_render_printf_ex2(x1, y1,
-                                     FONT_NORMAL, color, FLAG_ROT_90, WRAP_NONE,
-                                     "%s", name);
+        y += COH_P;
     }
+
+    loc = sdlx_render_printf_ex2(x, y,
+                                 FONT_NORMAL, color, FLAG_NONE, WRAP_NONE,
+                                 "%s", name);
     sdlx_register_event(loc, event_id);
 }
 

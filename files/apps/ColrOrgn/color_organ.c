@@ -44,7 +44,6 @@
 
 // misc
 #define DISP_SCALE_FACTOR_DURATION 50
-#define COH  COLOR_ORGAN_H  // abbreviation
 
 // default param values
 #define DFLT_COLOR_ORGAN       COLOR_ORGAN_BARS
@@ -77,13 +76,12 @@ char *color_organ_name[MAX_COLOR_ORGAN] = {"BARS", "CIRC", "FFT"};
 char *filter_name[MAX_FILTER] = {"NONE", "EXP", "SNAP"};
 
 // circles used in COLOR_ORGAN_CIRCLES mode
-int circle_radius;
 sdlx_texture_t *red_circle_texture;
 sdlx_texture_t *green_circle_texture;
 sdlx_texture_t *blue_circle_texture;
 
 // texture used to display color organ in either vertical or horizontal orientation
-sdlx_texture_t *color_organ_texture;
+//sdlx_texture_t *color_organ_texture;
 
 // used to display band scaling values for a short time interval
 int disp_scale_factor;
@@ -107,10 +105,9 @@ void color_organ_init(void)
     red_circle_texture   = create_circle_texture(COLOR_RED);
     green_circle_texture = create_circle_texture(COLOR_GREEN);
     blue_circle_texture  = create_circle_texture(COLOR_BLUE);
-    circle_radius = COH / (2 + sqrt(3));
 
     // create texture used to display the color organ either vertical or horizontal
-    color_organ_texture = sdlx_create_texture(1000, COH);
+    //color_organ_texture = sdlx_create_texture(1000, COH);
 }
 
 void color_organ_cleanup(void)
@@ -119,7 +116,7 @@ void color_organ_cleanup(void)
     sdlx_destroy_texture(red_circle_texture);
     sdlx_destroy_texture(green_circle_texture);
     sdlx_destroy_texture(blue_circle_texture);
-    sdlx_destroy_texture(color_organ_texture);
+    //sdlx_destroy_texture(color_organ_texture);
 }
 
 sdlx_texture_t *create_circle_texture(sdlx_color_t color)
@@ -138,73 +135,184 @@ sdlx_texture_t *create_circle_texture(sdlx_color_t color)
 
 #define MAX_SAMPLES 600
 #define MAX_FFT     301
+#define DELTA_F     20.0
 
+void color_organ_display_bars(float *fft);
+void color_organ_display_circles(float *fft);
 void color_organ_display_fft(float *fft);
 void filter(float *val, float new_val);
-void display_band(int which_band, float band_volume);
+void init_loc(sdlx_loc_t *loc, int x, int y, int w, int h);
 
-void color_organ_display(void)
+void color_organ_display(int y_controls_2)
 {
-    int    num_downsample = 4;
-    int    num_samples = nearbyint(FRAMES_PER_SEC / num_downsample * 0.050);  // equals 600
-    float  delta_f = ((double)FRAMES_PER_SEC/num_downsample) / num_samples;   // equals 20
-    float  samples[MAX_SAMPLES], fft[MAX_FFT];
-
-    static float filtered_vol[3];
+    int          num_downsample = 4;
+    int          num_samples = nearbyint(FRAMES_PER_SEC / num_downsample * 0.050);  // equals 600
+    float        delta_f = ((double)FRAMES_PER_SEC/num_downsample) / num_samples;   // equals 20
+    float        samples[MAX_SAMPLES], fft[MAX_FFT];
 
     // sanity check
     if (num_samples != MAX_SAMPLES) {
         printf("E %s: BUG num_samples=%d should be %d\n", progname, num_samples, MAX_SAMPLES);
         return;
     }
-
-    // render to color_organ_texture
-    sdlx_set_render_target(color_organ_texture);
-    sdlx_clear_texture(color_organ_texture, COLOR_BLACK);
+    if (delta_f != DELTA_F) {
+        printf("E %s: BUG delta_f=%f should be %f\n", progname, delta_f, DELTA_F);
+        return;
+    }
 
     // get audio samples and perform fft
     sdlx_get_audio_samples(num_samples, num_downsample, GET_SAMPLES_MONO, samples);
     util_fft_real_to_real(num_samples, samples, fft, true);
 
     // display color organ in format: COLOR_ORGAN_BARS and COLOR_ORGAN_CIRCLES
-    if (which_color_organ == COLOR_ORGAN_BARS || which_color_organ == COLOR_ORGAN_CIRCLES) {
-        // loop over the 3 bands
-        for (int band = 0; band < 3; band++) {
-            int   first_bin, last_bin;
-            float raw_new_vol;
-
-            // determine raw_new_vol for this band
-            first_bin = nearbyint(band_start_freq[band] / delta_f);
-            last_bin = nearbyint(band_end_freq[band] / delta_f);
-            raw_new_vol = util_rms_float(&fft[first_bin], last_bin-first_bin+1);
-
-            // apply scale factor
-            raw_new_vol *= band_scale[band];
-            if (raw_new_vol > 1) raw_new_vol = 1;
-
-            // apply filter
-            filter(&filtered_vol[band], raw_new_vol);
-
-            // display the band
-            display_band(band, filtered_vol[band]);
-        }
-    } else {  // display COLOR_ORGAN_FFT
+    if (which_color_organ == COLOR_ORGAN_BARS) {
+        color_organ_display_bars(fft);
+    } else if (which_color_organ == COLOR_ORGAN_CIRCLES) {
+        color_organ_display_circles(fft);
+    } else if (which_color_organ == COLOR_ORGAN_FFT) {
         color_organ_display_fft(fft);
     }
 
-    // restore render target to the display
-    sdlx_set_render_target(NULL);
+    // stop displaying the scale values after a short time interval
+    if (disp_scale_factor) {
+        disp_scale_factor--;
+    }
 
-    // copy the color_organ_texture to the display, based on the caller provided display orientation
-    if (orientation == VERTICAL) {
-        sdlx_render_texture(color_organ_texture, 0, 0);
-    } else {
-        float scale = 1000.0 / COH;
-        int new_w = nearbyint(1000 * scale);
-        int new_h = nearbyint(COH * scale);
-        sdlx_render_texture_ex3(color_organ_texture, 
-                                0, 0.5*sdlx_win_height - new_w/2, new_w, new_h,
-                                90, new_h/2, new_h/2);
+    // register events to select the color organ display format and filter 
+    if (orientation == VERTICAL || show_horizontal) {
+        reg_event(COL2X(0), y_controls_2, COLOR_LIGHT_BLUE,
+                  color_organ_name[which_color_organ], EVID_COLOR_ORGAN_SLCT);
+        reg_event(COL2X(5), y_controls_2, COLOR_LIGHT_BLUE, 
+                  filter_name[which_filter], EVID_FILTER_SLCT);
+    }
+}
+
+void color_organ_display_bars(float *fft)
+{
+    int   first_bin, last_bin;
+    float raw_new_vol;
+    int   x, y, w, h, cow, coh;
+    sdlx_color_t color;
+    sdlx_loc_t loc;
+
+    static float filtered_vol[3];
+
+    // loop over the 3 bands
+    for (int band = 0; band < 3; band++) {
+        // determine raw_new_vol for this band
+        first_bin = nearbyint(band_start_freq[band] / DELTA_F);
+        last_bin = nearbyint(band_end_freq[band] / DELTA_F);
+        raw_new_vol = util_rms_float(&fft[first_bin], last_bin-first_bin+1);
+
+        // apply scale factor
+        raw_new_vol *= band_scale[band];
+        if (raw_new_vol > 1) raw_new_vol = 1;
+
+        // apply filter
+        filter(&filtered_vol[band], raw_new_vol);
+
+        // display the band volume
+        cow = (orientation == VERTICAL ? COW_P : COW_L);
+        coh = (orientation == VERTICAL ? COH_P : COH_L);
+
+        w = cow / 3;;
+        h = coh * filtered_vol[band];
+        x = band * w;
+        y = coh - h;
+        if (orientation == HORIZONTAL) { //xxx use LANDSCAPE
+            x += (sdlx_win_height - COW_L) / 2;
+        }
+
+        color = (band == LOW_BAND ? COLOR_RED : (band == MID_BAND ? COLOR_GREEN : COLOR_BLUE));
+        sdlx_render_fill_rect(x, y, w, h, color);
+
+        // register events to adjust scale factor
+        init_loc(&loc, x, 0, w, coh/2);
+        sdlx_register_event(&loc, band == 0 ? EVID_LOW_BAND_INCREASE : 
+                                 (band == 1 ? EVID_MID_BAND_INCREASE : 
+                                              EVID_HIGH_BAND_INCREASE));
+        loc.y += coh/2;
+        sdlx_register_event(&loc, band == 0 ? EVID_LOW_BAND_DECREASE : 
+                                 (band == 1 ? EVID_MID_BAND_DECREASE : 
+                                              EVID_HIGH_BAND_DECREASE));
+
+        // display scale factor
+        if (disp_scale_factor) {
+            sdlx_render_printf_ex2(x+w/2, coh/2,
+                                   FONT_NORMAL, COLOR_WHITE, FLAG_XY_CTR, WRAP_NONE,
+                                   "%d", band_scale[band]);
+        }
+    }
+}
+
+void color_organ_display_circles(float *fft)
+{
+    int          first_bin, last_bin;
+    float        raw_new_vol;
+    static float filtered_vol[3];
+
+    // loop over the 3 bands
+    for (int band = 0; band < 3; band++) {
+        // determine raw_new_vol for this band
+        first_bin = nearbyint(band_start_freq[band] / DELTA_F);
+        last_bin = nearbyint(band_end_freq[band] / DELTA_F);
+        raw_new_vol = util_rms_float(&fft[first_bin], last_bin-first_bin+1);
+
+        // apply scale factor
+        raw_new_vol *= band_scale[band];
+        if (raw_new_vol > 1) raw_new_vol = 1;  // xxx apply limit later?
+
+        // apply filter
+        filter(&filtered_vol[band], raw_new_vol);
+
+        // display the band volume by varying the 
+        // brightness of the red/green/blue circle
+        sdlx_texture_t *t;
+        sdlx_loc_t      loc;
+        int             cow, coh, win_ctr, radius, x_ctr, y_ctr;
+        float           k, band_volume;
+
+        cow     = (orientation == VERTICAL ? COW_P : COW_L);
+        coh     = (orientation == VERTICAL ? COH_P : COH_L);
+        win_ctr = (orientation == VERTICAL ? 500 : 2166/2);  // xxx review for numeric 
+        radius  = coh / (2 + sqrt(3));
+        k       = 2.0;  // determined emppirically for good visual
+
+        if (band == LOW_BAND) {
+            t = red_circle_texture;
+            x_ctr = win_ctr - radius;
+            y_ctr = coh - radius;
+        } else if (band == MID_BAND) {
+            t = green_circle_texture;
+            x_ctr = win_ctr + radius;
+            y_ctr = coh - radius;
+        } else {
+            t = blue_circle_texture;
+            x_ctr = win_ctr;
+            y_ctr = radius;
+        }
+
+        band_volume = k * filtered_vol[band];
+        sdlx_color_mod_texture(t, band_volume, band_volume, band_volume);
+        sdlx_render_texture_ex1(t, x_ctr-radius, y_ctr-radius, 2*radius, 2*radius);
+
+        // register events to adjust scale factor
+        sdlx_loc_t loc;
+        init_loc(&loc, x_ctr - radius/2, y_ctr-radius, radius, radius);
+        sdlx_register_event(&loc, band == 0 ? EVID_LOW_BAND_INCREASE : 
+                                 (band == 1 ? EVID_MID_BAND_INCREASE : 
+                                              EVID_HIGH_BAND_INCREASE));
+        loc.y += radius;
+        sdlx_register_event(&loc, band == 0 ? EVID_LOW_BAND_DECREASE : 
+                                 (band == 1 ? EVID_MID_BAND_DECREASE : 
+                                              EVID_HIGH_BAND_DECREASE));
+
+        // display scale factor
+        if (disp_scale_factor) {
+            sdlx_render_printf_ex2(x_ctr, y_ctr,
+                                   FONT_NORMAL, COLOR_WHITE, FLAG_XY_CTR, WRAP_NONE,
+                                   "%d", band_scale[band]);
+        }
     }
 }
 
@@ -227,10 +335,17 @@ void color_organ_display_fft(float *fft)
 
         filter(&filtered[i], raw_scaled);
 
-        x = 3*(i-1) + 50;
-        y = COH - COH * filtered[i];
-        w = 3;
-        h = COH * filtered[i];
+        if (orientation == VERTICAL) {  // xxxx fix
+            w = 3;
+            h = COH_P * filtered[i];
+            x = 3*(i-1) + 50;
+            y = COH_P - h;
+        } else {
+            w = 4;
+            h = 1000 * filtered[i];
+            x = 4*(i-1) + (sdlx_win_height - 1200) / 2;
+            y = 1000 - h;
+        }
 
         wavelength = 700 - i;
         color = sdlx_wavelength_to_color(wavelength);
@@ -256,47 +371,17 @@ void filter(float *val, float new_val)
     }
 }
 
-// this routine is called only for COLOR_ORGAN_BARS and COLOR_ORGAN_CIRCLES
-void display_band(int which_band, float band_volume)
+void init_loc(sdlx_loc_t *loc, int x, int y, int w, int h)
 {
-    if (which_color_organ == COLOR_ORGAN_BARS) {
-        int          x = which_band * 333;
-        int          h = COH*band_volume;
-        sdlx_color_t color;
-
-        color = (which_band == LOW_BAND ? COLOR_RED : (which_band == MID_BAND ? COLOR_GREEN : COLOR_BLUE));
-        sdlx_render_fill_rect(x, COH-h, 333, h, color);
-    } else {
-        sdlx_texture_t *t;
-        int             x_ctr, y_ctr;
-
-        // Note that the value of 'k' was determined empirically 
-        // to give good visual result of the circle intensities.
-        float k = 2.0;
-
-        if (which_band == LOW_BAND) {
-            t = red_circle_texture;
-            x_ctr = 500 - circle_radius;
-            y_ctr = COH - circle_radius;
-        } else if (which_band == MID_BAND) {
-            t = green_circle_texture;
-            x_ctr = 500 + circle_radius;
-            y_ctr = COH - circle_radius;
-        } else {
-            t = blue_circle_texture;
-            x_ctr = 500;
-            y_ctr = circle_radius;
-        }
-
-        band_volume *= k;
-        sdlx_color_mod_texture(t, band_volume, band_volume, band_volume);
-        sdlx_render_texture_ex1(t, x_ctr-circle_radius, y_ctr-circle_radius, 2*circle_radius, 2*circle_radius);
-    }
+    loc->x = x;
+    loc->y = y;
+    loc->w = w;
+    loc->h = h;
 }
 
 // -----------------  COLOR ORGAN EVENT HANDLING  --------------------
 
-void init_loc(sdlx_loc_t *loc, int x, int y, int w, int h);
+//void init_loc(sdlx_loc_t *loc, int x, int y, int w, int h);
 
 void color_organ_process_event(sdlx_event_t *ev)
 {
@@ -356,89 +441,6 @@ void color_organ_process_event(sdlx_event_t *ev)
     }
 }
 
-void color_organ_register_events(int y_controls_2)
-{
-    sdlx_loc_t loc;
-    int flags = FLAG_XY_CTR | (orientation == HORIZONTAL ? FLAG_ROT_90 : 0);
-
-    // register events to select the color organ display format and filter 
-    if (orientation == VERTICAL || show_horizontal) {
-        reg_event(COL2X(0), y_controls_2, COLOR_LIGHT_BLUE,
-                  color_organ_name[which_color_organ], EVID_COLOR_ORGAN_SLCT);
-        reg_event(COL2X(5), y_controls_2, COLOR_LIGHT_BLUE, filter_name[which_filter], EVID_FILTER_SLCT);
-    }
-
-    // register events to adjust the color organ display scale
-    if (which_color_organ == COLOR_ORGAN_BARS) {
-        for (int band = 0; band < 3; band++) {
-            init_loc(&loc, 333*band, 0, 333, COH/2);
-            sdlx_register_event(&loc, band == 0 ? EVID_LOW_BAND_INCREASE : (band == 1 ? EVID_MID_BAND_INCREASE : EVID_HIGH_BAND_INCREASE));
-            init_loc(&loc, 333*band, COH/2, 333, COH/2);
-            sdlx_register_event(&loc, band == 0 ? EVID_LOW_BAND_DECREASE : (band == 1 ? EVID_MID_BAND_DECREASE : EVID_HIGH_BAND_DECREASE));
-            if (disp_scale_factor) {
-                init_loc(&loc, 333*band+166, COH/2, 0, 0);
-                sdlx_render_printf_ex2(loc.x, loc.y,
-                                       FONT_NORMAL, COLOR_WHITE, flags, WRAP_NONE,
-                                       "%d", band_scale[band]);
-            }
-        }
-    } else if (which_color_organ == COLOR_ORGAN_CIRCLES) {
-        int r = circle_radius;
-        int x_ctr[3] = {500-r, 500+r, 500};
-        int y_ctr[3] = {COH-r, COH-r, r};
-
-        for (int band = 0; band < 3; band++) {
-            init_loc(&loc, x_ctr[band]-r/2, y_ctr[band]-r, r, r);
-            sdlx_register_event(&loc, band == 0 ? EVID_LOW_BAND_INCREASE : (band == 1 ? EVID_MID_BAND_INCREASE : EVID_HIGH_BAND_INCREASE));
-            init_loc(&loc, x_ctr[band]-r/2, y_ctr[band], r, r);
-            sdlx_register_event(&loc, band == 0 ? EVID_LOW_BAND_DECREASE : (band == 1 ? EVID_MID_BAND_DECREASE : EVID_HIGH_BAND_DECREASE));
-            if (disp_scale_factor) {
-                init_loc(&loc, x_ctr[band], y_ctr[band], 0, 0);
-                sdlx_render_printf_ex2(loc.x, loc.y,
-                                       FONT_NORMAL, COLOR_WHITE, flags, WRAP_NONE,
-                                       "%d", band_scale[band]);
-            }
-        }
-    } else {  // which_color_organ == COLOR_ORGAN_FFT
-        init_loc(&loc, 0, 0, 1000, COH/2);
-        sdlx_register_event(&loc, EVID_FFT_INCREASE);
-        init_loc(&loc, 0, COH/2, 1000, COH/2);
-        sdlx_register_event(&loc, EVID_FFT_DECREASE);
-
-        if (disp_scale_factor) {
-            init_loc(&loc, 500, COH/2, 0, 0);
-            sdlx_render_printf_ex2(loc.x, loc.y,
-                                   FONT_NORMAL, COLOR_WHITE, flags, WRAP_NONE,
-                                   "%d", fft_scale);
-        }
-    }
-
-    // stop displaying the scale values after a short time interval
-    if (disp_scale_factor) {
-        disp_scale_factor--;
-    }
-}
-
-// Return display location of the color organ controls, based on the screen orientation.
-// When vertical, the color organ controls are located on the lower 2/3 of the display.
-// When horizontal, the color organ controls are located on the left side of the display.
-void init_loc(sdlx_loc_t *loc, int x, int y, int w, int h)
-{
-    if (orientation == VERTICAL) {
-        loc->x = x;
-        loc->y = y;
-        loc->w = w;
-        loc->h = h;
-    } else {
-        float scale = 1000.0 / COH;
-        int   y_top = sdlx_win_height/2 - (1000*scale)/2;
-        loc->h = w * scale;
-        loc->w = h * scale;
-        loc->y = x * scale + y_top;
-        loc->x = sdlx_win_width - y * scale - loc->w;
-    }
-}
-
 // -----------------  COLOR ORGAN SETTINGS  --------------------------
 
 void settings_init(void)
@@ -485,7 +487,7 @@ void color_organ_settings(void)
 
     while (!done) {
         // init the backbuffer
-        sdlx_display_init(COLOR_BLACK);
+        sdlx_display_init(COLOR_BLACK, true);
 
         // display settings
         sdlx_print_set_default(24, COLOR_WHITE);
