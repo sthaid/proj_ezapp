@@ -27,7 +27,7 @@ typedef struct {
 //
 
 // defined in sdlx_video.c
-extern SDL_Window * window;
+extern SDL_Window * window; // xxx move to private.h or sdlx.h
 
 static event_t      event_tbl[100];
 static int          max_event;
@@ -61,7 +61,6 @@ void sdlx_event_box_ctrl(bool enable)
     event_box_enable = enable;
 }
 
-extern bool portrait_flag; //xxx
 void sdlx_register_event(sdlx_loc_t *loc, int event_id)
 {
     sdlx_loc_t loc2;
@@ -98,8 +97,8 @@ void sdlx_register_event(sdlx_loc_t *loc, int event_id)
         sdlx_render_rect(loc2.x, loc2.y, loc2.w, loc2.h, 3, COLOR_WHITE);
     }
 
-    // rotate the loc2  xxx
-    if (!portrait_flag) { 
+    // rotate the loc2  xxx comment
+    if (orientation == LANDSCAPE) { 
         int x,y,w,h;
         x = sdlx_win_width - loc2.y - loc2.h;
         y = loc2.x;
@@ -136,7 +135,7 @@ void sdlx_register_control_events(int evid1, char *evstr1,
     evid[2] = evid3;
 
     // fill entire control events area with bg_color
-    if (portrait_flag) {
+    if (orientation == PORTRAIT) {
         y = sdlx_win_height - CONTROL_EVENTS_DISPLAY_HEIGHT;
         sdlx_render_fill_rect(0, y, sdlx_win_width, sdlx_win_height-y, bg_color);
     } else {
@@ -161,7 +160,7 @@ void sdlx_register_control_events(int evid1, char *evstr1,
             x = sdlx_win_width - (strlen(evstr[2]) * chw / 2);
         }
         y = sdlx_win_height - (CONTROL_EVENTS_DISPLAY_HEIGHT / 2);
-        if (portrait_flag) {
+        if (orientation == PORTRAIT) {
             loc = sdlx_render_printf_ex2(x, y, FONT_NORMAL, print_color, FLAG_XY_CTR, WRAP_NONE, "%s", evstr[i]);
         } else {
             loc = sdlx_render_printf_ex2(

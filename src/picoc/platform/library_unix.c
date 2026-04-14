@@ -44,9 +44,9 @@ void Sdlx_display_init(struct ParseState *Parser, struct Value *ReturnValue,
         struct Value **Param, int NumArgs)
 {
     sdlx_color_t color = (sdlx_color_t)Param[0]->Val->UnsignedInteger;
-    bool portrait      = Param[1]->Val->Integer;
+    int orientation    = Param[1]->Val->Integer;
 
-    sdlx_display_init(color, portrait);
+    sdlx_display_init(color, orientation);
 }
 
 void Sdlx_display_present(struct ParseState *Parser, struct Value *ReturnValue,
@@ -751,7 +751,7 @@ struct LibraryFunction SdlFunctions[] = {
     { Sdlx_quit,                     "void sdlx_quit(int subsys);" },
 
     // video - display init and present
-    { Sdlx_display_init,             "void sdlx_display_init(sdlx_color_t color, bool portrait);" },
+    { Sdlx_display_init,             "void sdlx_display_init(sdlx_color_t color, int orientation);" },
     { Sdlx_display_present,          "void sdlx_display_present(void);" },
 
     // video - colors
@@ -852,6 +852,9 @@ typedef struct { \n\
     int y; \n\
 } sdlx_point_t; \n\
 \n\
+/* video display orientation, for call to sdlx_display_init */ \n\
+#define PORTRAIT  0 \n\
+#define LANDSCAPE 1 \n\
 /* video colors */ \n\
 #define BYTES_PER_PIXEL    4 \n\
 #define COLOR_BLACK        0xff000000   /* abgr */ \n\

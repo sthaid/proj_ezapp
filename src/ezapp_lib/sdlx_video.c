@@ -55,14 +55,12 @@ int sdlx_char_height_dflt;
 //
 
 // used by other sdl*.c files
-SDL_Window            * window;
-double                  scale_render;
-double                  scale_events;
-double                  scale_render_save;
-
-static SDL_Renderer   * renderer;
-
-static font_t           font[MAX_FONT_PTSIZE];
+SDL_Window          *window;
+static SDL_Renderer *renderer;
+static font_t        font[MAX_FONT_PTSIZE];
+double               scale_events;  // xxx need 2 variables
+sdlx_texture_t      *texture;  // xxx name
+int                  orientation = PORTRAIT;
 
 //
 // prototypes
@@ -131,23 +129,15 @@ int sdlx_video_init(void)
     INFO("real win_width x height = %d %d  aspect = %f\n", real_win_width, real_win_height, aspect_ratio);
 
     // xxx comment
+    INFO("XXXXXXXXXXXXXXXXXXXX\n");
     sdlx_win_width  = 1000;
     sdlx_win_height = rint(sdlx_win_width * aspect_ratio);
-#ifndef USE_SET_RENDER_LOGICAL_PRESENTATION
-    scale_render = (double)real_win_width / sdlx_win_width;
-    scale_render_save = scale_render;
+    INFO("logical sdlx_win_width x height = %d %d\n",
+         sdlx_win_width, sdlx_win_height);
+
     scale_events = (double)real_win_width / sdlx_win_width;
-#else
-    // xxx remove scaling
-    INFO("XXXXXXXXXXXXXXXXXXXX USE_SET_RENDER_LOGICAL_PRESENTATION\n");
-    scale_render = 1;
-    scale_render_save = scale_render;
-    scale_events = (double)real_win_width / sdlx_win_width;
-    //SDL_SetRenderLogicalPresentation(renderer, sdlx_win_width, sdlx_win_height, 
-                                      //SDL_LOGICAL_PRESENTATION_STRETCH);
-#endif
-    INFO("logical sdlx_win_width x height = %d %d  scale = %f %f\n", 
-         sdlx_win_width, sdlx_win_height, scale_render, scale_events);
+    INFO("scale_events = %f\n", scale_events);
+
     int w, h;
     SDL_GetCurrentRenderOutputSize(renderer, &w, &h);
     INFO("GetCurrentRenderOutputSize = %d %d\n", w, h);
@@ -171,7 +161,7 @@ int sdlx_video_init(void)
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 
     // this is needed so that the first actual display present works
-    sdlx_display_init(COLOR_BLACK, true);
+    sdlx_display_init(COLOR_BLACK, PORTRAIT);
     sdlx_display_present();
     usleep(50000);  // xxx comment
     sdlx_event_t event;
@@ -254,71 +244,48 @@ static bool event_watcher(void* userdata, SDL_Event* event)
 
 // ----------------- DISPLAY INIT / PRESENT ---------------
 //xxx cleanup needed here
-sdlx_texture_t *landscape;
-int landscape_w;
-int landscape_h;
 
-sdlx_texture_t *portrait;
-int portrait_w;
-int portrait_h;
-
-bool portrait_flag;
-
-void sdlx_display_init(sdlx_color_t color, bool portrait_orientation)
+void sdlx_display_init(sdlx_color_t color, int orientation_arg)
 {
-    portrait_flag = portrait_orientation;
+    int w, h;
+    static int texture_orientation = -1;
 
     sdlx_reset_events();
 
-#if 0
-    // xxx orig
-    set_render_draw_color(color);
-    SDL_RenderClear(renderer);
-#endif
+    orientation = orientation_arg;
 
-    // xxx create and destroy texture
-    if (portrait_flag) {
-        if (portrait == NULL) {
-            portrait_w = sdlx_win_width;
-            portrait_h = sdlx_win_height;
-            portrait = sdlx_create_texture(portrait_w, portrait_h);
-        }
+    if (!texture || (texture_orientation != orientation)) {
+        sdlx_destroy_texture(texture);
+        texture = NULL;
 
-        if (portrait) {
-            sdlx_set_render_target(portrait);
-            sdlx_clear_texture(portrait, COLOR_PURPLE);
-        }
-    } else {
-        if (landscape == NULL) {
-            landscape_w = sdlx_win_height;
-            landscape_h = sdlx_win_width;
-            landscape = sdlx_create_texture(landscape_w, landscape_h);
-            printf("XXXXXXXXXXXXX LAND W h %d %d\n", landscape_w, landscape_h);
+        if (orientation == PORTRAIT) {
+            w = sdlx_win_width;
+            h = sdlx_win_height;
+        } else {
+            w = sdlx_win_height;
+            h = sdlx_win_width;
         }
 
-        if (landscape) {
-            sdlx_set_render_target(landscape);
-            sdlx_clear_texture(landscape, COLOR_PURPLE);
-        }
+        texture = sdlx_create_texture(w, h);
+        texture_orientation = orientation;
     }
-}
 
-//void commit_register_control_events(void);
+    SDL_SetRenderTarget(renderer, (SDL_Texture*)texture);
+    sdlx_clear_texture(texture, COLOR_PURPLE);  // xxx temp
+}
 
 void sdlx_display_present(void)
 {
-    sdlx_set_render_target(NULL);
+    SDL_SetRenderTarget(renderer, NULL);
 
-    if (landscape) {
-        sdlx_render_texture_ex3(landscape,
-                                0, 0, 975, 450,
-                                90,           // clockwise rotation angle
+    if (orientation == PORTRAIT) {
+        sdlx_render_texture_ex1(texture, 0, 0, 450, 975);  // xxx numbers
+    } else {
+        sdlx_render_texture_ex3(texture,
+                                0, 0, 975, 450,  // xxx numbers
+                                90,
                                 450/2, 450/2);
-    } else if (portrait) {
-        sdlx_render_texture_ex1(portrait, 0, 0, 450, 975);
     }
-
-    //commit_register_control_events();
 
     SDL_RenderPresent(renderer);
 }
@@ -444,7 +411,7 @@ static void font_create(int ptsize)
 
     // initialize the font structure
     f->font = fnt;
-    f->chh  = nearbyint(ptsize / scale_render);
+    f->chh  = nearbyint(ptsize);
     f->chw  = nearbyint(f->chh * 0.6);
 }
 
@@ -457,8 +424,8 @@ void sdlx_print_set_default(int fontid, sdlx_color_t color)
     print_dflt.color  = color;
 
     // set global variables containing the char width,height of the default font
-    ptsize = ((sdlx_win_width / fontid) * scale_render) / 0.6;
-    sdlx_char_height_dflt = nearbyint(ptsize / scale_render);
+    ptsize = (sdlx_win_width / fontid) / 0.6;
+    sdlx_char_height_dflt = nearbyint(ptsize);
     sdlx_char_width_dflt  = nearbyint(sdlx_char_height_dflt * 0.6);
 }
 
@@ -467,8 +434,8 @@ int sdlx_char_width(int fontid)
     int ptsize, chh, chw;
 
     // return char width, based on fontid
-    ptsize = ((sdlx_win_width / fontid) * scale_render) / 0.6;
-    chh = nearbyint(ptsize / scale_render);
+    ptsize = (sdlx_win_width / fontid) / 0.6;
+    chh = nearbyint(ptsize);
     chw  = nearbyint(chh * 0.6);
     return chw;
 }
@@ -478,8 +445,8 @@ int sdlx_char_height(int fontid)
     int ptsize, chh;
 
     // return char height, based on fontid
-    ptsize = ((sdlx_win_width / fontid) * scale_render) / 0.6;
-    chh = nearbyint(ptsize / scale_render);
+    ptsize = (sdlx_win_width / fontid) / 0.6;
+    chh = nearbyint(ptsize);
     return chh;
 }
 
@@ -577,7 +544,7 @@ static sdlx_loc_t *render_text(int x, int y, int fontid, sdlx_color_t color, int
     static int        num_allocated = 0;
 
     // if font has not been created then do so
-    ptsize = ((sdlx_win_width / fontid) * scale_render) / 0.6;
+    ptsize = (sdlx_win_width / fontid) / 0.6;
     if (font[ptsize].font == NULL) {
         font_create(ptsize);
         if (font[ptsize].font == NULL) {
@@ -608,8 +575,8 @@ static sdlx_loc_t *render_text(int x, int y, int fontid, sdlx_color_t color, int
 
     // matching entry found, render it, and return
     if (found) {
-        pos.x = x*scale_render;
-        pos.y = y*scale_render;
+        pos.x = x;
+        pos.y = y;
         pos.w = entry->surface_w;
         pos.h = entry->surface_h;
         if (flags & FLAG_X_CTR) pos.x -= pos.w / 2;
@@ -643,7 +610,7 @@ static sdlx_loc_t *render_text(int x, int y, int fontid, sdlx_color_t color, int
         surface = TTF_RenderText_Solid_Wrapped(
                         font[ptsize].font, str, 0,
                         sdlx_color(color),
-                        wrap * scale_render);
+                        wrap);
     } else {
         surface = TTF_RenderText_Solid(
                         font[ptsize].font, str, 0,
@@ -672,8 +639,8 @@ static sdlx_loc_t *render_text(int x, int y, int fontid, sdlx_color_t color, int
     num_allocated++;
 
     // render the texture
-    pos.x = x*scale_render;
-    pos.y = y*scale_render;
+    pos.x = x;
+    pos.y = y;
     pos.w = surface->w;
     pos.h = surface->h;
     if (flags & FLAG_X_CTR) pos.x -= pos.w / 2;
@@ -686,10 +653,10 @@ static sdlx_loc_t *render_text(int x, int y, int fontid, sdlx_color_t color, int
 
     // return the display location where the text was rendered;
 return_loc:
-    loc.x = pos.x / scale_render;
-    loc.y = pos.y / scale_render;
-    loc.w = pos.w / scale_render;
-    loc.h = pos.h / scale_render;
+    loc.x = pos.x;
+    loc.y = pos.y;
+    loc.w = pos.w;
+    loc.h = pos.h;
     return &loc;
 
     // error return path
@@ -800,10 +767,10 @@ void sdlx_render_rect(int x, int y, int w, int h, int line_width, sdlx_color_t c
     SDL_FRect rect;
     int i;
 
-    rect.x = x * scale_render;
-    rect.y = y * scale_render;
-    rect.w = w * scale_render;
-    rect.h = h * scale_render;
+    rect.x = x;
+    rect.y = y;
+    rect.w = w;
+    rect.h = h;
 
     set_render_draw_color(color);
 
@@ -823,10 +790,10 @@ void sdlx_render_fill_rect(int x, int y, int w, int h, sdlx_color_t color)
 {
     SDL_FRect rect;
 
-    rect.x = x * scale_render;
-    rect.y = y * scale_render;
-    rect.w = w * scale_render;
-    rect.h = h * scale_render;
+    rect.x = x;
+    rect.y = y;
+    rect.w = w;
+    rect.h = h;
 
     set_render_draw_color(color);
     SDL_RenderFillRect(renderer, &rect);
@@ -854,8 +821,8 @@ void sdlx_render_lines(sdlx_point_t *points, int count, sdlx_color_t color)
     }
 
     for (int i = 0; i < count; i++) {
-        scaled_points[i].x = points[i].x * scale_render;
-        scaled_points[i].y = points[i].y * scale_render;
+        scaled_points[i].x = points[i].x;
+        scaled_points[i].y = points[i].y;
     }
 
     set_render_draw_color(color);
@@ -877,9 +844,9 @@ void sdlx_render_circle(int x_ctr, int y_ctr, int radius, int line_width, sdlx_c
     static bool first_call = true;
 
     // apply scale factor
-    x_center = nearbyint(x_ctr * scale_render);
-    y_center = nearbyint(y_ctr * scale_render);
-    radius   = nearbyint(radius * scale_render);
+    x_center = nearbyint(x_ctr);
+    y_center = nearbyint(y_ctr);
+    radius   = nearbyint(radius);
 
     // on first call make table of sin and cos indexed by degrees
     if (first_call) {
@@ -919,9 +886,9 @@ void sdlx_render_fill_circle(int x_ctr, int y_ctr, int radius, sdlx_color_t colo
 {
     int x, y, error;
 
-    x_ctr  = nearbyint(x_ctr * scale_render);
-    y_ctr  = nearbyint(y_ctr * scale_render);
-    radius = nearbyint(radius * scale_render);
+    x_ctr  = nearbyint(x_ctr);
+    y_ctr  = nearbyint(y_ctr);
+    radius = nearbyint(radius);
 
     x     = radius;
     y     = 0;
@@ -1107,8 +1074,8 @@ void sdlx_render_points(sdlx_point_t *points, int count, sdlx_color_t color, int
 
     for (i = 0; i < count; i++) {
         for (j = 0; j < pe->max; j++) {
-            x = nearbyint((points[i].x + peo[j].x) * scale_render);
-            y = nearbyint((points[i].y + peo[j].y) * scale_render);
+            x = nearbyint(points[i].x + peo[j].x);
+            y = nearbyint(points[i].y + peo[j].y);
             sdlx_points[sdlx_points_count].x = x;
             sdlx_points[sdlx_points_count].y = y;
             sdlx_points_count++;
@@ -1278,10 +1245,10 @@ void sdlx_render_texture(sdlx_texture_t *texture, int x, int y)
 
     sdlx_query_texture(texture, &w, &h);
 
-    dest.x = x * scale_render;
-    dest.y = y * scale_render;
-    dest.w = w * scale_render;
-    dest.h = h * scale_render;
+    dest.x = x;
+    dest.y = y;
+    dest.w = w;
+    dest.h = h;
 
     SDL_RenderTexture(renderer, (SDL_Texture*)texture, NULL, &dest);
 }
@@ -1294,10 +1261,10 @@ void sdlx_render_texture_ex1(sdlx_texture_t *texture, int x, int y, int w, int h
         return;
     }
 
-    dest.x = x * scale_render;
-    dest.y = y * scale_render;
-    dest.w = w * scale_render;
-    dest.h = h * scale_render;
+    dest.x = x;
+    dest.y = y;
+    dest.w = w;
+    dest.h = h;
 
     SDL_RenderTexture(renderer, (SDL_Texture*)texture, NULL, &dest);
 }
@@ -1310,10 +1277,10 @@ void sdlx_render_texture_ex2(sdlx_texture_t *texture, int x, int y, int w, int h
         return;
     }
 
-    dest.x = x * scale_render;
-    dest.y = y * scale_render;
-    dest.w = w * scale_render;
-    dest.h = h * scale_render;
+    dest.x = x;
+    dest.y = y;
+    dest.w = w;
+    dest.h = h;
 
     SDL_RenderTextureRotated(renderer,
                              (SDL_Texture*)texture, 
@@ -1333,13 +1300,13 @@ void sdlx_render_texture_ex3(sdlx_texture_t *texture, int x, int y, int w, int h
         return;
     }
 
-    dest.x = x * scale_render;
-    dest.y = y * scale_render;
-    dest.w = w * scale_render;
-    dest.h = h * scale_render;
+    dest.x = x;
+    dest.y = y;
+    dest.w = w;
+    dest.h = h;
 
-    ctr.x = xctr * scale_render;
-    ctr.y = yctr * scale_render;
+    ctr.x = xctr;
+    ctr.y = yctr;
 
     SDL_RenderTextureRotated(renderer,
                              (SDL_Texture*)texture, 
@@ -1356,12 +1323,15 @@ void sdlx_set_render_target(sdlx_texture_t *t)
 {
     bool succ;
 
-    succ = SDL_SetRenderTarget(renderer, (SDL_Texture*)t);
+    if (t == NULL) {
+        succ = SDL_SetRenderTarget(renderer, (SDL_Texture*)texture);
+    } else {
+        succ = SDL_SetRenderTarget(renderer, (SDL_Texture*)t);
+    }
+
     if (!succ) {
         ERROR("SDL_SetRenderTarget failed, %s\n", SDL_GetError());
     }
-
-    scale_render = (t ? 1 : scale_render_save);
 }
 
 // -----------------  MISC  --------------------------------------------- 

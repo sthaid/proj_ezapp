@@ -28,7 +28,10 @@ extern int sdlx_win_height;
 // display init and present
 // - - - - - - - - - - - - - 
 
-void sdlx_display_init(sdlx_color_t color, bool portrait);
+#define PORTRAIT  0
+#define LANDSCAPE 1
+
+void sdlx_display_init(sdlx_color_t color, int orientation);
 void sdlx_display_present(void);
 
 // - - - - - 
@@ -321,9 +324,12 @@ char *sdlx_get_input_str(char *prompt1, char *prompt2, bool numeric_keybd, sdlx_
 // NOT AVAILABLE IN PICOC
 // --------------------
 
+// xxx put these in private.h  ???
+
 // sdlx_video.c
 extern double scale_render;
 extern double scale_events;
+extern int    orientation;
 
 int sdlx_video_init(void);
 void sdlx_video_quit(void);
