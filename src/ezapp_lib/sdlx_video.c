@@ -54,13 +54,16 @@ int sdlx_char_height_dflt;
 // variables
 //
 
-// used by other sdl*.c files
+// xxx move some of these to sdlx.h private section
 SDL_Window          *window;
 static SDL_Renderer *renderer;
 static font_t        font[MAX_FONT_PTSIZE];
-double               scale_events;  // xxx need 2 variables
+double               scale_events_x;
+double               scale_events_y;
 sdlx_texture_t      *texture;  // xxx name
-int                  orientation = PORTRAIT;
+int                  orientation;
+int                  real_win_width, real_win_height;
+int                  logical_win_width, logical_win_height;
 
 //
 // prototypes
@@ -87,9 +90,9 @@ static bool event_watcher(void* userdata, SDL_Event* event);
 
 int sdlx_video_init(void)
 {
-    int    real_win_width, real_win_height;
     int    num, i;
-    double aspect_ratio;
+    double real_aspect_ratio;
+    double logical_aspect_ratio;
 
     INFO("initializing\n");
 
@@ -125,18 +128,25 @@ int sdlx_video_init(void)
 
     // get real windows size and aspect ratio
     SDL_GetWindowSize(window, &real_win_width, &real_win_height);
-    aspect_ratio = (double)real_win_height / real_win_width;
-    INFO("real win_width x height = %d %d  aspect = %f\n", real_win_width, real_win_height, aspect_ratio);
+    real_aspect_ratio = (double)real_win_height / real_win_width;
+    INFO("real    win_width x height = %d %d  aspect = %f\n", real_win_width, real_win_height, real_aspect_ratio);
 
-    // xxx comment
-    INFO("XXXXXXXXXXXXXXXXXXXX\n");
-    sdlx_win_width  = 1000;
-    sdlx_win_height = rint(sdlx_win_width * aspect_ratio);
-    INFO("logical sdlx_win_width x height = %d %d\n",
-         sdlx_win_width, sdlx_win_height);
+    // xxx
+    logical_win_width  = 1000;
+    //logical_win_height = 2166;  //xxx use 2200   // xxx subtract control area ?
+    logical_win_height = 2500;
+    logical_aspect_ratio = (double)logical_win_height / logical_win_width;
+    INFO("logical win_width x height = %d %d  aspect = %f\n", logical_win_width, logical_win_height, logical_aspect_ratio);
 
-    scale_events = (double)real_win_width / sdlx_win_width;
-    INFO("scale_events = %f\n", scale_events);
+    // xxx
+    orientation = PORTRAIT;
+    sdlx_win_width = logical_win_width;
+    sdlx_win_height = logical_win_height;
+
+    // xxx
+    scale_events_x = (double)real_win_width / sdlx_win_width;
+    scale_events_y = (double)real_win_height / sdlx_win_height;
+    INFO("scale_events x,y = %f %f\n", scale_events_x, scale_events_y);
 
     int w, h;
     SDL_GetCurrentRenderOutputSize(renderer, &w, &h);
@@ -243,11 +253,9 @@ static bool event_watcher(void* userdata, SDL_Event* event)
 #endif
 
 // ----------------- DISPLAY INIT / PRESENT ---------------
-//xxx cleanup needed here
 
 void sdlx_display_init(sdlx_color_t color, int orientation_arg)
 {
-    int w, h;
     static int texture_orientation = -1;
 
     sdlx_reset_events();
@@ -259,15 +267,16 @@ void sdlx_display_init(sdlx_color_t color, int orientation_arg)
         texture = NULL;
 
         if (orientation == PORTRAIT) {
-            w = sdlx_win_width;
-            h = sdlx_win_height;
+            texture = sdlx_create_texture(logical_win_width, logical_win_height);
+            texture_orientation = PORTRAIT;
+            sdlx_win_width  = logical_win_width;
+            sdlx_win_height = logical_win_height;
         } else {
-            w = sdlx_win_height;
-            h = sdlx_win_width;
+            texture = sdlx_create_texture(logical_win_height, logical_win_width);
+            texture_orientation = LANDSCAPE;
+            sdlx_win_width  = logical_win_height;
+            sdlx_win_height = logical_win_width;
         }
-
-        texture = sdlx_create_texture(w, h);
-        texture_orientation = orientation;
     }
 
     SDL_SetRenderTarget(renderer, (SDL_Texture*)texture);
@@ -279,12 +288,12 @@ void sdlx_display_present(void)
     SDL_SetRenderTarget(renderer, NULL);
 
     if (orientation == PORTRAIT) {
-        sdlx_render_texture_ex1(texture, 0, 0, 450, 975);  // xxx numbers
+        sdlx_render_texture_ex1(texture, 0, 0, real_win_width, real_win_height);
     } else {
         sdlx_render_texture_ex3(texture,
-                                0, 0, 975, 450,  // xxx numbers
+                                0, 0, real_win_height, real_win_width,
                                 90,
-                                450/2, 450/2);
+                                real_win_width/2, real_win_width/2);
     }
 
     SDL_RenderPresent(renderer);
@@ -424,7 +433,7 @@ void sdlx_print_set_default(int fontid, sdlx_color_t color)
     print_dflt.color  = color;
 
     // set global variables containing the char width,height of the default font
-    ptsize = (sdlx_win_width / fontid) / 0.6;
+    ptsize = (logical_win_width / fontid) / 0.6;
     sdlx_char_height_dflt = nearbyint(ptsize);
     sdlx_char_width_dflt  = nearbyint(sdlx_char_height_dflt * 0.6);
 }
@@ -434,7 +443,7 @@ int sdlx_char_width(int fontid)
     int ptsize, chh, chw;
 
     // return char width, based on fontid
-    ptsize = (sdlx_win_width / fontid) / 0.6;
+    ptsize = (logical_win_width / fontid) / 0.6;
     chh = nearbyint(ptsize);
     chw  = nearbyint(chh * 0.6);
     return chw;
@@ -445,7 +454,7 @@ int sdlx_char_height(int fontid)
     int ptsize, chh;
 
     // return char height, based on fontid
-    ptsize = (sdlx_win_width / fontid) / 0.6;
+    ptsize = (logical_win_width / fontid) / 0.6;
     chh = nearbyint(ptsize);
     return chh;
 }
@@ -544,7 +553,7 @@ static sdlx_loc_t *render_text(int x, int y, int fontid, sdlx_color_t color, int
     static int        num_allocated = 0;
 
     // if font has not been created then do so
-    ptsize = (sdlx_win_width / fontid) / 0.6;
+    ptsize = (logical_win_width / fontid) / 0.6;
     if (font[ptsize].font == NULL) {
         font_create(ptsize);
         if (font[ptsize].font == NULL) {

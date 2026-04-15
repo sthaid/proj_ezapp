@@ -327,8 +327,10 @@ char *sdlx_get_input_str(char *prompt1, char *prompt2, bool numeric_keybd, sdlx_
 // xxx put these in private.h  ???
 
 // sdlx_video.c
+// xxx put event_box_enable flag here
 extern double scale_render;
-extern double scale_events;
+extern double scale_events_x;
+extern double scale_events_y;
 extern int    orientation;
 
 int sdlx_video_init(void);

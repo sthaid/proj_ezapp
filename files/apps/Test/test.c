@@ -67,6 +67,7 @@ static void page_11_draw(void);
 static void page_11_process_event(sdlx_event_t *event);
 
 static void page_12_draw(void);
+static void page_12_process_event(sdlx_event_t *event);
 
 // -----------------  MAIN  ------------------------------------------
 
@@ -235,6 +236,7 @@ static void page_hndlr()
         case 3: page_3_process_event(&event); break;
         case 7: page_7_process_event(&event); break;
         case 11: page_11_process_event(&event); break;
+        case 12: page_12_process_event(&event); break;
         }
     }
 
@@ -252,9 +254,8 @@ static void page_hndlr()
 
 // -----------------  PAGE 0: CLOCK  --------------------------
 
-#define EVID_TOGGLE_FOREGROUND  10
-#define EVID_FLASH_OFF          11
-#define EVID_FLASH_ON           12
+int page_0_x, page_0_y;
+double page_0_xrel, page_0_yrel;
 
 static void page_0_draw(void)
 {
@@ -288,23 +289,24 @@ static void page_0_draw(void)
 
     // print ipaddr
     sdlx_render_printf_ex2(sdlx_win_width/2, ROW2Y(11), FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE, "%s", util_get_ipaddr());
+
+    // test mouse motion
+    sdlx_render_printf_ex2(sdlx_win_width/2, ROW2Y(13), FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE, 
+           "xrel = %0.3f", page_0_xrel);
+    sdlx_render_printf_ex2(sdlx_win_width/2, ROW2Y(14), FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE, 
+           "yrel = %0.3f", page_0_yrel);
+    sdlx_render_point(page_0_x, page_0_y, COLOR_WHITE, 9);
+    sdlx_register_event(NULL, EVID_MOTION);
 }
 
 static void page_0_process_event(sdlx_event_t *ev)
 {
     switch (ev->event_id) {
-    case EVID_TOGGLE_FOREGROUND:
-        if (util_is_foreground_enabled()) {
-            util_stop_foreground();
-        } else {
-            util_start_foreground();
-        }
-        break;
-    case EVID_FLASH_OFF:
-        util_turn_flashlight_off();
-        break;
-    case EVID_FLASH_ON:
-        util_turn_flashlight_on();
+    case EVID_MOTION:
+        page_0_x = nearbyint(ev->u.motion.x);
+        page_0_y = nearbyint(ev->u.motion.y);
+        page_0_xrel = ev->u.motion.xrel;
+        page_0_yrel = ev->u.motion.yrel;
         break;
     }
 }
@@ -530,7 +532,7 @@ static void page_5_draw(void)
     texture1 = sdlx_create_texture(1000, 1000);
     // - query texture1, and validate
     sdlx_query_texture(texture1, &w, &h);
-    xxx
+    // xxx validate
     // - set render target to texture1
     sdlx_set_render_target(texture1);
     // - draw to texture1
@@ -1232,13 +1234,35 @@ static void page_11_process_event(sdlx_event_t *event)
 
 // -----------------  PAGE 12: LANDSCAPE ----------------------
 
+int page_12_x, page_12_y;
+double page_12_xrel, page_12_yrel;
+
 // xxx better test
 // xxx use sdlx_win_width/height
 // xxx test SetRenderTarget when in landscape
 static void page_12_draw(void)
 {
-    sdlx_render_printf_ex2(500, 500,     
+    sdlx_render_printf_ex2(sdlx_win_width/2, ROW2Y(2),
                            FONT_NORMAL, COLOR_WHITE,
-                           FLAG_XY_CTR, WRAP_NONE, 
-                           "HELLO FROM LANDSCAPE");
+                           FLAG_X_CTR, WRAP_NONE, 
+                           "WxH = %d %d", sdlx_win_width, sdlx_win_height);
+
+    sdlx_render_printf_ex2(sdlx_win_width/2, ROW2Y(4), FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE, 
+           "xrel = %0.3f", page_12_xrel);
+    sdlx_render_printf_ex2(sdlx_win_width/2, ROW2Y(5), FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE, 
+           "yrel = %0.3f", page_12_yrel);
+    sdlx_render_point(page_12_x, page_12_y, COLOR_WHITE, 9);
+    sdlx_register_event(NULL, EVID_MOTION);
+}
+
+static void page_12_process_event(sdlx_event_t *ev)
+{
+    switch (ev->event_id) {
+    case EVID_MOTION:
+        page_12_x = nearbyint(ev->u.motion.x);
+        page_12_y = nearbyint(ev->u.motion.y);
+        page_12_xrel = ev->u.motion.xrel;
+        page_12_yrel = ev->u.motion.yrel;
+        break;
+    }
 }

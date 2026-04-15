@@ -37,7 +37,9 @@ static bool         evid_keybd_registered;
 
 static int          event_quit_rcvd;
 
-static bool         event_box_enable=1; //xxx
+static bool         event_box_enable=1; //xxx temp enable    move to sdlx.h
+
+extern int          logical_win_width, logical_win_height;  // xxx move to sdlx.h
 
 //
 // prototypes
@@ -100,7 +102,7 @@ void sdlx_register_event(sdlx_loc_t *loc, int event_id)
     // rotate the loc2  xxx comment
     if (orientation == LANDSCAPE) { 
         int x,y,w,h;
-        x = sdlx_win_width - loc2.y - loc2.h;
+        x = logical_win_width - loc2.y - loc2.h;
         y = loc2.x;
         w = loc2.h;
         h = loc2.w;
@@ -139,9 +141,9 @@ void sdlx_register_control_events(int evid1, char *evstr1,
         y = sdlx_win_height - CONTROL_EVENTS_DISPLAY_HEIGHT;
         sdlx_render_fill_rect(0, y, sdlx_win_width, sdlx_win_height-y, bg_color);
     } else {
-        sdlx_render_fill_rect(2166 - CONTROL_EVENTS_DISPLAY_HEIGHT, 0,  // x,y
-                              CONTROL_EVENTS_DISPLAY_HEIGHT, 1000,      // w,h
-                              bg_color);
+        sdlx_render_fill_rect(sdlx_win_width - CONTROL_EVENTS_DISPLAY_HEIGHT, 0,  // x,y
+                              CONTROL_EVENTS_DISPLAY_HEIGHT, sdlx_win_height,      // w,h  xxx name
+                              COLOR_ORANGE);
     }
 
     // display the 3 control events at the display bottom
@@ -152,21 +154,30 @@ void sdlx_register_control_events(int evid1, char *evstr1,
             continue;
         }
 
-        x = (sdlx_win_width/3/2) + i * (sdlx_win_width/3);
-        if (i == 0 && x < strlen(evstr[0]) * chw / 2) {
-            x = strlen(evstr[0]) * chw / 2;
-        }
-        if (i == 2 && x > sdlx_win_width - (strlen(evstr[2]) * chw / 2)) {
-            x = sdlx_win_width - (strlen(evstr[2]) * chw / 2);
-        }
-        y = sdlx_win_height - (CONTROL_EVENTS_DISPLAY_HEIGHT / 2);
         if (orientation == PORTRAIT) {
+            x = (sdlx_win_width/3/2) + i * (sdlx_win_width/3);
+            if (i == 0 && x < strlen(evstr[0]) * chw / 2) {
+                x = strlen(evstr[0]) * chw / 2;
+            }
+            if (i == 2 && x > sdlx_win_width - (strlen(evstr[2]) * chw / 2)) {
+                x = sdlx_win_width - (strlen(evstr[2]) * chw / 2);
+            }
+            y = sdlx_win_height - (CONTROL_EVENTS_DISPLAY_HEIGHT / 2);
             loc = sdlx_render_printf_ex2(x, y, FONT_NORMAL, print_color, FLAG_XY_CTR, WRAP_NONE, "%s", evstr[i]);
         } else {
+            y = (sdlx_win_height/3/2) + i * (sdlx_win_height/3);
+            if (i == 0 && y < strlen(evstr[0]) * chw / 2) {
+                y = strlen(evstr[0]) * chw / 2;
+            }
+            if (i == 2 && y > sdlx_win_height - (strlen(evstr[2]) * chw / 2)) {
+                y = sdlx_win_height - (strlen(evstr[2]) * chw / 2);
+            }
+            x = sdlx_win_width - (CONTROL_EVENTS_DISPLAY_HEIGHT / 2);
             loc = sdlx_render_printf_ex2(
-                    y, 1000 - x,  //xxx 1000
-                    FONT_NORMAL, print_color, FLAG_XY_CTR|FLAG_ROT_CTR_90|FLAG_FLIP, WRAP_NONE, "%s", evstr[i]);
+                        x, sdlx_win_height - y,
+                        FONT_NORMAL, print_color, FLAG_XY_CTR|FLAG_ROT_CTR_90|FLAG_FLIP, WRAP_NONE, "%s", evstr[i]);
         }
+
         sdlx_register_event(loc, evid[i]);
     }
 }
@@ -249,8 +260,8 @@ static void process_sdlx_event(SDL_Event *ev, sdlx_event_t *event)
                ev->button.x,
                ev->button.y);
 #endif
-        x = ev->button.x / scale_events;
-        y = ev->button.y / scale_events;
+        x = ev->button.x / scale_events_x;
+        y = ev->button.y / scale_events_y;
 
         if (ev->button.down) {
             last_pressed_x = x;
@@ -282,10 +293,17 @@ static void process_sdlx_event(SDL_Event *ev, sdlx_event_t *event)
             //    ev->motion.yrel);
 
             event->event_id = EVID_MOTION;
-            event->u.motion.x = ev->motion.x / scale_events;
-            event->u.motion.y = ev->motion.y / scale_events;
-            event->u.motion.xrel = ev->motion.xrel / scale_events;
-            event->u.motion.yrel = ev->motion.yrel / scale_events;
+            if (orientation == PORTRAIT) {
+                event->u.motion.x = ev->motion.x / scale_events_x;
+                event->u.motion.y = ev->motion.y / scale_events_y;
+                event->u.motion.xrel = ev->motion.xrel / scale_events_x;
+                event->u.motion.yrel = ev->motion.yrel / scale_events_y;
+            } else {
+                event->u.motion.y = sdlx_win_height - ev->motion.x / scale_events_x;
+                event->u.motion.x = ev->motion.y / scale_events_y;
+                event->u.motion.yrel = -ev->motion.xrel / scale_events_x;
+                event->u.motion.xrel = ev->motion.yrel / scale_events_y;
+            }
         }
         break; }
     case SDL_EVENT_SENSOR_UPDATE: {
