@@ -79,7 +79,7 @@ int main(int argc, char **argv)
     // runtime loop
     while (!done) {
         // init the backbuffer
-        sdlx_display_init(COLOR_BLACK);
+        sdlx_display_init(COLOR_BLACK, PORTRAIT);
 
         // if log has not been loaded then
         //   display message

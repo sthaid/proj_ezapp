@@ -27,7 +27,7 @@ int main(int argc, char **argv)
     // runtime loop
     while (!done) {
         // init the backbuffer
-        sdlx_display_init(COLOR_BLACK);
+        sdlx_display_init(COLOR_BLACK, PORTRAIT);
 
         // register control event to end program
         sdlx_register_control_events(0, NULL,

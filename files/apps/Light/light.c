@@ -35,7 +35,7 @@ int main(int argc, char **argv)
     // runtime loop
     while (!done) {
         // init the backbuffer
-        sdlx_display_init(color);
+        sdlx_display_init(color, PORTRAIT);
 
         // register control events to
         // - set color either to white or red, or

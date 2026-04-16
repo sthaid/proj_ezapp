@@ -74,7 +74,7 @@ int main(int argc, char **argv)
     // loop until end program
     while (true) {
         // init display to black, and init print size/color
-        sdlx_display_init(COLOR_BLACK);
+        sdlx_display_init(COLOR_BLACK, PORTRAIT);
         sdlx_print_set_default(FONT_NORMAL, COLOR_WHITE);
 
         // update the display and register events

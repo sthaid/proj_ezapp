@@ -80,7 +80,7 @@ int main(int argc, char **argv)
     // runtime loop
     while (!end_program) {
         // init the backbuffer
-        sdlx_display_init(COLOR_BLACK);
+        sdlx_display_init(COLOR_BLACK, PORTRAIT);
 
         // get list of audio files
         get_list_of_files();

@@ -161,7 +161,7 @@ void no_accelerometer(void)
 {
     sdlx_event_t event;
 
-    sdlx_display_init(COLOR_BLACK);
+    sdlx_display_init(COLOR_BLACK, PORTRAIT);
     sdlx_register_control_events(0, NULL,
                                  0, NULL,
                                  EVID_QUIT, "X",
@@ -199,7 +199,7 @@ int cal_query(void)
     sdlx_loc_t *loc;
     sdlx_event_t event;
 
-    sdlx_display_init(COLOR_BLACK);
+    sdlx_display_init(COLOR_BLACK, PORTRAIT);
 
     loc = sdlx_render_printf_ex1(0, ROW2Y(3), FONT_NORMAL, COLOR_LIGHT_BLUE, "%s", "Save");
     sdlx_register_event(loc, EVID_CAL_SAVE);
@@ -249,7 +249,7 @@ void display_tilt_horizontal(double ax, double ay, double az, double roll_raw, d
     }
 
     // init the backbuffer
-    sdlx_display_init(COLOR_BLACK);
+    sdlx_display_init(COLOR_BLACK, PORTRAIT);
 
     // compenstate raw roll/pitch values using calibration values
     if (cal_horiz_roll != INVALID_NUMBER && cal_horiz_pitch != INVALID_NUMBER) {
@@ -409,7 +409,7 @@ void display_tilt_vertical(double ax, double ay, double az, double roll, double 
     }
 
     // init the backbuffer
-    sdlx_display_init(COLOR_BLACK);
+    sdlx_display_init(COLOR_BLACK, PORTRAIT);
 
     // set render target to the rendering texture, and
     // clear the rendering texture

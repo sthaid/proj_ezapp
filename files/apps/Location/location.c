@@ -79,7 +79,7 @@ int main(int argc, char **argv)
     // runtime loop
     while (!done) {
         // init the backbuffer
-        sdlx_display_init(COLOR_BLACK);
+        sdlx_display_init(COLOR_BLACK, PORTRAIT);
 
         // get current location
         time_now = time(NULL);
@@ -208,7 +208,7 @@ void settings(void)
 
     while (!done) {
         // init the backbuffer
-        sdlx_display_init(COLOR_BLACK);
+        sdlx_display_init(COLOR_BLACK, PORTRAIT);
 
         // print in LIGHT_BLUE
         sdlx_print_set_default(FONT_NORMAL, COLOR_LIGHT_BLUE);

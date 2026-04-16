@@ -54,7 +54,7 @@ int main(int argc, char **argv)
     // runtime loop
     while (!quit) {
         // init the backbuffer, and init print font/color
-        sdlx_display_init(COLOR_BLACK);
+        sdlx_display_init(COLOR_BLACK, PORTRAIT);
 
         // read the magnetic heading sensor
 #ifdef ANDROID

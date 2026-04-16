@@ -136,6 +136,10 @@ void sdlx_register_control_events(int evid1, char *evstr1,
     evid[1] = evid2;
     evid[2] = evid3;
 
+    // xxx these args not needed
+    print_color = COLOR_WHITE;
+    bg_color = COLOR_TEAL;
+
     // fill entire control events area with bg_color
     if (orientation == PORTRAIT) {
         y = sdlx_win_height - CONTROL_EVENTS_DISPLAY_HEIGHT;
@@ -143,7 +147,7 @@ void sdlx_register_control_events(int evid1, char *evstr1,
     } else {
         sdlx_render_fill_rect(sdlx_win_width - CONTROL_EVENTS_DISPLAY_HEIGHT, 0,  // x,y
                               CONTROL_EVENTS_DISPLAY_HEIGHT, sdlx_win_height,      // w,h  xxx name
-                              COLOR_ORANGE);
+                              bg_color);
     }
 
     // display the 3 control events at the display bottom
@@ -405,7 +409,7 @@ char *sdlx_get_input_str(char *prompt1, char *prompt2, bool numeric_keybd, sdlx_
     //  xxx comment
     while (true) {
         // clear backbuffer to bg_color
-        sdlx_display_init(bg_color, true);  // xxx what about when in landscape mode?
+        sdlx_display_init(bg_color, PORTRAIT);
 
         // display prompt line(s)
         row = 0;

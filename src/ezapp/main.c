@@ -30,7 +30,7 @@
 
 #define LAST_PAGE ((max_apps - 1) / 18)
 
-#define BG_COLOR (!params.devel_mode ? COLOR_TEAL : COLOR_VIOLET)
+#define BG_COLOR COLOR_PURPLE
 
 #define EVID_PAGE_DECREMENT  900
 #define EVID_PAGE_INCREMENT  901
@@ -695,6 +695,15 @@ static void settings(void)
         // init display and font size/color
         sdlx_display_init(BG_COLOR, PORTRAIT);
 
+        // display title line, version, and ipaddr
+        sdlx_render_fill_rect(0, 0, sdlx_win_width, 4*sdlx_char_height_dflt, BG_COLOR);
+        sdlx_render_printf_ex2(sdlx_win_width/2, ROW2Y(0),
+                               FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE,
+                               "%s", "Settings");
+        sdlx_render_printf(0, ROW2Y(1), "Version = %s", VERSION);
+        sdlx_render_printf(0, ROW2Y(2), "%s", BUILD_DATE);
+        sdlx_render_printf(0, ROW2Y(3), "%s:%d", ipaddr, params.devel_port);
+
         // display Copyright
         sdlx_print_set_default(FONT_NORMAL, COLOR_LIGHT_BLUE);
         y2 = nearbyint(y - 2*sdlx_char_height_dflt);
@@ -797,15 +806,6 @@ static void settings(void)
         if (msg && (util_microsec_timer() - msg_time) < 3000000) {
             sdlx_render_printf(0, sdlx_win_height-300, "%s", msg);
         }
-
-        // display title line, version, and ipaddr
-        sdlx_render_fill_rect(0, 0, sdlx_win_width, 4*sdlx_char_height_dflt, BG_COLOR);
-        sdlx_render_printf_ex2(sdlx_win_width/2, ROW2Y(0),
-                               FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE,
-                               "%s", "Settings");
-        sdlx_render_printf(0, ROW2Y(1), "Version = %s", VERSION);
-        sdlx_render_printf(0, ROW2Y(2), "%s", BUILD_DATE);
-        sdlx_render_printf(0, ROW2Y(3), "%s:%d", ipaddr, params.devel_port);
 
         // register motion and control events
         sdlx_register_event(NULL, EVID_MOTION);
@@ -1027,6 +1027,7 @@ static int devel_mode_server_thread(void *cx)
 
 again:
     // wait for developer mode to be enabled
+    // xxx should this terminate when program closes
     INFO("waiting for devel_mode enabled\n");
     sleep(1);
     while (params.devel_mode == false) {

@@ -280,7 +280,7 @@ void sdlx_display_init(sdlx_color_t color, int orientation_arg)
     }
 
     SDL_SetRenderTarget(renderer, (SDL_Texture*)texture);
-    sdlx_clear_texture(texture, COLOR_PURPLE);  // xxx temp
+    sdlx_clear_texture(texture, color);
 }
 
 void sdlx_display_present(void)

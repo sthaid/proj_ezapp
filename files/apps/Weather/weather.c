@@ -141,7 +141,7 @@ int main(int argc, char **argv)
     // runtime loop
     while (!done) {
         // init the backbuffer
-        sdlx_display_init(COLOR_BLACK);
+        sdlx_display_init(COLOR_BLACK, PORTRAIT);
 
         // if forecast is available but not parsed then parse it
         if (!daily_forecast_parsed && util_file_exists(data_dir, "daily.json")) {
@@ -798,7 +798,7 @@ void display_detailed_forecast(int idx)
 
     while (!done) {
         // init the backbuffer
-        sdlx_display_init(COLOR_BLACK);
+        sdlx_display_init(COLOR_BLACK, PORTRAIT);
 
         // display the forecast icon
         if (x->icon_texture) {

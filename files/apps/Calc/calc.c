@@ -107,7 +107,7 @@ int main(int argc, char **argv)
         // -------------------------
 
         // init the backbuffer
-        sdlx_display_init(BACKGROUND_COLOR);
+        sdlx_display_init(BACKGROUND_COLOR, PORTRAIT);
 
         // display calculator buttons, which will also register the button events
         for (int row = 0; row < MAX_BUTTON_ROW; row++) {

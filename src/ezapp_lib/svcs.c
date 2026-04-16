@@ -166,7 +166,7 @@ void svcs_display(int bg_color)
     // handle the setting display
     while (true) {
         // init display and display title line
-        sdlx_display_init(bg_color, true);
+        sdlx_display_init(bg_color, PORTRAIT);
         sdlx_render_printf(sdlx_win_width/2, sdlx_char_height_dflt/2, "%s", "Services"); // XXX was xyctr
 
         // display name and controls for each service

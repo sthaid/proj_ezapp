@@ -138,7 +138,7 @@ int main(int argc, char **argv)
     // runtime loop
     while (!end_program) {
         // init the backbuffer
-        sdlx_display_init(COLOR_BLACK);
+        sdlx_display_init(COLOR_BLACK, PORTRAIT);
 
         // if serve needed then reset variables
         if (state == STATE_SERVING) {
@@ -478,7 +478,7 @@ void settings(void)
 
     while (!done) {
         // init the backbuffer
-        sdlx_display_init(COLOR_BLACK);
+        sdlx_display_init(COLOR_BLACK, PORTRAIT);
 
         // display values, and register events to change the values
         loc = sdlx_render_printf_ex1(0, ROW2Y(2), FONT_NORMAL, COLOR_LIGHT_BLUE, "autonomous = %s", param_autonomous ? "ON" : "OFF");
