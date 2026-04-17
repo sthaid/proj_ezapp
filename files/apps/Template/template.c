@@ -29,16 +29,16 @@ int main(int argc, char **argv)
         // init the backbuffer
         sdlx_display_init(COLOR_BLACK, PORTRAIT);
 
+        // display 'Hello' at center of display
+        sdlx_render_printf_ex2(sdlx_win_width/2, sdlx_win_height/2, 
+                               FONT_LARGE, COLOR_PURPLE, 
+                               FLAG_XY_CTR, WRAP_NONE, "Hello");
+
         // register control event to end program
         sdlx_register_control_events(0, NULL,
                                      0, NULL,
                                      EVID_QUIT, "X",
                                      COLOR_WHITE, COLOR_BLACK);
-
-        // display 'Hello' at center of display
-        sdlx_render_printf_ex2(sdlx_win_width/2, sdlx_win_height/2, 
-                               FONT_LARGE, COLOR_PURPLE, 
-                               FLAG_XY_CTR, WRAP_NONE, "Hello");
 
         // present the display
         sdlx_display_present();

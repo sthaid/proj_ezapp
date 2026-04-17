@@ -4,17 +4,17 @@ To convert WGS84 ellipsoidal heights (
 ) at that location using the formula 
 . This requires a geoid model, such as EGM96 or EGM2008, which maps the difference between the ellipsoid and the sea-level surfac
 
+--- apps ---
+Piano
+Steps
+Magnifier
 
---- small ---
-swipe menu pages
+--- small tasks ---
 
---- medium ---
+--- medium / large ---
 altitude, improve elevation
 
 --------
-
-issues:
-- get event with infinite timeout not working;  this happens just with eztest?
 
 upgrade to Ubuntu 25.10
 
@@ -50,9 +50,8 @@ build & install
 - icon
 - should a fresh install wipe existing files; including top level params
 - checkout specific commit in sdl dirs
-- get rid of Light and Template ?
 - license and credits
-- help
+- help / doc
 - reneme Templates to SvcDemo  ??
 - git checkout the ttf and mixer too
    - ask question to the mixer team
@@ -83,9 +82,6 @@ Piano
      alphabet song
      bah baa black sheep
      head shoulders keens and toes
-
-magnifier
-- use camera to magnify
 
 ===========================================================
 ====================  LATER  ==============================
