@@ -965,7 +965,6 @@ typedef struct { \n\
 /* events */ \n\
 #define EVID_MOTION  9990 \n\
 #define EVID_QUIT    9991 \n\
-#define CONTROL_EVENTS_DISPLAY_HEIGHT 150 \n\
 typedef struct { \n\
     int event_id; \n\
     union { \n\

@@ -294,8 +294,6 @@ typedef struct {
 // event registration
 // - - - - - - - - - - 
 
-#define CONTROL_AREA_SIZE 150
-
 void sdlx_register_event(sdlx_loc_t *loc, int event_id);
 void sdlx_register_control_events(int evid1, char *evstr1,
                                   int evid2, char *evstr2,
@@ -360,6 +358,8 @@ int sdlx_sensor_init(void);
 void sdlx_sensor_quit(void);
 
 // sdlx_event.c
+#define CONTROL_AREA_SIZE 150
+
 void sdlx_reset_events(void);
 void sdlx_event_box_ctrl(bool event_box_enable);
 
