@@ -324,6 +324,13 @@ static void processing(void)
                                          COLOR_WHITE, BG_COLOR);
         }
 
+        // display message when devel mode is enabled
+        if (params.devel_mode) {
+            sdlx_render_printf_ex2(sdlx_win_width/2, sdlx_win_height-1.5*sdlx_char_height_dflt,
+                                   FONT_SMALL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE,
+                                   "developer mode");
+        }
+
         // update the display
         sdlx_display_present();
 
@@ -695,15 +702,6 @@ static void settings(void)
         // init display and font size/color
         sdlx_display_init(BG_COLOR, PORTRAIT);
 
-        // display title line, version, and ipaddr
-        sdlx_render_fill_rect(0, 0, sdlx_win_width, 4*sdlx_char_height_dflt, BG_COLOR);
-        sdlx_render_printf_ex2(sdlx_win_width/2, ROW2Y(0),
-                               FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE,
-                               "%s", "Settings");
-        sdlx_render_printf(0, ROW2Y(1), "Version = %s", VERSION);
-        sdlx_render_printf(0, ROW2Y(2), "%s", BUILD_DATE);
-        sdlx_render_printf(0, ROW2Y(3), "%s:%d", ipaddr, params.devel_port);
-
         // display Copyright
         sdlx_print_set_default(FONT_NORMAL, COLOR_LIGHT_BLUE);
         y2 = nearbyint(y - 2*sdlx_char_height_dflt);
@@ -800,6 +798,15 @@ static void settings(void)
             util_delete_file(".", RECORD_TEST_FILENAME);
             record_test_state = IDLE;
         }
+
+        // display title line, version, and ipaddr
+        sdlx_render_fill_rect(0, 0, sdlx_win_width, 4*sdlx_char_height_dflt, BG_COLOR);
+        sdlx_render_printf_ex2(sdlx_win_width/2, ROW2Y(0),
+                               FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE,
+                               "%s", "Settings");
+        sdlx_render_printf(0, ROW2Y(1), "Version = %s", VERSION);
+        sdlx_render_printf(0, ROW2Y(2), "%s", BUILD_DATE);
+        sdlx_render_printf(0, ROW2Y(3), "%s:%d", ipaddr, params.devel_port);
 
         // if a message is requested for display then do so;
         // otherwise, when in developer mode, display ipaddr:port

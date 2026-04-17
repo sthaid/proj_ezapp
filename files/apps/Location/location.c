@@ -121,7 +121,7 @@ int main(int argc, char **argv)
             y_history_top_reset     = y;
             y_history_top           = y_history_top_reset;
             y_history_display_begin = y_history_top_reset;
-            y_history_display_end   = sdlx_win_height-2*sdlx_char_height_dflt;  // need a define or routine for this ?
+            y_history_display_end   = sdlx_win_height;
         }
         // - display the history, starting at most recent
         int count = loc_hist->count;

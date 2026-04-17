@@ -1,56 +1,24 @@
-Location app scrolling issue
+To convert WGS84 ellipsoidal heights (
+) to Mean Sea Level (MSL), or orthometric heights (
+), subtract the geoid height (
+) at that location using the formula 
+. This requires a geoid model, such as EGM96 or EGM2008, which maps the difference between the ellipsoid and the sea-level surfac
 
-scrolling problem in settings
 
-devel mode indication
+--- small ---
+swipe menu pages
 
-page0/1 layout
-
-altitude
-
-xxxxxxxxxxx
-
-Top area of settings in Teal
-
-Colr Organ horizontal problem
-
-Memo has double height of control area
-
-does reversi need doulbe lines on android
-
-use purple just for the menu
-
-improve elevation
-
-rename CONTROL area constant, and exclude from sdlx_win_width/height ?
-
-recheck Light
-
-Template not working
-
-Test/Landscape is not centered
-
-add 2nd Menu page
-
-differnet way to show Devle Mode
-
-rename CONTROL_EVENTS_DISPLAY_HEIGHT
+--- medium ---
+altitude, improve elevation
 
 --------
-
-picoc - 
-- add strncasecmp
-- ptr operations ?
 
 issues:
 - get event with infinite timeout not working;  this happens just with eztest?
 
 upgrade to Ubuntu 25.10
 
-cleanup this list
-
-apps issues
-- Location Altitude problem
+--------
 
 picoc issues  
 - low_band = util_rms_float(&fft[first_bin], last_bin-first_bin+1);// yyy picoc isue requires &fft[first_bin]
@@ -63,6 +31,7 @@ picoc issues
 - search FIXME 
 - picoc numbers .333,  needs leading 0
 - ifdef code for ANDROID, check apps for other places ifdef ANDROID used
+- ptr operations ?
 
 issues with open source ...
 - kissfft does not use O2 ????????
@@ -103,9 +72,8 @@ CODE REVIEWS
 Steps
 - StepCount  Svc keeps track of when app is running and steps
 
-Tonals
-- twinkle little star
-- close encounters
+Piano  
+- more solfege
 - "what are common musical tone sequence such as twinke twinkle or Close encounters"
      close encounters
      jaws
