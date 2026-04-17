@@ -105,7 +105,7 @@ int main(int argc, char **argv)
     y_controls_2        = y_controls_1 + LINE_SPACING*sdlx_char_height_dflt;
     y_files_list        = y_controls_2 + LINE_SPACING*sdlx_char_height_dflt;
     y_files_list_top    = y_files_list;
-    y_files_list_bottom = sdlx_win_height - CONTROL_EVENTS_DISPLAY_HEIGHT - COH_P;
+    y_files_list_bottom = sdlx_win_height - COH_P;
 
     // initialize color organ
     color_organ_init();

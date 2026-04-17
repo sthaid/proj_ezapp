@@ -40,6 +40,7 @@ static int          event_quit_rcvd;
 static bool         event_box_enable=1; //xxx temp enable    move to sdlx.h
 
 extern int          logical_win_width, logical_win_height;  // xxx move to sdlx.h
+extern int          logical_win_width_portrait;
 
 //
 // prototypes
@@ -102,7 +103,7 @@ void sdlx_register_event(sdlx_loc_t *loc, int event_id)
     // rotate the loc2  xxx comment
     if (orientation == LANDSCAPE) { 
         int x,y,w,h;
-        x = logical_win_width - loc2.y - loc2.h;
+        x = logical_win_width_portrait - loc2.y - loc2.h;
         y = loc2.x;
         w = loc2.h;
         h = loc2.w;
@@ -142,11 +143,11 @@ void sdlx_register_control_events(int evid1, char *evstr1,
 
     // fill entire control events area with bg_color
     if (orientation == PORTRAIT) {
-        y = sdlx_win_height - CONTROL_EVENTS_DISPLAY_HEIGHT;
-        sdlx_render_fill_rect(0, y, sdlx_win_width, sdlx_win_height-y, bg_color);
+        y = logical_win_height - CONTROL_AREA_SIZE;
+        sdlx_render_fill_rect(0, y, logical_win_width, logical_win_height-y, bg_color);
     } else {
-        sdlx_render_fill_rect(sdlx_win_width - CONTROL_EVENTS_DISPLAY_HEIGHT, 0,  // x,y
-                              CONTROL_EVENTS_DISPLAY_HEIGHT, sdlx_win_height,      // w,h  xxx name
+        sdlx_render_fill_rect(logical_win_width - CONTROL_AREA_SIZE, 0,  // x,y
+                              CONTROL_AREA_SIZE, logical_win_height,      // w,h  xxx name
                               bg_color);
     }
 
@@ -159,26 +160,26 @@ void sdlx_register_control_events(int evid1, char *evstr1,
         }
 
         if (orientation == PORTRAIT) {
-            x = (sdlx_win_width/3/2) + i * (sdlx_win_width/3);
+            x = (logical_win_width/3/2) + i * (logical_win_width/3);
             if (i == 0 && x < strlen(evstr[0]) * chw / 2) {
                 x = strlen(evstr[0]) * chw / 2;
             }
-            if (i == 2 && x > sdlx_win_width - (strlen(evstr[2]) * chw / 2)) {
-                x = sdlx_win_width - (strlen(evstr[2]) * chw / 2);
+            if (i == 2 && x > logical_win_width - (strlen(evstr[2]) * chw / 2)) {
+                x = logical_win_width - (strlen(evstr[2]) * chw / 2);
             }
-            y = sdlx_win_height - (CONTROL_EVENTS_DISPLAY_HEIGHT / 2);
+            y = logical_win_height - (CONTROL_AREA_SIZE / 2);
             loc = sdlx_render_printf_ex2(x, y, FONT_NORMAL, print_color, FLAG_XY_CTR, WRAP_NONE, "%s", evstr[i]);
         } else {
-            y = (sdlx_win_height/3/2) + i * (sdlx_win_height/3);
+            y = (logical_win_height/3/2) + i * (logical_win_height/3);
             if (i == 0 && y < strlen(evstr[0]) * chw / 2) {
                 y = strlen(evstr[0]) * chw / 2;
             }
-            if (i == 2 && y > sdlx_win_height - (strlen(evstr[2]) * chw / 2)) {
-                y = sdlx_win_height - (strlen(evstr[2]) * chw / 2);
+            if (i == 2 && y > logical_win_height - (strlen(evstr[2]) * chw / 2)) {
+                y = logical_win_height - (strlen(evstr[2]) * chw / 2);
             }
-            x = sdlx_win_width - (CONTROL_EVENTS_DISPLAY_HEIGHT / 2);
+            x = logical_win_width - (CONTROL_AREA_SIZE / 2);
             loc = sdlx_render_printf_ex2(
-                        x, sdlx_win_height - y,
+                        x, logical_win_height - y,
                         FONT_NORMAL, print_color, FLAG_XY_CTR|FLAG_ROT_CTR_90|FLAG_FLIP, WRAP_NONE, "%s", evstr[i]);
         }
 
@@ -303,7 +304,7 @@ static void process_sdlx_event(SDL_Event *ev, sdlx_event_t *event)
                 event->u.motion.xrel = ev->motion.xrel / scale_events_x;
                 event->u.motion.yrel = ev->motion.yrel / scale_events_y;
             } else {
-                event->u.motion.y = sdlx_win_height - ev->motion.x / scale_events_x;
+                event->u.motion.y = logical_win_height - ev->motion.x / scale_events_x;
                 event->u.motion.x = ev->motion.y / scale_events_y;
                 event->u.motion.yrel = -ev->motion.xrel / scale_events_x;
                 event->u.motion.xrel = ev->motion.yrel / scale_events_y;

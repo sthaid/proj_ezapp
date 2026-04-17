@@ -294,7 +294,7 @@ typedef struct {
 // event registration
 // - - - - - - - - - - 
 
-#define CONTROL_EVENTS_DISPLAY_HEIGHT 150
+#define CONTROL_AREA_SIZE 150
 
 void sdlx_register_event(sdlx_loc_t *loc, int event_id);
 void sdlx_register_control_events(int evid1, char *evstr1,

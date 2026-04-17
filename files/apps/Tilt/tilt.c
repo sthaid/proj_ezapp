@@ -314,7 +314,7 @@ void display_tilt_horizontal(double ax, double ay, double az, double roll_raw, d
 
     // register EVID_CALIBRATE
     loc = sdlx_render_printf_ex2(
-                sdlx_win_width/2, sdlx_win_height - CONTROL_EVENTS_DISPLAY_HEIGHT - 2 * sdlx_char_height_dflt,
+                sdlx_win_width/2, sdlx_win_height - 2 * sdlx_char_height_dflt,
                 FONT_NORMAL, COLOR_LIGHT_BLUE, FLAG_X_CTR, WRAP_NONE,
                 "%s", "CALIBRATE");
     sdlx_register_event(loc, EVID_HORIZ_CALIBRATE);
@@ -515,12 +515,12 @@ void display_tilt_vertical(double ax, double ay, double az, double roll, double 
 
     // render the rendering texture to the display, centered and rotated
     x = 0;
-    y = (sdlx_win_height - CONTROL_EVENTS_DISPLAY_HEIGHT - VERT_TEXTURE_WH) / 2;
+    y = (sdlx_win_height - VERT_TEXTURE_WH) / 2;
     sdlx_render_texture_ex2(vert, x, y, VERT_TEXTURE_WH, VERT_TEXTURE_WH, rotate_deg);
 
     // register EVID_CALIBRATE
     loc = sdlx_render_printf_ex2(
-                sdlx_win_width/2, sdlx_win_height - CONTROL_EVENTS_DISPLAY_HEIGHT - 2 * sdlx_char_height_dflt,
+                sdlx_win_width/2, sdlx_win_height - 2 * sdlx_char_height_dflt,
                 FONT_NORMAL, COLOR_LIGHT_BLUE, FLAG_X_CTR, WRAP_NONE,
                 "%s", "CALIBRATE");
     sdlx_register_event(loc, EVID_VERT_CALIBRATE);

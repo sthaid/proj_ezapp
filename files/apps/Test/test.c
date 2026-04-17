@@ -265,6 +265,9 @@ static void page_0_draw(void)
     long usecs, delta_ms;
     static long usecs_last, usecs_first;
     
+    // draw rect around sdlx_win perimeter
+    sdlx_render_rect(0, 0, sdlx_win_width, sdlx_win_height, 3, COLOR_BLUE);
+
     // print the time, hh:mm:ss
     time(&t);
     tm = localtime(&t);
@@ -805,7 +808,7 @@ static void page_7_draw(void)
     // display volume bar
     int y, w;
     if (state.state != AUDIO_STATE_IDLE) {
-        y = sdlx_win_height - CONTROL_EVENTS_DISPLAY_HEIGHT - 2*sdlx_char_height_dflt - 10;
+        y = sdlx_win_height - 2*sdlx_char_height_dflt - 10;
         w = state.volume * 1000;
         sdlx_render_fill_rect(0, y, w, sdlx_char_height_dflt, COLOR_WHITE);
     }
@@ -818,7 +821,7 @@ static void page_7_draw(void)
         float  delta_f;
 
         delta_f = ((double)FRAMES_PER_SEC/num_downsample) / num_samples;
-        y       = sdlx_win_height - CONTROL_EVENTS_DISPLAY_HEIGHT - sdlx_char_height_dflt - 10;
+        y       = sdlx_win_height - sdlx_char_height_dflt - 10;
 
         sdlx_get_audio_samples(num_samples, num_downsample, GET_SAMPLES_LEFT_CHANNEL, samples);
         util_fft_real_to_real(num_samples, samples, fft, true);
@@ -1167,7 +1170,7 @@ static void page_11_draw(void)
                                  "%s", wrap_text);
     sdlx_render_rect(loc->x, loc->y, loc->w, loc->h, 2, COLOR_GREEN);
 
-    y = sdlx_win_height - CONTROL_EVENTS_DISPLAY_HEIGHT - 8 * (1.5 * sdlx_char_height_dflt);
+    y = sdlx_win_height - 8 * (1.5 * sdlx_char_height_dflt);
 
     loc = sdlx_render_printf_ex1(0, y, FONT_NORMAL, COLOR_LIGHT_BLUE, "ROT_NONE");
     sdlx_register_event(loc, EVID_ROT_NONE);
@@ -1238,10 +1241,11 @@ int page_12_x, page_12_y;
 double page_12_xrel, page_12_yrel;
 
 // xxx better test
-// xxx use sdlx_win_width/height
 // xxx test SetRenderTarget when in landscape
 static void page_12_draw(void)
 {
+    sdlx_render_rect(0, 0, sdlx_win_width, sdlx_win_height, 3, COLOR_BLUE);
+
     sdlx_render_printf_ex2(sdlx_win_width/2, ROW2Y(2),
                            FONT_NORMAL, COLOR_WHITE,
                            FLAG_X_CTR, WRAP_NONE, 

@@ -69,7 +69,7 @@ int main(int argc, char **argv)
 
     // init display location of captured log prints
     y_top    = 0;
-    y_bottom = sdlx_win_height - CONTROL_EVENTS_DISPLAY_HEIGHT;
+    y_bottom = sdlx_win_height;
     y        = y_top;
     x        = 0;
 

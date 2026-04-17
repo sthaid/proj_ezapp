@@ -64,6 +64,8 @@ sdlx_texture_t      *texture;  // xxx name
 int                  orientation;
 int                  real_win_width, real_win_height;
 int                  logical_win_width, logical_win_height;
+int                  logical_win_width_portrait, logical_win_height_portrait;
+int                  logical_win_width_landscape, logical_win_height_landscape;
 
 //
 // prototypes
@@ -90,9 +92,8 @@ static bool event_watcher(void* userdata, SDL_Event* event);
 
 int sdlx_video_init(void)
 {
-    int    num, i;
-    double real_aspect_ratio;
-    double logical_aspect_ratio;
+    int num, i;
+    int w, h;
 
     INFO("initializing\n");
 
@@ -109,7 +110,9 @@ int sdlx_video_init(void)
         INFO("   %s\n",  SDL_GetVideoDriver(i));
     }
 
+    // xxx add comment about the common aspect ratio, and the logical sizes used
     // xxx   1080 x 2340    2.1666    = 19.5/9
+
     // create SDL Window and Renderer
 #ifdef ANDROID
     if (!SDL_CreateWindowAndRenderer("ezApp", 0, 0, SDL_WINDOW_FULLSCREEN, &window, &renderer)) {
@@ -123,34 +126,40 @@ int sdlx_video_init(void)
     }
 #endif
 
-    // add the event watcher
-    SDL_AddEventWatch(event_watcher, NULL);
-
     // get real windows size and aspect ratio
     SDL_GetWindowSize(window, &real_win_width, &real_win_height);
-    real_aspect_ratio = (double)real_win_height / real_win_width;
-    INFO("real    win_width x height = %d %d  aspect = %f\n", real_win_width, real_win_height, real_aspect_ratio);
+    INFO("real    win_width x height = %d %d  aspect = %f\n", 
+         real_win_width, real_win_height, (double)real_win_height / real_win_width);
 
-    // xxx
-    logical_win_width  = 1000;
-    //logical_win_height = 2166;  //xxx use 2200   // xxx subtract control area ?
-    logical_win_height = 2500;
-    logical_aspect_ratio = (double)logical_win_height / logical_win_width;
-    INFO("logical win_width x height = %d %d  aspect = %f\n", logical_win_width, logical_win_height, logical_aspect_ratio);
+    // sanity check
+    SDL_GetCurrentRenderOutputSize(renderer, &w, &h);
+    if (real_win_width != w || real_win_height != h) {
+        ERROR("real_win_width/height = %d %d differs from GetCurrentRenderOutputSize %d %d\n",
+              real_win_width, real_win_height, w, h);
+    }
 
-    // xxx
+    // init the logical window size for portrait and landscape orientations
+    logical_win_width_portrait   = 1000;
+    logical_win_height_portrait  = 2200;
+    logical_win_width_landscape  = logical_win_height_portrait;
+    logical_win_height_landscape = logical_win_width_portrait;
+
+    // start in PORTRAIT mode
     orientation = PORTRAIT;
-    sdlx_win_width = logical_win_width;
-    sdlx_win_height = logical_win_height;
+    logical_win_width  = logical_win_width_portrait;
+    logical_win_height = logical_win_height_portrait;
+    sdlx_win_width     = logical_win_width;
+    sdlx_win_height    = logical_win_height - CONTROL_AREA_SIZE;
+    INFO("logical win_width x height = %d %d  aspect = %f\n", 
+         logical_win_width, logical_win_height, (double)logical_win_height / logical_win_width);
 
-    // xxx
-    scale_events_x = (double)real_win_width / sdlx_win_width;
-    scale_events_y = (double)real_win_height / sdlx_win_height;
+    // init scale factors used by sdlx_event.c
+    scale_events_x = (double)real_win_width / logical_win_width;
+    scale_events_y = (double)real_win_height / logical_win_height;
     INFO("scale_events x,y = %f %f\n", scale_events_x, scale_events_y);
 
-    int w, h;
-    SDL_GetCurrentRenderOutputSize(renderer, &w, &h);
-    INFO("GetCurrentRenderOutputSize = %d %d\n", w, h);
+    // add the event watcher, which is currently only used for debug purpose
+    SDL_AddEventWatch(event_watcher, NULL);
 
     // initialize True Type Font
     if (!TTF_Init()) {
@@ -267,15 +276,19 @@ void sdlx_display_init(sdlx_color_t color, int orientation_arg)
         texture = NULL;
 
         if (orientation == PORTRAIT) {
+            logical_win_width = logical_win_width_portrait;
+            logical_win_height = logical_win_height_portrait;
             texture = sdlx_create_texture(logical_win_width, logical_win_height);
             texture_orientation = PORTRAIT;
             sdlx_win_width  = logical_win_width;
-            sdlx_win_height = logical_win_height;
+            sdlx_win_height = logical_win_height - CONTROL_AREA_SIZE;
         } else {
-            texture = sdlx_create_texture(logical_win_height, logical_win_width);
+            logical_win_width = logical_win_width_landscape;
+            logical_win_height = logical_win_height_landscape;
+            texture = sdlx_create_texture(logical_win_width, logical_win_height);
             texture_orientation = LANDSCAPE;
-            sdlx_win_width  = logical_win_height;
-            sdlx_win_height = logical_win_width;
+            sdlx_win_width  = logical_win_width - CONTROL_AREA_SIZE;
+            sdlx_win_height = logical_win_height;
         }
     }
 
@@ -433,7 +446,7 @@ void sdlx_print_set_default(int fontid, sdlx_color_t color)
     print_dflt.color  = color;
 
     // set global variables containing the char width,height of the default font
-    ptsize = (logical_win_width / fontid) / 0.6;
+    ptsize = (logical_win_width_portrait / fontid) / 0.6;
     sdlx_char_height_dflt = nearbyint(ptsize);
     sdlx_char_width_dflt  = nearbyint(sdlx_char_height_dflt * 0.6);
 }
@@ -443,7 +456,7 @@ int sdlx_char_width(int fontid)
     int ptsize, chh, chw;
 
     // return char width, based on fontid
-    ptsize = (logical_win_width / fontid) / 0.6;
+    ptsize = (logical_win_width_portrait / fontid) / 0.6;
     chh = nearbyint(ptsize);
     chw  = nearbyint(chh * 0.6);
     return chw;
@@ -454,7 +467,7 @@ int sdlx_char_height(int fontid)
     int ptsize, chh;
 
     // return char height, based on fontid
-    ptsize = (logical_win_width / fontid) / 0.6;
+    ptsize = (logical_win_width_portrait / fontid) / 0.6;
     chh = nearbyint(ptsize);
     return chh;
 }
@@ -553,7 +566,7 @@ static sdlx_loc_t *render_text(int x, int y, int fontid, sdlx_color_t color, int
     static int        num_allocated = 0;
 
     // if font has not been created then do so
-    ptsize = (logical_win_width / fontid) / 0.6;
+    ptsize = (logical_win_width_portrait / fontid) / 0.6;
     if (font[ptsize].font == NULL) {
         font_create(ptsize);
         if (font[ptsize].font == NULL) {

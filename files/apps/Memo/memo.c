@@ -71,7 +71,7 @@ int main(int argc, char **argv)
     // init variables which define the vertical region of the display
     // being used for the filename list
     y_top    = 100;
-    y_bottom = sdlx_win_height - CONTROL_EVENTS_DISPLAY_HEIGHT - BAR_AREA_HEIGHT;
+    y_bottom = sdlx_win_height - BAR_AREA_HEIGHT;
     y        = y_top;
 
     // set default font

@@ -5,11 +5,10 @@
 //                                               21.666      22.2222
 
 // defines
-#define COH_P  800     // color organ height in portrait orientation
-#define COH_L  1000    // color organ height in landscape orientation
-
-#define COW_P 1000
-#define COW_L 1200
+#define COW_P 1000   // color organ w/h in portrait orientation
+#define COH_P  800  
+#define COW_L 1200   // color organ w/h in landscape orientation
+#define COH_L 1000
 
 #define DEBUG_FLAG_CYCLE_DUR  1
 

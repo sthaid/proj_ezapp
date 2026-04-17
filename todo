@@ -1,3 +1,11 @@
+devel mode indication
+
+page0/1 layout
+
+altitude
+
+xxxxxxxxxxx
+
 Top area of settings in Teal
 
 Colr Organ horizontal problem
@@ -17,6 +25,13 @@ recheck Light
 Template not working
 
 Test/Landscape is not centered
+
+add 2nd Menu page
+
+differnet way to show Devle Mode
+
+rename CONTROL_EVENTS_DISPLAY_HEIGHT
+
 --------
 
 picoc - 

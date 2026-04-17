@@ -118,7 +118,7 @@ int main(int argc, char **argv)
 
     // init variables that define the display region
     y_top    = 100;
-    y_bottom = sdlx_win_height - CONTROL_EVENTS_DISPLAY_HEIGHT;
+    y_bottom = sdlx_win_height;
     y        = y_top;
 
     // initiate weather forecast download;

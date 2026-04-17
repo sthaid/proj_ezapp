@@ -202,6 +202,7 @@ void color_organ_display_bars(float *fft)
         if (raw_new_vol > 1) raw_new_vol = 1;
 
         // apply filter
+        // xxx dont exceed 1
         filter(&filtered_vol[band], raw_new_vol);
 
         // display the band volume
@@ -213,7 +214,7 @@ void color_organ_display_bars(float *fft)
         x = band * w;
         y = coh - h;
         if (orientation == LANDSCAPE) {
-            x += (sdlx_win_height - COW_L) / 2;
+            x += (sdlx_win_width - COW_L) / 2;
         }
 
         color = (band == LOW_BAND ? COLOR_RED : (band == MID_BAND ? COLOR_GREEN : COLOR_BLUE));
@@ -267,7 +268,7 @@ void color_organ_display_circles(float *fft)
 
         cow     = (orientation == PORTRAIT ? COW_P : COW_L);
         coh     = (orientation == PORTRAIT ? COH_P : COH_L);
-        win_ctr = (orientation == PORTRAIT ? 500 : 2166/2);  // xxx review for numeric 
+        win_ctr = sdlx_win_width / 2;
         radius  = coh / (2 + sqrt(3));
         k       = 2.0;  // determined emppirically for good visual
 
@@ -313,6 +314,8 @@ void color_organ_display_fft(float *fft)
     int          x, y, w, h, wavelength;
     sdlx_color_t color;
     float        raw_scaled;
+    sdlx_loc_t   loc;
+    int          cow, coh;
     static float filtered[MAX_FFT];
 
     // visible light range is 380 (violet) to 750 (red) nm;
@@ -334,14 +337,30 @@ void color_organ_display_fft(float *fft)
             y = COH_P - h;
         } else {
             w = 4;
-            h = 1000 * filtered[i];
-            x = 4*(i-1) + (sdlx_win_height - 1200) / 2;
-            y = 1000 - h;
+            h = COH_L * filtered[i];
+            x = 4*(i-1) + (sdlx_win_width - COW_L) / 2;
+            y = COH_L - h;
         }
 
         wavelength = 700 - i;
         color = sdlx_wavelength_to_color(wavelength);
         sdlx_render_fill_rect(x, y, w, h, color);
+    }
+
+    // register events to adjust scale factor
+    cow = (orientation == PORTRAIT ? COW_P : COW_L);
+    coh = (orientation == PORTRAIT ? COH_P : COH_L);
+    x = (orientation == PORTRAIT ? 0 : ((sdlx_win_width - COW_L) / 2));
+    init_loc(&loc, x, 0, cow, coh/2);
+    sdlx_register_event(&loc, EVID_FFT_INCREASE);
+    loc.y += coh/2;
+    sdlx_register_event(&loc, EVID_FFT_DECREASE);
+
+    // display scale factor
+    if (disp_scale_factor) {
+        sdlx_render_printf_ex2(x+cow/2, coh/2,
+                               FONT_NORMAL, COLOR_WHITE, FLAG_XY_CTR, WRAP_NONE,
+                               "%d", fft_scale);
     }
 }
 

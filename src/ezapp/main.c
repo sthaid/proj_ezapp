@@ -687,7 +687,7 @@ static void settings(void)
     // init variables which define the vertical region of the display
     // being used for the filename list
     y_top    = ROW2Y(4.5);
-    y_bottom = sdlx_win_height - CONTROL_EVENTS_DISPLAY_HEIGHT;
+    y_bottom = sdlx_win_height;
     y        = y_top;
 
     // handle the setting display
@@ -977,7 +977,7 @@ static void copyright(void)
 
     // init vars
     y_top    = 0;
-    y_bottom = sdlx_win_height - CONTROL_EVENTS_DISPLAY_HEIGHT;
+    y_bottom = sdlx_win_height;
     y        = y_top;
 
     // display copyright
