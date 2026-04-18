@@ -15,6 +15,7 @@
 
 // defines
 #define EVID_PLAY_TONE_SEQ 100
+#define EVID_PIANO_KEY     500
 
 #define MAX_ITEMS_STR 10000
 #define MAX_TONE_SEQ  100
@@ -23,13 +24,18 @@
 char  *progname;
 char  *data_dir;
 
-double piano_key_freq[89];  // starts at [1]
+double piano_key_freq[89];      // starts at [1]
+bool   piano_key_is_black[89];  // starts at [1]
 
 int max_tone_seq;
 struct {
     char *title;
     char *items;
 } tone_seq_tbl[MAX_TONE_SEQ];
+
+double X;
+int highlight;
+long highlight_start_usec;
 
 // prototypes
 void read_tone_seq_file(char *filename);
@@ -40,9 +46,6 @@ int get_piano_keynum_solfege(char *item, int octave);
 
 // xxx new
 void display_update(void);
-
-//int texture_w, texture_h;
-//sdlx_texture_t *texture;
 
 // -----------------  MAIN  ------------------------------------------
 
@@ -65,16 +68,16 @@ int main(int argc, char **argv)
     // initialize
     init_piano_key_freq_tbl();
     read_tone_seq_file("tones.seq");
-    //texture_w = sdlx_win_height - CONTROL_EVENTS_DISPLAY_HEIGHT;
-    //texture_h = sdlx_win_width;
-    //texture = sdlx_create_texture(texture_w,texture_h);
 
     // runtime loop
     while (!done) {
         // init the backbuffer
         sdlx_display_init(COLOR_BLACK, LANDSCAPE);
 
+        // xxx
         display_update();
+
+        sdlx_register_event(NULL, EVID_MOTION);
 
         // register control event to end program
         sdlx_register_control_events(0, NULL,
@@ -85,15 +88,31 @@ int main(int argc, char **argv)
         // present the display
         sdlx_display_present();
 
-        // wait for event, with infinite timeout
-        sdlx_get_event(-1, &event);
+        // wait for event, with 100 ms timeout
+        sdlx_get_event(100000, &event);
 
         // process events
         if (event.event_id >= EVID_PLAY_TONE_SEQ && event.event_id < EVID_PLAY_TONE_SEQ + MAX_TONE_SEQ) {
             int which = event.event_id - EVID_PLAY_TONE_SEQ;
             play_tone_seq(tone_seq_tbl[which].items);
+        } else if (event.event_id >= EVID_PIANO_KEY+1 && 
+                   event.event_id <= EVID_PIANO_KEY+88) {
+            int keynum = event.event_id - EVID_PIANO_KEY;
+            sdlx_tone_t tones[2];
+            printf("GOT keynum %d\n", keynum);
+            tones[0].freq = piano_key_freq[keynum];   // save in rounded to int
+            tones[0].intvl_ms = 500;
+            tones[1].freq = 0;
+            tones[1].intvl_ms = 0;
+            sdlx_audio_play_tones(tones);
+            highlight = keynum;
+            highlight_start_usec = util_microsec_timer();
+
         } else {
             switch (event.event_id) {
+            case EVID_MOTION:
+                X += event.u.motion.xrel;
+                break;
             case EVID_QUIT:
                 done = true;
                 break;
@@ -109,7 +128,6 @@ int main(int argc, char **argv)
         free(tone_seq_tbl[i].title);
         free(tone_seq_tbl[i].items);
     }
-    //sdlx_destroy_texture(texture);
 
     // end program
     printf("I %s: terminating\n", progname);
@@ -139,16 +157,70 @@ void test(void)
     printf("I %s: test complete\n", progname);
 }
 
-// -----------------  xxxxxxxxxxxxxx  --------------------------------
+// -----------------  DISPLAY UPDATE  --------------------------------
 
-void register_event(sdlx_loc_t *loc, int evid);
+void init_loc(sdlx_loc_t *loc, int x, int y, int w, int h)
+{
+    loc->x = x;
+    loc->y = y;
+    loc->w = w;
+    loc->h = h;
+}
 
 void display_update(void)
 {
-    int y;
     sdlx_loc_t *loc;
+    sdlx_loc_t loc2;
+    int keynum, pos, x, y, w, h;
+    long now;
 
-    //sdlx_set_render_target(texture);
+    if (highlight) {
+        now = util_microsec_timer();
+        if (now > highlight_start_usec + 500000) {
+            highlight = 0;
+        }
+    }
+
+    // display piano keys
+    pos = 0;
+    for (keynum = 1; keynum <= 88; keynum++) {
+        if (!piano_key_is_black[keynum]) {
+            w = sdlx_win_width / 24;
+            h = sdlx_win_height / 3;
+            x = pos * w + 1;
+            y = sdlx_win_height - h;
+            w -= 2;
+            if (X+x > -w && X+x < sdlx_win_width) {
+                sdlx_render_fill_rect(X+x, y, w, h, (highlight == keynum) ? COLOR_GREEN : COLOR_WHITE);
+                init_loc(&loc2, X+x, y, w, h);
+                sdlx_register_event(&loc2, EVID_PIANO_KEY+keynum);
+            }
+            pos++;
+        }
+    }
+
+    pos = 0;
+    for (keynum = 1; keynum <= 88; keynum++) {
+        if (piano_key_is_black[keynum]) {
+            w = sdlx_win_width / 24;
+            h = sdlx_win_height / 6;
+            x = (pos + 0.5) * w + 16;
+            y = sdlx_win_height - 2*h;
+            w -= 32;
+            if (X+x > -w && X+x < sdlx_win_width) {
+                sdlx_render_fill_rect(X+x, y, w, h, (highlight == keynum) ? COLOR_GREEN : COLOR_BLACK);
+                init_loc(&loc2, X+x, y, w, h);
+                sdlx_register_event(&loc2, EVID_PIANO_KEY+keynum);
+            }
+
+            int zz = ((keynum + 8) % 12);
+            if (zz == 10 || zz == 3) {
+                pos += 2;
+            } else {
+                pos += 1;
+            }
+        }
+    }
 
     // register events to play tone sequence
     y = 0;
@@ -157,37 +229,7 @@ void display_update(void)
         sdlx_register_event(loc, EVID_PLAY_TONE_SEQ+i);
         y += 2 * sdlx_char_height(FONT_NORMAL);
     }
-
-    //sdlx_set_render_target(NULL);
-
-    //sdlx_render_texture_ex3(texture, 
-                            //0, 0, texture_w, texture_h,   // x,y,widht,height
-                            //90,           // clockwise rotation angle
-                            //texture_h/2, texture_h/2);    // texture point to rotate about
 }
-
-#if 0
-void register_event(sdlx_loc_t *loc, int evid)
-{
-    int x, y, w, h;
-
-    //sdlx_render_rect(loc->x, loc->y, loc->w, loc->h, 2, COLOR_WHITE);
-
-    // rotate the loc
-    x = texture_h - loc->y - loc->h;
-    y = loc->x;
-    w = loc->h;
-    h = loc->w;
-
-    loc->x = x;
-    loc->y = y;
-    loc->w = w;
-    loc->h = h;
-
-    // register event
-    sdlx_register_event(loc, evid);
-}
-#endif
 
 // -----------------  READ TONE SEQ FILE  ----------------------------
 
@@ -225,7 +267,7 @@ void read_tone_seq_file(char *filename)
         }
 
         // if 's' is a title line then 
-        //   if a title and seq is currently under construction
+        //   if a title and tone sequence is currently under construction
         //     save the in progress title and items
         //     increment max_tone_seq
         //   endif
@@ -248,6 +290,7 @@ void read_tone_seq_file(char *filename)
         }
 
         // the line contains tone sequence items, so save it
+        // xxx make this more efficient
         strcat(items, s);
         strcat(items, " ");
     }
@@ -389,7 +432,7 @@ void play_tone_seq(char *items)
     // add terminator
     add_terminator();
 
-    // play the tones sequence
+    // play the tones sequence, using thread
     sdlx_audio_play_tones(tones);
 }
 
@@ -434,6 +477,28 @@ void init_piano_key_freq_tbl(void)
         printf("I %s: keynum,freq = %2d %8.3f\n", progname, i, piano_key_freq[i]);
     }
 #endif
+
+    // https://en.wikipedia.org/wiki/Piano_key_frequencies
+    // 0  40           C
+    // 1  41  black
+    // 2  42           D
+    // 3  43  black
+    // 4  44           E
+    // 5  45           F
+    // 6  46  black
+    // 7  47           G
+    // 8  48  black
+    // 9  49           A
+    // 10 50  black
+    // 11 51           B
+    for (i = 1; i <= 88; i++) {
+        int tmp = (i + 8) % 12;
+        piano_key_is_black[i] = (tmp == 1 ||
+                                 tmp == 3 ||
+                                 tmp == 6 ||
+                                 tmp == 8 ||
+                                 tmp == 10);
+    }
 }
 
 int spn_tbl[7] = { 9, 11, 0, 2, 4, 5, 7 };

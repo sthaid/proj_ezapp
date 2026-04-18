@@ -1,3 +1,5 @@
+the rotate and flip is redundant when rotating about center
+
 To convert WGS84 ellipsoidal heights (
 ) to Mean Sea Level (MSL), or orthometric heights (
 ), subtract the geoid height (
