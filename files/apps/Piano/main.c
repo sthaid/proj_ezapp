@@ -10,6 +10,12 @@
 #include <utils.h>
 
 // xxx
+// - highlight keys during tone seq playback
+//   maybe play one tone at a time?
+// - make a piano recording
+// - display the octave and note letter
+
+// xxx
 // - check for overflow of tone_seq_tbl
 // - check for overflow of items string
 
@@ -222,12 +228,36 @@ void display_update(void)
         }
     }
 
+    // display piano key octave
+    x = 0;
+    y = sdlx_win_height * 0.60;
+    w = 52 * (sdlx_win_width / 24);
+    h = 4;
+    sdlx_render_fill_rect(X+x, y, w, h, COLOR_WHITE);
+
+    for (int octave = 1; octave <= 8; octave++) {
+        x = sdlx_win_width/24 * (7 * (octave-1) + 2) - 5;
+        y = sdlx_win_height * 0.60 - 20;
+        w = 8;
+        h = 40;
+        sdlx_render_fill_rect(X+x, y, w, h, COLOR_WHITE);
+    }
+
+    for (int octave = 1; octave <= 7; octave++) {
+        y = sdlx_win_height * 0.60;
+        x = sdlx_win_width/24 * (7 * (octave-1) + 2);
+        x += sdlx_win_width/24 * 3.5;
+        sdlx_render_printf_ex2(X+x, y, FONT_NORMAL, COLOR_WHITE, FLAG_XY_CTR, WRAP_NONE, 
+            " %d ", octave);
+    }
+        
+
     // register events to play tone sequence
     y = 0;
     for (int i = 0; i < max_tone_seq; i++) {
         loc = sdlx_render_printf_ex1(0, y, FONT_NORMAL, COLOR_LIGHT_BLUE, "%s", tone_seq_tbl[i].title);
         sdlx_register_event(loc, EVID_PLAY_TONE_SEQ+i);
-        y += 2 * sdlx_char_height(FONT_NORMAL);
+        y += 1.5 * sdlx_char_height(FONT_NORMAL);
     }
 }
 
