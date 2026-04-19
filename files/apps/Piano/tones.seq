@@ -1,5 +1,8 @@
 # xxx no error print so vs sol
 
+TITLE consec
+C4 C4 C4 C4 C4 C4 C4 C4
+
 TITLE ttls
 5
 do do sol sol la la sol pause
@@ -20,15 +23,11 @@ sol Sol sol fa fa             # One for the little boy
 mi mi mi re pause             # who lives down the lane
 do do sol sol                 # Baa baa black sheep
 la la la la sol pause         # Have you any wool
-fa fa mi mi re re do pause    # Yes sir Yes sir three bags full
+fa fa mi mi re re do          # Yes sir Yes sir three bags full
 
 TITLE ce3k
-5 re mi do down do sol pause
-5 re mi do down do sol pause
-5 re mi do down do sol pause
+5 re mi do down do sol pause pause
+5 re mi do down do sol 
 
 TITLE do_re_mi 
-3  C D E F G A B up C pause
-4  C D E F G A B up C pause
-5  C D E F G A B up C pause
-6  C D E F G A B up C pause
+4  C D E F G A B

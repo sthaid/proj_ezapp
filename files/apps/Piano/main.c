@@ -30,8 +30,9 @@
 char  *progname;
 char  *data_dir;
 
-double piano_key_freq[89];      // starts at [1]
+int    piano_key_freq[89];      // starts at [1]
 bool   piano_key_is_black[89];  // starts at [1]
+unsigned char piano_freq_to_keynum[4200];
 
 int max_tone_seq;
 struct {
@@ -40,8 +41,8 @@ struct {
 } tone_seq_tbl[MAX_TONE_SEQ];
 
 double X;
-int highlight;
-long highlight_start_usec;
+bool X_initialized;
+
 
 // prototypes
 void read_tone_seq_file(char *filename);
@@ -61,6 +62,8 @@ int main(int argc, char **argv)
 {
     sdlx_event_t event;
     bool         done = false;
+    long         time_start=0, time_now, cycle_dur;
+
 
     // save args
     progname = argv[0];
@@ -94,8 +97,18 @@ int main(int argc, char **argv)
         // present the display
         sdlx_display_present();
 
-        // wait for event, with 100 ms timeout
-        sdlx_get_event(100000, &event);
+        // debug print the cycle duration, 
+        if (0) {
+            time_now = util_microsec_timer();
+            cycle_dur = time_now - time_start;
+            time_start = time_now;
+            if (cycle_dur < 1000000) {
+                printf("I %s: cycle_dur %ld ms\n", progname, cycle_dur/1000);
+            }
+        }
+
+        // wait for event, with 20 ms timeout
+        sdlx_get_event(20000, &event);
 
         // process events
         if (event.event_id >= EVID_PLAY_TONE_SEQ && event.event_id < EVID_PLAY_TONE_SEQ + MAX_TONE_SEQ) {
@@ -111,9 +124,6 @@ int main(int argc, char **argv)
             tones[1].freq = 0;
             tones[1].intvl_ms = 0;
             sdlx_audio_play_tones(tones);
-            highlight = keynum;
-            highlight_start_usec = util_microsec_timer();
-
         } else {
             switch (event.event_id) {
             case EVID_MOTION:
@@ -178,28 +188,60 @@ void display_update(void)
     sdlx_loc_t *loc;
     sdlx_loc_t loc2;
     int keynum, pos, x, y, w, h;
-    long now;
+    //long now;
+    sdlx_color_t color;
 
-    if (highlight) {
-        now = util_microsec_timer();
-        if (now > highlight_start_usec + 500000) {
-            highlight = 0;
+    sdlx_audio_state_t as;
+
+    static int last_play_tones_seqnum;
+    static bool highlight_keynum;
+    static long highlight_start;
+
+    sdlx_audio_get_state(&as);
+    if (as.play_tones_seqnum && as.play_tones_seqnum != last_play_tones_seqnum) {
+        highlight_keynum = piano_freq_to_keynum[as.play_tones_freq];
+        printf("highlight_keynum %d\n", highlight_keynum);
+        if (highlight_keynum) {
+            highlight_start = util_microsec_timer();
+            printf("HIGHLIGHTING  %d\n", highlight_keynum);
         }
+    }
+    if (highlight_keynum) {
+        long duration = util_microsec_timer() - highlight_start;
+        if (duration > 250000) {
+            highlight_keynum = 0;
+            highlight_start = 0;
+            printf("CANCEL HIGHLIGHT\n");
+        }
+    }
+    last_play_tones_seqnum = as.play_tones_seqnum;
+
+    int white_key_w = sdlx_win_width / 14;
+    int white_key_h = sdlx_win_height / 3;
+    int black_key_w = white_key_w * 0.5;
+    int black_key_h = white_key_h / 2;
+
+    if (!X_initialized) {
+        X_initialized = true;
+        X = -23 * white_key_w + 4;
     }
 
     // display piano keys
     pos = 0;
     for (keynum = 1; keynum <= 88; keynum++) {
         if (!piano_key_is_black[keynum]) {
-            w = sdlx_win_width / 24;
-            h = sdlx_win_height / 3;
-            x = pos * w + 1;
-            y = sdlx_win_height - h;
-            w -= 2;
-            if (X+x > -w && X+x < sdlx_win_width) {
-                sdlx_render_fill_rect(X+x, y, w, h, (highlight == keynum) ? COLOR_GREEN : COLOR_WHITE);
+            w = white_key_w - 2;
+            h = white_key_h;
+            x = pos * white_key_w + 1;
+            y = sdlx_win_height - white_key_h;
+            if (X+x > -white_key_w && X+x < sdlx_win_width) {
+                color = (keynum == highlight_keynum ? COLOR_GREEN : COLOR_WHITE);
+                sdlx_render_fill_rect(X+x, y, w, h, color);
                 init_loc(&loc2, X+x, y, w, h);
                 sdlx_register_event(&loc2, EVID_PIANO_KEY+keynum);
+                //if (keynum == 1 || keynum == 12) {
+                    //printf("%d %d %d %d\n", loc2.x, loc2.y, loc2.w, loc2.h);
+                //}
             }
             pos++;
         }
@@ -208,19 +250,19 @@ void display_update(void)
     pos = 0;
     for (keynum = 1; keynum <= 88; keynum++) {
         if (piano_key_is_black[keynum]) {
-            w = sdlx_win_width / 24;
-            h = sdlx_win_height / 6;
-            x = (pos + 0.5) * w + 16;
-            y = sdlx_win_height - 2*h;
-            w -= 32;
+            h = black_key_h;
+            x = (pos + 0.5) * white_key_w + black_key_w/2;
+            y = sdlx_win_height - 2 * black_key_h;
+            w = black_key_w;
             if (X+x > -w && X+x < sdlx_win_width) {
-                sdlx_render_fill_rect(X+x, y, w, h, (highlight == keynum) ? COLOR_GREEN : COLOR_BLACK);
+                color = (keynum == highlight_keynum ? COLOR_GREEN : COLOR_BLACK);
+                sdlx_render_fill_rect(X+x, y, w, h, color);
                 init_loc(&loc2, X+x, y, w, h);
                 sdlx_register_event(&loc2, EVID_PIANO_KEY+keynum);
             }
 
-            int zz = ((keynum + 8) % 12);
-            if (zz == 10 || zz == 3) {
+            int tmp = ((keynum + 8) % 12);
+            if (tmp == 10 || tmp == 3) {
                 pos += 2;
             } else {
                 pos += 1;
@@ -228,27 +270,29 @@ void display_update(void)
         }
     }
 
+int num_white_keys = 52;
+int y_octave = sdlx_win_height - white_key_h - 100;
+
     // display piano key octave
     x = 0;
-    y = sdlx_win_height * 0.60;
-    w = 52 * (sdlx_win_width / 24);
+    y = y_octave;
+    w = num_white_keys * white_key_w;
     h = 4;
     sdlx_render_fill_rect(X+x, y, w, h, COLOR_WHITE);
 
     for (int octave = 1; octave <= 8; octave++) {
-        x = sdlx_win_width/24 * (7 * (octave-1) + 2) - 5;
-        y = sdlx_win_height * 0.60 - 20;
+        x = white_key_w * (7 * (octave-1) + 2) - 5;
+        y = y_octave - 50;
         w = 8;
-        h = 40;
+        h = 100;
         sdlx_render_fill_rect(X+x, y, w, h, COLOR_WHITE);
     }
 
     for (int octave = 1; octave <= 7; octave++) {
-        y = sdlx_win_height * 0.60;
-        x = sdlx_win_width/24 * (7 * (octave-1) + 2);
-        x += sdlx_win_width/24 * 3.5;
+        y = y_octave;
+        x = (white_key_w * (7 * (octave-1) + 2)) + (white_key_w * 3.5);
         sdlx_render_printf_ex2(X+x, y, FONT_NORMAL, COLOR_WHITE, FLAG_XY_CTR, WRAP_NONE, 
-            " %d ", octave);
+                               " %d ", octave);
     }
         
 
@@ -492,19 +536,21 @@ void add_terminator(void)
 void init_piano_key_freq_tbl(void)
 {
     double factor = pow(2,1.0/12);
+    double f;
     int    i;
 
     printf("I %s: factor %f\n", progname, factor);
 
-    piano_key_freq[0] = 0;      // 0 is not used
-    piano_key_freq[1] = 27.5;   // 1 is the first piano key
-    for (i = 2; i <= 88; i++) {
-        piano_key_freq[i] = piano_key_freq[i-1] * factor;
+    f = 27.5;
+    for (i = 1; i <= 88; i++) {
+        piano_key_freq[i] = nearbyint(f);
+        f *= factor;
     }
 
-#if 0
+
+#if 1
     for (i = 1; i <= 88; i++) {
-        printf("I %s: keynum,freq = %2d %8.3f\n", progname, i, piano_key_freq[i]);
+        printf("I %s: keynum,freq = %2d %d\n", progname, i, piano_key_freq[i]);
     }
 #endif
 
@@ -528,6 +574,16 @@ void init_piano_key_freq_tbl(void)
                                  tmp == 6 ||
                                  tmp == 8 ||
                                  tmp == 10);
+    }
+
+    for (i = 1; i <= 88; i++) {
+        piano_freq_to_keynum[piano_key_freq[i]] = i;
+    }
+
+    for (int freq = 27; freq < 4200; freq++) {
+        if (piano_freq_to_keynum[freq]) {
+            printf("FREQ %d  keynum %d\n", freq, piano_freq_to_keynum[freq]);
+        }
     }
 }
 
