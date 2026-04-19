@@ -24,6 +24,7 @@
 // - check for overflow of items string
 
 // defines
+#define EVID_HLOCK         1
 #define EVID_PLAY_TONE_SEQ 100
 #define EVID_PIANO_KEY     500
 
@@ -47,6 +48,7 @@ struct {
 
 double X, Y;
 bool X_initialized;  //xxx is this needed?
+bool hlock = true;
 
 
 // prototypes
@@ -94,7 +96,7 @@ int main(int argc, char **argv)
         sdlx_register_event(NULL, EVID_MOTION);
 
         // register control event to end program
-        sdlx_register_control_events(0, NULL,
+        sdlx_register_control_events(EVID_HLOCK, hlock ? "UNLOCK" : "LOCK",
                                      0, NULL,
                                      EVID_QUIT, "X",
                                      COLOR_WHITE, COLOR_BLACK);
@@ -131,11 +133,16 @@ int main(int argc, char **argv)
             sdlx_audio_play_tones(tones);
         } else {
             switch (event.event_id) {
+            case EVID_HLOCK:
+                hlock = !hlock;
+                break;
             case EVID_MOTION:
                 double xrel = event.u.motion.xrel;
                 double yrel = event.u.motion.yrel;
 
-                if (fabs(xrel) > fabs(yrel)*1.5) X += xrel;
+                if (!hlock) {
+                    if (fabs(xrel) > fabs(yrel)*1.5) X += xrel;
+                }
                 if (fabs(yrel) > fabs(xrel)*1.5) Y += yrel;
 
                 if (Y > 0) Y = 0;

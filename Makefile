@@ -28,6 +28,6 @@ clobber: clean
 	rm -rf src/SDL src/SDL_mixer src/SDL_ttf
 
 install_on_android:
-	make -C android install_debug
+	make -C android install
 
 .PHONY: build apps svcs clean clobber install_on_android

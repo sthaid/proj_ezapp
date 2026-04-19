@@ -1,9 +1,11 @@
-save copy and rebuild all/test
-fixup FLIP and ROT
-add option for black background
+width is 2050, maybe it should be 2200 ?
+
 display key letter when highlighted
 
-the rotate and flip is redundant when rotating about center
+display amount of daytime in Clock
+
+
+xxxxxxxx----------------xxxxxxxxxxxxxxx
 
 To convert WGS84 ellipsoidal heights (
 ) to Mean Sea Level (MSL), or orthometric heights (
