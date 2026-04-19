@@ -17,8 +17,9 @@ git clone https://github.com/libsdl-org/SDL_ttf
 git clone https://github.com/libsdl-org/SDL_mixer
 
 # checkout branches
-# note: SDL_ttf and SDL_mixer currently don't have recent release tags
-cd $top/src/SDL; git checkout -q release-3.4.0
+cd $top/src/SDL;       git checkout -q release-3.4.0
+cd $top/src/SDL_ttf;   git checkout -q 0165849a0061d91c51d4a3fa8bcda5b5fcf53cc9
+cd $top/src/SDL_mixer; git checkout -q 092fafa4d820c45e3f05b59b7be75807ef3eefe8
 
 # download external repos
 cd $top/src/SDL_ttf/external;   ./download.sh
