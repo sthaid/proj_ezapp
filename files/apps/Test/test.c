@@ -1145,14 +1145,10 @@ static char *num2str(double num, char *fmt, char *s)
 
 // -----------------  PAGE 11: TEXT ROTATION  -----------------
 
-#define EVID_ROT_NONE           10
-#define EVID_FLIP               11
-#define EVID_ROT_CTR_90         12
-#define EVID_ROT_CTR_90_FLIP    13
-#define EVID_ROT_CTR_180        14
-#define EVID_ROT_CTR_180_FLIP   15
-#define EVID_ROT_CTR_270        16
-#define EVID_ROT_CTR_270_FLIP   17
+#define EVID_ROT_NONE    10
+#define EVID_ROT_CTR_90  11
+#define EVID_ROT_CTR_180 12
+#define EVID_ROT_CTR_270 13
 
 char *text = "hello";
 char *wrap_text = "this is line 1\nthis is line 2\nthis is line 3";
@@ -1176,32 +1172,16 @@ static void page_11_draw(void)
     sdlx_register_event(loc, EVID_ROT_NONE);
     y += 1.5 * sdlx_char_height_dflt;
 
-    loc = sdlx_render_printf_ex1(0, y, FONT_NORMAL, COLOR_LIGHT_BLUE, "FLIP");
-    sdlx_register_event(loc, EVID_FLIP);
-    y += 1.5 * sdlx_char_height_dflt;
-
     loc = sdlx_render_printf_ex1(0, y, FONT_NORMAL, COLOR_LIGHT_BLUE, "ROT_CTR_90");
     sdlx_register_event(loc, EVID_ROT_CTR_90);
-    y += 1.5 * sdlx_char_height_dflt;
-
-    loc = sdlx_render_printf_ex1(0, y, FONT_NORMAL, COLOR_LIGHT_BLUE, "ROT_CTR_90_FLIP");
-    sdlx_register_event(loc, EVID_ROT_CTR_90_FLIP);
     y += 1.5 * sdlx_char_height_dflt;
 
     loc = sdlx_render_printf_ex1(0, y, FONT_NORMAL, COLOR_LIGHT_BLUE, "ROT_CTR_180");
     sdlx_register_event(loc, EVID_ROT_CTR_180);
     y += 1.5 * sdlx_char_height_dflt;
 
-    loc = sdlx_render_printf_ex1(0, y, FONT_NORMAL, COLOR_LIGHT_BLUE, "ROT_CTR_180_FLIP");
-    sdlx_register_event(loc, EVID_ROT_CTR_180_FLIP);
-    y += 1.5 * sdlx_char_height_dflt;
-
     loc = sdlx_render_printf_ex1(0, y, FONT_NORMAL, COLOR_LIGHT_BLUE, "ROT_CTR_270");
     sdlx_register_event(loc, EVID_ROT_CTR_270);
-    y += 1.5 * sdlx_char_height_dflt;
-
-    loc = sdlx_render_printf_ex1(0, y, FONT_NORMAL, COLOR_LIGHT_BLUE, "ROT_CTR_270_FLIP");
-    sdlx_register_event(loc, EVID_ROT_CTR_270_FLIP);
     y += 1.5 * sdlx_char_height_dflt;
 }
 
@@ -1211,26 +1191,14 @@ static void page_11_process_event(sdlx_event_t *event)
     case EVID_ROT_NONE:
         rot_flags = 0;
         break;
-    case EVID_FLIP:
-        rot_flags = FLAG_FLIP;
-        break;
     case EVID_ROT_CTR_90:
         rot_flags = FLAG_ROT_CTR_90;
-        break;
-    case EVID_ROT_CTR_90_FLIP:
-        rot_flags = FLAG_ROT_CTR_90 | FLAG_FLIP;
         break;
     case EVID_ROT_CTR_180:
         rot_flags = FLAG_ROT_CTR_180;
         break;
-    case EVID_ROT_CTR_180_FLIP:
-        rot_flags = FLAG_ROT_CTR_180 | FLAG_FLIP;
-        break;
     case EVID_ROT_CTR_270:
         rot_flags = FLAG_ROT_CTR_270;
-        break;
-    case EVID_ROT_CTR_270_FLIP:
-        rot_flags = FLAG_ROT_CTR_270 | FLAG_FLIP;
         break;
     }
 }

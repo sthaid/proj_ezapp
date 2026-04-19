@@ -144,7 +144,7 @@ Public Domain Beginner Pieces with Letter/SPN Notation
 The following popular, free tunes are in the public domain and often arranged for beginners 
 with letter notation: 
 
-  - Ode to Joy (Beethoven): Often arranged in C Major starting on E4 or E5.
+k - Ode to Joy (Beethoven): Often arranged in C Major starting on E4 or E5.
 k - Twinkle, Twinkle, Little Star: Commonly played in C4-G4 position.
 k - Mary Had a Little Lamb: Ideal for learning E4, D4, C4.
 k - Jingle Bells: Simple melody often starting on E5.

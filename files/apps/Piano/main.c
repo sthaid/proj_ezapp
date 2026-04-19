@@ -9,6 +9,10 @@
 #include <sdlx.h>
 #include <utils.h>
 
+// xxx 
+// - display playing title
+// - display key letters when active
+
 // xxx
 // - highlight keys during tone seq playback
 //   maybe play one tone at a time?
@@ -41,8 +45,8 @@ struct {
     int   octave;
 } tone_seq_tbl[MAX_TONE_SEQ];
 
-double X;
-bool X_initialized;
+double X, Y;
+bool X_initialized;  //xxx is this needed?
 
 
 // prototypes
@@ -128,7 +132,13 @@ int main(int argc, char **argv)
         } else {
             switch (event.event_id) {
             case EVID_MOTION:
-                X += event.u.motion.xrel;
+                double xrel = event.u.motion.xrel;
+                double yrel = event.u.motion.yrel;
+
+                if (fabs(xrel) > fabs(yrel)*1.5) X += xrel;
+                if (fabs(yrel) > fabs(xrel)*1.5) Y += yrel;
+
+                if (Y > 0) Y = 0;
                 break;
             case EVID_QUIT:
                 done = true;
@@ -292,16 +302,24 @@ int y_octave = sdlx_win_height - white_key_h - 100;
     for (int octave = 1; octave <= 7; octave++) {
         y = y_octave;
         x = (white_key_w * (7 * (octave-1) + 2)) + (white_key_w * 3.5);
-        sdlx_render_printf_ex2(X+x, y, FONT_NORMAL, COLOR_WHITE, FLAG_XY_CTR, WRAP_NONE, 
+        sdlx_render_printf_ex2(X+x, y, FONT_NORMAL, COLOR_WHITE,
+                               FLAG_XY_CTR | FLAG_BG_BLACK, WRAP_NONE,
                                " %d ", octave);
     }
         
+    // xxx temp display pathname
+    //sdlx_render_printf(sdlx_win_width/2, 0, "%s", as.pathname);
 
     // register events to play tone sequence
     y = 0;
     for (int i = 0; i < max_tone_seq; i++) {
-        loc = sdlx_render_printf_ex1(0, y, FONT_NORMAL, COLOR_LIGHT_BLUE, "%s", tone_seq_tbl[i].title);
-        sdlx_register_event(loc, EVID_PLAY_TONE_SEQ+i);
+        if (Y+y > -sdlx_char_height_dflt && Y+y < y_octave-sdlx_char_height_dflt) {
+            loc = sdlx_render_printf_ex1(
+                      0, Y+y, 
+                      FONT_NORMAL, COLOR_LIGHT_BLUE, 
+                      "%s", tone_seq_tbl[i].title);
+            sdlx_register_event(loc, EVID_PLAY_TONE_SEQ+i);
+        }
         y += 1.5 * sdlx_char_height(FONT_NORMAL);
     }
 }

@@ -85,14 +85,15 @@ sdlx_loc_t *sdlx_render_printf(int x, int y, char *fmt, ...) __attribute__ ((for
 
 // The following work with the font specified by fontid, and the 
 // specified color. These also support the flag and wrap params
-#define FLAG_NONE          0
-#define FLAG_X_CTR         1
-#define FLAG_Y_CTR         2
+#define FLAG_NONE          0x000
+#define FLAG_X_CTR         0x001
+#define FLAG_Y_CTR         0x002
 #define FLAG_XY_CTR        (FLAG_X_CTR | FLAG_Y_CTR)
-#define FLAG_FLIP          0x10
-#define FLAG_ROT_CTR_90    0x20
-#define FLAG_ROT_CTR_180   0x40
-#define FLAG_ROT_CTR_270   0x80
+#define FLAG_ROT_CTR_90    0x010
+#define FLAG_ROT_CTR_180   0x020
+#define FLAG_ROT_CTR_270   0x040
+#define FLAG_BG_BLACK      0x100
+#define FLAG_BG_WHITE      0x200
 #define WRAP_NONE    -1
 #define WRAP_NEWLINE  0
 int sdlx_char_width(int fontid);
@@ -170,7 +171,9 @@ typedef struct {
     int    play_current_secs;
     int    play_total_secs;
     int    record_secs;
-    char   pathname[100];
+    char   pathname[100];  // xxx if not used then delete
+    int    play_tones_freq;
+    int    play_tones_seqnum;
     double volume;
     // xxx add fps and num_channels ?
 } sdlx_audio_state_t;

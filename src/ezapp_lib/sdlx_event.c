@@ -180,7 +180,7 @@ void sdlx_register_control_events(int evid1, char *evstr1,
             x = logical_win_width - (CONTROL_AREA_SIZE / 2);
             loc = sdlx_render_printf_ex2(
                         x, logical_win_height - y,
-                        FONT_NORMAL, print_color, FLAG_XY_CTR|FLAG_ROT_CTR_90|FLAG_FLIP, WRAP_NONE, "%s", evstr[i]);
+                        FONT_NORMAL, print_color, FLAG_XY_CTR|FLAG_ROT_CTR_270, WRAP_NONE, "%s", evstr[i]);
         }
 
         sdlx_register_event(loc, evid[i]);

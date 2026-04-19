@@ -1,5 +1,3 @@
-# xxx no error print so vs sol
-
 TITLE fj 5
 C D E C pause1 C D E C
 E F G pause1 E F G
@@ -31,8 +29,8 @@ C C G G A A G
 F F E E D D C
 
 TITLE ce3k 5
-D E C down C G up pause2
-D E C down C G 
+D E C C4 G4 pause2
+D E C C4 G4
 
 TITLE doremi4 4
 C D E F G A B

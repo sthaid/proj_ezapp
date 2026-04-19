@@ -494,8 +494,6 @@ static void render_text_texture(SDL_Texture *t, SDL_FRect *pos, int flags)
     #define SWAP_FLOAT(a,b) \
         do { float tmp = (a); (a) = (b); (b) = tmp; } while (0)
 
-    bool flip = (flags & FLAG_FLIP);
-
     if (flags & FLAG_ROT_CTR_90) {
         SDL_RenderTextureRotated(renderer,
                                  t, 
@@ -503,7 +501,7 @@ static void render_text_texture(SDL_Texture *t, SDL_FRect *pos, int flags)
                                  pos,       // dest rectangle
                                  90,        // rotation angle
                                  NULL,      // point around which dest will be rotated
-                                 flip ? SDL_FLIP_HORIZONTAL_AND_VERTICAL : SDL_FLIP_NONE);
+                                 SDL_FLIP_NONE);
         pos->x = pos->x + pos->w/2 - pos->h/2;
         pos->y = pos->y + pos->h/2 - pos->w/2;
         SWAP_FLOAT(pos->w, pos->h);
@@ -514,7 +512,7 @@ static void render_text_texture(SDL_Texture *t, SDL_FRect *pos, int flags)
                                  pos,       // dest rectangle
                                  180,       // rotation angle
                                  NULL,      // point around which dest will be rotated
-                                 flip ? SDL_FLIP_HORIZONTAL_AND_VERTICAL : SDL_FLIP_NONE);
+                                 SDL_FLIP_NONE);
     } else if (flags & FLAG_ROT_CTR_270) {
         SDL_RenderTextureRotated(renderer,
                                  t, 
@@ -522,19 +520,10 @@ static void render_text_texture(SDL_Texture *t, SDL_FRect *pos, int flags)
                                  pos,       // dest rectangle
                                  270,       // rotation angle
                                  NULL,      // point around which dest will be rotated
-                                 flip ? SDL_FLIP_HORIZONTAL_AND_VERTICAL : SDL_FLIP_NONE);
+                                 SDL_FLIP_NONE);
         pos->x = pos->x + pos->w/2 - pos->h/2;
         pos->y = pos->y + pos->h/2 - pos->w/2;
         SWAP_FLOAT(pos->w, pos->h);
-    } else if (flip) {
-        // flip with 0 rotation
-        SDL_RenderTextureRotated(renderer,
-                                 t, 
-                                 NULL,      // source, NULL means the entire texture
-                                 pos,       // dest rectangle
-                                 0,         // rotation angle
-                                 NULL,      // point around which dest will be rotated
-                                 SDL_FLIP_HORIZONTAL_AND_VERTICAL);
     } else {
         SDL_RenderTexture(renderer, t, NULL, pos);
     }
@@ -634,9 +623,19 @@ static sdlx_loc_t *render_text(int x, int y, int fontid, sdlx_color_t color, int
                         sdlx_color(color),
                         wrap);
     } else {
-        surface = TTF_RenderText_Solid(
-                        font[ptsize].font, str, 0,
-                        sdlx_color(color));
+        if (flags & FLAG_BG_BLACK) {
+            surface = TTF_RenderText_Shaded(
+                            font[ptsize].font, str, 0,
+                            sdlx_color(color), sdlx_color(COLOR_BLACK));
+        } else if (flags & FLAG_BG_WHITE) {
+            surface = TTF_RenderText_Shaded(
+                            font[ptsize].font, str, 0,
+                            sdlx_color(color), sdlx_color(COLOR_WHITE));
+        } else {
+            surface = TTF_RenderText_Solid(
+                            font[ptsize].font, str, 0,
+                            sdlx_color(color));
+        }
     }
     if (surface == NULL) {
         ERROR("TTF_RenderTextSolid failed, %s\n", SDL_GetError());

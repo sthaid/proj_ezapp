@@ -967,7 +967,7 @@ static int record_dev_thread(void *cx_arg)
 // -----------------  PLAY SEQUENCE OF TONES  -------------
 
 // defines
-#define MIN_TONE_FREQ  50   // inclusive range
+#define MIN_TONE_FREQ  25   // inclusive range
 #define MAX_TONE_FREQ  6000 
 
 // typedefs
@@ -1041,6 +1041,8 @@ static int tones_thread(void *cx_arg)
     int              max_samples;
     int              total_queued_samples = 0;
 
+    static int seqnum;
+
     // allocate samples to handle a tone or gap of up to 30 secs
     max_samples = 30 * FRAMES_PER_SEC;
     samples = malloc(max_samples * sizeof(float));
@@ -1082,6 +1084,11 @@ static int tones_thread(void *cx_arg)
         int n;  // number of samples
 
         //INFO("tone[%d] freq=%d millisecs=%d\n", i, t->freq, t->intvl_ms);
+
+        // xxx comment
+        seqnum++;
+        state.play_tones_freq = t->freq;
+        state.play_tones_seqnum = seqnum;
 
         // construct samples for either:
         // - gap  (when t->freq == 0), or
@@ -1130,6 +1137,8 @@ done:
     free(cx);
     free(samples);
     state.state = AUDIO_STATE_IDLE;
+    state.play_tones_freq = 0;
+    state.play_tones_seqnum = 0;
     memset(&state, 0, sizeof(state));
     return 0;
 }

@@ -1,3 +1,8 @@
+save copy and rebuild all/test
+fixup FLIP and ROT
+add option for black background
+display key letter when highlighted
+
 the rotate and flip is redundant when rotating about center
 
 To convert WGS84 ellipsoidal heights (
