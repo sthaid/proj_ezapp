@@ -269,6 +269,7 @@ struct ValueType {
 };
 
 /* function definition */
+struct Value;
 struct FuncDef {
     struct ValueType *ReturnType;   /* the return value type */
     int NumParams;                  /* the number of parameters */
@@ -276,7 +277,8 @@ struct FuncDef {
                                         the explicitly specified ones */
     struct ValueType **ParamType;   /* array of parameter types */
     char **ParamName;               /* array of parameter names */
-    void (*Intrinsic)();            /* intrinsic call address or NULL */
+    void (*Intrinsic)(struct ParseState *, struct Value *, struct Value **, int);
+                                    /* intrinsic call address or NULL */
     struct ParseState Body;         /* lexical tokens of the function body if
                                         not intrinsic */
 };
