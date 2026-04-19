@@ -23,7 +23,7 @@
 #define EVID_PLAY_TONE_SEQ 100
 #define EVID_PIANO_KEY     500
 
-#define MAX_ITEMS_STR 10000
+#define MAX_ITEMS_STR 10000  //xxx is this long enough
 #define MAX_TONE_SEQ  100
 
 // variables
@@ -38,6 +38,7 @@ int max_tone_seq;
 struct {
     char *title;
     char *items;
+    int   octave;
 } tone_seq_tbl[MAX_TONE_SEQ];
 
 double X;
@@ -46,7 +47,7 @@ bool X_initialized;
 
 // prototypes
 void read_tone_seq_file(char *filename);
-void play_tone_seq(char *items);
+void play_tone_seq(char *items, int octave);
 void init_piano_key_freq_tbl(void);
 int get_piano_keynum_spn(char *item);
 int get_piano_keynum_solfege(char *item, int octave);
@@ -112,8 +113,8 @@ int main(int argc, char **argv)
 
         // process events
         if (event.event_id >= EVID_PLAY_TONE_SEQ && event.event_id < EVID_PLAY_TONE_SEQ + MAX_TONE_SEQ) {
-            int which = event.event_id - EVID_PLAY_TONE_SEQ;
-            play_tone_seq(tone_seq_tbl[which].items);
+            int idx = event.event_id - EVID_PLAY_TONE_SEQ;
+            play_tone_seq(tone_seq_tbl[idx].items, tone_seq_tbl[idx].octave);
         } else if (event.event_id >= EVID_PIANO_KEY+1 && 
                    event.event_id <= EVID_PIANO_KEY+88) {
             int keynum = event.event_id - EVID_PIANO_KEY;
@@ -315,6 +316,7 @@ void read_tone_seq_file(char *filename)
     char  s[1000], pathname[100], *p;
     char  title[100];
     char  items[MAX_ITEMS_STR];
+    int   cnt, octave=4;
 
     title[0] = '\0';
     items[0] = '\0';
@@ -352,13 +354,20 @@ void read_tone_seq_file(char *filename)
             if (title[0] && items[0]) {
                 tone_seq_tbl[max_tone_seq].title = strdup(title);
                 tone_seq_tbl[max_tone_seq].items = strdup(items);
-                printf("I %s: tone_seq '%s' = '%s'\n", 
+                tone_seq_tbl[max_tone_seq].octave = octave;
+                printf("I %s: tone_seq '%s' / %d = '%s'\n", 
                        progname,
                        tone_seq_tbl[max_tone_seq].title,
+                       tone_seq_tbl[max_tone_seq].octave,
                        tone_seq_tbl[max_tone_seq].items);
                 max_tone_seq++;
             }
-            strcpy(title, &s[6]); 
+            cnt = sscanf(&s[6], "%s %d", title, &octave);
+            if (cnt != 2) {
+                printf("E %s: both title and octave required\n", progname);
+                fclose(fp);
+                return;
+            }
             items[0] = '\0';
             continue;
         }
@@ -366,16 +375,18 @@ void read_tone_seq_file(char *filename)
         // the line contains tone sequence items, so save it
         // xxx make this more efficient
         strcat(items, s);
-        strcat(items, " ");
+        strcat(items, " pause2 ");
     }
 
     // reached EOF, save the last title/items
     if (title[0] && items[0]) {
         tone_seq_tbl[max_tone_seq].title = strdup(title);
         tone_seq_tbl[max_tone_seq].items = strdup(items);
-        printf("I %s: tone_seq '%s' = '%s'\n", 
+        tone_seq_tbl[max_tone_seq].octave = octave;
+        printf("I %s: tone_seq '%s' / %d = '%s'\n", 
                progname,
                tone_seq_tbl[max_tone_seq].title,
+               tone_seq_tbl[max_tone_seq].octave,
                tone_seq_tbl[max_tone_seq].items);
         max_tone_seq++;
     }
@@ -420,7 +431,7 @@ void sanitize_input(char *s)
 #define MAX_TONE        2000
 #define TONE_INTVL_MS   500
 #define TONE_GAP_MS     50
-#define PAUSE_INTVL_MS  500
+#define PAUSE_INTVL_MS  250
 
 sdlx_tone_t tones[MAX_TONE];
 int         max_tones;
@@ -429,10 +440,9 @@ void add_tone(int freq, int intvl_ms);
 void add_gap(int freq);
 void add_terminator(void);
 
-void play_tone_seq(char *items)
+void play_tone_seq(char *items, int octave)
 {
     int   keynum;
-    int   octave = 4;
     char  items_copy[MAX_ITEMS_STR];
     char *strtok_arg, *item;
 
@@ -468,8 +478,16 @@ void play_tone_seq(char *items)
         }
 
         // handle pause item
-        if (strcasecmp(item, "pause") == 0) {
-            add_gap(PAUSE_INTVL_MS);
+        if (strcasecmp(item, "pause1") == 0) {
+            add_gap(1*PAUSE_INTVL_MS);
+            continue;
+        }
+        if (strcasecmp(item, "pause2") == 0) {
+            add_gap(2*PAUSE_INTVL_MS);
+            continue;
+        }
+        if (strcasecmp(item, "pause4") == 0) {
+            add_gap(4*PAUSE_INTVL_MS);
             continue;
         }
 
