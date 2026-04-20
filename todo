@@ -1,33 +1,37 @@
+piano app
+- cleanup piano
+- display key letter when highlighted
+- display title line
+- more sequences
+     jaws
+     alphabet song
+     head shoulders keens and toes
+
+clock app
+- display amount of daytime in Clock
+
+altitude
+- To convert WGS84 ellipsoidal heights (
+  ) to Mean Sea Level (MSL), or orthometric heights (
+  ), subtract the geoid height (
+  ) at that location using the formula 
+  . This requires a geoid model, such as EGM96 or EGM2008, which maps the difference between the ellipsoid and the sea-level surfac
+  
 width is 2050, maybe it should be 2200 ?
 
-display key letter when highlighted
+Steps App
+- write service to collect stepcount every 5 minutes
+- design the UI
 
-display amount of daytime in Clock
-
+documentation
+- make doc dir, with all README files
+   . android
+   . apps
+   . credits
+   . copyright
+- copyright and credits
 
 xxxxxxxx----------------xxxxxxxxxxxxxxx
-
-To convert WGS84 ellipsoidal heights (
-) to Mean Sea Level (MSL), or orthometric heights (
-), subtract the geoid height (
-) at that location using the formula 
-. This requires a geoid model, such as EGM96 or EGM2008, which maps the difference between the ellipsoid and the sea-level surfac
-
---- apps ---
-Piano
-Steps
-Magnifier
-
---- small tasks ---
-
---- medium / large ---
-altitude, improve elevation
-
---------
-
-upgrade to Ubuntu 25.10
-
---------
 
 picoc issues  
 - low_band = util_rms_float(&fft[first_bin], last_bin-first_bin+1);// yyy picoc isue requires &fft[first_bin]
@@ -41,6 +45,7 @@ picoc issues
 - picoc numbers .333,  needs leading 0
 - ifdef code for ANDROID, check apps for other places ifdef ANDROID used
 - ptr operations ?
+- short circuit eval
 
 issues with open source ...
 - kissfft does not use O2 ????????
@@ -76,21 +81,6 @@ CODE REVIEWS
 ----------
 -- APPS --
 ----------
-
-Steps
-- StepCount  Svc keeps track of when app is running and steps
-
-Piano  
-- more solfege
-- "what are common musical tone sequence such as twinke twinkle or Close encounters"
-     close encounters
-     jaws
-     beethoven
-     imperial march
-     twinkle twinkle:
-     alphabet song
-     bah baa black sheep
-     head shoulders keens and toes
 
 ===========================================================
 ====================  LATER  ==============================
