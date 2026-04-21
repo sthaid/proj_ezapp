@@ -89,10 +89,8 @@ int main(int argc, char **argv)
         // present the display
         sdlx_display_present();
 
-#if 0
         // debug print the cycle duration, 
         debug_print_cycle_duration();
-#endif
 
         // wait for event, with 20 ms timeout
         sdlx_get_event(20000, &event);
@@ -119,8 +117,8 @@ int main(int argc, char **argv)
                 break;
             case EVID_MOTION:
                 // handle mouse motion in the X,Y directions
-                // - X scrolls the keyboard
-                // - Y scrolls the tone sequence title list
+                // - X scrolls the piano keyboard
+                // - Y scrolls the list of tone sequence titles
                 double xrel = event.u.motion.xrel;
                 double yrel = event.u.motion.yrel;
                 if (!Xlock) {
@@ -155,6 +153,9 @@ void debug_print_cycle_duration(void)
 {
     long time_now, cycle_dur;
     static long time_start;
+
+    // disable
+    return;
 
     if (time_start == 0) {
         time_start = util_microsec_timer();
@@ -269,13 +270,13 @@ void display_update(void)
     }
 
     // display piano key octaves
-    // - display the line
+    // - display line above piano keyboard
     x = 0;
     y = y_octave;
     w = num_white_keys * white_key_w;
     h = 4;
     sdlx_render_fill_rect(X+x, y, w, h, COLOR_WHITE);
-    // - display vertical ticks
+    // - display vertical octave divider tick marks
     for (int octave = 1; octave <= 8; octave++) {
         x = white_key_w * (7 * (octave-1) + 2) - 5;
         y = y_octave - 50;

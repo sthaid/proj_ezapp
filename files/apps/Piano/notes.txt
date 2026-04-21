@@ -1,11 +1,15 @@
+--------------
 --- OCTAVE ---
+--------------
 
 An octave spans 12 semitones, where the top note is exactly double the frequency 
 of the bottom note. Using equal temperament (A4 = 440 Hz), each note is 12th root 
 of 2 (approx. 1.05946) times higher than the previous. 
 For example, in the 4th octave, C4 is 261.63 Hz and C5 is 523.25 Hz.
 
+-------------
 --- PIANO ---
+-------------
 
 https://en.wikipedia.org/wiki/Piano_key_frequencies
 
@@ -16,7 +20,9 @@ standard modern piano has 88 keys,
 A0 = 27.5 Hz
 A4 = 440  Hz
 
+-----------
 --- SPN ---
+-----------
 
 https://en.wikipedia.org/wiki/Scientific_pitch_notation
 
@@ -42,8 +48,7 @@ Musical Notes:
 - These represent the "natural" notes (white keys on a piano).
 - When raised or lowered, they use accidentals: Sharp (#) or Flat (b).
 
-Octave 1:
-                  White Keys
+Octave 1: White Keys Only
   Note    Freq    Piano Key Num
   C1     261.63 Hz      4
   D1     293.66 Hz      6
@@ -53,7 +58,9 @@ Octave 1:
   A1     440.00 Hz      13
   B1     493.88 Hz      15
 
+---------------
 --- SOLFEGE ---
+---------------
 
 Key Aspects of Solfege
 - The Syllables: 
@@ -64,99 +71,38 @@ Key Aspects of Solfege
     In "fixed do," Do is always the note C, regardless of the key.
 
 
-xxxxxxxxxxxxxxxxxxxx
+-----------------
+--- MIDI INFO ---
+-----------------
 
-https://musopen.org/
+NOTE - this program does not support MIDI
 
-A MIDI file (.mid) is a digital file containing data instructions for electronic instruments, rather than recorded audio. It acts like "digital sheet music," telling a synthesizer, computer, or DAW which notes to play, their pitch, duration, and velocity. Because they lack actual sound data, MIDI files are extremely small and easily editable
-
-
-https://github.com/jpcima/fmidi
-
+Reference:
 https://en.wikipedia.org/wiki/File:MIDI_sample.mid?qsrc=3044
+https://petersmidi.com/download.html   # sample midi files
 
+A MIDI file (.mid) is a digital file containing data instructions for electronic 
+instruments, rather than recorded audio. It acts like "digital sheet music," 
+telling a synthesizer, computer, or DAW which notes to play, their pitch, 
+duration, and velocity. Because they lack actual sound data, MIDI files 
+are extremely small and easily editable
 
-C language code to convert MIDI to SPN
+Playing a midi file on Linux
+  fluidsynth -a pulseaudio -m alsa_seq /usr/share/sounds/sf2/FluidR3_GM.sf2 <filename.mid>
 
-#include <stdio.h>
-#include <string.h>
-
-void midiToSPN(int midiNote, char *spn) {
-    if (midiNote < 0 || midiNote > 127) {
-        strcpy(spn, "Invalid");
-        return;
-    }
-    const char *noteNames[] = {"C", "C#", "D", "D#", "E", "F", 
-                               "F#", "G", "G#", "A", "A#", "B"};
-    
-    int octave = (midiNote / 12) - 1;
-    int noteIndex = midiNote % 12;
-    
-    sprintf(spn, "%s%d", noteNames[noteIndex], octave);
-}
-
-int main() {
-    int note = 60; // Example: Middle C
-    char spn[5];
-    
-    midiToSPN(note, spn);
-    printf("MIDI %d is %s\n", note, spn); // Output: MIDI 60 is C4
-    
-    return 0;
-}
-
-
-
-https://sheetmusicinternational.com/comp/mastercomposer?gad_source=1&gad_campaignid=14630123745&gbraid=0AAAAABOYtcpL99KM3CjIQ1ElEyF6RJ4j5&gclid=Cj0KCQjw-pHPBhCdARIsAHXYWP9I3Wt6bgjmXwAc1PJyExf5Zx3jYNlaPddINykg1xfETttX-OlLpvsaAkG9EALw_wcB
-
-https://sheetmusicinternational.com/comp/keywordsearch
-
-
-
-
-
-where to get a sample midi file
-https://petersmidi.com/download.html   <===========
-
-
-playing file
-fluidsynth
-aplaymidi
-  aplaymidi -p 14:0,20:0 filename.mid
-  aplaymidi -l
-  needs fluidsynth running the port;  instead just run fluidsynth
-fluidsynth -a pulseaudio -m alsa_seq /usr/share/sounds/sf2/FluidR3_GM.sf2  Am_I_Blue_AB.mid
-
-
-
-ttls midi
-https://bitmidi.com/twinkle-twinkle-little-star-mid
-
-
-https://github.com/MarquisdeGeek/midilib
-
-
-
-
-"public domain beginner piano music in scientific pitch notation"
+----------------------------------------------------------------
+--- PUBLIC DOMAIN BEGINNER PIECES WITH LETTER / SPN NOTATION ---
+----------------------------------------------------------------
 
 Public Domain Beginner Pieces with Letter/SPN Notation
-The following popular, free tunes are in the public domain and often arranged for beginners 
-with letter notation: 
+The following popular, free tunes are in the public domain 
+and often arranged for beginners with letter notation: 
 
-k - Ode to Joy (Beethoven): Often arranged in C Major starting on E4 or E5.
-k - Twinkle, Twinkle, Little Star: Commonly played in C4-G4 position.
-k - Mary Had a Little Lamb: Ideal for learning E4, D4, C4.
-k - Jingle Bells: Simple melody often starting on E5.
-  - Amazing Grace: Usually arranged for beginners to play in G Major or C Major.
-  - Lavender’s Blue: A beginner-friendly, public-domain folk song.
-k - Frere Jacques: Simple, repetitive, and often set in C4-
-
-gmajormusictheory.org: Provides free, simple piano arrangements of folk songs and classical tunes that often include letter labels or are in a very easy-to-read format
-
-
-SEARCH: 
-"Mary Had a Little Lamb" in letter notation
-
-
+- Ode to Joy (Beethoven): Often arranged in C Major starting on E4 or E5.
+- Twinkle, Twinkle, Little Star: Commonly played in C4-G4 position.
+- Mary Had a Little Lamb: Ideal for learning E4, D4, C4.
+- Jingle Bells: Simple melody often starting on E5.
+- Amazing Grace: Usually arranged for beginners to play in G Major or C Major.
+- Lavender’s Blue: A beginner-friendly, public-domain folk song.
+- Frere Jacques: Simple, repetitive, and often set in C4-
 

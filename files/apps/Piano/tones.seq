@@ -1,4 +1,27 @@
-# xxx document
+# format:
+# - case inensitive
+# - title line: "TITLE <tone-seq-name> <initial-octave>
+# - tone sequence items:
+#     C D E F G A B         : pitches in scientific pitch notation (SPN), in current octave
+#     Cn Dn En Fn Gn An Bn  : pitches in SPN, where 'n' is the octave number, e.g. C4
+#     do re mi fa sol la ti : solfege syllables, do=C re=D, ...
+#     <n> up down           : set octave to 'n'; or increase / decrease octave
+#     pause1 pause2 pause4  : delay for 250, 500, 1000 ms
+# - an implicit pause2 is appended to the end of each line of items
+
+TITLE ttls 5
+C C G G A A G
+F F E E D D C
+G G F F E E D
+G G F F E E D
+C C G G A A G
+F F E E D D C
+
+TITLE mary 5
+E D C D E E E
+D D D
+E G G
+E D C D E E E E D D E D C 
 
 TITLE fj 5
 C D E C pause1 C D E C
@@ -16,26 +39,17 @@ E G C D E
 F F F F F E E
 G G F D C
 
-TITLE mary 5
-E D C D E E E
-D D D
-E G G
-E D C D E E E E D D E D C 
-
-TITLE ttls 5
+TITLE alphabet 5
 C C G G A A G
 F F E E D D C
 G G F F E E D
 G G F F E E D
 C C G G A A G
-F F E E D D C
+F F E E D D C 
 
 TITLE ce3k 5
 D E C C4 G4 pause2
 D E C C4 G4
-
-TITLE doremi3 3
-C D E F G A B
 
 TITLE doremi4 4
 C D E F G A B
@@ -43,8 +57,3 @@ C D E F G A B
 TITLE doremi5 5
 do re mi fa sol la ti
 
-TITLE doremi6 6
-do re mi fa sol la ti
-
-TITLE doremi7 7
-do re mi fa sol la ti
