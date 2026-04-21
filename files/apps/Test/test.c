@@ -294,9 +294,13 @@ static void page_0_draw(void)
     sdlx_render_printf_ex2(sdlx_win_width/2, ROW2Y(11), FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE, "%s", util_get_ipaddr());
 
     // test mouse motion
-    sdlx_render_printf_ex2(sdlx_win_width/2, ROW2Y(13), FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE, 
-           "xrel = %0.3f", page_0_xrel);
+    sdlx_render_printf_ex2(sdlx_win_width/2, ROW2Y(13),
+                           FONT_NORMAL, COLOR_WHITE,
+                           FLAG_X_CTR, WRAP_NONE, 
+                           "WxH = %d %d", sdlx_win_width, sdlx_win_height);
     sdlx_render_printf_ex2(sdlx_win_width/2, ROW2Y(14), FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE, 
+           "xrel = %0.3f", page_0_xrel);
+    sdlx_render_printf_ex2(sdlx_win_width/2, ROW2Y(15), FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE, 
            "yrel = %0.3f", page_0_yrel);
     sdlx_render_point(page_0_x, page_0_y, COLOR_WHITE, 9);
     sdlx_register_event(NULL, EVID_MOTION);
@@ -1214,11 +1218,10 @@ static void page_12_draw(void)
 {
     sdlx_render_rect(0, 0, sdlx_win_width, sdlx_win_height, 3, COLOR_BLUE);
 
-    sdlx_render_printf_ex2(sdlx_win_width/2, ROW2Y(2),
+    sdlx_render_printf_ex2(sdlx_win_width/2, ROW2Y(3),
                            FONT_NORMAL, COLOR_WHITE,
                            FLAG_X_CTR, WRAP_NONE, 
                            "WxH = %d %d", sdlx_win_width, sdlx_win_height);
-
     sdlx_render_printf_ex2(sdlx_win_width/2, ROW2Y(4), FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE, 
            "xrel = %0.3f", page_12_xrel);
     sdlx_render_printf_ex2(sdlx_win_width/2, ROW2Y(5), FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE, 

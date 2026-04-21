@@ -24,7 +24,8 @@
 #define MIN_FONT_PTSIZE  10
 #define MAX_FONT_PTSIZE  400
 
-#define USE_SET_RENDER_LOGICAL_PRESENTATION  //xxx
+#define LOGICAL_WIN_WIDTH   1000
+#define LOGICAL_WIN_HEIGHT  2350
 
 //
 // typedefs
@@ -115,16 +116,45 @@ int sdlx_video_init(void)
 
     // create SDL Window and Renderer
 #ifdef ANDROID
+    // - use full screen
     if (!SDL_CreateWindowAndRenderer("ezApp", 0, 0, SDL_WINDOW_FULLSCREEN, &window, &renderer)) {
         ERROR("SDL_CreateWindowAndRenderer failed\n");
         return -1;
     }
 #else
+    // - use Window with aspect ratio 2.1666  (19.5:9)
     if (!SDL_CreateWindowAndRenderer("ezApp", 450, 975, 0, &window, &renderer)) {
         ERROR("SDL_CreateWindowAndRenderer failed\n");
         return -1;
     }
 #endif
+
+    // Aspect ratio ...
+    // 
+    // * Modern android devices use taller aspect ratios, such as:
+    //   - 19.5:9   2.1666
+    //   - 20:9     2.2222
+    //   - 20.5:9   2.2777
+    // * This program was developed on an Android device with 
+    //   display size of WxH = 1080 x 2340   (aspect_ratio = 2.1666).
+    // * For best results this program should be run on a device with
+    //   one of these taller aspect ratios.
+    // * This program scales the display size to 1000x2350. 
+    // * 150 pixels at the bottom of the display are reserved space for 
+    //   master controls.
+    // * Apps that run within this program should assume a fixed logical
+    //   display size of 1000 x 2200. This size excludes the master control area.
+    //
+    // When landscape mode is selected the useable logical display area becomes 2200 x 1000.
+    // Note that the orientation is selected by apps when calling sdlx_display_init().
+    // Since apps call sdlx_display_init periodically, the apps can dynamically change
+    // screen orientation.
+    //
+    // These global variables should be used for display size.
+    // These varaibles are initialized by the sdlx_display_init routine.
+    //                   PORTRAIT   LANDSCAPE
+    // sdlx_win_width  =  1000        2200
+    // sdlx_win_height =  2200        1000
 
     // get real windows size and aspect ratio
     SDL_GetWindowSize(window, &real_win_width, &real_win_height);
@@ -139,8 +169,8 @@ int sdlx_video_init(void)
     }
 
     // init the logical window size for portrait and landscape orientations
-    logical_win_width_portrait   = 1000;
-    logical_win_height_portrait  = 2200;
+    logical_win_width_portrait   = LOGICAL_WIN_WIDTH;
+    logical_win_height_portrait  = LOGICAL_WIN_HEIGHT;
     logical_win_width_landscape  = logical_win_height_portrait;
     logical_win_height_landscape = logical_win_width_portrait;
 
