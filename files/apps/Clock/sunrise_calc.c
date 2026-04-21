@@ -29,10 +29,10 @@ static double ymdh2jd(int yr, int mn, int day, double hour);
 static void hr2hms(double hr, int * hour, int * minute, int * seconds);
 
 // https://en.wikipedia.org/wiki/Sunrise_equation#Hour_angle
-void sunrise_sunset_calc(char *sunrise, char *sunset, char *midday)
+void sunrise_sunset_calc(char *sunrise, char *sunset, char *midday, char *daytime)
 {
     int              n, year, month, day;
-    double           jd, jstar, M, C, lambda, jtransit, declination, hour_angle, jset, jrise, jmid;;
+    double           jd, jstar, M, C, lambda, jtransit, declination, hour_angle, jset, jrise, jmid;
     double           latitude, longitude;
     time_t           t;
     struct           tm tm;
@@ -41,6 +41,7 @@ void sunrise_sunset_calc(char *sunrise, char *sunset, char *midday)
     strcpy(sunrise, "N/A");
     strcpy(sunset, "N/A");
     strcpy(midday, "N/A");
+    strcpy(daytime, "N/A");
 
     // get location
     util_get_location(&latitude, &longitude, NULL);
@@ -108,6 +109,13 @@ void sunrise_sunset_calc(char *sunrise, char *sunset, char *midday)
     make_local_time_str(jrise, sunrise, "calc RISE");
     make_local_time_str(jset, sunset,   "calc SET ");
     make_local_time_str(jmid, midday,   "calc MID ");
+
+    // determine the daytime length
+    int minutes, hours;
+    minutes = nearbyint((jset - jrise) * 1440);
+    hours = minutes / 60;
+    minutes -= 60 * hours;
+    sprintf(daytime, "%02d:%02d", hours, minutes);
 }
 
 static void make_local_time_str(double jd, char *str, char *debug)

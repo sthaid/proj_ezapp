@@ -31,7 +31,7 @@ int main(int argc, char **argv)
     bool            quit = false;
     time_t          t;
     struct tm       tm;
-    char            sunrise_calc[50], sunset_calc[50], midday_calc[50];
+    char            sunrise_calc[50], sunset_calc[50], midday_calc[50], daytime_calc[50];
 
     // save args
     progname = argv[0];
@@ -43,8 +43,8 @@ int main(int argc, char **argv)
     printf("I %s: starting, data_dir=%s\n", progname, data_dir);
 
     // get the sunrise, sunset, and midday (solar noon) times
-    sunrise_sunset_calc(sunrise_calc, sunset_calc, midday_calc);
-    printf("I %s: CALC  %s %s %s\n", progname, sunrise_calc, midday_calc, sunset_calc);
+    sunrise_sunset_calc(sunrise_calc, sunset_calc, midday_calc, daytime_calc);
+    printf("I %s: CALC  %s %s %s %s\n", progname, sunrise_calc, midday_calc, sunset_calc, daytime_calc);
 
     // set default font
     sdlx_print_set_default(FONT_NORMAL, COLOR_WHITE);
@@ -89,6 +89,12 @@ int main(int argc, char **argv)
         sdlx_render_printf(0, y, "%s", sunrise_calc);
         sdlx_render_printf(sdlx_win_width/2-5*sdlx_char_width_dflt/2, y, "%s", midday_calc);
         sdlx_render_printf(sdlx_win_width-5*sdlx_char_width_dflt, y, "%s", sunset_calc);
+        y += 1.5 * sdlx_char_height_dflt;
+
+        // display daytime
+        sdlx_render_printf_ex2(sdlx_win_width/2, y, FONT_NORMAL, COLOR_WHITE,
+                               FLAG_X_CTR, WRAP_NONE, 
+                               "DayTime %s", daytime_calc);
     
         // register control event to end program
         sdlx_register_control_events(0, NULL, 
