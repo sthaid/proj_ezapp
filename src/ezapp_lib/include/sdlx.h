@@ -266,7 +266,7 @@ sdlx_sensor_info_t *sdlx_sensor_get_info_tbl(int *max);
 int sdlx_sensor_find(int type);  // returns sensor id, or -1 if not found
 int sdlx_sensor_read_raw(int id, float *data, int num_values);
 
-int sdlx_sensor_read_step_counter(unsigned long *step_count, unsigned long *first_step_count);
+int sdlx_sensor_read_step_counter(unsigned long *step_count);
 int sdlx_sensor_read_mag_heading(double *mag_heading);
 int sdlx_sensor_read_accelerometer(double *ax, double *ay, double *az);
 int sdlx_sensor_read_roll_pitch(double *roll, double *pitch);

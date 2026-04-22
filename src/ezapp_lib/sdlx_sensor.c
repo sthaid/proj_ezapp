@@ -28,9 +28,14 @@
 static sdlx_sensor_info_t sensor_info_tbl[MAX_SENSOR_INFO];
 static int               max_sensor_info_tbl;
 
-SDL_Sensor              *sensor[MAX_SENSOR_ID];  // indexed by id
+static SDL_Sensor       *sensor[MAX_SENSOR_ID];  // indexed by id
 
-static unsigned long first_step_count;
+static int               id_step_counter;
+static int               id_accelerometer;
+static int               id_magnetic_field;
+static int               id_pressure;
+static int               id_ambient_temperature;
+static int               id_relative_humidity;
 
 //
 // prototypes
@@ -42,7 +47,7 @@ int sdlx_sensor_init(void)
 {
     int            i, max, num_sensors;
     SDL_SensorID  *ids;
-    unsigned long  dummy_ulong;
+    unsigned long  step_count;
 
     INFO("initializing\n");
 
@@ -87,12 +92,13 @@ int sdlx_sensor_init(void)
     // free the list of ids
     SDL_free(ids);
 
-    // read the first_step_count;
-    // note: the first call to read the step count does not work
-    sdlx_sensor_read_step_counter(&dummy_ulong, NULL);
-    usleep(250000);
-    sdlx_sensor_read_step_counter(&first_step_count, NULL);
-    INFO("first_step_count = %ld\n", first_step_count);
+    // find sensors by searching the sensor_info_tbl
+    id_step_counter        = sdlx_sensor_find(ASENSOR_TYPE_STEP_COUNTER);
+    id_accelerometer       = sdlx_sensor_find(ASENSOR_TYPE_ACCELEROMETER);
+    id_magnetic_field      = sdlx_sensor_find(ASENSOR_TYPE_MAGNETIC_FIELD);
+    id_pressure            = sdlx_sensor_find(ASENSOR_TYPE_PRESSURE);
+    id_ambient_temperature = sdlx_sensor_find(ASENSOR_TYPE_AMBIENT_TEMPERATURE);
+    id_relative_humidity   = sdlx_sensor_find(ASENSOR_TYPE_RELATIVE_HUMIDITY);
 
     // return success
     INFO("success\n");
@@ -127,7 +133,14 @@ int sdlx_sensor_find(int type)
         }
     }
     if (i == max_sensor_info_tbl) {
-        ERROR("no sensor found with type %d\n", type);
+        char *type_str = (type == ASENSOR_TYPE_STEP_COUNTER        ? "STEP_COUNTER"        :
+                          type == ASENSOR_TYPE_ACCELEROMETER       ? "ACCELEROMETER"       :
+                          type == ASENSOR_TYPE_MAGNETIC_FIELD      ? "MAGNETIC_FIELD"      :
+                          type == ASENSOR_TYPE_PRESSURE            ? "PRESSURE"            :
+                          type == ASENSOR_TYPE_AMBIENT_TEMPERATURE ? "AMBIENT_TEMPERATURE" :
+                          type == ASENSOR_TYPE_RELATIVE_HUMIDITY   ? "RELATIVE_HUMIDITY"   :
+                                                                     "????");
+        ERROR("no sensor found with type %2d %s\n", type, type_str);
         return -1;
     }
 
@@ -139,13 +152,13 @@ int sdlx_sensor_read_raw(int id, float *data, int num_values)
 {
     bool  succ;
 
-    // xxx mutex ?
-
     // preset return data to 0
     memset(data, 0, num_values * sizeof(float));
 
     // validate args
-    if (id < 0 || id >= MAX_SENSOR_ID) {
+    if (id < 0) {
+        return -1;
+    } else if (id >= MAX_SENSOR_ID) {
         ERROR("id %d is out of range\n", id);
         return -1;  
     }
@@ -179,39 +192,41 @@ int sdlx_sensor_read_raw(int id, float *data, int num_values)
 #define RAD_TO_DEG (180 / M_PI)
 #define DEG_TO_RAD (M_PI / 180)
 
-int sdlx_sensor_read_step_counter(unsigned long *step_count, unsigned long *first_step_count_arg)
+int sdlx_sensor_read_step_counter(unsigned long *step_count)
 {
-    unsigned long raw_step_count;
-    
-    static bool   first_call = true;
-    static int    id = -1;
+    unsigned long data;
+    int           rc;
 
-    // if first call then find the sensor id;
-    // if not found then return error
-    if (first_call) {
-        first_call = false;
-        id = sdlx_sensor_find(ASENSOR_TYPE_STEP_COUNTER);
-    }
-    if (id == -1) {
+    static bool first_call = true;
+
+    // NOTES: 
+    // - the step_counter sensor is a special case, returning a 64 bit integer;
+    //   refer to NDK ASensorEvent, which is included in the comment section
+    //   at the end of this file
+    // - first read of the step counter may return an incorrect value of 0;
+    //   if so, then delay and retry returns the correct value
+
+try_again:
+    // read step counter sensor
+    rc = sdlx_sensor_read_raw(id_step_counter, (float*)&data, 2);
+    if (rc != 0) {
         *step_count = INVALID_NUMBER;
         return -1;
     }
 
-    // read step counter sensor
-    // NOTE: the step_counter sensor is a special case, returning a 64 bit integer;
-    //       refer to NDK ASensorEvent, which is included in the comment section
-    //       at the end of this file
-    sdlx_sensor_read_raw(id, (float*)&raw_step_count, 2);
-
-    // return step count sensor value minus first step count value 
-    *step_count = raw_step_count - first_step_count;
-
-    // return first_step_count, if requested
-    if (first_step_count_arg != NULL) {
-        *first_step_count_arg = first_step_count;
+    // an incorrect zero value may be returned on first_call;
+    // if first_call and step_count data is zero then delay and try again
+    if (first_call) {
+        first_call = false;
+        if (data == 0) {
+            INFO("retrying on first_call, because step_count value is 0\n");
+            usleep(250000);
+            goto try_again;
+        }
     }
 
-    // success
+    // return step count sensor value
+    *step_count = data;
     return 0;
 }
 
@@ -222,59 +237,36 @@ int sdlx_sensor_read_step_counter(unsigned long *step_count, unsigned long *firs
 int sdlx_sensor_read_accelerometer(double *ax, double *ay, double *az)
 {
     float data[3];
+    int   rc;
 
-    static bool first_call = true;
-    static int  id = -1;
-
-    // if first call then find the sensor id;
-    // if not found then return error
-    if (first_call) {
-        first_call = false;
-        id = sdlx_sensor_find(ASENSOR_TYPE_ACCELEROMETER);
-    }
-    if (id == -1) {
-        *ax = INVALID_NUMBER;
-        *ay = INVALID_NUMBER;
-        *az = INVALID_NUMBER;
+    // read accelerometer sensor data
+    rc = sdlx_sensor_read_raw(id_accelerometer, data, 3);
+    if (rc != 0) {
+        *ax = *ay = *az = INVALID_NUMBER;
         return -1;
     }
-
-    // read raw sensor data
-    sdlx_sensor_read_raw(id, data, 3);
 
     // return accelerometer values
     *ax = data[0];
     *ay = data[1];
     *az = data[2];
-
-    // success
     return 0;
 }
 
 int sdlx_sensor_read_roll_pitch(double *roll, double *pitch)
 {
-    float data[3];
+    float  data[3];
     double ax, ay, az;
+    int    rc;
 
-    static bool first_call = true;
-    static int  id = -1;
-
-    // if first call then find the sensor id;
-    // if not found then return error
-    if (first_call) {
-        first_call = false;
-        id = sdlx_sensor_find(ASENSOR_TYPE_ACCELEROMETER);
-    }
-    if (id == -1) {
-        *roll = INVALID_NUMBER;
-        *pitch = INVALID_NUMBER;
+    // read accelerometer data
+    rc = sdlx_sensor_read_raw(id_accelerometer, data, 3);
+    if (rc != 0) {
+        *roll = *pitch = INVALID_NUMBER;
         return -1;
     }
 
-    // read raw sensor data
-    sdlx_sensor_read_raw(id, data, 3);
-
-    // return roll and pitch; 
+    // convert accelerometer data to roll and pitch; 
     // - positive pitch means top of phone points upward
     // - positive roll means right side of phone is below the left side
     ax = data[0];
@@ -284,143 +276,111 @@ int sdlx_sensor_read_roll_pitch(double *roll, double *pitch)
     *pitch = -atan(-ay / sqrt(ax*ax + az*az)) * RAD_TO_DEG;
 
     // if nan then set mag_heading to INVALID_NUMBER, 
-    // because picoc does not support nan
+    // note: picoc does not support nan
     if (isnan(*roll) || isnan(*pitch)) {
         *roll = INVALID_NUMBER;
         *pitch = INVALID_NUMBER;
+        return -1;
     }
 
+    // success
     return 0;
 }
 
 int sdlx_sensor_read_mag_heading(double *mag_heading)
 {
-    float data[3];
+    float  data[3];
     double mx, my, mz;
     double roll, pitch; 
     double mprimex, mprimey;
+    int    rc;
 
-    static bool first_call = true;
-    static int  id = -1;
-
-    // if first call then find the sensor id;
-    // if not found then return error
-    if (first_call) {
-        first_call = false;
-        id = sdlx_sensor_find(ASENSOR_TYPE_MAGNETIC_FIELD);
-    }
-    if (id == -1) {
+    // read magnetic_heading sensor data
+    rc = sdlx_sensor_read_raw(id_magnetic_field, data, 3);
+    if (rc != 0) {
         *mag_heading = INVALID_NUMBER;
         return -1;
     }
-
-    // read raw sensor data
-    sdlx_sensor_read_raw(id, data, 3);
     my = data[0];
     mx = data[1];
     mz = -data[2];
 
-    // get roll and pitch
-    sdlx_sensor_read_roll_pitch(&roll, &pitch);
+    // get roll and pitch, which is used to correct the roll/pitch 
+    // influence in the calculation of mag_headong
+    rc = sdlx_sensor_read_roll_pitch(&roll, &pitch);
+    if (rc != 0) {
+        *mag_heading = INVALID_NUMBER;
+        return -1;
+    }
     roll  *= -DEG_TO_RAD;
     pitch *= -DEG_TO_RAD;
 
-    // compensate
+    // compute mag_heading, taking into account roll & pitch
     mprimex = mx * cos(pitch) + 
               my * sin(roll) * sin(pitch) - 
               mz * cos(roll) * sin(pitch);
     mprimey = my * cos(roll) + 
               mz * sin(roll);
-
-    // return magnetic heading
     *mag_heading = atan2(-mprimey, mprimex) * (180 / M_PI);
-    if (*mag_heading < 0) {
-        *mag_heading += 360;
-    }
-
-    // if nan then set mag_heading to INVALID_NUMBER, 
-    // because picoc does not support nan
     if (isnan(*mag_heading)) {
         *mag_heading = INVALID_NUMBER;
     }
 
+    // adjust mag_heading to range 0-360 degrees,
+    // and return success
+    if (*mag_heading < 0) {
+        *mag_heading += 360;
+    }
     return 0;
 }
 
 int sdlx_sensor_read_pressure(double *millibars)
 {
     float data[3];
+    int   rc;
 
-    static bool first_call = true;
-    static int  id = -1;
-
-    // if first call then find the sensor id;
-    // if not found then return error
-    if (first_call) {
-        first_call = false;
-        id = sdlx_sensor_find(ASENSOR_TYPE_PRESSURE);
-    }
-    if (id == -1) {
+    // read raw sensor data
+    rc = sdlx_sensor_read_raw(id_pressure, data, 3);
+    if (rc != 0) {
         *millibars = INVALID_NUMBER;
         return -1;
     }
-
-    // read raw sensor data
-    sdlx_sensor_read_raw(id, data, 3);
 
     // return pressure
     *millibars = data[0];
     return 0;
 }
 
-// not tested
+// note: not tested
 int sdlx_sensor_read_temperature(double *degrees_c)
 {
     float data[3];
+    int   rc;
 
-    static bool first_call = true;
-    static int  id = -1;
-
-    // if first call then find the sensor id;
-    // if not found then return error
-    if (first_call) {
-        first_call = false;
-        id = sdlx_sensor_find(ASENSOR_TYPE_AMBIENT_TEMPERATURE);
-    }
-    if (id == -1) {
+    // read raw temperature sensor data
+    rc = sdlx_sensor_read_raw(id_ambient_temperature, data, 3);
+    if (rc != 0) {
         *degrees_c = INVALID_NUMBER;
         return -1;
     }
-
-    // read raw sensor data
-    sdlx_sensor_read_raw(id, data, 3);
 
     // return temperature
     *degrees_c = data[0];
     return 0;
 }
 
-// not tested
+// note: not tested
 int sdlx_sensor_read_humidity(double *percent)
 {
     float data[3];
+    int   rc;
 
-    static bool first_call = true;
-    static int  id = -1;
-
-    // if first call then find the sensor id;
-    // if not found then return error
-    if (first_call) {
-        first_call = false;
-        id = sdlx_sensor_find(ASENSOR_TYPE_RELATIVE_HUMIDITY);
-    }
-    if (id == -1) {
+    // read raw sensor data
+    rc = sdlx_sensor_read_raw(id_relative_humidity, data, 3);
+    if (rc != 0) {
         *percent = INVALID_NUMBER;
         return -1;
     }
-
-    // read raw sensor data
-    sdlx_sensor_read_raw(id, data, 3);
 
     // return humidity
     *percent = data[0];

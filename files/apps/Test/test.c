@@ -1076,9 +1076,15 @@ static void page_9_draw(void)
     float         data[3];
     int           row = 2;
     int           rc;
-    unsigned long step_count, first_step_count;
+    unsigned long step_count;
     double        mag_heading, roll, pitch, millibars;
     double        ax, ay, az;
+
+    static unsigned long first_step_count = -1;
+
+    if (first_step_count == -1) {
+        sdlx_sensor_read_step_counter(&first_step_count);
+    }
 
     sdlx_print_set_default(FONT_SMALL, COLOR_WHITE);
 
@@ -1094,9 +1100,11 @@ static void page_9_draw(void)
 
     sdlx_print_set_default(FONT_NORMAL, COLOR_WHITE);
 
-    rc = sdlx_sensor_read_step_counter(&step_count, &first_step_count);
-    if (rc == 0) {
-        sdlx_render_printf(0, ROW2Y(row++), "stepc=%ld  %ld", step_count, first_step_count);
+    if (first_step_count != INVALID_NUMBER) {
+        rc = sdlx_sensor_read_step_counter(&step_count);
+        if (rc == 0) {
+            sdlx_render_printf(0, ROW2Y(row++), "stepc=%ld", step_count);
+        }
     }
 
     rc = sdlx_sensor_read_mag_heading(&mag_heading);

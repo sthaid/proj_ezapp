@@ -1,9 +1,10 @@
+Steps App
+- write service to collect stepcount every 5 minutes
+- design the UI
+
 piano app
 - display key letter when highlighted
 - display title line
-
-clock app
-- display amount of daytime in Clock
 
 altitude
 - To convert WGS84 ellipsoidal heights (
@@ -12,12 +13,6 @@ altitude
   ) at that location using the formula 
   . This requires a geoid model, such as EGM96 or EGM2008, which maps the difference between the ellipsoid and the sea-level surfac
   
-width is 2050, maybe it should be 2200 ?
-
-Steps App
-- write service to collect stepcount every 5 minutes
-- design the UI
-
 documentation
 - make doc dir, with all README files
    . android
