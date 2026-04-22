@@ -1103,7 +1103,7 @@ static void page_9_draw(void)
     if (first_step_count != INVALID_NUMBER) {
         rc = sdlx_sensor_read_step_counter(&step_count);
         if (rc == 0) {
-            sdlx_render_printf(0, ROW2Y(row++), "stepc=%ld", step_count);
+            sdlx_render_printf(0, ROW2Y(row++), "stepc= %ld %ld", step_count, step_count-first_step_count);
         }
     }
 
