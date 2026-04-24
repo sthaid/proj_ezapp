@@ -238,7 +238,6 @@ void *util_map_file(char *dir, char *file, int len_arg, bool create_if_needed,
     char   *zero;
 
     concat(dir, file, path);
-    INFO("mapping file %s\n", path);
 
     // do not allow create_if_needed and read_only both true
     if (create_if_needed && read_only) {
@@ -255,18 +254,18 @@ void *util_map_file(char *dir, char *file, int len_arg, bool create_if_needed,
     }
 
     // print message
-    INFO("mapping %s len_arg=0x%x adjusted_len=0x%x create_if_needed=%d\n", path, len_arg, len, create_if_needed);
+    INFO("mapping %s len_arg=0x%x adj_len=0x%x create_if_needed=%d\n", path, len_arg, len, create_if_needed);
 
     // stat the file to determine if it exists, and its length
     rc = stat(path, &statbuf);
     file_exists = (rc == 0) && S_ISREG(statbuf.st_mode);
     file_len    = file_exists ? statbuf.st_size : 0;
-    INFO("file exists=%d len=%d\n", file_exists, file_len);
+    INFO("file exists=%d file_len=0x%x\n", file_exists, file_len);
 
     // if the file doesnt exist, or has the wrong length then
     //   if create flag is set
     //     unlink the file
-    //     create the file with the proper length
+    //     create the file with the proper length, and fill with zero
     //     set 'created_flag'
     //   else
     //     return error
@@ -274,7 +273,7 @@ void *util_map_file(char *dir, char *file, int len_arg, bool create_if_needed,
     // endif
     if (!file_exists || file_len != len) {
         if (create_if_needed) {
-            INFO("creating %s len=%d\n", path, len);
+            INFO("creating %s adj_len=0x%x\n", path, len);
             unlink(path);
             fd = open(path, O_CREAT|O_EXCL|O_RDWR, 0666);
             if (fd < 0) {
@@ -285,7 +284,7 @@ void *util_map_file(char *dir, char *file, int len_arg, bool create_if_needed,
             rc = write(fd, zero, len);
             free(zero);
             if (rc != len) {
-                ERROR("write zero to %s, len=%d, failed, %s\n", path, len, strerror(errno));
+                ERROR("write zero to %s, adj_len=0x%x, failed, %s\n", path, len, strerror(errno));
                 close(fd);
                 goto done;  
             }
@@ -294,14 +293,14 @@ void *util_map_file(char *dir, char *file, int len_arg, bool create_if_needed,
                 *created_flag = true;
             }
         } else {
-            ERROR("file doesnt exist or has wrong len, file_exists=%d file_len=%d len=%d\n", 
+            ERROR("file doesnt exist or has wrong len, file_exists=%d file_len=0x%x adj_len=0x%x\n", 
                    file_exists, file_len, len);
             goto done;  
         }
     }
 
     // map the file
-    INFO("mapping %s len=%d\n", path, len);
+    INFO("mapping %s adj_len=0x%x\n", path, len);
     fd = open(path, read_only ? O_RDONLY : O_RDWR);
     if (fd < 0) {
         ERROR("failed to open %s, %s\n", path, strerror(errno));
@@ -331,7 +330,7 @@ void util_unmap_file(void *addr, int len_arg)
     len = (len_arg + PAGE_SIZE2 - 1) & ~(PAGE_SIZE2-1);
 
     // print starting msg
-    INFO("unmapping addr %p, len_arg=%x adjusted_len=%x\n", addr, len_arg, len);
+    INFO("unmapping addr %p, len_arg=0x%x adj_len=0x%x\n", addr, len_arg, len);
 
     // sanity check addr arg
     if (addr == NULL) {
@@ -342,7 +341,7 @@ void util_unmap_file(void *addr, int len_arg)
     // unmap
     rc = munmap(addr, len);
     if (rc != 0) {
-        ERROR("munmap failed, addr=%p len=0x%x, %s\n", addr, len, strerror(errno));
+        ERROR("munmap failed, addr=%p adj_len=0x%x, %s\n", addr, len, strerror(errno));
     }
 }
 
@@ -354,12 +353,11 @@ void util_sync_file(void *addr, int len)
     void         *adjusted_addr = (void*)first_page;
     int           adjusted_len  = last_page - first_page + PAGE_SIZE2;
 
-    // INFO("addr=%p len=0x%x 0x%x - adjusted addr=%p len=%d\n", 
-    //      addr, len, adjusted_addr, adjusted_len);
+    INFO("addr=%p len=0x%x - adj_addr=%p adj_len=0x%x\n", addr, len, adjusted_addr, adjusted_len);
 
     rc = msync(adjusted_addr, adjusted_len, MS_SYNC);
     if (rc != 0) {
-        ERROR("msync %p %d failed, %s\n", adjusted_addr, adjusted_len, strerror(errno));
+        ERROR("msync failed, adj_addr=%p adj_len=0x%x, %s\n", adjusted_addr, adjusted_len, strerror(errno));
     }
 }
 

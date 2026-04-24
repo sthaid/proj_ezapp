@@ -47,7 +47,6 @@ int sdlx_sensor_init(void)
 {
     int            i, max, num_sensors;
     SDL_SensorID  *ids;
-    unsigned long  step_count;
 
     INFO("initializing\n");
 
@@ -194,6 +193,10 @@ int sdlx_sensor_read_raw(int id, float *data, int num_values)
 
 int sdlx_sensor_read_step_counter(unsigned long *step_count)
 {
+    // xxx test, remove this
+    *step_count = time(NULL);
+    return 0;
+
     unsigned long data;
     int           rc;
 
@@ -219,7 +222,7 @@ try_again:
     if (first_call) {
         first_call = false;
         if (data == 0) {
-            INFO("retrying on first_call, because step_count value is 0\n");
+            INFO("retrying on first_call, because step_count value 0 is probably incorrect\n");
             usleep(250000);
             goto try_again;
         }

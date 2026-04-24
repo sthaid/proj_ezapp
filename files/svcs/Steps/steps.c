@@ -6,7 +6,10 @@
 #include <string.h>
 
 #include <sdlx.h>
+#include <utils.h>
 #include <svcs.h>
+
+#include "svcs/Steps/steps.h"
 
 // program args
 char *progname;
@@ -16,11 +19,12 @@ char *data_dir;
 bool end_program = false;
 
 // prototypes
-void init();
 void process_req(svc_req_t *req);
-void periodic_svc_processing(void);
+int initialize(void);
+void cleanup(void);
+void periodic_processing(void);
 
-// -----------------  TEMPLATE SERVICE  --------------------------------------
+// -----------------  STEPS SERVICE  -----------------------------------------
 
 int main(int argc, char **argv)
 {
@@ -37,7 +41,25 @@ int main(int argc, char **argv)
     data_dir = argv[1];
     printf("I %s: starting, data_dir=%s\n", progname, data_dir);
 
-    init();
+#if 1
+    // unit test code
+    int cnt=0;
+    initialize();
+    while (true) {
+        periodic_processing();
+        sleep(1);
+        if (++cnt >= 5) break;
+    }
+    cleanup();
+    return 0;
+#endif
+
+    // initialize
+    rc = initialize();
+    if (rc != 0) {
+        printf("E %s: failed to initialize\n", progname);
+        return 1;
+    }
 
     // set absolute time at which svc_wait_for_req will timeout;
     // this time is rounded down to the prior minute so that the first
@@ -52,8 +74,6 @@ int main(int argc, char **argv)
 
         // if an unexpected error is returned, then delay and try again
         if (rc != 0 && rc != SVC_REQ_WAIT_ERROR_TIMEDOUT) {
-            periodic_svc_processing(); //xxx temp
-            //xxx printf("E %s: svc_wait_for_req returned unexpected error %d\n", progname, rc);
             sleep(1);
             continue;
         }
@@ -61,10 +81,7 @@ int main(int argc, char **argv)
         // if scv_wait_for_req timedout then do periodic svc processing
         if (rc == SVC_REQ_WAIT_ERROR_TIMEDOUT) {
             abstime += 60; // xxx why so iregular;  set to wake up 1 minute from now
-            periodic_svc_processing();
-
-            exit(1); //xxx
-
+            periodic_processing();
             continue;
         }
 
@@ -74,13 +91,16 @@ int main(int argc, char **argv)
             process_req(req);
         }
     }
+
+    // cleanup
+    cleanup();
             
     // print terminating msg
     printf("I %s: terminating\n", progname);
     return 0;
 }
 
-// -----------------------------------------------------------------
+// -----------------  PROCESS REQ  ---------------------------------
 
 void process_req(svc_req_t *req)
 {
@@ -99,86 +119,139 @@ void process_req(svc_req_t *req)
     }
 }
 
-// -----------------------------------------------------------------
+// -----------------  INITIALIZE  ----------------------------------
 
-time_t TIME_0;
+// defines
+#define CREATE_IF_NEEDED true
+#define READ_WRITE       false
 
-#define MAX_YEAR  20
-#define MAX_MONTH (MAX_YEAR * 12)
-#define MAX_DAY   (MAX_YEAR * 365)
-#define MAX_HOUR  (MAX_YEAR * 8760)
+// variables
+steps_file_t  *steps_file;
+unsigned long  last_step_count_sensor;
 
-#define YEAR_T0  2026
+// prototypes
+time_t cvt_local_ymdhms_to_epoch_time(int year, int month, int day, int hour, int min, int sec);
 
-typedef struct {
-    int year[MAX_YEAR];
-    int month[MAX_MONTH];
-    int day[MAX_DAY];
-    int hour[MAX_HOUR];
-} step_data_t;
+int initialize(void)
+{
+    int rc;
+    int tries = 0;
+    int created_flag;
 
-step_data_t step_data;
-unsigned long last_step_count_sensor;
+try_again:
+    // map the steps data file (steps.dat)
+    steps_file = util_map_file(data_dir, STEPS_FILENAME, sizeof(steps_file_t),
+                               CREATE_IF_NEEDED, READ_WRITE, &created_flag);
+    if (steps_file == NULL) {
+        printf("E %s: failed to map %s\n", progname, STEPS_FILENAME);
+        return -1;
+    }
 
-void periodic_svc_processing(void)
+    // if the steps.dat file was created then 
+    //   init the file hdr fields
+    // else if file magic is invalid then 
+    //   delete the file and call util_map_file again
+    // endif
+    if (created_flag) {
+        steps_file->hdr.version = VERSION;
+        steps_file->hdr.time0   = cvt_local_ymdhms_to_epoch_time(2026, 1, 1, 0, 0, 0);
+        util_sync_file(&steps_file->hdr, sizeof(steps_file->hdr));
+    } else if (steps_file->hdr.version != VERSION) {
+        util_delete_file(data_dir, STEPS_FILENAME);
+        tries++;
+        if (tries == 1) {
+            goto try_again;
+        } else {
+            return -1;
+        }
+    }
+
+    // init the last_step_count_sensor variable
+    rc = sdlx_sensor_read_step_counter(&last_step_count_sensor);
+    if (rc != 0) {
+        printf("E %s: failed to read step counter sensor\n", progname);
+        return -1;
+    }
+
+    // test code
+    time_t tnow = time(NULL);
+    printf("I %s: tnow   = %s", progname, ctime(&tnow));
+    printf("I %s: time0  = %s", progname, ctime(&steps_file->hdr.time0));
+    printf("I %s: sizeof(steps_file_t) = 0x%zx\n", progname, sizeof(steps_file_t));
+
+    // success
+    return 0;
+}
+
+void cleanup(void)
+{
+    if (steps_file) {
+        util_unmap_file(steps_file, sizeof(steps_file_t));
+        steps_file = NULL;
+    }
+}
+
+time_t cvt_local_ymdhms_to_epoch_time(int year, int month, int day, int hour, int min, int sec)
+{
+    struct tm tm;
+
+    memset(&tm, 0, sizeof(tm));
+    tm.tm_year = year - 1900;  // tm_year is 1900 based
+    tm.tm_mon  = month - 1;    // tm_month is 0 based
+    tm.tm_mday = day;
+    tm.tm_hour = hour;
+    tm.tm_min  = min;
+    tm.tm_sec  = sec;
+    tm.tm_isdst = -1;  // system will determine dst
+
+    return mktime(&tm);
+}
+
+// -----------------  PERIODIC PROCESSING  -------------------------
+
+void periodic_processing(void)
 {
     unsigned long step_count_sensor;
-    int steps;
+    int steps, rc;
+    time_t time0 = steps_file->hdr.time0;
 
-    printf("I %s: sizeof(step_data_t) = %zd\n", progname, sizeof(step_data_t));
+    // read step counter sensor
+    rc = sdlx_sensor_read_step_counter(&step_count_sensor);
+    if (rc != 0) {
+        printf("E %s: failed to read step counter sensor\n", progname);
+        return;
+    }
 
-    sdlx_sensor_read_step_counter(&step_count_sensor);
+    // determine number of steps since last read of the sensor
     steps = (step_count_sensor - last_step_count_sensor);
     last_step_count_sensor = step_count_sensor;
+    printf("I %s: step_count_sensor = %ld  steps = %d\n", progname, step_count_sensor, steps);
 
-    printf("I %s: step_count = %ld  steps = %d\n", progname, step_count_sensor, steps);
+    // if no new steps then return
+    if (steps == 0) {
+        return;
+    }
 
+    // determine idx values for the steps_file_t step count data arrays
     int hour_idx, day_idx, month_idx, year_idx;
-
     time_t t_now = time(NULL);
     struct tm tm_now;
-
     localtime_r(&t_now, &tm_now);
-    printf("xxxx month %d  year %d\n", tm_now.tm_mon, tm_now.tm_year);
-
-    hour_idx  = (t_now - TIME_0) / 3600;
-    day_idx   = (t_now - TIME_0) / 86400;
-    year_idx  = (tm_now.tm_year + 1900) - YEAR_T0;
+    printf("I %s: now month=%d year=%d\n", progname, tm_now.tm_mon+1, tm_now.tm_year+1900);
+    hour_idx  = (t_now - time0) / 3600;
+    day_idx   = (t_now - time0) / 86400;
+    year_idx  = (tm_now.tm_year + 1900) - YEAR0;
     month_idx = tm_now.tm_mon + 12 * (year_idx);
-
     printf("I %s: hour_idx=%d day_idx=%d month_idx=%d year_idx=%d\n",
            progname, hour_idx, day_idx, month_idx, year_idx);
 
+    // xxx check for invalid idx
 
-    step_data.year[year_idx]  += steps;
-    step_data.month[month_idx] += steps;
-    step_data.day[day_idx]    += steps;
-    step_data.hour[hour_idx]  += steps;
+    // add new steps to steps file data arrays
+    steps_file->year[year_idx]   += steps;
+    steps_file->month[month_idx] += steps;
+    steps_file->day[day_idx]     += steps;
+    steps_file->hour[hour_idx]   += steps;
 
     // xxx msync periodically
-    // xxx does util_map create msync?
 }
-
-void init(void)
-{
-    struct tm tm;
-    time_t tnow;
-
-    sdlx_sensor_read_step_counter(&last_step_count_sensor);
-
-    // Specify the local time
-    memset(&tm, 0, sizeof(tm));
-    tm.tm_year = 2026 - 1900; // Year is 2026
-    tm.tm_mon  = 0;           // Month is January (0-indexed)
-    tm.tm_mday = 1;           // Day is 1st
-    tm.tm_hour = 0;           // Hour
-    tm.tm_min  = 0;           // Minute
-    tm.tm_sec  = 0;           // Second
-    tm.tm_isdst = -1;         // Let system determine DST
-
-    TIME_0 = mktime(&tm);
-    tnow = time(NULL);
-    printf("i %s: tnow   = %s", progname, ctime(&tnow));
-    printf("i %s: TIME_0 = %s", progname, ctime(&TIME_0));
-}
-
