@@ -193,9 +193,10 @@ int sdlx_sensor_read_raw(int id, float *data, int num_values)
 
 int sdlx_sensor_read_step_counter(unsigned long *step_count)
 {
-    // xxx test, remove this
+#ifndef ANDROID // xxx test code
     *step_count = time(NULL);
     return 0;
+#endif
 
     unsigned long data;
     int           rc;

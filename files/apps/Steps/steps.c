@@ -32,7 +32,6 @@ int view;
 int year;
 int month;
 int day;
-int hour;
     
 // prototypes
 void draw_display(void);
@@ -72,8 +71,7 @@ int main(int argc, char **argv)
     year  = tm.tm_year + 1900 - YEAR0;  // 0 is year 2026
     month = tm.tm_mon;                  // 0 - 11
     day   = tm.tm_mday - 1;             // 0 - 30
-    hour  = tm.tm_hour;                 // 0 - 23
-    printf("I %s: now - year=%d month=%d day=%d hour=%d\n", progname, year, month, day, hour);
+    printf("I %s: now - year=%d month=%d day=%d\n", progname, year, month, day);
 
     // runtime loop
     while (!end_program) {
@@ -97,6 +95,12 @@ int main(int argc, char **argv)
     printf("I %s: terminating\n", progname);
     return 0;
 }
+
+// -----------------  DRAW DISPLAY  ------------------------------------
+
+#define GRAPH_Y  (sdlx_win_height - 200)
+#define GRAPH_H  1000
+#define MAX_STEPS_PER_HOUR  10000
 
 void draw_display(void)
 {
@@ -128,6 +132,15 @@ void draw_display(void)
 #endif
 
     // graph
+    double x, w, h;
+    x = 0;
+    w = sdlx_win_width / 24.0;
+    for (int hour = 0; hour < 24; hour++) {
+        steps = steps_file->hour[year][month][day][hour];
+        h = (double)steps / MAX_STEPS_PER_HOUR * GRAPH_H;  // xxx limit h
+        sdlx_render_fill_rect(x, GRAPH_Y-h, w, h, COLOR_PURPLE);
+        x += w;
+    }
 
     // register control event
     sdlx_register_control_events(EVID_PREV, "<",
@@ -135,6 +148,8 @@ void draw_display(void)
                                  EVID_QUIT, "X",
                                  COLOR_WHITE, COLOR_BLACK);
 }
+
+// -----------------  PROCESS EVENT  ---------------------------
 
 void process_event(sdlx_event_t *event)
 {

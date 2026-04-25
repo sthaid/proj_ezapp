@@ -79,9 +79,12 @@ int main(int argc, char **argv)
         }
 
         // if scv_wait_for_req timedout then do periodic svc processing
+        // xxx maybe use relative time
         if (rc == SVC_REQ_WAIT_ERROR_TIMEDOUT) {
-            //abstime += 60; // xxx why so iregular;  set to wake up 1 minute from now
-            abstime += 1; // xxx why so iregular;  set to wake up 1 minute from now
+            // xxx adjust interval
+            // - when app is running and not dozing or minimized then use 1 second
+            // - else use 1 minute
+            abstime += 1; // xxx why so iregular;  set to wake up xxx from now
             periodic_processing();
             continue;
         }
@@ -196,6 +199,8 @@ void periodic_processing(void)
     time_t        t;
     struct tm     tm;
 
+    static int count;
+
     // read step counter sensor
     rc = sdlx_sensor_read_step_counter(&step_count_sensor);
     if (rc != 0) {
@@ -206,7 +211,7 @@ void periodic_processing(void)
     // determine number of steps since last read of the sensor
     steps = (step_count_sensor - last_step_count_sensor);
     last_step_count_sensor = step_count_sensor;
-    printf("I %s: step_count_sensor = %ld  steps = %d\n", progname, step_count_sensor, steps);
+    //printf("I %s: step_count_sensor = %ld  steps = %d\n", progname, step_count_sensor, steps);
 
     // if no new steps then return
     if (steps == 0) {
@@ -225,5 +230,11 @@ void periodic_processing(void)
     steps_file->day[year][month][day]        += steps;
     steps_file->hour[year][month][day][hour] += steps;
 
-    // xxx msync periodically
+    // xxx sync file periodically
+    // xxx use time based, hourly
+    if (++count == 10) {
+        count = 0;
+        printf("I %s: calling util_sync_file\n", progname);
+        util_sync_file(steps_file, sizeof(steps_file_t));
+    }
 }
