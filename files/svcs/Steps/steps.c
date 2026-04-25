@@ -41,7 +41,7 @@ int main(int argc, char **argv)
     data_dir = argv[1];
     printf("I %s: starting, data_dir=%s\n", progname, data_dir);
 
-#if 1
+#if 0
     // unit test code
     int cnt=0;
     initialize();
@@ -80,7 +80,8 @@ int main(int argc, char **argv)
 
         // if scv_wait_for_req timedout then do periodic svc processing
         if (rc == SVC_REQ_WAIT_ERROR_TIMEDOUT) {
-            abstime += 60; // xxx why so iregular;  set to wake up 1 minute from now
+            //abstime += 60; // xxx why so iregular;  set to wake up 1 minute from now
+            abstime += 1; // xxx why so iregular;  set to wake up 1 minute from now
             periodic_processing();
             continue;
         }
@@ -130,13 +131,14 @@ steps_file_t  *steps_file;
 unsigned long  last_step_count_sensor;
 
 // prototypes
-time_t cvt_local_ymdhms_to_epoch_time(int year, int month, int day, int hour, int min, int sec);
 
 int initialize(void)
 {
     int rc;
     int tries = 0;
     int created_flag;
+
+    printf("I %s: sizeof(steps_file_t) = 0x%zx\n", progname, sizeof(steps_file_t));
 
 try_again:
     // map the steps data file (steps.dat)
@@ -148,18 +150,18 @@ try_again:
     }
 
     // if the steps.dat file was created then 
-    //   init the file hdr fields
+    //   init the file version field
     // else if file magic is invalid then 
     //   delete the file and call util_map_file again
     // endif
     if (created_flag) {
-        steps_file->hdr.version = VERSION;
-        steps_file->hdr.time0   = cvt_local_ymdhms_to_epoch_time(2026, 1, 1, 0, 0, 0);
-        util_sync_file(&steps_file->hdr, sizeof(steps_file->hdr));
-    } else if (steps_file->hdr.version != VERSION) {
+        steps_file->version = VERSION;
+        util_sync_file(&steps_file->version, sizeof(steps_file->version));
+    } else if (steps_file->version != VERSION) {
+        printf("I %s: steps_file version=0x%lx expected=0x%lx, recreating steps_file\n",
+               progname, steps_file->version, VERSION);
         util_delete_file(data_dir, STEPS_FILENAME);
-        tries++;
-        if (tries == 1) {
+        if (++tries == 1) {
             goto try_again;
         } else {
             return -1;
@@ -173,12 +175,6 @@ try_again:
         return -1;
     }
 
-    // test code
-    time_t tnow = time(NULL);
-    printf("I %s: tnow   = %s", progname, ctime(&tnow));
-    printf("I %s: time0  = %s", progname, ctime(&steps_file->hdr.time0));
-    printf("I %s: sizeof(steps_file_t) = 0x%zx\n", progname, sizeof(steps_file_t));
-
     // success
     return 0;
 }
@@ -191,29 +187,14 @@ void cleanup(void)
     }
 }
 
-time_t cvt_local_ymdhms_to_epoch_time(int year, int month, int day, int hour, int min, int sec)
-{
-    struct tm tm;
-
-    memset(&tm, 0, sizeof(tm));
-    tm.tm_year = year - 1900;  // tm_year is 1900 based
-    tm.tm_mon  = month - 1;    // tm_month is 0 based
-    tm.tm_mday = day;
-    tm.tm_hour = hour;
-    tm.tm_min  = min;
-    tm.tm_sec  = sec;
-    tm.tm_isdst = -1;  // system will determine dst
-
-    return mktime(&tm);
-}
-
 // -----------------  PERIODIC PROCESSING  -------------------------
 
 void periodic_processing(void)
 {
     unsigned long step_count_sensor;
-    int steps, rc;
-    time_t time0 = steps_file->hdr.time0;
+    int           steps, rc, year, month, day, hour;
+    time_t        t;
+    struct tm     tm;
 
     // read step counter sensor
     rc = sdlx_sensor_read_step_counter(&step_count_sensor);
@@ -232,26 +213,17 @@ void periodic_processing(void)
         return;
     }
 
-    // determine idx values for the steps_file_t step count data arrays
-    int hour_idx, day_idx, month_idx, year_idx;
-    time_t t_now = time(NULL);
-    struct tm tm_now;
-    localtime_r(&t_now, &tm_now);
-    printf("I %s: now month=%d year=%d\n", progname, tm_now.tm_mon+1, tm_now.tm_year+1900);
-    hour_idx  = (t_now - time0) / 3600;
-    day_idx   = (t_now - time0) / 86400;
-    year_idx  = (tm_now.tm_year + 1900) - YEAR0;
-    month_idx = tm_now.tm_mon + 12 * (year_idx);
-    printf("I %s: hour_idx=%d day_idx=%d month_idx=%d year_idx=%d\n",
-           progname, hour_idx, day_idx, month_idx, year_idx);
-
-    // xxx check for invalid idx
-
-    // add new steps to steps file data arrays
-    steps_file->year[year_idx]   += steps;
-    steps_file->month[month_idx] += steps;
-    steps_file->day[day_idx]     += steps;
-    steps_file->hour[hour_idx]   += steps;
+    // accumulate steps
+    t = time(NULL);
+    localtime_r(&t, &tm);
+    year  = tm.tm_year + 1900 - YEAR0;
+    month = tm.tm_mon;       // 0 - 11
+    day   = tm.tm_mday - 1;  // 0 - 30
+    hour  = tm.tm_hour;      // 0 - 23 
+    steps_file->year[year]                   += steps;
+    steps_file->month[year][month]           += steps;
+    steps_file->day[year][month][day]        += steps;
+    steps_file->hour[year][month][day][hour] += steps;
 
     // xxx msync periodically
 }
