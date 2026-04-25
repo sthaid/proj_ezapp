@@ -382,8 +382,8 @@ int svc_wait_for_req(char *svc_name, svc_req_t **req, long timeout_abstime_secs)
     int             ret;
     int             id;
 
-    INFO("svc_name=%s timeout_abstime_secs=%ld time_until_timeout=%ld\n", 
-         svc_name, timeout_abstime_secs, timeout_abstime_secs-time(NULL));
+    //INFO("svc_name=%s timeout_abstime_secs=%ld time_until_timeout=%ld\n", 
+    //     svc_name, timeout_abstime_secs, timeout_abstime_secs-time(NULL));
  
 try_again:
 
