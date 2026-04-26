@@ -39,6 +39,8 @@
 //   . stride len
 //   . max graph vaules
 // - review Steps svc
+// - swipe left/right?
+// - improve x-axis label
 
 // variables
 char *progname;
@@ -153,10 +155,8 @@ void draw_display(void)
     sdlx_color_t color;
     int y,m,d;
 
-    // these colors are used in the graph to try to enhance the visual
-    static sdlx_color_t colors[6] = {
-            COLOR_RED, COLOR_ORANGE, COLOR_YELLOW, COLOR_GREEN, COLOR_BLUE, COLOR_PURPLE };
-
+    // choose the color that the title line will be displayed,
+    // use green if the current date is being viewed, else use white
     get_current_ymd(&y, &m, &d);
     color = (year == y && month == m && day == d) ? COLOR_GREEN : COLOR_WHITE;
 
@@ -227,7 +227,7 @@ void draw_display(void)
         miles = steps * STRIDE_LEN / INCHES_PER_MILE;
         h = miles / max_graph * GRAPH_H;
         if (h > GRAPH_H) h = GRAPH_H;
-        sdlx_render_fill_rect(5+idx*w, GRAPH_Y_BOTTOM-h+1, w+1, h, colors[idx%6]);
+        sdlx_render_fill_rect(5+idx*w, GRAPH_Y_BOTTOM-h+1, w-6, h, COLOR_GREEN);
     }
 
     // display graph max y-axis value
