@@ -167,10 +167,12 @@ void svcs_display(int bg_color)
     while (true) {
         // init display and display title line
         sdlx_display_init(bg_color, PORTRAIT);
-        sdlx_render_printf(sdlx_win_width/2, sdlx_char_height_dflt/2, "%s", "Services"); // XXX was xyctr
+        sdlx_render_printf_ex2(sdlx_win_width/2, ROW2Y(1), 
+                               FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE,
+                               "Services");
 
         // display name and controls for each service
-        row = 2;
+        row = 3;
         for (id = 0; id < max_svcs; id++) {
             svc_t *x = &svcs[id];
 
@@ -184,7 +186,7 @@ void svcs_display(int bg_color)
                 sdlx_register_event(loc, EVID_SVC_STOP+id);
             }
 
-            row += 1.5;
+            row += 2;
         }
 
         // display the control event 'X' to exit this

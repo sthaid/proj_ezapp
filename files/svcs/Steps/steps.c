@@ -11,26 +11,33 @@
 
 #include "svcs/Steps/steps.h"
 
-// program args
-char *progname;
-char *data_dir;
+// defines
+#define CREATE_IF_NEEDED true
+#define READ_WRITE       false
 
-// flag set when SVC_REQ_ID_STOP received
-bool end_program = false;
+// program args
+char          *progname;
+char          *data_dir;
+
+// variables
+bool          end_program = false;
+steps_file_t *steps_file;
+FILE         *fp;  // xxx temp
 
 // prototypes
 void process_req(svc_req_t *req);
-int initialize(void);
-void cleanup(void);
 void periodic_processing(void);
 
-// -----------------  STEPS SERVICE  -----------------------------------------
+// -----------------  MAIN  ----------------------------------------
+
+int initialize(void);
+void cleanup(void);
 
 int main(int argc, char **argv)
 {
     svc_req_t *req;
-    long abstime;
-    int rc;
+    int        rc;
+    time_t     t_now, t_last=time(NULL), timeout=0;
 
     // save args
     progname = argv[0];
@@ -41,50 +48,39 @@ int main(int argc, char **argv)
     data_dir = argv[1];
     printf("I %s: starting, data_dir=%s\n", progname, data_dir);
 
-#if 0
-    // unit test code
-    int cnt=0;
-    initialize();
-    while (true) {
-        periodic_processing();
-        sleep(1);
-        if (++cnt >= 5) break;
-    }
-    cleanup();
-    return 0;
-#endif
-
     // initialize
     rc = initialize();
     if (rc != 0) {
         printf("E %s: failed to initialize\n", progname);
+        cleanup();
         return 1;
     }
-
-    // set absolute time at which svc_wait_for_req will timeout;
-    // this time is rounded down to the prior minute so that the first
-    // call to svc_wait_for_req will timeout immedeately
-    // xxx why abstime?
-    abstime = time(NULL) / 60 * 60;
 
     // service runtime loop
     while (!end_program) {
         // wait for req or timeout
-        rc = svc_wait_for_req(progname, &req, abstime);
+        timeout = (timeout == 0 ? time(NULL) : time(NULL)+5);
+        rc = svc_wait_for_req(progname, &req, time(NULL)+5);
 
         // if an unexpected error is returned, then delay and try again
         if (rc != 0 && rc != SVC_REQ_WAIT_ERROR_TIMEDOUT) {
+            printf("E %s: svc_wait_for_req rc=%d\n", progname, rc);
             sleep(1);
             continue;
         }
 
         // if scv_wait_for_req timedout then do periodic svc processing
-        // xxx maybe use relative time
         if (rc == SVC_REQ_WAIT_ERROR_TIMEDOUT) {
-            // xxx adjust interval
-            // - when app is running and not dozing or minimized then use 1 second
-            // - else use 1 minute
-            abstime += 1; // xxx why so iregular;  set to wake up xxx from now
+            // debug print actual duration of the timeout
+            t_now = time(NULL);
+            printf("I %s: delta_t=%ld calling period_processing\n", progname, t_now-t_last);
+            if (fp) {
+                fprintf(fp, "I %s: delta_t=%ld calling period_processing\n", progname, t_now-t_last);
+                fflush(fp);
+            }
+            t_last = t_now;
+
+            // perform periodic processing
             periodic_processing();
             continue;
         }
@@ -104,40 +100,8 @@ int main(int argc, char **argv)
     return 0;
 }
 
-// -----------------  PROCESS REQ  ---------------------------------
-
-void process_req(svc_req_t *req)
-{
-    printf("I %s: got req_id %d\n", progname, req->req_id);
-
-    // process the request
-    switch (req->req_id) {
-    case SVC_REQ_ID_STOP:
-        svc_req_completed(req, SVC_REQ_OK);
-        end_program = true;
-        break;
-    default:
-        printf("E %s: req %d is invalid\n", progname, req->req_id);
-        svc_req_completed(req, SVC_REQ_ERROR_INVALID_REQ);
-        break;
-    }
-}
-
-// -----------------  INITIALIZE  ----------------------------------
-
-// defines
-#define CREATE_IF_NEEDED true
-#define READ_WRITE       false
-
-// variables
-steps_file_t  *steps_file;
-unsigned long  last_step_count_sensor;
-
-// prototypes
-
 int initialize(void)
 {
-    int rc;
     int tries = 0;
     int created_flag;
 
@@ -171,12 +135,8 @@ try_again:
         }
     }
 
-    // init the last_step_count_sensor variable
-    rc = sdlx_sensor_read_step_counter(&last_step_count_sensor);
-    if (rc != 0) {
-        printf("E %s: failed to read step counter sensor\n", progname);
-        return -1;
-    }
+    // xxx temp
+    fp = fopen("svcs/Steps/debug.log", "a");
 
     // success
     return 0;
@@ -188,6 +148,30 @@ void cleanup(void)
         util_unmap_file(steps_file, sizeof(steps_file_t));
         steps_file = NULL;
     }
+
+    if (fp) {
+        fclose(fp);
+        fp = NULL;
+    }
+}
+
+// -----------------  PROCESS REQ  ---------------------------------
+
+void process_req(svc_req_t *req)
+{
+    printf("I %s: got req_id %d\n", progname, req->req_id);
+
+    // process the request
+    switch (req->req_id) {
+    case SVC_REQ_ID_STOP:
+        svc_req_completed(req, SVC_REQ_OK);
+        end_program = true;
+        break;
+    default:
+        printf("E %s: req %d is invalid\n", progname, req->req_id);
+        svc_req_completed(req, SVC_REQ_ERROR_INVALID_REQ);
+        break;
+    }
 }
 
 // -----------------  PERIODIC PROCESSING  -------------------------
@@ -196,10 +180,23 @@ void periodic_processing(void)
 {
     unsigned long step_count_sensor;
     int           steps, rc, year, month, day, hour;
-    time_t        t;
+    time_t        t_now;
     struct tm     tm;
 
-    static int count;
+    static int           t_last_sync;
+    static bool          sync_needed;
+    static unsigned long last_step_count_sensor;
+
+    // get current time
+    t_now = time(NULL);
+
+    // sync the steps_file, if needed
+    if (sync_needed && (t_now - t_last_sync > 60)) {
+        printf("I %s: calling util_sync_file\n", progname);
+        util_sync_file(steps_file, sizeof(steps_file_t));
+        t_last_sync = t_now;
+        sync_needed = false;
+    }
 
     // read step counter sensor
     rc = sdlx_sensor_read_step_counter(&step_count_sensor);
@@ -208,19 +205,24 @@ void periodic_processing(void)
         return;
     }
 
-    // determine number of steps since last read of the sensor
+    // if don't yet have the last_step_count_sensor value then set it and return
+    if (last_step_count_sensor == 0) {
+        last_step_count_sensor = step_count_sensor;
+        printf("I %s: init last_step_count_sensor %ld\n", progname, last_step_count_sensor);
+        return;
+    }
+
+    // determine number of steps since previous read of the sensor
     steps = (step_count_sensor - last_step_count_sensor);
     last_step_count_sensor = step_count_sensor;
-    //printf("I %s: step_count_sensor = %ld  steps = %d\n", progname, step_count_sensor, steps);
 
     // if no new steps then return
     if (steps == 0) {
         return;
     }
 
-    // accumulate steps
-    t = time(NULL);
-    localtime_r(&t, &tm);
+    // accumulate steps to memory mapped steps_file
+    localtime_r(&t_now, &tm);
     year  = tm.tm_year + 1900 - YEAR0;
     month = tm.tm_mon;       // 0 - 11
     day   = tm.tm_mday - 1;  // 0 - 30
@@ -230,11 +232,15 @@ void periodic_processing(void)
     steps_file->day[year][month][day]        += steps;
     steps_file->hour[year][month][day][hour] += steps;
 
-    // xxx sync file periodically
-    // xxx use time based, hourly
-    if (++count == 10) {
-        count = 0;
-        printf("I %s: calling util_sync_file\n", progname);
-        util_sync_file(steps_file, sizeof(steps_file_t));
+    // set sync_needed flag
+    sync_needed = true;
+
+    // debug print, and also print to logfile
+    printf("I %s: ymdh=%d %d %d %d  steps=%d  sensor=%ld\n", 
+           progname, year, month, day, hour, steps, step_count_sensor);
+    if (fp) {
+        fprintf(fp, "I %s: ymdh=%d %d %d %d  steps=%d  sensor=%ld\n", 
+                progname, year, month, day, hour, steps, step_count_sensor);
+        fflush(fp);
     }
 }

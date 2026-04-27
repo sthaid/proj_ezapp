@@ -1,3 +1,8 @@
+Color Orgn file list scrolling when rotatied
+
+remove Template apps and svcs from layout/svcs
+
+
 Steps App
 - write service to collect stepcount every 5 minutes
 - design the UI

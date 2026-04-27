@@ -191,46 +191,38 @@ int sdlx_sensor_read_raw(int id, float *data, int num_values)
 #define RAD_TO_DEG (180 / M_PI)
 #define DEG_TO_RAD (M_PI / 180)
 
-int sdlx_sensor_read_step_counter(unsigned long *step_count)
+int sdlx_sensor_read_step_counter(unsigned long *step_count_arg)
 {
-#ifndef ANDROID // xxx test code
-    *step_count = time(NULL);
+#ifndef ANDROID
+    // for test when running on LINUX, simulates one step per second
+    *step_count_arg = time(NULL);
     return 0;
 #endif
 
-    unsigned long data;
+    unsigned long step_count;
     int           rc;
-
-    static bool first_call = true;
 
     // NOTES: 
     // - the step_counter sensor is a special case, returning a 64 bit integer;
     //   refer to NDK ASensorEvent, which is included in the comment section
     //   at the end of this file
-    // - first read of the step counter may return an incorrect value of 0;
-    //   if so, then delay and retry returns the correct value
+    // - first read of the step counter is observed to return an incorrect value of 0
 
-try_again:
     // read step counter sensor
-    rc = sdlx_sensor_read_raw(id_step_counter, (float*)&data, 2);
+    rc = sdlx_sensor_read_raw(id_step_counter, (float*)&step_count, 2);
     if (rc != 0) {
-        *step_count = INVALID_NUMBER;
+        *step_count_arg = INVALID_NUMBER;
         return -1;
     }
 
-    // an incorrect zero value may be returned on first_call;
-    // if first_call and step_count data is zero then delay and try again
-    if (first_call) {
-        first_call = false;
-        if (data == 0) {
-            INFO("retrying on first_call, because step_count value 0 is probably incorrect\n");
-            usleep(250000);
-            goto try_again;
-        }
+    // if step_count value is 0 then return error
+    if (step_count == 0) {
+        *step_count_arg = INVALID_NUMBER;
+        return -1;
     }
 
     // return step count sensor value
-    *step_count = data;
+    *step_count_arg = step_count;
     return 0;
 }
 
