@@ -1,12 +1,8 @@
 steps
-- params
-- maxy
-- x axis
-- review log file            okay
-- file version check
+- settings for params
 
 Log
-- rotate
+- rotate display
 
 ezput
 - only git files

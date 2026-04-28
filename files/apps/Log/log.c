@@ -13,16 +13,18 @@
 // defines
 //
 
-#define EVID_RELOAD 1
-#define EVID_END    2
+#define EVID_RELOAD       1
+#define EVID_END          2
+#define EVID_FONT_SELECT  3
 
 #define LOG_NOT_LOADED  0
 #define LOG_LOADED      1
 #define LOG_LOAD_FAILED 2
 
-#define FONT_LOG 40
+#define MAX_LINES 500
 
-#define MAX_LINES 200
+#define FONT_SMALLEST  40
+#define FONT_LARGEST   25
 
 //
 // variables
@@ -41,22 +43,30 @@ double        x;
 double        y;
 int           y_top;
 int           y_bottom;
-    
+
+int           fontid;
+
 //
 // prototypes
 //
 
-void init_xy(void);
+void init_xy_to_end_of_log(void);
 int log_load(void);
 void log_cleanup(void);
+int get_device_orientation(void);
 
 // -----------------  MAIN  ------------------------------------------
     
+// xxx when program starts, is the initial orientation always PORTRAIT
+
 int main(int argc, char **argv)
 {
     int          rc;
     sdlx_event_t event;
     bool         done = false;
+    int          orientation;
+    int          last_orientation;
+    sdlx_loc_t  *loc;
 
     // save args
     progname = argv[0];
@@ -68,18 +78,29 @@ int main(int argc, char **argv)
     printf("I %s: starting, data_dir=%s\n", progname, data_dir);
 
     // init display location of captured log prints
-    y_top    = 0;
-    y_bottom = sdlx_win_height;
-    y        = y_top;
-    x        = 0;
+    y_top            = 0;
+    y_bottom         = sdlx_win_height;
+    y                = y_top;
+    x                = 0;
+    orientation      = PORTRAIT;
+    last_orientation = PORTRAIT;
 
-    // set default font size and color
-    sdlx_print_set_default(FONT_LOG, COLOR_WHITE);
+    // init fontid
+    fontid = util_get_numeric_param(data_dir, "fontid", FONT_SMALLEST);
 
     // runtime loop
     while (!done) {
         // init the backbuffer
-        sdlx_display_init(COLOR_BLACK, PORTRAIT);
+        orientation = get_device_orientation();
+        sdlx_display_init(COLOR_BLACK, orientation);
+
+        // if orientation has changed then
+        // set x,y to display end of log
+        if (orientation != last_orientation) {
+            y_bottom = sdlx_win_height;
+            init_xy_to_end_of_log();
+            last_orientation = orientation;
+        }
 
         // if log has not been loaded then
         //   display message
@@ -92,13 +113,13 @@ int main(int argc, char **argv)
                                    "%s",
                                    state == LOG_NOT_LOADED ?  "Loading" : "Load Failed");
         } else {
-            sdlx_render_multiline_text(x, y, y_top, y_bottom, FONT_LOG, lines, colors, num_lines);
+            sdlx_render_multiline_text(x, y, y_top, y_bottom, fontid, lines, colors, num_lines);
         }
 
         // register control events
-        sdlx_register_control_events(EVID_RELOAD, "RELOAD",
-                                     EVID_END,    "END",  
-                                     EVID_QUIT,   "X",
+        sdlx_register_control_events(EVID_RELOAD,      "RELOAD",
+                                     EVID_FONT_SELECT, "FONT",  
+                                     EVID_QUIT,        "X",
                                      COLOR_WHITE, COLOR_BLACK);
         sdlx_register_event(NULL, EVID_MOTION);
 
@@ -109,7 +130,7 @@ int main(int argc, char **argv)
         if (state == LOG_NOT_LOADED) {
             rc = log_load();
             state = (rc == 0 ? LOG_LOADED : LOG_LOAD_FAILED);
-            init_xy();
+            init_xy_to_end_of_log();
         }
 
         // wait for event, with 50 ms timeout
@@ -124,7 +145,12 @@ int main(int argc, char **argv)
             state = LOG_NOT_LOADED;
             break;
         case EVID_END:
-            init_xy();
+            init_xy_to_end_of_log();
+            break;
+        case EVID_FONT_SELECT:
+            fontid = (fontid > FONT_LARGEST ? fontid-5 : FONT_SMALLEST);
+            util_set_numeric_param(data_dir, "fontid", fontid);
+            init_xy_to_end_of_log();
             break;
         case EVID_MOTION:
             if (state == LOG_LOADED) {
@@ -147,12 +173,14 @@ int main(int argc, char **argv)
     return 0;
 }
 
-void init_xy(void)
+void init_xy_to_end_of_log(void)
 {
     int num_last_lines_to_display;
 
     // this routine should only be called when the log has been loaded
     if (state != LOG_LOADED) {
+        x = 0;
+        y = 0;
         return;
     }
 
@@ -160,9 +188,9 @@ void init_xy(void)
     x = 0;
 
     // set y to display last lines of the log
-    num_last_lines_to_display = (y_bottom - y_top) / sdlx_char_height_dflt - 2;
+    num_last_lines_to_display = (y_bottom - y_top) / sdlx_char_height(fontid) - 3;
     if (num_lines > num_last_lines_to_display) {
-        y = y_top - (num_lines - num_last_lines_to_display) * sdlx_char_height_dflt;
+        y = y_top - (num_lines - num_last_lines_to_display) * sdlx_char_height(fontid);
     } else {
         y = y_top;
     }
@@ -173,6 +201,7 @@ int log_load(void)
     char s[1000];
     char cmd[200];
     FILE *fp;
+    static int cnt;
 
     // NOTES: 
     // - set -o pipefail - option in Bash ensures that a pipeline's exit status
@@ -182,12 +211,13 @@ int log_load(void)
     //   status were to be examined then the pipefail option would be needed when
     //   making the popen call
 
-    printf("I %s: loading log\n", progname);
+    printf("I %s: ==== LOADING LOG %d ====\n", progname, ++cnt);
 
-    // free previously captured log lines
+    // free previously captured log lines,
+    // this call resets num_lines to zero
     log_cleanup();
 
-    // start logcat to capture last 100 lines for EZAPP, SDL, SDL/APP and AndroidRuntime
+    // start logcat to capture last lines for EZAPP, SDL, SDL/APP and AndroidRuntime
 #ifdef ANDROID
     sprintf(cmd, "logcat -s -d --format=tag EZAPP:I SDL:I SDL/APP:I AndroidRuntime:I | tail -%d", MAX_LINES);
 #else
@@ -234,3 +264,35 @@ void log_cleanup(void)
     }
     num_lines = 0;
 }
+
+// -----------------  UTILS  -----------------------------------------
+
+int get_device_orientation(void)
+{
+    double ax, ay, az;
+    int rc;
+    static int orient = PORTRAIT;
+    static bool printed;
+
+    rc = sdlx_sensor_read_accelerometer(&ax, &ay, &az);
+    if (rc != 0) {
+        if (!printed) {
+            printf("E %s: failed to read accelerometer\n", progname);
+            printed = true;
+        }
+        return orient;
+    }
+    
+    if (ay > 7 && orient != PORTRAIT) {
+        printf("I %s: orientation is now PORTRAIT\n", progname);
+        orient = PORTRAIT;
+    }
+
+    if (ax > 7 && orient != LANDSCAPE) {
+        printf("I %s: orientation is now LANDSCAPE\n", progname);
+        orient = LANDSCAPE;
+    }
+    
+    return orient;
+}   
+
