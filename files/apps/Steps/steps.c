@@ -24,23 +24,26 @@
 #define VIEW_YEAR   2
 #define VIEW_STR (view == VIEW_DAY ? "DAY" : (view == VIEW_MONTH ? "MONTH" : "YEAR"))
 
-#define GRAPH_H          1000
+#define GRAPH_H          800 
 #define GRAPH_Y_TOP      700
 #define GRAPH_Y_BOTTOM   (GRAPH_Y_TOP + GRAPH_H - 1)
-#define MAX_GRAPH_MILES_PER_HOUR  5
-#define MAX_GRAPH_MILES_PER_DAY   20
-#define MAX_GRAPH_MILES_PER_MONTH 50
+#define DEFAULT_MAX_GRAPH_MILES_PER_HOUR  3
+#define DEFAULT_MAX_GRAPH_MILES_PER_DAY   15
+#define DEFAULT_MAX_GRAPH_MILES_PER_MONTH 30
 
-#define STRIDE_LEN  29.44
+#define DEFAULT_STRIDE_LEN  29.0  // average for height 6'0"
 
 // xxx todo
 // - describe base of yr,mn,day
-// - params
-//   . stride len
-//   . max graph vaules
-// - review Steps svc
-// - swipe left/right?
 // - improve x-axis label
+
+// typedefs
+typedef struct {
+    double max_graph_miles_per_hour;
+    double max_graph_miles_per_day;
+    double max_graph_miles_per_month;
+    double stride_len;
+} params_t;
 
 // variables
 char *progname;
@@ -52,6 +55,7 @@ int           view;
 int           year;
 int           month;
 int           day;
+params_t      params;
     
 // prototypes
 void draw_display(void);
@@ -66,7 +70,7 @@ void get_current_ymd(int *y, int *m, int *d);
 // -----------------  MAIN  ------------------------------------------
 
 int initialize(void);
-int cleanup(void);
+void cleanup(void);
 
 int main(int argc, char **argv)
 {
@@ -133,11 +137,28 @@ int initialize(void)
         return -1;
     }
 
+    // validate steps.dat version
+    if (steps_file->version != STEPS_FILE_VERSION) {
+        printf("E %s: unsupported steps.dat version=%lx, expected=%lx\n",
+               progname, steps_file->version, STEPS_FILE_VERSION);
+        return -1;
+    }
+
+    // read params
+    params.max_graph_miles_per_hour = 
+        util_get_numeric_param(data_dir, "max_graph_miles_per_hour", DEFAULT_MAX_GRAPH_MILES_PER_HOUR);
+    params.max_graph_miles_per_day = 
+        util_get_numeric_param(data_dir, "max_graph_miles_per_day", DEFAULT_MAX_GRAPH_MILES_PER_DAY);
+    params.max_graph_miles_per_month = 
+        util_get_numeric_param(data_dir, "max_graph_miles_per_month", DEFAULT_MAX_GRAPH_MILES_PER_MONTH);
+    params.stride_len = 
+        util_get_numeric_param(data_dir, "stride_len", DEFAULT_STRIDE_LEN);
+
     // success
     return 0;
 }
 
-int cleanup(void)
+void cleanup(void)
 {
     if (steps_file) {
         util_unmap_file(steps_file, sizeof(steps_file_t));
@@ -158,6 +179,7 @@ void draw_display(void)
     // choose the color that the title line will be displayed,
     // use green if the current date is being viewed, else use white
     get_current_ymd(&y, &m, &d);
+    // xxx check view also when choosing color
     color = (year == y && month == m && day == d) ? COLOR_GREEN : COLOR_WHITE;
 
     // display title line, based on the current view selection
@@ -183,7 +205,7 @@ void draw_display(void)
     steps = (view == VIEW_DAY   ? steps_file->day[year][month][day] :
             (view == VIEW_MONTH ? steps_file->month[year][month] :
                                   steps_file->year[year]));
-    miles = steps * STRIDE_LEN / INCHES_PER_MILE;
+    miles = steps * params.stride_len / INCHES_PER_MILE;
 
     sdlx_render_printf_ex2(COL2X(5), ROW2Y(3), FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE, "%d", steps);
     sdlx_render_printf_ex2(COL2X(5), ROW2Y(4), FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE, "Steps");
@@ -204,19 +226,19 @@ void draw_display(void)
     if (view == VIEW_DAY) {
         max_idx = 24;
         steps_array = steps_file->hour[year][month][day];
-        max_graph = MAX_GRAPH_MILES_PER_HOUR;
-        x_left = "00";
+        max_graph = params.max_graph_miles_per_hour;
+        x_left = "00";  // xxx redo x-axis
         x_right = "23";
     } else if (view == VIEW_MONTH) {
         max_idx = 31;
         steps_array = steps_file->day[year][month];
-        max_graph = MAX_GRAPH_MILES_PER_DAY;
+        max_graph = params.max_graph_miles_per_day;
         x_left = "1";
         x_right = "31";
     } else {  // year
         max_idx = 12;
         steps_array = steps_file->month[year];
-        max_graph = MAX_GRAPH_MILES_PER_MONTH;
+        max_graph = params.max_graph_miles_per_month;
         x_left = "Jan";
         x_right = "Dec";
     }
@@ -224,11 +246,28 @@ void draw_display(void)
     double w = (double)(sdlx_win_width-10) / max_idx;
     for (idx = 0; idx < max_idx; idx++) {
         steps = steps_array[idx];
-        miles = steps * STRIDE_LEN / INCHES_PER_MILE;
+        miles = steps * params.stride_len / INCHES_PER_MILE;
         h = miles / max_graph * GRAPH_H;
         if (h > GRAPH_H) h = GRAPH_H;
         sdlx_render_fill_rect(5+idx*w, GRAPH_Y_BOTTOM-h+1, w-6, h, COLOR_GREEN);
     }
+
+    // display graph title
+    if (view == VIEW_DAY) {
+        sdlx_render_printf_ex2(sdlx_win_width/2, GRAPH_Y_TOP-2*sdlx_char_height_dflt-5,
+                               FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE, 
+                               "Day - %s %d", get_month_str(month), day+1);
+    } else if (view == VIEW_MONTH) {
+        sdlx_render_printf_ex2(sdlx_win_width/2, GRAPH_Y_TOP-2*sdlx_char_height_dflt-5,
+                               FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE, 
+                               "Month - %s", get_month_str(month));
+    } else {
+        sdlx_render_printf_ex2(sdlx_win_width/2, GRAPH_Y_TOP-2*sdlx_char_height_dflt-5,
+                               FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE, 
+                               "Year - %d", year+YEAR0);
+    }
+
+// xxx display weekends in blue graph
 
     // display graph max y-axis value
     sdlx_render_printf_ex2(sdlx_win_width/2, GRAPH_Y_TOP-sdlx_char_height_dflt-5,

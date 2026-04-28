@@ -5,7 +5,7 @@
 #define MAX_YEAR  20
 
 #define STEPS_FILENAME "steps.dat"
-#define VERSION 0x55aa55aa00000002
+#define STEPS_FILE_VERSION 0x55aa55aa00000002
 
 typedef struct {
     unsigned long version;

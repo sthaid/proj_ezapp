@@ -1,3 +1,18 @@
+steps
+- params
+- maxy
+- x axis
+- review log file            okay
+- file version check
+
+Log
+- rotate
+
+ezput
+- only git files
+
+horizontal orientation for Log app
+
 Color Orgn file list scrolling when rotatied
 
 remove Template apps and svcs from layout/svcs

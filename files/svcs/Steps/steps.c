@@ -16,13 +16,12 @@
 #define READ_WRITE       false
 
 // program args
-char          *progname;
-char          *data_dir;
+char *progname;
+char *data_dir;
 
 // variables
 bool          end_program = false;
 steps_file_t *steps_file;
-FILE         *fp;  // xxx temp
 
 // prototypes
 void process_req(svc_req_t *req);
@@ -74,10 +73,6 @@ int main(int argc, char **argv)
             // debug print actual duration of the timeout
             t_now = time(NULL);
             printf("I %s: delta_t=%ld calling period_processing\n", progname, t_now-t_last);
-            if (fp) {
-                fprintf(fp, "I %s: delta_t=%ld calling period_processing\n", progname, t_now-t_last);
-                fflush(fp);
-            }
             t_last = t_now;
 
             // perform periodic processing
@@ -105,10 +100,11 @@ int initialize(void)
     int tries = 0;
     int created_flag;
 
-    printf("I %s: sizeof(steps_file_t) = 0x%zx\n", progname, sizeof(steps_file_t));
+    printf("I %s: sizeof(steps_file_t) = 0x%zx %0.3f MB\n",
+           progname, sizeof(steps_file_t), (double)sizeof(steps_file_t)/0x100000);
 
-try_again:
-    // map the steps data file (steps.dat)
+    // map the steps data file;
+    // create the file if needed because either it doesn't exist or has incorrect size
     steps_file = util_map_file(data_dir, STEPS_FILENAME, sizeof(steps_file_t),
                                CREATE_IF_NEEDED, READ_WRITE, &created_flag);
     if (steps_file == NULL) {
@@ -116,27 +112,13 @@ try_again:
         return -1;
     }
 
-    // if the steps.dat file was created then 
-    //   init the file version field
-    // else if file magic is invalid then 
-    //   delete the file and call util_map_file again
-    // endif
-    if (created_flag) {
-        steps_file->version = VERSION;
-        util_sync_file(&steps_file->version, sizeof(steps_file->version));
-    } else if (steps_file->version != VERSION) {
-        printf("I %s: steps_file version=0x%lx expected=0x%lx, recreating steps_file\n",
-               progname, steps_file->version, VERSION);
-        util_delete_file(data_dir, STEPS_FILENAME);
-        if (++tries == 1) {
-            goto try_again;
-        } else {
-            return -1;
-        }
+    // if file was created or has incorrect version then init the file
+    if (created_flag || steps_file->version != STEPS_FILE_VERSION) {
+        printf("I %s: initializing steps_file\n", progname);
+        memset(steps_file, 0, sizeof(steps_file_t));
+        steps_file->version = STEPS_FILE_VERSION;
+        util_sync_file(steps_file, sizeof(steps_file_t));
     }
-
-    // xxx temp
-    fp = fopen("svcs/Steps/debug.log", "a");
 
     // success
     return 0;
@@ -147,11 +129,6 @@ void cleanup(void)
     if (steps_file) {
         util_unmap_file(steps_file, sizeof(steps_file_t));
         steps_file = NULL;
-    }
-
-    if (fp) {
-        fclose(fp);
-        fp = NULL;
     }
 }
 
@@ -235,12 +212,7 @@ void periodic_processing(void)
     // set sync_needed flag
     sync_needed = true;
 
-    // debug print, and also print to logfile
+    // debug print
     printf("I %s: ymdh=%d %d %d %d  steps=%d  sensor=%ld\n", 
            progname, year, month, day, hour, steps, step_count_sensor);
-    if (fp) {
-        fprintf(fp, "I %s: ymdh=%d %d %d %d  steps=%d  sensor=%ld\n", 
-                progname, year, month, day, hour, steps, step_count_sensor);
-        fflush(fp);
-    }
 }
