@@ -34,8 +34,9 @@
 #define DEFAULT_STRIDE_LEN  29.0  // average for height 6'0"
 
 // xxx todo
+// - settings for params
+// - test on android
 // - describe base of yr,mn,day
-// - improve x-axis label
 
 // typedefs
 typedef struct {
@@ -64,6 +65,7 @@ void process_event(sdlx_event_t *event);
 // prototypes for utils
 char *get_month_str(int month);
 char *get_weekday_str(int year, int month, int day);
+bool is_weekend(int y, int m, int d);
 int days_in_month(int year, int month);
 void get_current_ymd(int *y, int *m, int *d);
 
@@ -174,16 +176,12 @@ void draw_display(void)
     double miles;
     sdlx_loc_t *loc;
     sdlx_color_t color;
-    int y,m,d;
-
-    // choose the color that the title line will be displayed,
-    // use green if the current date is being viewed, else use white
-    get_current_ymd(&y, &m, &d);
-    // xxx check view also when choosing color
-    color = (year == y && month == m && day == d) ? COLOR_GREEN : COLOR_WHITE;
+    int curr_y, curr_m, curr_d;
 
     // display title line, based on the current view selection
+    get_current_ymd(&curr_y, &curr_m, &curr_d);
     if (view == VIEW_DAY) {
+        color = (year == curr_y && month == curr_m && day == curr_d) ? COLOR_GREEN : COLOR_WHITE;
         sdlx_render_printf_ex2(sdlx_win_width/2, ROW2Y(1), FONT_NORMAL, color, FLAG_X_CTR, WRAP_NONE, 
                                "%s %s %d %d",
                                get_weekday_str(year, month, day),
@@ -191,11 +189,13 @@ void draw_display(void)
                                day + 1,
                                year + YEAR0);
     } else if (view == VIEW_MONTH) {
+        color = (year == curr_y && month == curr_m) ? COLOR_GREEN : COLOR_WHITE;
         sdlx_render_printf_ex2(sdlx_win_width/2, ROW2Y(1), FONT_NORMAL, color, FLAG_X_CTR, WRAP_NONE, 
                                "%s %d",
                                get_month_str(month),
                                year + YEAR0);
     } else { // year
+        color = (year == curr_y) ? COLOR_GREEN : COLOR_WHITE;
         sdlx_render_printf_ex2(sdlx_win_width/2, ROW2Y(1), FONT_NORMAL, color, FLAG_X_CTR, WRAP_NONE, 
                                "%d",
                                year + YEAR0);
@@ -220,36 +220,37 @@ void draw_display(void)
                      5, // line_width
                      COLOR_WHITE);
 
-    // display graph, based on the current view selection
+    // display graph, based on the current view selected
     unsigned int max_idx, *steps_array, max_graph;
-    char *x_left, *x_right;
     if (view == VIEW_DAY) {
         max_idx = 24;
         steps_array = steps_file->hour[year][month][day];
         max_graph = params.max_graph_miles_per_hour;
-        x_left = "00";  // xxx redo x-axis
-        x_right = "23";
     } else if (view == VIEW_MONTH) {
         max_idx = 31;
         steps_array = steps_file->day[year][month];
         max_graph = params.max_graph_miles_per_day;
-        x_left = "1";
-        x_right = "31";
     } else {  // year
         max_idx = 12;
         steps_array = steps_file->month[year];
         max_graph = params.max_graph_miles_per_month;
-        x_left = "Jan";
-        x_right = "Dec";
     }
     int idx, h;
     double w = (double)(sdlx_win_width-10) / max_idx;
     for (idx = 0; idx < max_idx; idx++) {
         steps = steps_array[idx];
         miles = steps * params.stride_len / INCHES_PER_MILE;
+
         h = miles / max_graph * GRAPH_H;
         if (h > GRAPH_H) h = GRAPH_H;
-        sdlx_render_fill_rect(5+idx*w, GRAPH_Y_BOTTOM-h+1, w-6, h, COLOR_GREEN);
+
+        if (view == VIEW_MONTH) {
+            color = is_weekend(year, month, idx) ? COLOR_BLUE : COLOR_GREEN;
+        } else {
+            color = COLOR_GREEN;
+        }
+
+        sdlx_render_fill_rect(5+idx*w, GRAPH_Y_BOTTOM-h+1, w-6, h, color);
     }
 
     // display graph title
@@ -267,17 +268,22 @@ void draw_display(void)
                                "Year - %d", year+YEAR0);
     }
 
-// xxx display weekends in blue graph
-
-    // display graph max y-axis value
+    // display graph max y-axis max value
     sdlx_render_printf_ex2(sdlx_win_width/2, GRAPH_Y_TOP-sdlx_char_height_dflt-5,
                            FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE, 
-                           "Y-max %d miles", max_graph);
+                           "ymax %d miles", max_graph);
 
     // display graph x-axis values
-    sdlx_render_printf(0, GRAPH_Y_BOTTOM+5, "%s", x_left);
-    sdlx_render_printf(sdlx_win_width - strlen(x_right)*sdlx_char_width_dflt, GRAPH_Y_BOTTOM+5,
-                       "%s", x_right);
+    if (view == VIEW_DAY) {
+        sdlx_render_printf_ex1(3, GRAPH_Y_BOTTOM+5, 37, COLOR_WHITE, "%s",
+                               "00 02 04 06 08 10 12 14 16 18 20 22");
+    } else if (view == VIEW_MONTH) {
+        sdlx_render_printf_ex1(3, GRAPH_Y_BOTTOM+5, 46, COLOR_WHITE, "%s",
+                               "01 03 05 07 09 11 13 15 17 19 21 23 25 27 29 31");
+    } else {
+        sdlx_render_printf_ex1(3, GRAPH_Y_BOTTOM+5, 23, COLOR_WHITE, "%s",
+                               "J F M A M J J A S O N D");
+    }
 
     // register events:
     // - EVID_VIEW_SELECT: used to choose DAY, MONTH, or YEAR view
@@ -405,6 +411,22 @@ char *get_weekday_str(int y, int m, int d)
     t = mktime(&tm);
     localtime_r(&t, &tm);
     return day_str_tbl[tm.tm_wday];
+}
+
+bool is_weekend(int y, int m, int d)
+{
+    struct tm tm;
+    time_t t;
+
+    memset(&tm, 0, sizeof(tm));
+    tm.tm_year = y + YEAR0 - 1900;
+    tm.tm_mon  = m;
+    tm.tm_mday = d + 1;
+    tm.tm_isdst = -1;  // system will determine dst
+
+    t = mktime(&tm);
+    localtime_r(&t, &tm);
+    return tm.tm_wday == 0 || tm.tm_wday == 6;
 }
 
 int days_in_month(int y, int m)
