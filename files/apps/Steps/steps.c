@@ -281,7 +281,7 @@ void draw_display(void)
         sdlx_render_printf_ex1(3, GRAPH_Y_BOTTOM+5, 46, COLOR_WHITE, "%s",
                                "01 03 05 07 09 11 13 15 17 19 21 23 25 27 29 31");
     } else {
-        sdlx_render_printf_ex1(3, GRAPH_Y_BOTTOM+5, 23, COLOR_WHITE, "%s",
+        sdlx_render_printf_ex1(6, GRAPH_Y_BOTTOM+5, 23, COLOR_WHITE, "%s",
                                "J F M A M J J A S O N D");
     }
 
