@@ -1,22 +1,29 @@
 steps
 - settings for params
+- cleanup
 
-Log
-- rotate display
+ColrOrgn 
+- should display file play time and duration
+- Color Orgn file list scrolling when rotatied
 
 ezput
 - only git files
 
-horizontal orientation for Log app
+libmp3lame
 
-Color Orgn file list scrolling when rotatied
+---- READY FOR TEST -----
 
 remove Template apps and svcs from layout/svcs
 
+Log - rotate display
 
-Steps App
-- write service to collect stepcount every 5 minutes
-- design the UI
+---- LATER --------
+
+developer mode password
+
+review all for xxx
+
+doc files
 
 piano app
 - display key letter when highlighted
@@ -37,9 +44,8 @@ documentation
    . copyright
 - copyright and credits
 
-xxxxxxxx----------------xxxxxxxxxxxxxxx
 
-picoc issues  
+document or fix picoc issues  
 - low_band = util_rms_float(&fft[first_bin], last_bin-first_bin+1);// yyy picoc isue requires &fft[first_bin]
 - picoc ptr math
     vol = rms_float(fft+bin, 1);    fft+bin not working
@@ -53,23 +59,9 @@ picoc issues
 - ptr operations ?
 - short circuit eval
 
-issues with open source ...
-- kissfft does not use O2 ????????
-- SDL record volume issue:
-  - maybe add to this - https://github.com/libsdl-org/sdl/issues/13402
-  - "org.sthaid.ezApp/app/jni/SDL/src/audio/aaudio/SDL_aaudio.c"
-     ctx.AAudioStreamBuilder_setInputPreset(builder, AAUDIO_INPUT_PRESET_CAMCORDER);
-  - SDL/build/org.sthaid.ezApp/app/jni/SDL/src/audio/aaudio/SDL_aaudio.c
-  - AAUDIO_INPUT_PRESET_CAMCORDER
-      //ctx.AAudioStreamBuilder_setInputPreset(builder, AAUDIO_INPUT_PRESET_CAMCORDER);
-  - Logical Presentation
-      - ask SDL team bout LogicalPresentation issues
-- picoc, many issues
-
 build & install
 - icon
 - should a fresh install wipe existing files; including top level params
-- checkout specific commit in sdl dirs
 - license and credits
 - help / doc
 - reneme Templates to SvcDemo  ??
@@ -84,9 +76,22 @@ BUGS
 CODE REVIEWS
 - mmap / munmap - code reveiw,  make sure fd is closed
 
-----------
--- APPS --
-----------
+
+=================================================
+
+issues with open source ...
+- kissfft does not use O2 ????????
+- SDL record volume issue:
+  - maybe add to this - https://github.com/libsdl-org/sdl/issues/13402
+  - "org.sthaid.ezApp/app/jni/SDL/src/audio/aaudio/SDL_aaudio.c"
+     ctx.AAudioStreamBuilder_setInputPreset(builder, AAUDIO_INPUT_PRESET_CAMCORDER);
+  - SDL/build/org.sthaid.ezApp/app/jni/SDL/src/audio/aaudio/SDL_aaudio.c
+  - AAUDIO_INPUT_PRESET_CAMCORDER
+      //ctx.AAudioStreamBuilder_setInputPreset(builder, AAUDIO_INPUT_PRESET_CAMCORDER);
+  - Logical Presentation
+      - ask SDL team bout LogicalPresentation issues
+- picoc, many issues
+
 
 ===========================================================
 ====================  LATER  ==============================

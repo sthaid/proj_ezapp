@@ -2,13 +2,12 @@
 Compass     Clock       Morse
 Calc        Location    Tilt
 Weather     Memo        ColrOrgn
-Piano       Steps       -
--           -           -
+Piano       Steps       Reversi
+Paddle      -           -
 -           Log         Settings
 
 # -------- Page 1 --------
-Reversi     Paddle      Test
-FlshLite    Light       -
+FlshLite    Light       Test
 -           -           -
 -           -           -
 -           -           -

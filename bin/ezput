@@ -1,10 +1,10 @@
 #!/bin/bash
 
-# verify parent directory is 'apps'
+# verify parent directory is 'apps' or 'svcs'
 parent_dir=$(basename $(dirname $PWD))
 if [ "$parent_dir" != apps -a "$parent_dir" != svcs ]; then
-    echo "ERROR: parent_dir must be apps or svcs"
-    exit 1
+  echo "ERROR: parent_dir must be apps or svcs"
+  exit 1
 fi
 
 # set filename_list equal to args
@@ -38,19 +38,26 @@ if [ "$android_dir_exists" != YES ]; then
 fi
 
 # if filename_list is empty then
-#   xxx maybe add query to remove pre-existing files
-#   copy all files from this dir to Android
+#   copy all git tracked files from this dir to Android;
+#    and copy the apps/layout and apps/svcs files
 # else
 #   copy filename_list
 # endif
 if [ "$filename_list" = "" ]; then
-  tar -C ../.. -cf /tmp/ezput.tar $android_dir apps/layout svcs/svcs
+  cd ../..
+  tar -cf /tmp/ezput.tar $(git ls-files $android_dir) apps/layout svcs/svcs
   ezsh put /tmp/ezput.tar 
   echo "Creating files on Android device ..."
   ezsh tar -xvf ezput.tar
   ezsh rm -f ezput.tar
   rm -f /tmp/ezput.tar
 else
+  for filename in $filename_list; do
+    if [ ! -f "$filename" ]; then
+      echo "ERROR $filename does not exist"
+      exit 1
+    fi
+  done
   for filename in $filename_list; do
     echo "copying to android $android_dir/$filename"
     ezsh "put $filename $android_dir/$filename"
