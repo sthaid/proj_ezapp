@@ -494,6 +494,14 @@ void Sdlx_audio_play_file(struct ParseState *Parser, struct Value *ReturnValue,
     ReturnValue->Val->Integer = retval;
 }
 
+void Sdlx_audio_set_play_file_time(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
+{
+    int secs = Param[0]->Val->Integer;
+
+    sdlx_audio_set_play_file_time(secs);
+}
+
 void Sdlx_audio_play_tones(struct ParseState *Parser, struct Value *ReturnValue,
         struct Value **Param, int NumArgs)
 {
@@ -799,6 +807,7 @@ struct LibraryFunction SdlFunctions[] = {
     { Sdlx_audio_get_state,          "void sdlx_audio_get_state(sdlx_audio_state_t * state);" },
     { Sdlx_get_audio_samples,        "void sdlx_get_audio_samples(int num_ret_samples, int num_downsample, int which_channel, float *ret_samples);" },
     { Sdlx_audio_play_file,          "int sdlx_audio_play_file(char *dir, char *filename);" },
+    { Sdlx_audio_set_play_file_time, "void sdlx_audio_set_play_file_time(int secs);" },
     { Sdlx_audio_play_tones,         "int sdlx_audio_play_tones(sdlx_tone_t *tones);" },
     { Sdlx_audio_play_buff,          "int sdlx_audio_play_buff(float *samples, int num_samples, int num_channels, int loops, bool free_samples_when_done);" },
     { Sdlx_audio_record_from_mic,    "int sdlx_audio_record_from_mic(char *dir, char *filename, int auto_stop_secs, bool append, bool start_paused);" },

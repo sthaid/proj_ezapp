@@ -136,7 +136,7 @@ void color_organ_display_fft(float *fft);
 void filter(float *val, float new_val);
 void init_loc(sdlx_loc_t *loc, int x, int y, int w, int h);
 
-void color_organ_display(int y_controls_2)
+void color_organ_display(int y_controls)
 {
     int          num_downsample = 4;
     int          num_samples = nearbyint(FRAMES_PER_SEC / num_downsample * 0.050);  // equals 600
@@ -172,10 +172,10 @@ void color_organ_display(int y_controls_2)
     }
 
     // register events to select the color organ display format and filter 
-    if (show_controls) {
-        reg_event(COL2X(0), y_controls_2, COLOR_LIGHT_BLUE,
+    if (show_controls) { //xxx dont use reg_event
+        reg_event(COL2X(11), y_controls, COLOR_LIGHT_BLUE,
                   color_organ_name[which_color_organ], EVID_COLOR_ORGAN_SLCT);
-        reg_event(COL2X(5), y_controls_2, COLOR_LIGHT_BLUE, 
+        reg_event(COL2X(16), y_controls, COLOR_LIGHT_BLUE, 
                   filter_name[which_filter], EVID_FILTER_SLCT);
     }
 }

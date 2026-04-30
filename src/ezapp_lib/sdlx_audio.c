@@ -1398,10 +1398,38 @@ int sdlx_audio_play_file(char *dir, char *filename)
     return 0;
 }
 
+void sdlx_audio_set_play_file_time(int secs)
+{
+    bool succ;
+    long frames;
+
+    INFO("setting play file time to %d secs\n", secs);
+
+    // verify file play is in progress
+    if (state.state != AUDIO_STATE_PLAY_FILE || audio == NULL || track == NULL) {
+        ERROR("state is not AUDIO_STATE_PLAY_FILE or audio or track is NULL\n");
+        return;
+    }
+
+    // set track playback position
+    frames = MIX_TrackMSToFrames(track, secs*1000L);
+    succ = MIX_SetTrackPlaybackPosition(track, frames);
+    if (!succ) {
+        ERROR("MIX_SetTrackPlaybackPosition failed, %s\n", SDL_GetError());
+        return;
+    }
+
+    // update audio state.play_current_secs_
+    // xxx this may not be needed
+    frames = MIX_GetTrackPlaybackPosition(track);
+    state.play_current_secs = MIX_TrackFramesToMS(track, frames) / 1000;
+    INFO("readback of play file time = %d\n", state.play_current_secs);
+}
+
 static void mixer_track_raw_callback(void *userdata, MIX_Track *track, const SDL_AudioSpec *spec,
                                      float *samples, int num_samples)
 {
-    // update audio state.play_currentsecs_
+    // update audio state.play_current_secs_
     long frames = MIX_GetTrackPlaybackPosition(track);
     state.play_current_secs = MIX_TrackFramesToMS(track, frames) / 1000;
 

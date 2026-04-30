@@ -199,6 +199,7 @@ void sdlx_get_audio_samples(int num_ret_samples, int num_downsample, int which_c
 // - - - - - -
 
 int sdlx_audio_play_file(char *dir, char *filename);
+void sdlx_audio_set_play_file_time(int secs);
 int sdlx_audio_play_tones(sdlx_tone_t *tones);
 int sdlx_audio_play_buff(float *samples, int num_samples, int num_channels,
                          int loops, bool free_samples_when_done);

@@ -6,16 +6,18 @@ ColrOrgn
 - should display file play time and duration
 - Color Orgn file list scrolling when rotatied
 
-ezput
-- only git files
-
 libmp3lame
+https://github.com/gypified/libmp3lame
+
+svcs is not re-reading svcs/svcs
 
 ---- READY FOR TEST -----
 
 remove Template apps and svcs from layout/svcs
 
 Log - rotate display
+
+ezput - only git files
 
 ---- LATER --------
 

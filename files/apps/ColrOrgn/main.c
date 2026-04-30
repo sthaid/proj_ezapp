@@ -12,6 +12,8 @@
 // xxx
 // - MON/REC core dump
 
+// - xxx filename renmae has space at end, and the keyboard changes the string
+
 //
 // defines
 //
@@ -28,6 +30,9 @@
 #define EVID_PLAY_FILE           100     // start play file, range 100-199
 #define EVID_DELETE_FILE         200     // delete file, range 200-299
 #define EVID_RENAME_FILE         300     // delete file, range 300-399
+
+#define EVID_PLAY_GO_FWD          20  // xxx cleanup
+#define EVID_PLAY_GO_BACK         21
 
 #define STATE_STOPPED               0
 #define STATE_PLAYING_FILE          1
@@ -51,8 +56,7 @@ char *files_noext[MAX_FILES];
 int   max_files;
 
 int   y_state;
-int   y_controls_1;
-int   y_controls_2;
+int   y_controls;
 int   y_files_list;
 int   y_files_list_top;
 int   y_files_list_bottom;
@@ -67,15 +71,16 @@ bool  test_force_landscape;
 //
 
 // event handling
-void process_event(sdlx_event_t *ev);
+void process_event(sdlx_event_t *ev, sdlx_audio_state_t *as);
 void register_events(void);
-//void reg_event(int x, int y, sdlx_color_t color, char *name, int event_id);
+//void reg_event(int x, int y, sdlx_color_t color, char *name, int event_id);  xxx
 
 // utils
 void get_list_of_files(void);
 void remove_trailing_newline(char *s);
 char *get_state_str(void);
 int get_device_orientation(void);
+char *secs_to_mmss_str(int secs, char *str);
 
 // -----------------  MAIN  ------------------------------------------
     
@@ -101,9 +106,8 @@ int main(int argc, char **argv)
 
     // init y locations
     y_state             = 0;
-    y_controls_1        = y_state + LINE_SPACING*sdlx_char_height_dflt;
-    y_controls_2        = y_controls_1 + LINE_SPACING*sdlx_char_height_dflt;
-    y_files_list        = y_controls_2 + LINE_SPACING*sdlx_char_height_dflt;
+    y_controls          = y_state + LINE_SPACING*sdlx_char_height_dflt;
+    y_files_list        = y_controls + LINE_SPACING*sdlx_char_height_dflt;
     y_files_list_top    = y_files_list;
     y_files_list_bottom = sdlx_win_height - COH_P;
 
@@ -123,7 +127,7 @@ int main(int argc, char **argv)
         // if orientation has changed then reset display file list to the top
         new_orientation = get_device_orientation();
         if (new_orientation != orientation) {
-            y_files_list = y_controls_2 + LINE_SPACING*sdlx_char_height_dflt;
+            y_files_list = y_controls + LINE_SPACING*sdlx_char_height_dflt;
             orientation = new_orientation;
         }
 
@@ -132,16 +136,26 @@ int main(int argc, char **argv)
 
         // display state line
         if (show_controls) {
+            char dur_str1[12], dur_str2[12];
             sdlx_color_t color = (state==STATE_RECORDING_DEV ? COLOR_RED : COLOR_WHITE);
             int y = (orientation == PORTRAIT ? COH_P+y_state : 0);
+
+            dur_str1[0] = dur_str2[0] = '\0';
+            if (as.record_secs) {
+                secs_to_mmss_str(as.record_secs, dur_str1);
+            } else if (as.play_total_secs) {
+                secs_to_mmss_str(as.play_total_secs, dur_str1);
+                secs_to_mmss_str(as.play_current_secs, dur_str2);
+            }
+
             sdlx_render_printf_ex2(0, y,
                                    FONT_NORMAL, color, FLAG_NONE, WRAP_NONE,
-                                   "%s", get_state_str());
+                                   "%s %s %s", get_state_str(), dur_str1, dur_str2);
         }
 
         // display color organ
         if (state != STATE_STOPPED) {
-            color_organ_display(y_controls_2);
+            color_organ_display(y_controls);
         }
 
         // register events
@@ -170,7 +184,7 @@ int main(int argc, char **argv)
         }
 
         // process events
-        process_event(&event);
+        process_event(&event, &as);
     }
 
     // cleanup
@@ -179,6 +193,8 @@ int main(int argc, char **argv)
     state = STATE_STOPPED;
     playing_file[0] = '\0';
 
+    // xxx remove and close .record.mp3
+
     // terminate
     printf("I %s: terminating\n", progname);
     return 0;
@@ -186,8 +202,10 @@ int main(int argc, char **argv)
 
 // -----------------  EVENT HANDLING  --------------------------------
 
-void process_event(sdlx_event_t *ev)
+void process_event(sdlx_event_t *ev, sdlx_audio_state_t *as)
 {
+    int new_play_file_time;
+
     if (ev->event_id >= EVID_PLAY_FILE && ev->event_id < EVID_PLAY_FILE+MAX_FILES) {
         // play the selected file
         int idx = ev->event_id - EVID_PLAY_FILE;
@@ -209,6 +227,28 @@ void process_event(sdlx_event_t *ev)
         }
     } else {
         switch (ev->event_id) {
+        // xxxx
+        case EVID_PLAY_GO_BACK:
+            if ((as->play_current_secs % 60) >= 5) {
+                new_play_file_time = as->play_current_secs / 60 * 60;
+            } else {
+                new_play_file_time = (as->play_current_secs - 60) / 60 * 60;
+            }
+            if (new_play_file_time < 0) new_play_file_time = 0;
+            sdlx_audio_set_play_file_time(new_play_file_time);
+            break;
+        case EVID_PLAY_GO_FWD:
+            new_play_file_time = (as->play_current_secs + 60) / 60 * 60;
+            if ((as->play_total_secs >= 3) && 
+                (as->play_current_secs < as->play_total_secs-3) &&
+                (new_play_file_time > as->play_total_secs-3))
+            {
+                new_play_file_time = as->play_total_secs-3;
+            }
+            sdlx_audio_set_play_file_time(new_play_file_time);
+            break;
+
+
         // stop audio
         case EVID_STOP:
             sdlx_audio_stop();
@@ -309,20 +349,20 @@ void register_events(void)
     if (show_controls) {
         // register EVID_MON_REC or EVID_STOP on control line 1, col 0
         if (state == STATE_STOPPED) {
-            reg_event(0, y_controls_1, COLOR_LIGHT_BLUE, "MON/REC", EVID_MON_REC);
+            reg_event(0, y_controls, COLOR_LIGHT_BLUE, "MON/REC", EVID_MON_REC);
         } else {
-            reg_event(0, y_controls_1, COLOR_LIGHT_BLUE, "STP", EVID_STOP);
+            reg_event(0, y_controls, COLOR_LIGHT_BLUE, "STOP", EVID_STOP);
         }
 
         // register EVID RECORD, MONITOR, PAUSE, or CONT on control line 1 col 4
         if (state == STATE_MONITORING_DEV) {
-            reg_event(4*sdlx_char_width_dflt, y_controls_1, COLOR_LIGHT_BLUE, "REC", EVID_RECORD);
+            reg_event(5*sdlx_char_width_dflt, y_controls, COLOR_LIGHT_BLUE, "REC", EVID_RECORD);
         } else if (state == STATE_RECORDING_DEV) {
-            reg_event(4*sdlx_char_width_dflt, y_controls_1, COLOR_LIGHT_BLUE, "MON", EVID_MONITOR);
+            reg_event(5*sdlx_char_width_dflt, y_controls, COLOR_LIGHT_BLUE, "MON", EVID_MONITOR);
         } else if (state == STATE_PLAYING_FILE) {
-            reg_event(4*sdlx_char_width_dflt, y_controls_1, COLOR_LIGHT_BLUE, "PAUS", EVID_PAUSE);
+            reg_event(5*sdlx_char_width_dflt, y_controls, COLOR_LIGHT_BLUE, "PAUSE", EVID_PAUSE);
         } else if (state == STATE_PLAYING_FILE_PAUSED) {
-            reg_event(4*sdlx_char_width_dflt, y_controls_1, COLOR_LIGHT_BLUE, "CONT", EVID_CONT);
+            reg_event(5*sdlx_char_width_dflt, y_controls, COLOR_LIGHT_BLUE, "CONT", EVID_CONT);
         }
 
         // get list of mp3 files, and register events to play, rename, or delete each file
@@ -337,7 +377,7 @@ void register_events(void)
             if (y+sdlx_char_height_dflt > y_files_list_bottom) break;
 
             // register event to play the file
-            if (state == STATE_PLAYING_FILE && strcmp(playing_file, files[i]) == 0) {
+            if ((state == STATE_PLAYING_FILE || state == STATE_PLAYING_FILE_PAUSED) && strcmp(playing_file, files[i]) == 0) {
                 color = COLOR_GREEN;
             } else {
                 color = COLOR_LIGHT_BLUE;
@@ -352,6 +392,12 @@ void register_events(void)
                 reg_event(sdlx_win_width-4*sdlx_char_width_dflt, y, COLOR_LIGHT_BLUE, " DEL", EVID_DELETE_FILE+i);
             }
 
+            // xxx
+            if (color == COLOR_GREEN) {
+                reg_event(sdlx_win_width-8*sdlx_char_width_dflt, y, COLOR_LIGHT_BLUE, "  < ", EVID_PLAY_GO_BACK);
+                reg_event(sdlx_win_width-4*sdlx_char_width_dflt, y, COLOR_LIGHT_BLUE, "  > ", EVID_PLAY_GO_FWD);
+            }
+
             // advance to next file
             y += LINE_SPACING*sdlx_char_height_dflt;
         }
@@ -362,7 +408,7 @@ void register_events(void)
 #ifndef ANDROID
         // if not running on android then provide control to simulate landscape orientation;
         // this feature is provided for development testing
-        reg_event(COL2X(8), 0, COLOR_LIGHT_BLUE, "H", EVID_TEST_FORCE_LANDSCAPE);
+        reg_event(sdlx_win_width-sdlx_char_width_dflt, 0, COLOR_LIGHT_BLUE, "H", EVID_TEST_FORCE_LANDSCAPE);
 #endif
     }
 
@@ -440,13 +486,13 @@ char *get_state_str(void)
     case STATE_PLAYING_FILE:
         return "Playing";
     case STATE_PLAYING_FILE_PAUSED:
-        return "Paused";
+        return "Paused ";
     case STATE_MONITORING_DEV:
-        return "MonDev";
+        return "MonDev ";
     case STATE_RECORDING_DEV:
-        return "RecDev";
+        return "RecDev ";
     default:
-        return "???";
+        return "????   ";
     }
 }
 
@@ -490,4 +536,15 @@ int get_device_orientation(void)
     }
 
     return orient;
+}
+
+char *secs_to_mmss_str(int secs, char *str)
+{
+    int minutes;
+
+    minutes = secs / 60;
+    secs -= minutes * 60;
+
+    sprintf(str, "%d:%02d", minutes, secs);
+    return str;
 }
