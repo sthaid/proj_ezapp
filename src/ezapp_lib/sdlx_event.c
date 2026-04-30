@@ -453,6 +453,7 @@ char *sdlx_get_input_str(char *prompt1, char *prompt2, bool numeric_keybd, sdlx_
                     // does not work, so allow ',' to be used instead
                     if (numeric_keybd && ch == ',') ch = '.';
                     input[max_input++] = ch;
+                    input[max_input] = '\0';
                 }
             } else if (ch == '\b') {
                 if (max_input > 0) {
