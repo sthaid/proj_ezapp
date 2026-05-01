@@ -136,7 +136,7 @@ void color_organ_display_fft(float *fft);
 void filter(float *val, float new_val);
 void init_loc(sdlx_loc_t *loc, int x, int y, int w, int h);
 
-void color_organ_display(int y_controls)
+void color_organ_display(void)
 {
     int          num_downsample = 4;
     int          num_samples = nearbyint(FRAMES_PER_SEC / num_downsample * 0.050);  // equals 600
@@ -172,11 +172,22 @@ void color_organ_display(int y_controls)
     }
 
     // register events to select the color organ display format and filter 
-    if (show_controls) { //xxx dont use reg_event
-        reg_event(COL2X(11), y_controls, COLOR_LIGHT_BLUE,
-                  color_organ_name[which_color_organ], EVID_COLOR_ORGAN_SLCT);
-        reg_event(COL2X(16), y_controls, COLOR_LIGHT_BLUE, 
-                  filter_name[which_filter], EVID_FILTER_SLCT);
+    if (show_controls) {
+        if (orientation == PORTRAIT) {
+            int y_controls = COH_P + LINE_SPACING;
+            reg_event(COL2X(11), y_controls, COLOR_LIGHT_BLUE,
+                    color_organ_name[which_color_organ], EVID_COLOR_ORGAN_SLCT);
+            reg_event(COL2X(16), y_controls, COLOR_LIGHT_BLUE, 
+                    filter_name[which_filter], EVID_FILTER_SLCT);
+        } else {
+            int x_controls = sdlx_win_width - 8*sdlx_char_width_dflt;
+            int y_controls = 3 * LINE_SPACING;
+            reg_event(x_controls, y_controls, COLOR_LIGHT_BLUE,
+                    color_organ_name[which_color_organ], EVID_COLOR_ORGAN_SLCT);
+            y_controls += LINE_SPACING;
+            reg_event(x_controls, y_controls, COLOR_LIGHT_BLUE, 
+                    filter_name[which_filter], EVID_FILTER_SLCT);
+        }
     }
 }
 

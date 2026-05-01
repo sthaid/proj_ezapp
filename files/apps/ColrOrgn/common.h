@@ -12,6 +12,8 @@
 
 #define DEBUG_FLAG_CYCLE_DUR  1
 
+#define LINE_SPACING (2.00 * sdlx_char_height_dflt)
+
 // variables
 char *progname;
 char *data_dir;
@@ -23,7 +25,7 @@ int   debug_flags;
 // prototypes of routiens defined in color_organ.c
 void color_organ_init(void);
 void color_organ_cleanup(void);
-void color_organ_display(int y_controls);
+void color_organ_display(void);
 void color_organ_process_event(sdlx_event_t *ev);
 void color_organ_settings(void);
 

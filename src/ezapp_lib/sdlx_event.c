@@ -37,7 +37,7 @@ static bool         evid_keybd_registered;
 
 static int          event_quit_rcvd;
 
-static bool         event_box_enable=1; //xxx temp enable    move to sdlx.h
+static bool         event_box_enable=0; //xxx move to sdlx.h ?
 
 extern int          logical_win_width, logical_win_height;  // xxx move to sdlx.h
 extern int          logical_win_width_portrait;
