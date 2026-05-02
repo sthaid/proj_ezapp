@@ -2,6 +2,7 @@
 #include <stdbool.h>
 #include <time.h>
 #include <string.h>
+#include <math.h>
 
 #include <sdlx.h>
 #include <utils.h>
@@ -18,32 +19,36 @@
 #define EVID_NEXT         2
 #define EVID_VIEW_SELECT  3
 #define EVID_GOTO_TODAY   4
+#define EVID_SETTINGS     5
 
 #define VIEW_DAY    0
 #define VIEW_MONTH  1
 #define VIEW_YEAR   2
 #define VIEW_STR (view == VIEW_DAY ? "DAY" : (view == VIEW_MONTH ? "MONTH" : "YEAR"))
 
-#define GRAPH_H          800 
-#define GRAPH_Y_TOP      700
-#define GRAPH_Y_BOTTOM   (GRAPH_Y_TOP + GRAPH_H - 1)
-#define DEFAULT_MAX_GRAPH_MILES_PER_HOUR  3
-#define DEFAULT_MAX_GRAPH_MILES_PER_DAY   15
-#define DEFAULT_MAX_GRAPH_MILES_PER_MONTH 30
+#define GRAPH_H            800 
+#define GRAPH_Y_TOP        700
+#define GRAPH_Y_BOTTOM     (GRAPH_Y_TOP + GRAPH_H - 1)
 
-#define DEFAULT_STRIDE_LEN  29.0  // average for height 6'0"
+#define DEFAULT_YMAX_HOUR   3
+#define DEFAULT_YMAX_DAY    15
+#define DEFAULT_YMAX_MONTH  30
+#define DEFAULT_STEP_LEN    30.0   // inches
 
 // xxx todo
 // - settings for params
 // - test on android
 // - describe base of yr,mn,day
+// - compare step count and miles with Fit program
+//   - avg walking step length is 30 inches
+// - check numeric input str on android
 
 // typedefs
 typedef struct {
-    double max_graph_miles_per_hour;
-    double max_graph_miles_per_day;
-    double max_graph_miles_per_month;
-    double stride_len;
+    double ymax_hour;
+    double ymax_day;
+    double ymax_month;
+    double step_len;
 } params_t;
 
 // variables
@@ -61,6 +66,7 @@ params_t      params;
 // prototypes
 void draw_display(void);
 void process_event(sdlx_event_t *event);
+void settings(void);
 
 // prototypes for utils
 char *get_month_str(int month);
@@ -147,14 +153,10 @@ int initialize(void)
     }
 
     // read params
-    params.max_graph_miles_per_hour = 
-        util_get_numeric_param(data_dir, "max_graph_miles_per_hour", DEFAULT_MAX_GRAPH_MILES_PER_HOUR);
-    params.max_graph_miles_per_day = 
-        util_get_numeric_param(data_dir, "max_graph_miles_per_day", DEFAULT_MAX_GRAPH_MILES_PER_DAY);
-    params.max_graph_miles_per_month = 
-        util_get_numeric_param(data_dir, "max_graph_miles_per_month", DEFAULT_MAX_GRAPH_MILES_PER_MONTH);
-    params.stride_len = 
-        util_get_numeric_param(data_dir, "stride_len", DEFAULT_STRIDE_LEN);
+    params.ymax_hour  = util_get_numeric_param(data_dir, "ymax_hour",  DEFAULT_YMAX_HOUR);
+    params.ymax_day   = util_get_numeric_param(data_dir, "ymax_day",   DEFAULT_YMAX_DAY);
+    params.ymax_month = util_get_numeric_param(data_dir, "ymax_month", DEFAULT_YMAX_MONTH);
+    params.step_len   = util_get_numeric_param(data_dir, "step_len",   DEFAULT_STEP_LEN);
 
     // success
     return 0;
@@ -205,12 +207,17 @@ void draw_display(void)
     steps = (view == VIEW_DAY   ? steps_file->day[year][month][day] :
             (view == VIEW_MONTH ? steps_file->month[year][month] :
                                   steps_file->year[year]));
-    miles = steps * params.stride_len / INCHES_PER_MILE;
+    miles = steps * params.step_len / INCHES_PER_MILE;
 
     sdlx_render_printf_ex2(COL2X(5), ROW2Y(3), FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE, "%d", steps);
     sdlx_render_printf_ex2(COL2X(5), ROW2Y(4), FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE, "Steps");
     sdlx_render_printf_ex2(COL2X(14), ROW2Y(3), FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE, "%0.2f", miles);
     sdlx_render_printf_ex2(COL2X(14), ROW2Y(4), FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE, "Miles");
+
+    // display step length
+    sdlx_render_printf_ex2(sdlx_win_width/2, sdlx_win_height-5.5*sdlx_char_height_dflt,
+                           FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE, 
+                           "step_len = %g", params.step_len);
 
     // draw rectangle around the graph area
     sdlx_render_rect(0,
@@ -225,21 +232,21 @@ void draw_display(void)
     if (view == VIEW_DAY) {
         max_idx = 24;
         steps_array = steps_file->hour[year][month][day];
-        max_graph = params.max_graph_miles_per_hour;
+        max_graph = params.ymax_hour;
     } else if (view == VIEW_MONTH) {
         max_idx = 31;
         steps_array = steps_file->day[year][month];
-        max_graph = params.max_graph_miles_per_day;
+        max_graph = params.ymax_day;;
     } else {  // year
         max_idx = 12;
         steps_array = steps_file->month[year];
-        max_graph = params.max_graph_miles_per_month;
+        max_graph = params.ymax_month;
     }
     int idx, h;
     double w = (double)(sdlx_win_width-10) / max_idx;
     for (idx = 0; idx < max_idx; idx++) {
         steps = steps_array[idx];
-        miles = steps * params.stride_len / INCHES_PER_MILE;
+        miles = steps * params.step_len / INCHES_PER_MILE;
 
         h = miles / max_graph * GRAPH_H;
         if (h > GRAPH_H) h = GRAPH_H;
@@ -288,6 +295,7 @@ void draw_display(void)
     // register events:
     // - EVID_VIEW_SELECT: used to choose DAY, MONTH, or YEAR view
     // - EVID_GOTO_TODAY:  used to reset to DAY view on the current day
+    // - EVID_SETTINGS:    bring up settings display
     loc = sdlx_render_printf_ex1(0, sdlx_win_height-2*sdlx_char_height_dflt, 
                                  FONT_NORMAL, COLOR_LIGHT_BLUE, "%s", VIEW_STR);
     sdlx_register_event(loc, EVID_VIEW_SELECT);
@@ -295,6 +303,10 @@ void draw_display(void)
     loc = sdlx_render_printf_ex1(COL2X(7), sdlx_win_height-2*sdlx_char_height_dflt, 
                                  FONT_NORMAL, COLOR_LIGHT_BLUE, "TODAY");
     sdlx_register_event(loc, EVID_GOTO_TODAY);
+
+    loc = sdlx_render_printf_ex1(COL2X(17), sdlx_win_height-2*sdlx_char_height_dflt, 
+                                 FONT_NORMAL, COLOR_LIGHT_BLUE, "STG");
+    sdlx_register_event(loc, EVID_SETTINGS);
 
     // register control event
     sdlx_register_control_events(EVID_PREV, "<",
@@ -326,6 +338,9 @@ void process_event(sdlx_event_t *event)
     case EVID_GOTO_TODAY:
         view = VIEW_DAY;
         get_current_ymd(&year, &month, &day);
+        break;
+    case EVID_SETTINGS:
+        settings();
         break;
     }
 }
@@ -385,6 +400,104 @@ void next(void)
         month = m;
         day = d;
     }
+}
+
+// -----------------  SETTINGS  -----------------------------------
+
+#define EVID_STEP_LEN   1
+#define EVID_YMAX_HOUR  2
+#define EVID_YMAX_DAY   3
+#define EVID_YMAX_MONTH 4
+
+void reg_setting_event(int *y, char *name, double value, int event_id);
+
+void settings(void)
+{
+    bool         done = false;
+    sdlx_event_t event;
+    int          y, cnt;
+    double       value;
+    char        *str;
+
+    while (!done) {
+        // init the backbuffer
+        sdlx_display_init(COLOR_BLACK, PORTRAIT);
+
+        // display title line
+        sdlx_render_printf_ex2(sdlx_win_width/2, ROW2Y(1), 
+                               FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE, 
+                               "SETTINGS");
+
+        // register events to change setting value
+        y = 3*sdlx_char_height_dflt;
+        reg_setting_event(&y, "step_len",   params.step_len,   EVID_STEP_LEN);
+        reg_setting_event(&y, "ymax_hour",  params.ymax_hour,  EVID_YMAX_HOUR);
+        reg_setting_event(&y, "ymax_day",   params.ymax_day,   EVID_YMAX_DAY);
+        reg_setting_event(&y, "ymax_month", params.ymax_month, EVID_YMAX_MONTH);
+
+        // register control event to exit settings display
+        sdlx_register_control_events(0, NULL,
+                                     0, NULL,
+                                     EVID_QUIT, "X",
+                                     COLOR_WHITE, COLOR_BLACK);
+
+        // present the display
+        sdlx_display_present();
+
+        // wait for event, infinite timeout
+        sdlx_get_event(-1, &event);
+        if (event.event_id == -1) {
+            continue;
+        }
+
+        // process events
+        switch (event.event_id) {
+        case EVID_STEP_LEN:
+            str = sdlx_get_input_str("step_len", NULL, true, COLOR_BLACK);
+            if (sscanf(str, "%lf", &value) == 1) {
+                params.step_len = value;
+                util_set_numeric_param(data_dir, "step_len", params.step_len);
+            }
+            break;
+        case EVID_YMAX_HOUR: 
+            str = sdlx_get_input_str("ymax_hour", NULL, true, COLOR_BLACK);
+            if (sscanf(str, "%lf", &value) == 1) {
+                params.ymax_hour = nearbyint(value);
+                util_set_numeric_param(data_dir, "ymax_hour", params.ymax_hour);
+            }
+            break;
+        case EVID_YMAX_DAY: 
+            str = sdlx_get_input_str("ymax_day", NULL, true, COLOR_BLACK);
+            if (sscanf(str, "%lf", &value) == 1) {
+                params.ymax_day = nearbyint(value);
+                util_set_numeric_param(data_dir, "ymax_day", params.ymax_day);
+            }
+            break;
+        case EVID_YMAX_MONTH: 
+            str = sdlx_get_input_str("ymax_month", NULL, true, COLOR_BLACK);
+            if (sscanf(str, "%lf", &value) == 1) {
+                params.ymax_month = nearbyint(value);
+                util_set_numeric_param(data_dir, "ymax_month", params.ymax_month);
+            }
+            break;
+        case EVID_QUIT:
+            done = true;
+            break;
+        }
+    }
+}
+
+void reg_setting_event(int *y, char *name, double value, int event_id)
+{
+    sdlx_loc_t *loc;
+    char str[50];
+
+    sprintf(str, "%s = %g", name, value);
+
+    loc = sdlx_render_printf_ex1(0, *y, FONT_NORMAL, COLOR_LIGHT_BLUE, "%s", str);
+    sdlx_register_event(loc, event_id);
+
+    *y += 2*sdlx_char_height_dflt;
 }
 
 // -----------------  UTILS  --------------------------------------
