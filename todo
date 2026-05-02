@@ -1,10 +1,17 @@
+git rebase -i
+https://github.com/gypified/libmp3lame
 steps
 - settings for params
 - cleanup
+color organ list, do not scroll up if nothing at bottom,
+  may not be practical
+altitude
 
-ColrOrgn 
-- should display file play time and duration
-- Color Orgn file list scrolling when rotatied
+-----------
+
+steps
+- settings for params
+- cleanup
 
 libmp3lame
 https://github.com/gypified/libmp3lame
@@ -45,7 +52,6 @@ documentation
    . credits
    . copyright
 - copyright and credits
-
 
 document or fix picoc issues  
 - low_band = util_rms_float(&fft[first_bin], last_bin-first_bin+1);// yyy picoc isue requires &fft[first_bin]

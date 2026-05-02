@@ -70,10 +70,12 @@ int main(int argc, char **argv)
 
         // if scv_wait_for_req timedout then do periodic svc processing
         if (rc == SVC_REQ_WAIT_ERROR_TIMEDOUT) {
+#if 0
             // debug print actual duration of the timeout
             t_now = time(NULL);
             printf("I %s: delta_t=%ld calling period_processing\n", progname, t_now-t_last);
             t_last = t_now;
+#endif
 
             // perform periodic processing
             periodic_processing();

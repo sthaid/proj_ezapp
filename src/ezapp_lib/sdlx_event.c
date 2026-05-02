@@ -400,11 +400,28 @@ char *sdlx_get_input_str(char *prompt1, char *prompt2, bool numeric_keybd, sdlx_
     memset(input, 0, sizeof(input));
     max_input = 0;
 
+    // init text input properties
+#ifdef ANDROID
     SDL_PropertiesID props = SDL_CreateProperties();
-    SDL_SetNumberProperty(
-            props, 
-            SDL_PROP_TEXTINPUT_TYPE_NUMBER, 
-            numeric_keybd ?  SDL_TEXTINPUT_TYPE_NUMBER : SDL_TEXTINPUT_TYPE_TEXT);
+    SDL_SetBooleanProperty(props, SDL_PROP_TEXTINPUT_AUTOCORRECT_BOOLEAN, false);
+    SDL_SetNumberProperty(props, SDL_PROP_TEXTINPUT_CAPITALIZATION_NUMBER, SDL_CAPITALIZE_NONE);
+    if (numeric_keybd == false) {
+        // use full keyboard
+        SDL_SetNumberProperty(props, SDL_PROP_TEXTINPUT_TYPE_NUMBER, SDL_TEXTINPUT_TYPE_TEXT_PASSWORD_VISIBLE);
+    } else {
+        // use numeric keypad
+        // notes:
+        //   2    = TYPE_CLASS_NUMBER
+        //   8192 = TYPE_NUMBER_FLAG_DECIMAL
+        //   4096 = TYPE_NUMBER_FLAG_SIGNED  (not working well in conjunction with TYPE_NUMBER_FLAG_DECIMAL)
+        SDL_SetNumberProperty(props, SDL_PROP_TEXTINPUT_ANDROID_INPUTTYPE_NUMBER, 2 | 8192);
+    }
+#else  // Linux
+    SDL_PropertiesID props = SDL_CreateProperties();
+    SDL_SetNumberProperty(props, SDL_PROP_TEXTINPUT_TYPE_NUMBER, SDL_TEXTINPUT_TYPE_TEXT);
+#endif
+
+    // start text input, with properties initialized above
     SDL_StartTextInputWithProperties(window, props);
 
     //  xxx comment
@@ -431,7 +448,7 @@ char *sdlx_get_input_str(char *prompt1, char *prompt2, bool numeric_keybd, sdlx_
         // register cancel event;
         // this event is needed to deal with the keybd being dismissed
         row += 3;
-        loc = sdlx_render_printf_ex2(0, ROW2Y(row), FONT_NORMAL, COLOR_WHITE, 0, WRAP_NONE, "Cancel");
+        loc = sdlx_render_printf_ex2(0, ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, 0, WRAP_NONE, "Cancel");
         sdlx_register_event(loc, EVID_QUIT);
 
         // register for keyboard events
@@ -450,7 +467,7 @@ char *sdlx_get_input_str(char *prompt1, char *prompt2, bool numeric_keybd, sdlx_
             if (ch >= 0x20 && ch < 0x7f) {
                 if (max_input < sizeof(input)) {
                     // sometimes the './-' key on numeric keybd 
-                    // does not work, so allow ',' to be used instead
+                    // does not work, so allow ',' to be used instead of '.'
                     if (numeric_keybd && ch == ',') ch = '.';
                     input[max_input++] = ch;
                     input[max_input] = '\0';
