@@ -519,7 +519,7 @@ typedef struct ht_entry_s {
     TAILQ_ENTRY(ht_entry_s) hash_list_entry;
 } ht_entry_t;
 
-static void render_text_texture(SDL_Texture *t, SDL_FRect *pos, int flags)
+static void render_text_texture(SDL_Texture *t, SDL_FRect *pos, unsigned int flags)
 {
     #define SWAP_FLOAT(a,b) \
         do { float tmp = (a); (a) = (b); (b) = tmp; } while (0)
@@ -571,7 +571,7 @@ static unsigned int calc_hash_idx(char *key)
 }
 
 // xxx prints for number of hash hits and misses
-static sdlx_loc_t *render_text(int x, int y, int fontid, sdlx_color_t color, int flags, int wrap, char *str)
+static sdlx_loc_t *render_text(int x, int y, int fontid, sdlx_color_t color, unsigned int flags, char *str)
 {
     char         key[1000];
     ht_entry_t  *entry;
@@ -647,25 +647,19 @@ static sdlx_loc_t *render_text(int x, int y, int fontid, sdlx_color_t color, int
     }
 
     // create surface containing the rendered text
-    if (wrap != WRAP_NONE) {
+    if (flags & FLAG_BG_BLACK) {  // xxx this has Wrapped option too
+        surface = TTF_RenderText_Shaded(
+                        font[ptsize].font, str, 0,
+                        sdlx_color(color), sdlx_color(COLOR_BLACK));
+    } else if (flags & FLAG_BG_WHITE) {
+        surface = TTF_RenderText_Shaded(
+                        font[ptsize].font, str, 0,
+                        sdlx_color(color), sdlx_color(COLOR_WHITE));
+    } else {
         surface = TTF_RenderText_Solid_Wrapped(
                         font[ptsize].font, str, 0,
                         sdlx_color(color),
-                        wrap);
-    } else {
-        if (flags & FLAG_BG_BLACK) {
-            surface = TTF_RenderText_Shaded(
-                            font[ptsize].font, str, 0,
-                            sdlx_color(color), sdlx_color(COLOR_BLACK));
-        } else if (flags & FLAG_BG_WHITE) {
-            surface = TTF_RenderText_Shaded(
-                            font[ptsize].font, str, 0,
-                            sdlx_color(color), sdlx_color(COLOR_WHITE));
-        } else {
-            surface = TTF_RenderText_Solid(
-                            font[ptsize].font, str, 0,
-                            sdlx_color(color));
-        }
+                        flags & FLAG_WRAP_MASK);
     }
     if (surface == NULL) {
         ERROR("TTF_RenderTextSolid failed, %s\n", SDL_GetError());
@@ -734,7 +728,7 @@ sdlx_loc_t *sdlx_render_printf(int x, int y, char * fmt, ...)
     vsnprintf(str, sizeof(str), fmt, ap);
     va_end(ap);
 
-    return render_text(x, y, print_dflt.fontid, print_dflt.color, 0, WRAP_NONE, str);
+    return render_text(x, y, print_dflt.fontid, print_dflt.color, 0, str);
 }
 
 sdlx_loc_t *sdlx_render_printf_ex1(int x, int y, int fontid, sdlx_color_t color, char * fmt, ...)
@@ -746,10 +740,10 @@ sdlx_loc_t *sdlx_render_printf_ex1(int x, int y, int fontid, sdlx_color_t color,
     vsnprintf(str, sizeof(str), fmt, ap);
     va_end(ap);
 
-    return render_text(x, y, fontid, color, 0, WRAP_NONE, str);
+    return render_text(x, y, fontid, color, 0, str);
 }
 
-sdlx_loc_t *sdlx_render_printf_ex2(int x, int y, int fontid, sdlx_color_t color, int flags, int wrap, char *fmt, ...)
+sdlx_loc_t *sdlx_render_printf_ex2(int x, int y, int fontid, sdlx_color_t color, unsigned int flags, char *fmt, ...)
 {
     char str[1000];
     va_list ap;
@@ -758,7 +752,7 @@ sdlx_loc_t *sdlx_render_printf_ex2(int x, int y, int fontid, sdlx_color_t color,
     vsnprintf(str, sizeof(str), fmt, ap);
     va_end(ap);
 
-    return render_text(x, y, fontid, color, flags, wrap, str);
+    return render_text(x, y, fontid, color, flags, str);
 }
 
 // each line may have embedded newline chars
@@ -793,7 +787,7 @@ void sdlx_render_multiline_text(int x, int y, int y_top, int y_bottom, int fonti
         // region then render the line
         if (y2 >= y_top) {
             sdlx_color_t color = (colors ? colors[n] : print_dflt.color);
-            render_text(x, y2, fontid, color, 0, WRAP_NONE, str);
+            render_text(x, y2, fontid, color, 0, str);
         }
 
         // advance k and n

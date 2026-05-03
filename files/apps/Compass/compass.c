@@ -86,16 +86,16 @@ int main(int argc, char **argv)
             // the area where the compass is displayed
             sdlx_render_printf_ex2(
                 sdlx_win_width / 2, 1100 + 1.25 * sdlx_char_height(FONT_LARGE),
-                FONT_LARGE, COLOR_WHITE, FLAG_XY_CTR, WRAP_NONE,
+                FONT_LARGE, COLOR_WHITE, FLAG_XY_CTR, 
                 "%.0f", heading);
             sdlx_render_printf_ex2(
                 sdlx_win_width / 2, 1100 + 2.75 * sdlx_char_height(FONT_LARGE), 
-                FONT_LARGE, COLOR_WHITE, FLAG_XY_CTR, WRAP_NONE,
+                FONT_LARGE, COLOR_WHITE, FLAG_XY_CTR, 
                 "%s", abbreviation(heading));
         } else {
             sdlx_render_printf_ex2(
                 sdlx_win_width / 2, 500, 
-                FONT_LARGE, COLOR_WHITE, FLAG_XY_CTR, WRAP_NONE,
+                FONT_LARGE, COLOR_WHITE, FLAG_XY_CTR, 
                 "%s", "NO DATA");
         }
 

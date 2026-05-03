@@ -162,7 +162,7 @@ static void page_hndlr()
         sdlx_print_set_default(FONT_NORMAL, COLOR_WHITE);
 
         // draw title line
-        sdlx_render_printf_ex2(sdlx_win_width/2, 0, FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE, "%s", page_title[pagenum]);
+        sdlx_render_printf_ex2(sdlx_win_width/2, 0, FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, "%s", page_title[pagenum]);
 
         // draw display
         switch (pagenum) {
@@ -272,12 +272,12 @@ static void page_0_draw(void)
     time(&t);
     tm = localtime(&t);
     sprintf(str, "%02d:%02d:%02d", tm->tm_hour, tm->tm_min, tm->tm_sec);
-    sdlx_render_printf_ex2(sdlx_win_width/2, ROW2Y(5), FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE, "%s", str);
+    sdlx_render_printf_ex2(sdlx_win_width/2, ROW2Y(5), FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, "%s", str);
 
     // print the time in microsecs
     usecs = util_get_real_time_microsec();
     util_time2str(str, usecs, false, true, false);
-    sdlx_render_printf_ex2(sdlx_win_width/2, ROW2Y(7), FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE, "%s", str);
+    sdlx_render_printf_ex2(sdlx_win_width/2, ROW2Y(7), FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, "%s", str);
 
     // print microsecs since this page is first viewed, and
     // print the delta time since last display update
@@ -287,20 +287,20 @@ static void page_0_draw(void)
     }
     delta_ms = (usecs - usecs_last) / 1000;
     usecs_last = usecs;
-    sdlx_render_printf_ex2(sdlx_win_width/2, ROW2Y(9), FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE, "%0.3f delta=%ld ms", 
+    sdlx_render_printf_ex2(sdlx_win_width/2, ROW2Y(9), FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, "%0.3f delta=%ld ms", 
         (usecs-usecs_first)/1000000., delta_ms);
 
     // print ipaddr
-    sdlx_render_printf_ex2(sdlx_win_width/2, ROW2Y(11), FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE, "%s", util_get_ipaddr());
+    sdlx_render_printf_ex2(sdlx_win_width/2, ROW2Y(11), FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, "%s", util_get_ipaddr());
 
     // test mouse motion
     sdlx_render_printf_ex2(sdlx_win_width/2, ROW2Y(13),
                            FONT_NORMAL, COLOR_WHITE,
-                           FLAG_X_CTR, WRAP_NONE, 
+                           FLAG_X_CTR, 
                            "WxH = %d %d", sdlx_win_width, sdlx_win_height);
-    sdlx_render_printf_ex2(sdlx_win_width/2, ROW2Y(14), FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE, 
+    sdlx_render_printf_ex2(sdlx_win_width/2, ROW2Y(14), FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, 
            "xrel = %0.3f", page_0_xrel);
-    sdlx_render_printf_ex2(sdlx_win_width/2, ROW2Y(15), FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE, 
+    sdlx_render_printf_ex2(sdlx_win_width/2, ROW2Y(15), FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, 
            "yrel = %0.3f", page_0_yrel);
     sdlx_render_point(page_0_x, page_0_y, COLOR_WHITE, 9);
     sdlx_register_event(NULL, EVID_MOTION);
@@ -545,7 +545,7 @@ static void page_5_draw(void)
     // - draw to texture1
     sdlx_render_rect(0, 0, w, h, 5, COLOR_WHITE);
     sdlx_render_fill_circle(w/2, h/2, w/2, COLOR_YELLOW);
-    sdlx_render_printf_ex2(w/2, h/2, FONT_NORMAL, COLOR_RED, FLAG_XY_CTR, WRAP_NONE, "%s", "Hello");
+    sdlx_render_printf_ex2(w/2, h/2, FONT_NORMAL, COLOR_RED, FLAG_XY_CTR, "%s", "Hello");
     // - set render target back to the display
     sdlx_set_render_target(NULL);
 
@@ -1174,7 +1174,7 @@ static void page_11_draw(void)
 
     loc = sdlx_render_printf_ex2(500, 500,     
                                  FONT_NORMAL, COLOR_WHITE,
-                                 rot_flags | FLAG_XY_CTR, WRAP_NEWLINE, 
+                                 rot_flags | FLAG_XY_CTR, 
                                  "%s", wrap_text);
     sdlx_render_rect(loc->x, loc->y, loc->w, loc->h, 2, COLOR_GREEN);
 
@@ -1228,11 +1228,11 @@ static void page_12_draw(void)
 
     sdlx_render_printf_ex2(sdlx_win_width/2, ROW2Y(3),
                            FONT_NORMAL, COLOR_WHITE,
-                           FLAG_X_CTR, WRAP_NONE, 
+                           FLAG_X_CTR, 
                            "WxH = %d %d", sdlx_win_width, sdlx_win_height);
-    sdlx_render_printf_ex2(sdlx_win_width/2, ROW2Y(4), FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE, 
+    sdlx_render_printf_ex2(sdlx_win_width/2, ROW2Y(4), FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, 
            "xrel = %0.3f", page_12_xrel);
-    sdlx_render_printf_ex2(sdlx_win_width/2, ROW2Y(5), FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE, 
+    sdlx_render_printf_ex2(sdlx_win_width/2, ROW2Y(5), FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, 
            "yrel = %0.3f", page_12_yrel);
     sdlx_render_point(page_12_x, page_12_y, COLOR_WHITE, 9);
     sdlx_register_event(NULL, EVID_MOTION);

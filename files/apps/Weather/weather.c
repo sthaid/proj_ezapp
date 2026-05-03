@@ -161,7 +161,7 @@ int main(int argc, char **argv)
         } else {
             sdlx_render_printf_ex2(
                 sdlx_win_width/2, sdlx_win_height/2, 
-                FONT_NORMAL, COLOR_WHITE, FLAG_XY_CTR, WRAP_NONE,
+                FONT_NORMAL, COLOR_WHITE, FLAG_XY_CTR, 
                 "%s", download_status);
         }
 
@@ -728,7 +728,7 @@ void display_forecast(void)
 
     sdlx_render_printf_ex2(
             sdlx_win_width/2, y, 
-            FONT_SMALL, COLOR_WHITE, FLAG_XY_CTR, WRAP_NONE,
+            FONT_SMALL, COLOR_WHITE, FLAG_XY_CTR,
             "%s %s", info.city, info.state);
     y2 += sdlx_char_height_dflt;
 
@@ -774,10 +774,9 @@ void display_forecast(void)
                            x->day_name, x->temperature, x->wind, x->precip);
 
         // - short_forecast
-        int flags = 0;
         int wrap = sdlx_win_width-ICON_WH;
         sdlx_render_printf_ex2(ICON_WH, y2+2+sdlx_char_height_dflt, 
-                              FONT_SMALL, COLOR_WHITE, flags, wrap,
+                              FONT_SMALL, COLOR_WHITE, wrap,
                               "%s", x->short_forecast);
 
         // advance y
@@ -812,17 +811,15 @@ void display_detailed_forecast(int idx)
                            x->day_name, x->temperature, x->wind, x->precip);
 
         // - short_forecast
-        flags = 0;
-        wrap  = sdlx_win_width-ICON_WH;
+        wrap = sdlx_win_width-ICON_WH;
         sdlx_render_printf_ex2(ICON_WH, y_top+2+sdlx_char_height_dflt, 
-                               FONT_SMALL, COLOR_WHITE, flags, wrap,
+                               FONT_SMALL, COLOR_WHITE, wrap,
                                "%s", x->short_forecast);
 
         // - detailed_forecast
-        flags = 0;
         wrap  = sdlx_win_width;
         sdlx_render_printf_ex2(0, y_top+ICON_WH+sdlx_char_height_dflt, 
-                               FONT_SMALL, COLOR_WHITE, flags, wrap,
+                               FONT_SMALL, COLOR_WHITE, wrap,
                                "%s", x->detailed_forecast);
 
         // pass detailed_forecast to text_to_speech

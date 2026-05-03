@@ -292,22 +292,22 @@ static void update_display_and_register_events(board_t *b, int game_state, char 
     if (game_state == GAME_STATE_ACTIVE) str = "IN PROGRESS";  
     if (game_state == GAME_STATE_OVER)   str = "GAME OVER";  
     sdlx_render_printf_ex2(sdlx_win_width/2, 1000+0.5*sdlx_char_height_dflt,
-                           FONT_NORMAL, COLOR_WHITE, FLAG_XY_CTR, WRAP_NONE,
+                           FONT_NORMAL, COLOR_WHITE, FLAG_XY_CTR, 
                            "%s", str);
 
     // xxx
     if (game_state == GAME_STATE_OVER) {
         if (b->black_cnt > b->white_cnt) {
             sdlx_render_printf_ex2(sdlx_win_width/2, 1000+1.5*sdlx_char_height_dflt,
-                                   FONT_NORMAL, COLOR_WHITE, FLAG_XY_CTR, WRAP_NONE,
+                                   FONT_NORMAL, COLOR_WHITE, FLAG_XY_CTR, 
                                    "BLACK WINS BY %d", b->black_cnt - b->white_cnt);
         } else if (b->white_cnt > b->black_cnt) {
             sdlx_render_printf_ex2(sdlx_win_width/2, 1000+1.5*sdlx_char_height_dflt,
-                                   FONT_NORMAL, COLOR_WHITE, FLAG_XY_CTR, WRAP_NONE,
+                                   FONT_NORMAL, COLOR_WHITE, FLAG_XY_CTR, 
                                    "WHITE WINS BY %d", b->white_cnt - b->black_cnt);
         } else {
             sdlx_render_printf_ex2(sdlx_win_width/2, 1000+1.5*sdlx_char_height_dflt,
-                                   FONT_NORMAL, COLOR_WHITE, FLAG_XY_CTR, WRAP_NONE,
+                                   FONT_NORMAL, COLOR_WHITE, FLAG_XY_CTR, 
                                    "%s", "TIE");
         }
     }       

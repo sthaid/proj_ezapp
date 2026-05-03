@@ -168,7 +168,7 @@ void sdlx_register_control_events(int evid1, char *evstr1,
                 x = logical_win_width - (strlen(evstr[2]) * chw / 2);
             }
             y = logical_win_height - (CONTROL_AREA_SIZE / 2);
-            loc = sdlx_render_printf_ex2(x, y, FONT_NORMAL, print_color, FLAG_XY_CTR, WRAP_NONE, "%s", evstr[i]);
+            loc = sdlx_render_printf_ex2(x, y, FONT_NORMAL, print_color, FLAG_XY_CTR, "%s", evstr[i]);
         } else {
             y = (logical_win_height/3/2) + i * (logical_win_height/3);
             if (i == 0 && y < strlen(evstr[0]) * chw / 2) {
@@ -180,7 +180,7 @@ void sdlx_register_control_events(int evid1, char *evstr1,
             x = logical_win_width - (CONTROL_AREA_SIZE / 2);
             loc = sdlx_render_printf_ex2(
                         x, logical_win_height - y,
-                        FONT_NORMAL, print_color, FLAG_XY_CTR|FLAG_ROT_CTR_270, WRAP_NONE, "%s", evstr[i]);
+                        FONT_NORMAL, print_color, FLAG_XY_CTR|FLAG_ROT_CTR_270, "%s", evstr[i]);
         }
 
         sdlx_register_event(loc, evid[i]);
@@ -433,22 +433,22 @@ char *sdlx_get_input_str(char *prompt1, char *prompt2, bool numeric_keybd, sdlx_
         row = 0;
         if (prompt1 && prompt1[0] != '\0') {
             row += 1;
-            sdlx_render_printf_ex2(0, ROW2Y(row), FONT_NORMAL, COLOR_WHITE, 0, WRAP_NONE, "%s", prompt1);
+            sdlx_render_printf_ex2(0, ROW2Y(row), FONT_NORMAL, COLOR_WHITE, 0, "%s", prompt1);
         }
         if (prompt2 && prompt2[0] != '\0') {
             row += 1;
-            sdlx_render_printf_ex2(0, ROW2Y(row), FONT_NORMAL, COLOR_WHITE, 0, WRAP_NONE, "%s", prompt2);
+            sdlx_render_printf_ex2(0, ROW2Y(row), FONT_NORMAL, COLOR_WHITE, 0, "%s", prompt2);
         }
 
         // display input value string
         row += 2;
-        loc = sdlx_render_printf_ex2(0, ROW2Y(row), FONT_NORMAL, COLOR_WHITE, 0, WRAP_NONE, "? %s", input);
-        sdlx_render_printf_ex2(loc->x+loc->w, loc->y, FONT_NORMAL, COLOR_WHITE, 0, WRAP_NONE, "%s", "_");
+        loc = sdlx_render_printf_ex2(0, ROW2Y(row), FONT_NORMAL, COLOR_WHITE, 0, "? %s", input);
+        sdlx_render_printf_ex2(loc->x+loc->w, loc->y, FONT_NORMAL, COLOR_WHITE, 0, "%s", "_");
 
         // register cancel event;
         // this event is needed to deal with the keybd being dismissed
         row += 3;
-        loc = sdlx_render_printf_ex2(0, ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, 0, WRAP_NONE, "Cancel");
+        loc = sdlx_render_printf_ex2(0, ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, 0, "Cancel");
         sdlx_register_event(loc, EVID_QUIT);
 
         // register for keyboard events

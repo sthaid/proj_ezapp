@@ -244,7 +244,7 @@ void color_organ_display_bars(float *fft)
         // display scale factor
         if (disp_scale_factor) {
             sdlx_render_printf_ex2(x+w/2, coh/2,
-                                   FONT_NORMAL, COLOR_WHITE, FLAG_XY_CTR, WRAP_NONE,
+                                   FONT_NORMAL, COLOR_WHITE, FLAG_XY_CTR, 
                                    "%d", band_scale[band]);
         }
     }
@@ -314,7 +314,7 @@ void color_organ_display_circles(float *fft)
         // display scale factor
         if (disp_scale_factor) {
             sdlx_render_printf_ex2(x_ctr, y_ctr,
-                                   FONT_NORMAL, COLOR_WHITE, FLAG_XY_CTR, WRAP_NONE,
+                                   FONT_NORMAL, COLOR_WHITE, FLAG_XY_CTR, 
                                    "%d", band_scale[band]);
         }
     }
@@ -370,7 +370,7 @@ void color_organ_display_fft(float *fft)
     // display scale factor
     if (disp_scale_factor) {
         sdlx_render_printf_ex2(x+cow/2, coh/2,
-                               FONT_NORMAL, COLOR_WHITE, FLAG_XY_CTR, WRAP_NONE,
+                               FONT_NORMAL, COLOR_WHITE, FLAG_XY_CTR, 
                                "%d", fft_scale);
     }
 }

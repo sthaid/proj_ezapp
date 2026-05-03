@@ -84,27 +84,24 @@ extern int sdlx_char_height_dflt;
 sdlx_loc_t *sdlx_render_printf(int x, int y, char *fmt, ...) __attribute__ ((format (printf, 3, 4)));
 
 // The following work with the font specified by fontid, and the 
-// specified color. These also support the flag and wrap params
-#define FLAG_NONE          0x000
-#define FLAG_X_CTR         0x001
-#define FLAG_Y_CTR         0x002
+// specified color. These also support the flag param.
+#define FLAG_WRAP_MASK     0x00000fff
+#define FLAG_X_CTR         0x00001000
+#define FLAG_Y_CTR         0x00002000
+#define FLAG_ROT_CTR_90    0x00004000
+#define FLAG_ROT_CTR_180   0x00008000
+#define FLAG_ROT_CTR_270   0x00010000
+#define FLAG_BG_BLACK      0x00020000
+#define FLAG_BG_WHITE      0x00040000
 #define FLAG_XY_CTR        (FLAG_X_CTR | FLAG_Y_CTR)
-#define FLAG_ROT_CTR_90    0x010
-#define FLAG_ROT_CTR_180   0x020
-#define FLAG_ROT_CTR_270   0x040
-#define FLAG_BG_BLACK      0x100
-#define FLAG_BG_WHITE      0x200
-#define WRAP_NONE    -1
-#define WRAP_NEWLINE  0
 int sdlx_char_width(int fontid);
 int sdlx_char_height(int fontid);
 sdlx_loc_t *sdlx_render_printf_ex1(int x, int y, int fontid, sdlx_color_t color, 
                                    char * fmt, ...)
                                    __attribute__ ((format (printf, 5, 6)));
-sdlx_loc_t *sdlx_render_printf_ex2(int x, int y, int fontid, sdlx_color_t color,
-                                   int flags, int wrap, 
+sdlx_loc_t *sdlx_render_printf_ex2(int x, int y, int fontid, sdlx_color_t color, unsigned int flags,
                                    char *fmt, ...) 
-                                   __attribute__ ((format (printf, 7, 8)));
+                                   __attribute__ ((format (printf, 6, 7)));
 void sdlx_render_multiline_text(int x, int y, int y_top, int y_bottom, 
                                 int fontid, char **lines, sdlx_color_t *colors, int num_lines);
 

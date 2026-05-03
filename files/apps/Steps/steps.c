@@ -176,7 +176,7 @@ void draw_display(void)
     get_current_ymd(&curr_y, &curr_m, &curr_d);
     if (view == VIEW_DAY) {
         color = (year == curr_y && month == curr_m && day == curr_d) ? COLOR_GREEN : COLOR_WHITE;
-        sdlx_render_printf_ex2(sdlx_win_width/2, ROW2Y(1), FONT_NORMAL, color, FLAG_X_CTR, WRAP_NONE, 
+        sdlx_render_printf_ex2(sdlx_win_width/2, ROW2Y(1), FONT_NORMAL, color, FLAG_X_CTR, 
                                "%s %s %d %d",
                                get_weekday_str(year, month, day),
                                get_month_str(month),
@@ -184,13 +184,13 @@ void draw_display(void)
                                year + YEAR0);
     } else if (view == VIEW_MONTH) {
         color = (year == curr_y && month == curr_m) ? COLOR_GREEN : COLOR_WHITE;
-        sdlx_render_printf_ex2(sdlx_win_width/2, ROW2Y(1), FONT_NORMAL, color, FLAG_X_CTR, WRAP_NONE, 
+        sdlx_render_printf_ex2(sdlx_win_width/2, ROW2Y(1), FONT_NORMAL, color, FLAG_X_CTR, 
                                "%s %d",
                                get_month_str(month),
                                year + YEAR0);
     } else { // year
         color = (year == curr_y) ? COLOR_GREEN : COLOR_WHITE;
-        sdlx_render_printf_ex2(sdlx_win_width/2, ROW2Y(1), FONT_NORMAL, color, FLAG_X_CTR, WRAP_NONE, 
+        sdlx_render_printf_ex2(sdlx_win_width/2, ROW2Y(1), FONT_NORMAL, color, FLAG_X_CTR, 
                                "%d",
                                year + YEAR0);
     }
@@ -201,14 +201,14 @@ void draw_display(void)
                                   steps_file->year[year]));
     miles = steps * params.step_len / INCHES_PER_MILE;
 
-    sdlx_render_printf_ex2(COL2X(5), ROW2Y(3), FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE, "%d", steps);
-    sdlx_render_printf_ex2(COL2X(5), ROW2Y(4), FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE, "Steps");
-    sdlx_render_printf_ex2(COL2X(14), ROW2Y(3), FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE, "%0.2f", miles);
-    sdlx_render_printf_ex2(COL2X(14), ROW2Y(4), FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE, "Miles");
+    sdlx_render_printf_ex2(COL2X(5), ROW2Y(3), FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, "%d", steps);
+    sdlx_render_printf_ex2(COL2X(5), ROW2Y(4), FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, "Steps");
+    sdlx_render_printf_ex2(COL2X(14), ROW2Y(3), FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, "%0.2f", miles);
+    sdlx_render_printf_ex2(COL2X(14), ROW2Y(4), FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, "Miles");
 
     // display step length
     sdlx_render_printf_ex2(sdlx_win_width/2, sdlx_win_height-5.5*sdlx_char_height_dflt,
-                           FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE, 
+                           FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, 
                            "step_len = %g", params.step_len);
 
     // draw rectangle around the graph area
@@ -255,21 +255,21 @@ void draw_display(void)
     // display graph title
     if (view == VIEW_DAY) {
         sdlx_render_printf_ex2(sdlx_win_width/2, GRAPH_Y_TOP-2*sdlx_char_height_dflt-5,
-                               FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE, 
+                               FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, 
                                "Day - %s %d", get_month_str(month), day+1);
     } else if (view == VIEW_MONTH) {
         sdlx_render_printf_ex2(sdlx_win_width/2, GRAPH_Y_TOP-2*sdlx_char_height_dflt-5,
-                               FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE, 
+                               FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, 
                                "Month - %s", get_month_str(month));
     } else {
         sdlx_render_printf_ex2(sdlx_win_width/2, GRAPH_Y_TOP-2*sdlx_char_height_dflt-5,
-                               FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE, 
+                               FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, 
                                "Year - %d", year+YEAR0);
     }
 
     // display graph max y-axis max value
     sdlx_render_printf_ex2(sdlx_win_width/2, GRAPH_Y_TOP-sdlx_char_height_dflt-5,
-                           FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE, 
+                           FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, 
                            "ymax %d miles", max_graph);
 
     // display graph x-axis values
@@ -417,7 +417,7 @@ void settings(void)
 
         // display title line
         sdlx_render_printf_ex2(sdlx_win_width/2, ROW2Y(1), 
-                               FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE, 
+                               FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, 
                                "SETTINGS");
 
         // register events to change setting value

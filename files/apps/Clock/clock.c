@@ -68,13 +68,13 @@ int main(int argc, char **argv)
         y = YCTR_CLOCK + H_CLOCK / 2 + 1.5 * sdlx_char_height_dflt;
         sdlx_render_printf_ex2(
                 sdlx_win_width/2, y,
-                FONT_NORMAL, COLOR_WHITE, FLAG_XY_CTR, WRAP_NONE,
+                FONT_NORMAL, COLOR_WHITE, FLAG_XY_CTR, 
                 "%02d:%02d:%02d %s",
                 tm.tm_hour, tm.tm_min, tm.tm_sec, tm.tm_zone);
         y += 1.5 * sdlx_char_height_dflt;
         sdlx_render_printf_ex2(
                 sdlx_win_width/2, y, 
-                FONT_NORMAL, COLOR_WHITE, FLAG_XY_CTR, WRAP_NONE,
+                FONT_NORMAL, COLOR_WHITE, FLAG_XY_CTR, 
                 "%s %s %d %d",
                 day_of_week(&tm), month(&tm), tm.tm_mday, tm.tm_year+1900);
         y += 1.5 * sdlx_char_height_dflt;
@@ -93,7 +93,7 @@ int main(int argc, char **argv)
 
         // display daytime
         sdlx_render_printf_ex2(sdlx_win_width/2, y, FONT_NORMAL, COLOR_WHITE,
-                               FLAG_X_CTR, WRAP_NONE, 
+                               FLAG_X_CTR, 
                                "DayTime %s", daytime_calc);
     
         // register control event to end program
@@ -155,7 +155,7 @@ static void draw_analog_clock_face(void)
         y = YCTR_CLOCK - 400 * cos(hour * 30 * (M_PI / 180));
         sdlx_render_printf_ex2(
             x, y, 
-            FONT_NORMAL, COLOR_BLACK, FLAG_XY_CTR, WRAP_NONE,
+            FONT_NORMAL, COLOR_BLACK, FLAG_XY_CTR, 
             "%d", hour);
     }
 }

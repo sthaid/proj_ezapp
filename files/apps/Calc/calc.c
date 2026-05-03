@@ -334,7 +334,7 @@ void draw_button(int row, int col, int button, bool highlight)
         x-texture_w/2, y-texture_h/2);
 
     sdlx_render_printf_ex2(x, y, 
-                           FONT_NORMAL, BUTTON_COLOR_TEXT, FLAG_XY_CTR, WRAP_NONE,
+                           FONT_NORMAL, BUTTON_COLOR_TEXT, FLAG_XY_CTR, 
                            "%s", str);
 
     loc.x = x - texture_w/2;

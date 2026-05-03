@@ -101,7 +101,7 @@ int main(int argc, char **argv)
         // display current location
         // - display "Current"
         y = Y_TOP_OF_DISPLAY;
-        sdlx_render_printf_ex2(sdlx_win_width/2, y, FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE, "%s", "Current");
+        sdlx_render_printf_ex2(sdlx_win_width/2, y, FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, "%s", "Current");
         y += sdlx_char_height_dflt;
         // - display the current location
         lines_loc_curr[0] = loc_curr;
@@ -114,7 +114,7 @@ int main(int argc, char **argv)
 
         // display the location history
         // - display "History"
-        sdlx_render_printf_ex2(sdlx_win_width/2, y, FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE, "History");
+        sdlx_render_printf_ex2(sdlx_win_width/2, y, FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, "History");
         y += sdlx_char_height_dflt;
         // - init variables used to display and scroll the history display
         if (y_history_top_reset == 0) {

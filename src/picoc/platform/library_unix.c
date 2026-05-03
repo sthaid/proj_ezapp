@@ -182,18 +182,17 @@ void Sdlx_render_printf_ex2(struct ParseState *Parser, struct Value *ReturnValue
     int          y      = (int)Param[1]->Val->Integer;
     int          fontid = (int)Param[2]->Val->Integer;
     sdlx_color_t color  = (sdlx_color_t)Param[3]->Val->UnsignedInteger;
-    int          flags  = (int)Param[4]->Val->Integer;
-    int          wrap   = (int)Param[5]->Val->Integer;
-    char *       fmt    = (char *)Param[6]->Val->Pointer;
+    unsigned int flags  = (int)Param[4]->Val->Integer;
+    char *       fmt    = (char *)Param[5]->Val->Pointer;
 
     struct StdVararg PrintfArgs;
     char             str[500] = "";
-    PrintfArgs.Param = Param + 6;
-    PrintfArgs.NumArgs = NumArgs - 7;
+    PrintfArgs.Param = Param + 5;
+    PrintfArgs.NumArgs = NumArgs - 6;
     StdioBasePrintf(Parser, NULL, str, sizeof(str), fmt, &PrintfArgs);
 
     sdlx_loc_t *loc;
-    loc = sdlx_render_printf_ex2(x, y, fontid, color, flags, wrap, "%s", str);
+    loc = sdlx_render_printf_ex2(x, y, fontid, color, flags, "%s", str);
     ReturnValue->Val->Pointer = loc;
 }
 
@@ -773,7 +772,7 @@ struct LibraryFunction SdlFunctions[] = {
     { Sdlx_char_width,               "int sdlx_char_width(int fontid);" },
     { Sdlx_char_height,              "int sdlx_char_height(int fontid);" },
     { Sdlx_render_printf_ex1,        "sdlx_loc_t *sdlx_render_printf_ex1(int x, int y, int fontid, sdlx_color_t color, char * fmt, ...);" },
-    { Sdlx_render_printf_ex2,        "sdlx_loc_t *sdlx_render_printf_ex2(int x, int y, int fontid, sdlx_color_t color, int flags, int wrap, char *fmt, ...);" },
+    { Sdlx_render_printf_ex2,        "sdlx_loc_t *sdlx_render_printf_ex2(int x, int y, int fontid, sdlx_color_t color, unsigned int flags, char *fmt, ...);" },
     { Sdlx_render_multiline_text,    "void sdlx_render_multiline_text(int x, int y, int y_top, int y_bottom, int fontid, char **lines, sdlx_color_t *colors, int num_lines);" },
 
     // video - render rectangle, lines, circles, points
@@ -890,17 +889,15 @@ typedef struct { \n\
 #define FONT_LARGE    10 \n\
 #define ROW2Y(r)      ((r) * sdlx_char_height_dflt) \n\
 #define COL2X(c)      ((c) * sdlx_char_width_dflt) \n\
-#define FLAG_NONE          0x0000 \n\
-#define FLAG_X_CTR         0x0001 \n\
-#define FLAG_Y_CTR         0x0002 \n\
-#define FLAG_XY_CTR        0x0003 \n\
-#define FLAG_ROT_CTR_90    0x0010 \n\
-#define FLAG_ROT_CTR_180   0x0020 \n\
-#define FLAG_ROT_CTR_270   0x0040 \n\
-#define FLAG_BG_BLACK      0x0100 \n\
-#define FLAG_BG_WHITE      0x0200 \n\
-#define WRAP_NONE    -1 \n\
-#define WRAP_NEWLINE  0 \n\
+#define FLAG_WRAP_MASK     0x00000fff \n\
+#define FLAG_X_CTR         0x00001000 \n\
+#define FLAG_Y_CTR         0x00002000 \n\
+#define FLAG_ROT_CTR_90    0x00004000 \n\
+#define FLAG_ROT_CTR_180   0x00008000 \n\
+#define FLAG_ROT_CTR_270   0x00010000 \n\
+#define FLAG_BG_BLACK      0x00020000 \n\
+#define FLAG_BG_WHITE      0x00040000 \n\
+#define FLAG_XY_CTR        (FLAG_X_CTR | FLAG_Y_CTR) \n\
 /* video misc */ \n\
 #define MAX_POINT_SIZE 9 \n\
 \n\

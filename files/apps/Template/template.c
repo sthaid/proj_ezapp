@@ -32,7 +32,7 @@ int main(int argc, char **argv)
         // display 'Hello' at center of display
         sdlx_render_printf_ex2(sdlx_win_width/2, sdlx_win_height/2, 
                                FONT_LARGE, COLOR_PURPLE, 
-                               FLAG_XY_CTR, WRAP_NONE, "Hello");
+                               FLAG_XY_CTR, "Hello");
 
         // register control event to end program
         sdlx_register_control_events(0, NULL,

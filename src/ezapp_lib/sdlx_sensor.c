@@ -193,10 +193,12 @@ int sdlx_sensor_read_raw(int id, float *data, int num_values)
 
 int sdlx_sensor_read_step_counter(unsigned long *step_count_arg)
 {
+#if 0
 #ifndef ANDROID
     // for test when running on LINUX, simulates one step per second
     *step_count_arg = time(NULL);
     return 0;
+#endif
 #endif
 
     unsigned long step_count;

@@ -4,9 +4,6 @@ Step sensor on linux, remove debug code
 
 altitude
 
-Calculater
-- display numeric buttons in different color
-
 reversi
 - add undo
 - edge heuristic
