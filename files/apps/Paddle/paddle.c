@@ -180,12 +180,9 @@ int main(int argc, char **argv)
         }
 
         // display scores
-        sdlx_render_printf_ex2(0, 0, 
-                               FONT_LARGE, COLOR_WHITE, 0,  //xxx use ex1
-                               "%d", computer_score);
-        sdlx_render_printf_ex2(sdlx_win_width-2*sdlx_char_width(FONT_LARGE), 0,
-                               FONT_LARGE, COLOR_WHITE, 0,  // xxx use ex1
-                               "%2d", human_score);
+        sdlx_render_printf_ex1(0, 0, FONT_LARGE, COLOR_WHITE, "%d", computer_score);
+        sdlx_render_printf_ex1(sdlx_win_width-2*sdlx_char_width(FONT_LARGE), 0,
+                               FONT_LARGE, COLOR_WHITE, "%2d", human_score);
 
         // display ball speed, and skill setting
         sdlx_render_printf_ex2(sdlx_win_width/2, sdlx_char_height(FONT_NORMAL),

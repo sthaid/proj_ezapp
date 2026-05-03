@@ -648,13 +648,15 @@ static sdlx_loc_t *render_text(int x, int y, int fontid, sdlx_color_t color, uns
 
     // create surface containing the rendered text
     if (flags & FLAG_BG_BLACK) {  // xxx this has Wrapped option too
-        surface = TTF_RenderText_Shaded(
+        surface = TTF_RenderText_Shaded_Wrapped(
                         font[ptsize].font, str, 0,
-                        sdlx_color(color), sdlx_color(COLOR_BLACK));
+                        sdlx_color(color), sdlx_color(COLOR_BLACK),
+                        flags & FLAG_WRAP_MASK);
     } else if (flags & FLAG_BG_WHITE) {
-        surface = TTF_RenderText_Shaded(
+        surface = TTF_RenderText_Shaded_Wrapped(
                         font[ptsize].font, str, 0,
-                        sdlx_color(color), sdlx_color(COLOR_WHITE));
+                        sdlx_color(color), sdlx_color(COLOR_WHITE),
+                        flags & FLAG_WRAP_MASK);
     } else {
         surface = TTF_RenderText_Solid_Wrapped(
                         font[ptsize].font, str, 0,
