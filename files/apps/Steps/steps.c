@@ -35,14 +35,6 @@
 #define DEFAULT_YMAX_MONTH  30
 #define DEFAULT_STEP_LEN    30.0   // inches
 
-// xxx todo
-// - settings for params
-// - test on android
-// - describe base of yr,mn,day
-// - compare step count and miles with Fit program
-//   - avg walking step length is 30 inches
-// - check numeric input str on android
-
 // typedefs
 typedef struct {
     double ymax_hour;
@@ -58,9 +50,9 @@ bool  end_program;
 
 steps_file_t *steps_file;
 int           view;
-int           year;
-int           month;
-int           day;
+int           year;    // 0 = 2026
+int           month;   // 0 = Jan
+int           day;     // 0 = first day of month
 params_t      params;
     
 // prototypes

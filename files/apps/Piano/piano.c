@@ -11,17 +11,13 @@
 
 // xxx 
 // - timing of the key highlight vs the tone
-// - display playing title
-// - display key letters when active
-// - check for overflow of tone_seq_tbl
-// - check for overflow of items string
 
 // defines
 #define EVID_HLOCK         1
 #define EVID_PLAY_TONE_SEQ 100
 #define EVID_PIANO_KEY     500
 
-#define MAX_ITEMS_STR 10000
+#define MAX_ITEMS_STR 100000
 #define MAX_TONE_SEQ  100
 
 // variables
@@ -30,6 +26,7 @@ char  *data_dir;
 
 int           piano_key_freq[89];      // starts at [1]
 bool          piano_key_is_black[89];  // starts at [1]
+char          piano_white_key_to_basic_tone[88];  // starts at [1]
 unsigned char piano_freq_to_keynum[4200];
 
 struct {
@@ -39,11 +36,16 @@ struct {
 } tone_seq_tbl[MAX_TONE_SEQ];
 int max_tone_seq;
 
+char *playing_tone_seq_title;
+
 double X, Y;
 bool   Xlock;
 
+bool end_program;
+
 // prototypes
 void display_update(void);
+void process_event(sdlx_event_t *event);
 void read_tone_seq_file(char *filename);
 void play_tone_seq(char *items, int octave);
 void piano_utils_init(void);
@@ -57,7 +59,6 @@ void debug_print_cycle_duration(void);
 int main(int argc, char **argv)
 {
     sdlx_event_t event;
-    bool         done = false;
 
     // save args
     progname = argv[0];
@@ -73,7 +74,7 @@ int main(int argc, char **argv)
     read_tone_seq_file("tones.seq");
 
     // runtime loop
-    while (!done) {
+    while (!end_program) {
         // init the backbuffer
         sdlx_display_init(COLOR_BLACK, LANDSCAPE);
 
@@ -94,45 +95,12 @@ int main(int argc, char **argv)
 
         // wait for event, with 20 ms timeout
         sdlx_get_event(20000, &event);
+        if (event.event_id == -1) {
+            continue;
+        }
 
         // process events
-        if (event.event_id >= EVID_PLAY_TONE_SEQ && event.event_id < EVID_PLAY_TONE_SEQ + MAX_TONE_SEQ) {
-            // tone sequence is selected: play the sequence
-            int idx = event.event_id - EVID_PLAY_TONE_SEQ;
-            play_tone_seq(tone_seq_tbl[idx].items, tone_seq_tbl[idx].octave);
-        } else if (event.event_id >= EVID_PIANO_KEY+1 && event.event_id <= EVID_PIANO_KEY+88) {
-            // piano key is pressed: play thhe key
-            int keynum = event.event_id - EVID_PIANO_KEY;
-            sdlx_tone_t tones[2];
-            tones[0].freq = piano_key_freq[keynum];
-            tones[0].intvl_ms = 500;
-            tones[1].freq = 0;
-            tones[1].intvl_ms = 0;
-            sdlx_audio_play_tones(tones);
-        } else {
-            switch (event.event_id) {
-            case EVID_HLOCK:
-                // toggle lock of piano keyboard horizontal scrolling
-                Xlock = !Xlock;
-                break;
-            case EVID_MOTION:
-                // handle mouse motion in the X,Y directions
-                // - X scrolls the piano keyboard
-                // - Y scrolls the list of tone sequence titles
-                double xrel = event.u.motion.xrel;
-                double yrel = event.u.motion.yrel;
-                if (!Xlock) {
-                    if (fabs(xrel) > fabs(yrel)*1.5) X += xrel;
-                }
-                if (fabs(yrel) > fabs(xrel)*1.5) Y += yrel;
-                if (Y > 0) Y = 0;
-                break;
-            case EVID_QUIT:
-                // end program
-                done = true;
-                break;
-            }
-        }
+        process_event(&event);
     }
 
     // stop audio
@@ -212,6 +180,19 @@ void display_update(void)
         last_play_tones_seqnum = as.play_tones_seqnum;
     }
 
+    // display title line
+    if (playing_tone_seq_title != NULL) {
+        if (as.state == AUDIO_STATE_IDLE) {
+            playing_tone_seq_title = NULL;
+        }
+        if (playing_tone_seq_title != NULL) {
+            sdlx_render_printf_ex2(
+                sdlx_win_width/2, 0,
+                FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, WRAP_NONE, 
+                "Playing %s", playing_tone_seq_title);
+        }
+    }
+
     // if new tone is being played then request piano keynum be highlighted;
     // clear highlight after 250 ms
     if (as.play_tones_seqnum != last_play_tones_seqnum) {
@@ -236,10 +217,17 @@ void display_update(void)
             x = pos * white_key_w + 1;
             y = sdlx_win_height - white_key_h;
             if (X+x > -white_key_w && X+x < sdlx_win_width) {
+                // display white key rectangle
                 color = (keynum == highlight_keynum ? COLOR_GREEN : COLOR_WHITE);
                 sdlx_render_fill_rect(X+x, y, w, h, color);
                 init_loc(&loc2, X+x, y, w, h);
                 sdlx_register_event(&loc2, EVID_PIANO_KEY+keynum);
+
+                // display white key basic tone, A-G
+                sdlx_render_printf_ex2(
+                    X+x+w/2, sdlx_win_height-sdlx_char_height_dflt,
+                    FONT_NORMAL, COLOR_BLACK, FLAG_XY_CTR, WRAP_NONE, 
+                    "%c", piano_white_key_to_basic_tone[keynum]);
             }
             pos++;
         }
@@ -297,7 +285,7 @@ void display_update(void)
     y = 0;
     for (int i = 0; i < max_tone_seq; i++) {
         if (Y+y > -sdlx_char_height_dflt && Y+y < y_octave-sdlx_char_height_dflt) {
-            loc = sdlx_render_printf_ex1(0, Y+y, FONT_NORMAL, COLOR_LIGHT_BLUE, 
+            loc = sdlx_render_printf_ex1(COL2X(1), Y+y, FONT_NORMAL, COLOR_LIGHT_BLUE, 
                                          "%s", tone_seq_tbl[i].title);
             sdlx_register_event(loc, EVID_PLAY_TONE_SEQ+i);
         }
@@ -314,6 +302,50 @@ void init_loc(sdlx_loc_t *loc, int x, int y, int w, int h)
     loc->y = y;
     loc->w = w;
     loc->h = h;
+}
+        
+// -----------------  PROCESS EVENT  ---------------------------------
+
+void process_event(sdlx_event_t *event)
+{
+    if (event->event_id >= EVID_PLAY_TONE_SEQ && event->event_id < EVID_PLAY_TONE_SEQ + MAX_TONE_SEQ) {
+        // tone sequence is selected: play the sequence
+        int idx = event->event_id - EVID_PLAY_TONE_SEQ;
+        play_tone_seq(tone_seq_tbl[idx].items, tone_seq_tbl[idx].octave);
+        playing_tone_seq_title = tone_seq_tbl[idx].title;
+    } else if (event->event_id >= EVID_PIANO_KEY+1 && event->event_id <= EVID_PIANO_KEY+88) {
+        // piano key is pressed: play thhe key
+        int keynum = event->event_id - EVID_PIANO_KEY;
+        sdlx_tone_t tones[2];
+        tones[0].freq = piano_key_freq[keynum];
+        tones[0].intvl_ms = 500;
+        tones[1].freq = 0;
+        tones[1].intvl_ms = 0;
+        sdlx_audio_play_tones(tones);
+    } else {
+        switch (event->event_id) {
+        case EVID_HLOCK:
+            // toggle lock of piano keyboard horizontal scrolling
+            Xlock = !Xlock;
+            break;
+        case EVID_MOTION:
+            // handle mouse motion in the X,Y directions
+            // - X scrolls the piano keyboard
+            // - Y scrolls the list of tone sequence titles
+            double xrel = event->u.motion.xrel;
+            double yrel = event->u.motion.yrel;
+            if (!Xlock) {
+                if (fabs(xrel) > fabs(yrel)*1.5) X += xrel;
+            }
+            if (fabs(yrel) > fabs(xrel)*1.5) Y += yrel;
+            if (Y > 0) Y = 0;
+            break;
+        case EVID_QUIT:
+            // end program
+            end_program = true;
+            break;
+        }
+    }
 }
 
 // -----------------  READ TONE SEQ FILE  ----------------------------
@@ -372,6 +404,10 @@ void read_tone_seq_file(char *filename)
                 //       tone_seq_tbl[max_tone_seq].octave,
                 //       tone_seq_tbl[max_tone_seq].items);
                 max_tone_seq++;
+                if (max_tone_seq == MAX_TONE_SEQ) {
+                    fclose(fp);
+                    return;
+                }
             }
             cnt = sscanf(&s[6], "%s %d", title, &octave);
             if (cnt != 2) {
@@ -588,6 +624,15 @@ void piano_utils_init(void)
     // init tbl to convert from freq to keynum
     for (i = 1; i <= 88; i++) {
         piano_freq_to_keynum[piano_key_freq[i]] = i;
+    }
+
+    // init tbl to convert white keys to basic tone letter
+    char note = 'A';
+    for (i = 1; i <= 88; i++) {
+        if (!piano_key_is_black[i]) {
+            piano_white_key_to_basic_tone[i] = note;
+            if (++note == 'H') note = 'A';
+        }
     }
 
 #ifdef DEBUG_PIANO_UTILS_INIT

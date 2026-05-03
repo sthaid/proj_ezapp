@@ -1,42 +1,49 @@
-git rebase -i
-https://github.com/gypified/libmp3lame
-steps
-- settings for params
-- cleanup
-color organ list, do not scroll up if nothing at bottom,
-  may not be practical
+WRAP_NONE should be a flag, unless it is a number
+
+Step sensor on linux, remove debug code
+
 altitude
 
------------
+piano app
+- display key letter when highlighted
+- display title line
 
-steps
-- settings for params
-- cleanup
+Calculater
+- display numeric buttons in different color
 
-libmp3lame
-https://github.com/gypified/libmp3lame
+reversi
+- add undo
+- edge heuristic
 
-svcs is not re-reading svcs/svcs
+location permission problem
+- try running without location permission
+- java code may be failing if there is not permission
 
----- READY FOR TEST -----
+regarding foreground - 
+- dont let applications control it;  could let applications check it and fail if it is not set
+- document foreground 
 
-remove Template apps and svcs from layout/svcs
+battery usage
+- adjust compass app interval, to trade off jitter for battery life
+- check on usage
 
-Log - rotate display
+documentation
+- license and credits AND add to Settings
 
-ezput - only git files
+git checkout the ttf and mixer too
+- check if they have tagged versions now
 
+make new cleaned repo
+
+-------------------
 ---- LATER --------
+-------------------
 
 developer mode password
 
 review all for xxx
 
 doc files
-
-piano app
-- display key letter when highlighted
-- display title line
 
 altitude
 - To convert WGS84 ellipsoidal heights (
@@ -70,12 +77,7 @@ document or fix picoc issues
 build & install
 - icon
 - should a fresh install wipe existing files; including top level params
-- license and credits
 - help / doc
-- reneme Templates to SvcDemo  ??
-- git checkout the ttf and mixer too
-   - ask question to the mixer team
-   - check if they have tagged versions now
 
 BUGS
 - when an ezapp, running an ap, is brought back to foreground, the display is not updated
@@ -162,36 +164,11 @@ Picoc
 - expression evaluator test
 - write new expression evaluator
 
-Light app, not saving color in params correctly
-
 update params code, is this needed?
 
 why is volume low in memo
 - SDL_SetAudioDeviceGain(SDL_AudioDeviceID devid, float gain)
 - maybe set the gain from the app instead of from Settings
-
-location, just use couarse location
-
-location permission problem
-- java code may be failing if there is not permission
-
-App fixes
-- Calculater
-  - 64bit problem
-     - >> and / ops on 64 bit with msb set
-  - display numeric buttons in different color
-- Tilt app, allow different orientations
-- Location - ack the clearing of history
-- reversi
-  - add undo
-  - edge heuristic
-
-regarding foreground - 
-- dont let applications control it;  could let applications check it and fail if it is not set
-- document foreground 
-
-battery usage
-- adjust compass app interval, to trade off jitter for battery life
 
 ===================
 INFO

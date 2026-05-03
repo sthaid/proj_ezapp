@@ -316,7 +316,14 @@ void settings(void)
             break; }
 
         case EVID_CLEAR_HISTORY: {
-            // xxx add ack display message
+            char *yn;
+
+            yn = sdlx_get_input_str("Clear History", "", false, COLOR_BLACK);
+            if (yn[0] != 'y' && yn[0] != 'Y') {
+                printf("I %s: cancel clear history\n", progname);
+                break;
+            }
+
             printf("I %s: clearing history\n", progname);
             rc = svc_make_req("Location",      
                               SVC_LOCATION_REQ_CLEAR_HISTORY,
