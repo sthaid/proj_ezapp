@@ -93,8 +93,8 @@ void util_get_location(double *latitude, double *longitude, double *altitude)
             ERROR("timedout\n");
             return;
         }
-        usleep(10000);
-        ms += 10;
+        usleep(500000);
+        ms += 500;
     }
 }
 

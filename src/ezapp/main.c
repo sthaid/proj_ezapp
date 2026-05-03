@@ -58,13 +58,22 @@ typedef struct {
     bool   event_box_enable;
 } params_t;
 
+typedef struct {
+    bool post_notifications;
+    bool access_coarse_location;
+    bool access_fine_location;
+    bool activity_recognition;
+    bool record_audio;
+} perm_granted_t;
+
 //
 // variables
 //
 
-static char       *storage_path;
-static params_t    params;
-static pthread_t   server_tid;
+static char          *storage_path;
+static params_t       params;
+static pthread_t      server_tid;
+static perm_granted_t perm_granted;
 
 //
 // prototypes
@@ -124,18 +133,21 @@ static int init(void)
 
     // get permissions when running on Android;
     // this is noop when running on Linux
-    // xxx test without these granted
-    #define GET_PERMISSION(str) \
+    #define GET_PERMISSION(perm,granted) \
         do { \
-            if (sdlx_get_permission("android.permission." str) != 0) { \
-                ERROR("failed to get permission %s\n", str); \
+            if (sdlx_get_permission("android.permission." perm) != 0) { \
+                ERROR("failed to get permission %s\n", perm); \
+                granted = false; \
+            } else { \
+                INFO("permission granted %s\n", perm); \
+                granted = true; \
             } \
         } while (0)
-    GET_PERMISSION("POST_NOTIFICATIONS");
-    GET_PERMISSION("ACCESS_COARSE_LOCATION");
-    GET_PERMISSION("ACCESS_FINE_LOCATION");
-    GET_PERMISSION("ACTIVITY_RECOGNITION");
-    GET_PERMISSION("RECORD_AUDIO");
+    GET_PERMISSION("POST_NOTIFICATIONS", perm_granted.post_notifications);
+    GET_PERMISSION("ACCESS_COARSE_LOCATION", perm_granted.access_coarse_location);
+    GET_PERMISSION("ACCESS_FINE_LOCATION", perm_granted.access_fine_location);
+    GET_PERMISSION("ACTIVITY_RECOGNITION", perm_granted.activity_recognition);
+    GET_PERMISSION("RECORD_AUDIO", perm_granted.record_audio);
 
     // init android utils, which provide support for:
     // - text to speech
@@ -179,7 +191,11 @@ static int init(void)
 
     // start/stop foreground mode based on the foreground_enabled param
     if (params.foreground_enabled) {
-        util_start_foreground();
+        if (perm_granted.access_coarse_location) {
+            util_start_foreground();
+        } else {
+            ERROR("permission has not been granted to access_coarse_location\n");
+        }
     } else {
         util_stop_foreground();
     }
@@ -913,7 +929,11 @@ static void settings(void)
             params.foreground_enabled = (params.foreground_enabled ? false : true);
             util_set_numeric_param(".", "foreground_enabled", params.foreground_enabled);
             if (params.foreground_enabled) {
-                util_start_foreground();
+                if (perm_granted.access_coarse_location) {
+                    util_start_foreground();
+                } else {
+                    ERROR("permission has not been granted to access_coarse_location\n");
+                }
             } else {
                 util_stop_foreground();
             }
