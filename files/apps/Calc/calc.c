@@ -51,6 +51,7 @@ int dec_mode_buttons[MAX_BUTTON_ROW][MAX_BUTTON_COL] = {
 #define BACKGROUND_COLOR            COLOR_LIGHT_GRAY
 #define BUTTON_COLOR_NORMAL         COLOR_WHITE
 #define BUTTON_COLOR_HIGHLIGHT      COLOR_GRAY
+#define BUTTON_COLOR_NUMBER         COLOR_LIGHT_GREEN
 #define BUTTON_COLOR_TEXT           COLOR_BLACK
 #define DISPLAY_NUMBER_COLOR        COLOR_BLACK
 #define DISPLAY_NUMBER_ERROR_COLOR  COLOR_RED
@@ -296,12 +297,14 @@ void update_number_display(unsigned long value, bool error)
 
 sdlx_texture_t *button_texture;
 sdlx_texture_t *highlighted_button_texture;
+sdlx_texture_t *number_button_texture;
 
 void draw_button(int row, int col, int button, bool highlight)
 {
     sdlx_loc_t loc;
     int x, y, radius;
     char str[8];
+    bool is_number;
 
     static int texture_w, texture_h;
 
@@ -309,6 +312,7 @@ void draw_button(int row, int col, int button, bool highlight)
         radius = BUTTONS_SPACING * 45 / 100;
         button_texture = create_filled_circle_texture(radius, BUTTON_COLOR_NORMAL);
         highlighted_button_texture = create_filled_circle_texture(radius,BUTTON_COLOR_HIGHLIGHT);
+        number_button_texture = create_filled_circle_texture(radius,BUTTON_COLOR_NUMBER);
         sdlx_query_texture(button_texture, &texture_w, &texture_h);
     }
 
@@ -316,15 +320,19 @@ void draw_button(int row, int col, int button, bool highlight)
         return;
     }    
 
+    memset(str, 0, sizeof(str));
+    memcpy(str, &button, 4);
+
+    is_number = (str[1] == '\0') &&
+                ((str[0] >= '0' && str[0] <= '9') || (str[0] >= 'A' && str[0] <= 'F'));
+
     x = BUTTONS_X_LEFT + col * BUTTONS_SPACING;
     y = BUTTONS_Y_TOP + row * BUTTONS_SPACING;
 
     sdlx_render_texture(
-        !highlight ? button_texture : highlighted_button_texture,
+        highlight ? highlighted_button_texture : (is_number ? number_button_texture : button_texture),
         x-texture_w/2, y-texture_h/2);
 
-    memset(str, 0, sizeof(str));
-    memcpy(str, &button, 4);
     sdlx_render_printf_ex2(x, y, 
                            FONT_NORMAL, BUTTON_COLOR_TEXT, FLAG_XY_CTR, WRAP_NONE,
                            "%s", str);
@@ -416,5 +424,6 @@ void cleanup(void)
 {
     sdlx_destroy_texture(button_texture);
     sdlx_destroy_texture(highlighted_button_texture);
+    sdlx_destroy_texture(number_button_texture);
 }
 
