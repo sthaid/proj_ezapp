@@ -1130,6 +1130,8 @@ static void page_9_draw(void)
 
 // -----------------  PAGE 10: LOCATION  ----------------------
 
+#define METERS_TO_FEET 3.28084
+
 static char *num2str(double num, char *fmt, char *s);
 
 static void page_10_draw(void)
@@ -1141,10 +1143,10 @@ static void page_10_draw(void)
 
     util_get_location(&lat, &lng, &alt, &alt_is_msl);
 
-    sdlx_render_printf(0, ROW2Y(row++), "Lat  = %s", num2str(lat,"%9.4f",s));
-    sdlx_render_printf(0, ROW2Y(row++), "Long = %s", num2str(lng,"%9.4f",s));
-    sdlx_render_printf(0, ROW2Y(row++), "Alt  = %s %s m",
-                       num2str(alt,"%9.4f",s),
+    sdlx_render_printf(0, ROW2Y(row++), "Lat  = %s", num2str(lat,"%.4f",s));
+    sdlx_render_printf(0, ROW2Y(row++), "Long = %s", num2str(lng,"%.4f",s));
+    sdlx_render_printf(0, ROW2Y(row++), "Alt  = %s %s ft",
+                       num2str(alt*METERS_TO_FEET, "%0.0f", s),
                        alt_is_msl ? "MSL" : "WGS84");
 }
 
