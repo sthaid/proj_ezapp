@@ -50,18 +50,17 @@ void util_android_utils_destroy(void)
     call_java1("android_utils_destroy");
 }
 
-// location
-// note: altitude is in meters above the WGS84 ellipsoid; 
-//       which can be more than 100 meters different than mean sea level
-//       in some places
-void util_get_location(double *latitude, double *longitude, double *altitude) 
+// notes:
+// - if alt_is_msl is true then altitude is meters above mean sea leval
+// - if alt_is_msl is false then altitude is meters abve the WGS84 ellepsiod
+void util_get_location(double *latitude, double *longitude, double *altitude, bool *alt_is_msl) 
 {
     int         ms = 0;
-    bool        failed, retries_allowd;
+    bool        failed, retries_allowed;
     static bool first_call = true;
 
     // retries are allowd only on the first call
-    retries_allowd = first_call;
+    retries_allowed = first_call;
     first_call = false;
 
     // loop, allowing retries on the first call
@@ -78,13 +77,22 @@ void util_get_location(double *latitude, double *longitude, double *altitude)
         }
         if (altitude) {
             *altitude = call_java1("get_altitude");
-            if (*altitude == INVALID_NUMBER) failed = true;
+            if (*altitude == INVALID_NUMBER) {
+                failed = true;
+            } else {
+                bool is_msl = *altitude < (1000000 - 1000);
+                if (!is_msl) *altitude -= 1000000;
+                if (alt_is_msl) *alt_is_msl = is_msl;
+            }
         }
 
-        // if retries are not allowed (this is not the first call) OR
-        //    if the lat/long/alt values are valid
-        // then return
-        if (retries_allowd == false || failed == false) {
+        // if lat/long/alt values have been obtained then return
+        if (!failed) {
+            return;
+        }
+
+        // if retries are not allowed then return
+        if (!retries_allowed) {
             return;
         }
 
@@ -303,11 +311,11 @@ void util_android_utils_init(void) { }
 
 void util_android_utils_destroy(void) { }
 
-void util_get_location(double *latitude, double *longitude, double *altitude)
+void util_get_location(double *latitude, double *longitude, double *altitude, bool *alt_is_msl)
 {
     #define BOLTON_MASS_LATITUDE     42.4334
     #define BOLTON_MASS_LONGITUDE   -71.6078
-    #define BOLTON_MASS_ELEVATION    100    // Bolton elevation range is 63 to 201 meters
+    #define BOLTON_MASS_ALTITUDE    137.16    // equals 450 ft
 
     if (latitude) {
         *latitude = BOLTON_MASS_LATITUDE;
@@ -316,7 +324,10 @@ void util_get_location(double *latitude, double *longitude, double *altitude)
         *longitude = BOLTON_MASS_LONGITUDE;
     }
     if (altitude) {
-        *altitude = BOLTON_MASS_ELEVATION;
+        *altitude = BOLTON_MASS_ALTITUDE;
+    }
+    if (alt_is_msl) {
+        *alt_is_msl = true;
     }
 }
 

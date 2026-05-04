@@ -305,7 +305,7 @@ char *initiate_forecast_download(void)
     util_delete_file(data_dir, "hourly.temp");
 
     // get lat/long
-    util_get_location(&latitude, &longitude, NULL);
+    util_get_location(&latitude, &longitude, NULL, NULL);
     if (latitude == INVALID_NUMBER || longitude == INVALID_NUMBER) {
         printf("E %s: failed to get lat/long\n", progname);
         return "Get Loc Failure";

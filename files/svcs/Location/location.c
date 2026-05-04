@@ -29,8 +29,8 @@ bool        test_loc_hist = false;
 // prototypes
 void add_entry_to_loc_hist(time_t t, double latitude, double longitude, char *name);
 char *most_recent_loc_hist_name(void);
-void create_loc_data_str(time_t t, double latitude, double longitude, double elevation,
-                         char *name, double miles, bool extra, char *data_str);
+void create_loc_data_str(time_t t, double latitude, double longitude, double altitude, bool alt_is_msl,
+                         char *name, char *data_str);
 void add_simulated_entries_to_loc_hist(void);
 double rand_double(void);
 void clear_loc_history(void);
@@ -114,7 +114,7 @@ int main(int argc, char **argv)
         if (rc == SVC_REQ_WAIT_ERROR_TIMEDOUT) {
             if (param_enabled) {
                 // find location in database that is closest to current lat/long;
-                util_get_location(&latitude, &longitude, NULL);
+                util_get_location(&latitude, &longitude, NULL, NULL);
                 find_closest_loc_data(latitude, longitude, name, &miles);
 
                 // if name is different than most recent entry in loc_file
@@ -148,9 +148,6 @@ int main(int argc, char **argv)
 
 void add_entry_to_loc_hist(time_t t, double latitude, double longitude, char *name)
 {
-    double miles = 0;       // not included in loc hist file
-    double elevation = 0;   // not included in loc hist file
-
     // if buffer is full then discard the first half (oldest data)
     if (loc_hist->count == MAX_LOC_HIST) {
         memmove(&loc_hist->loc[0], 
@@ -165,8 +162,9 @@ void add_entry_to_loc_hist(time_t t, double latitude, double longitude, char *na
     }
 
     // add entry
-    create_loc_data_str(t, latitude, longitude, elevation, name, miles,
-                        false, loc_hist->loc[loc_hist->count].data_str);
+    create_loc_data_str(t, latitude, longitude, 
+                        INVALID_NUMBER, false,    // altitude/alt_is_msl not included in loc_hist
+                        name, loc_hist->loc[loc_hist->count].data_str);
     loc_hist->count++;
 
     // sync memory mapped buffer to storage
@@ -199,8 +197,8 @@ char *most_recent_loc_hist_name(void)
 
 #define METERS_TO_FEET 3.28084
 
-void create_loc_data_str(time_t t, double latitude, double longitude, double elevation, 
-                         char *name, double miles, bool extra, char *data_str)
+void create_loc_data_str(time_t t, double latitude, double longitude, double altitude, bool alt_is_msl,
+                         char *name, char *data_str)
 {
     struct tm *tm;
     char time_str[50];
@@ -210,8 +208,8 @@ void create_loc_data_str(time_t t, double latitude, double longitude, double ele
     //   Bolton
     //   Dec 5 23:00 EST
     //   -42.1234 -130.1234
-    // extra line:
-    //   el 300 ft, 1.1 mi       elevation, and distance to published lat/long
+    // optional altitude line
+    //    alt 300 MSL ft
 
     // create time string
     tm = localtime(&t);
@@ -224,8 +222,10 @@ void create_loc_data_str(time_t t, double latitude, double longitude, double ele
     } else {
         p += sprintf(p, "%s\n%s\nLocation Unavailable\n", name, time_str);
     }
-    if (extra) {
-        p += sprintf(p, "el %0.0f ft, %0.1f mi\n", elevation * METERS_TO_FEET, miles);
+    if (altitude != INVALID_NUMBER && altitude != 0) {
+        p += sprintf(p, "alt %0.0f %s ft\n", 
+                     altitude * METERS_TO_FEET,
+                     alt_is_msl ? "MSL" : "WGS84");
     }
     p += sprintf(p, "\n");
 }
@@ -280,13 +280,13 @@ void process_req(svc_req_t *req)
         end_program = true;
         break;
     case SVC_LOCATION_REQ_GET_LOC_INFO: {
-        double latitude, longitude, elevation, miles;
+        double latitude, longitude, altitude, miles;
         char name[MAX_NAME];
+        bool alt_is_msl;
 
-        util_get_location(&latitude, &longitude, &elevation);
+        util_get_location(&latitude, &longitude, &altitude, &alt_is_msl);
         find_closest_loc_data(latitude, longitude, name, &miles);
-        create_loc_data_str(time(NULL), latitude, longitude, elevation,
-                            name, miles, true, req->data);
+        create_loc_data_str(time(NULL), latitude, longitude, altitude, alt_is_msl, name, req->data);
         svc_req_completed(req, SVC_REQ_OK);
         break; }
     case SVC_LOCATION_REQ_ADD_COUNTRY_INFO: {

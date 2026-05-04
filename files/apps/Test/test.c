@@ -1135,14 +1135,17 @@ static char *num2str(double num, char *fmt, char *s);
 static void page_10_draw(void)
 {
     double lat, lng, alt;
+    bool   alt_is_msl;
     int    row=2;
     char   s[50];
 
-    util_get_location(&lat, &lng, &alt);
+    util_get_location(&lat, &lng, &alt, &alt_is_msl);
 
     sdlx_render_printf(0, ROW2Y(row++), "Lat  = %s", num2str(lat,"%9.4f",s));
     sdlx_render_printf(0, ROW2Y(row++), "Long = %s", num2str(lng,"%9.4f",s));
-    sdlx_render_printf(0, ROW2Y(row++), "Alt  = %s m", num2str(alt,"%9.4f",s));
+    sdlx_render_printf(0, ROW2Y(row++), "Alt  = %s %s m",
+                       num2str(alt,"%9.4f",s),
+                       alt_is_msl ? "MSL" : "WGS84");
 }
 
 static char *num2str(double num, char *fmt, char *s)

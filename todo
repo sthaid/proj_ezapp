@@ -1,23 +1,23 @@
-altitude
+new altitude app
+- altitude
+  - Modern Solutions: Android 14+ introduces Location.getMslAltitudeMeters to provide orthometric 
+    altitude directly. Alternatively, some specialized GNSS tools in Android use custom geoid files
+   (.bin format) to correct the data in real-time.
+- https://developer.android.com/reference/android/location/altitude/AltitudeConverter
+      addMslAltitudeToLocation(Context context, Location location)
+
+in Location, dont display the offset x.x mi  IN PROGRESS
 
 reversi
-- add undo
+- add undo  ?
 - edge heuristic
 
-location permission problem
-- try running without location permission
-- java code may be failing if there is not permission
-
-regarding foreground - 
-- dont let applications control it;  could let applications check it and fail if it is not set
-- document foreground 
-
 battery usage
-- adjust compass app interval, to trade off jitter for battery life
-- check on usage
+- leave the phone sleeping, with ezapp fg running, check usage
 
 documentation
 - license and credits AND add to Settings
+- document foreground 
 
 git checkout the ttf and mixer too
 - check if they have tagged versions now

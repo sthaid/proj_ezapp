@@ -44,7 +44,7 @@ void sunrise_sunset_calc(char *sunrise, char *sunset, char *midday, char *daytim
     strcpy(daytime, "N/A");
 
     // get location
-    util_get_location(&latitude, &longitude, NULL);
+    util_get_location(&latitude, &longitude, NULL, NULL);
     if (latitude == INVALID_NUMBER || longitude == INVALID_NUMBER) {
         printf("E %s: failed to get location\n", progname);
         return;

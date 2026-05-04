@@ -31,7 +31,7 @@ void sunrise_sunset_web(char *sunrise, char *sunset, char *midday)
     strcpy(midday, "N/A");
 
     // get location
-    util_get_location(&latitude, &longitude, NULL);
+    util_get_location(&latitude, &longitude, NULL, NULL);
     if (latitude == INVALID_NUMBER || longitude == INVALID_NUMBER) {
         printf("E %s: failed to get gps location\n", progname);
         goto done;

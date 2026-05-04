@@ -15,11 +15,14 @@ import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationResult;
 import android.location.Location;
+import android.location.altitude.AltitudeConverter;
 import android.os.Looper;
 
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraManager;
 import android.view.Gravity;
+
+import java.io.IOException;
 
 public class ezapp_utils {
     private static final String                TAG = "EZAPP";
@@ -68,23 +71,52 @@ public class ezapp_utils {
         //
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(cx);
+        AltitudeConverter altitudeConverter = new AltitudeConverter();
 
         locationCallback = new LocationCallback() {
             @Override
             public void onLocationResult(LocationResult locationResult) {
                 if (locationResult == null) {
+                    latitude  = INVALID_NUMBER;
+                    longitude = INVALID_NUMBER;
+                    altitude  = INVALID_NUMBER;
                     return;
                 }
+
                 for (Location location : locationResult.getLocations()) {
+                    // get current latitude and longitude
                     latitude = location.getLatitude();
                     longitude = location.getLongitude();
-                    // altitude notes:
-                    // - units: meters
-                    // - if fine location permission is not granted, then value is 0
-                    // - relative to WGS84 reference ellipsoid, not necessarily mean sea level;
-                    // - WGS84 can differ by over 100 meters from mean sea level in some places
-                    altitude = location.getAltitude();
-                    Log.i(TAG, "lat/long/alt = " + latitude + " " + longitude + " " + altitude);
+
+                    // try to attach altitude Mean-Sea-Lvel (MSL) converter;
+                    // when attached, getMslAltitudeMeters can be called, which provides
+                    // more accurate altitude than getAltitude
+                    try {
+                        altitudeConverter.addMslAltitudeToLocation(cx, location);
+                    } catch (IOException e) {
+                        Log.e(TAG, "addMsAltitudeToLocation failed");
+                    }
+
+                    // get altitude (units=meters) first try to get MSL altitude, 
+                    // if MSL not available then try to get WGS84 altitude
+                    if (location.hasMslAltitude()) {
+                        // altitude is mean sea level (meters)
+                        altitude = location.getMslAltitudeMeters();
+                    } else if (location.hasAltitude()) {
+                        // altitude is height above WGS84 ellepsoid (meters);
+                        // the '1000000' offset indicates alt is wgs84; 
+                        // caller of get_altitude() must deal with this offset value
+                        altitude = location.getAltitude() + 1000000;
+                    } else {
+                        altitude = INVALID_NUMBER;
+                    }
+                        
+                    // debug print location/altitude result
+                    if (altitude > 1000000 - 1000) {
+                        Log.i(TAG, "lat/long/alt = " + latitude + " " + longitude + " " + (altitude-1000000) + " wgs84 m");
+                    } else {
+                        Log.i(TAG, "lat/long/alt = " + latitude + " " + longitude + " " + altitude + " msl m");
+                    }
                 }
             }
         };
