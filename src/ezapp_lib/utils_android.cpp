@@ -21,8 +21,7 @@
 // Notes on altitude, from Google AI Overview:
 //  "GPS altitude is a height above the WGS84 reference ellipsoid,
 //   which is an approximation of the Earth's surface. This value is
-//   not the same as height above mean sea level and may require a
-//   correction"
+//   not the same as height above mean sea level and may require a correction"
 
 // JNI based mehtod signatures:
 // References:
@@ -51,9 +50,9 @@ void util_android_utils_destroy(void)
 }
 
 // notes:
-// - if alt_is_msl is true then altitude is meters above mean sea leval
-// - if alt_is_msl is false then altitude is meters abve the WGS84 ellepsiod
-void util_get_location(double *latitude, double *longitude, double *altitude, bool *alt_is_msl) 
+// - if returned alt_is_wgs84 is false then returned altitude is feet above mean sea leval
+// - if returned alt_is_wgs84 is true then returned altitude is feet abve the WGS84 ellepsiod
+void util_get_location(double *latitude, double *longitude, double *altitude_ft, bool *alt_is_wgs84) 
 {
     int         ms = 0;
     bool        failed, retries_allowed;
@@ -75,14 +74,14 @@ void util_get_location(double *latitude, double *longitude, double *altitude, bo
             *longitude = call_java1("get_longitude");
             if (*longitude == INVALID_NUMBER) failed = true;
         }
-        if (altitude) {
-            *altitude = call_java1("get_altitude");
-            if (*altitude == INVALID_NUMBER) {
+        if (altitude_ft) {
+            *altitude_ft = call_java1("get_altitude");
+            if (*altitude_ft == INVALID_NUMBER) {
                 failed = true;
             } else {
-                bool is_msl = *altitude < (1000000 - 1000);
-                if (!is_msl) *altitude -= 1000000;
-                if (alt_is_msl) *alt_is_msl = is_msl;
+                bool is_wgs84 = *altitude_ft > (1000000 - 1000);
+                if (is_wgs84) *altitude_ft -= 1000000;
+                if (alt_is_wgs84) *alt_is_wgs84 = is_wgs84;
             }
         }
 
@@ -156,7 +155,7 @@ int util_get_playbackcapture_audio(float *array, int num_array_elements) {
 // returns:
 // - INVALID_NUMBER, when failed, or
 // - method specific result value, such as:
-//   - latitude, longitude, or altitude
+//   - latitude, longitude, or altitude_ft
 //   - 0 or 1 for boolean
 //   - 0 for success
 
@@ -311,11 +310,11 @@ void util_android_utils_init(void) { }
 
 void util_android_utils_destroy(void) { }
 
-void util_get_location(double *latitude, double *longitude, double *altitude, bool *alt_is_msl)
+void util_get_location(double *latitude, double *longitude, double *altitude, bool *alt_is_wgs84)
 {
     #define BOLTON_MASS_LATITUDE     42.4334
     #define BOLTON_MASS_LONGITUDE   -71.6078
-    #define BOLTON_MASS_ALTITUDE    137.16    // equals 450 ft
+    #define BOLTON_MASS_ALTITUDE_FT  450.0
 
     if (latitude) {
         *latitude = BOLTON_MASS_LATITUDE;
@@ -324,10 +323,10 @@ void util_get_location(double *latitude, double *longitude, double *altitude, bo
         *longitude = BOLTON_MASS_LONGITUDE;
     }
     if (altitude) {
-        *altitude = BOLTON_MASS_ALTITUDE;
+        *altitude = BOLTON_MASS_ALTITUDE_FT;
     }
-    if (alt_is_msl) {
-        *alt_is_msl = true;
+    if (alt_is_wgs84) {
+        *alt_is_wgs84 = false;
     }
 }
 

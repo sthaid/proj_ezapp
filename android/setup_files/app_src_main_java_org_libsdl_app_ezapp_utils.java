@@ -27,15 +27,19 @@ import java.io.IOException;
 public class ezapp_utils {
     private static final String                TAG = "EZAPP";
     private static final int                   INVALID_NUMBER = 999999999;
+    private static final double                METERS_TO_FEET = 3.28084;
+    private static final int                   MSL   = 0;
+    private static final int                   WGS84 = 1;
 
     private static TextToSpeech                mTts;
     private static boolean                     isTtsInitialized = false;
 
     private static FusedLocationProviderClient fusedLocationClient;
     private static LocationCallback            locationCallback;
-    private static double                      latitude  = INVALID_NUMBER;
-    private static double                      longitude = INVALID_NUMBER;
-    private static double                      altitude  = INVALID_NUMBER;
+    private static double                      latitude    = INVALID_NUMBER;
+    private static double                      longitude   = INVALID_NUMBER;
+    private static double                      altitude_ft = INVALID_NUMBER;
+    private static int                         alt_type;
 
     private static CameraManager               cameraManager;
     private static String                      cameraId;
@@ -77,9 +81,9 @@ public class ezapp_utils {
             @Override
             public void onLocationResult(LocationResult locationResult) {
                 if (locationResult == null) {
-                    latitude  = INVALID_NUMBER;
-                    longitude = INVALID_NUMBER;
-                    altitude  = INVALID_NUMBER;
+                    latitude    = INVALID_NUMBER;
+                    longitude   = INVALID_NUMBER;
+                    altitude_ft = INVALID_NUMBER;
                     return;
                 }
 
@@ -97,26 +101,22 @@ public class ezapp_utils {
                         Log.e(TAG, "addMsAltitudeToLocation failed");
                     }
 
-                    // get altitude (units=meters) first try to get MSL altitude, 
-                    // if MSL not available then try to get WGS84 altitude
+                    // get altitude, first try to get MSL altitude, 
+                    // if MSL not available then try to get WGS84 altitude;
                     if (location.hasMslAltitude()) {
-                        // altitude is mean sea level (meters)
-                        altitude = location.getMslAltitudeMeters();
+                        altitude_ft = location.getMslAltitudeMeters() * METERS_TO_FEET;
+                        alt_type = MSL;
                     } else if (location.hasAltitude()) {
-                        // altitude is height above WGS84 ellepsoid (meters);
-                        // the '1000000' offset indicates alt is wgs84; 
-                        // caller of get_altitude() must deal with this offset value
-                        altitude = location.getAltitude() + 1000000;
+                        altitude_ft = location.getAltitude() * METERS_TO_FEET;
+                        alt_type = WGS84;
                     } else {
-                        altitude = INVALID_NUMBER;
+                        altitude_ft = INVALID_NUMBER;
                     }
                         
                     // debug print location/altitude result
-                    if (altitude > 1000000 - 1000) {
-                        Log.i(TAG, "lat/long/alt = " + latitude + " " + longitude + " " + (altitude-1000000) + " wgs84 m");
-                    } else {
-                        Log.i(TAG, "lat/long/alt = " + latitude + " " + longitude + " " + altitude + " msl m");
-                    }
+                    Log.i(TAG, "lat/long/alt = " + 
+                          latitude + " " + longitude + " " + 
+                          altitude_ft + " ft " + (alt_type == MSL ? "MSL" : "WGS84"));
                 }
             }
         };
@@ -191,7 +191,13 @@ public class ezapp_utils {
     }
 
     public double get_altitude() {
-        return altitude;
+        if (alt_type == MSL) {
+            return altitude_ft;
+        } else {  // alt_type == WGS84
+            // caller must check for the added 1000000,
+            // which indicates altitude type is WGS84
+            return altitude_ft + 1000000;
+        }
     }
 
     //

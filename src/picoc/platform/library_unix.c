@@ -1373,16 +1373,16 @@ void Util_rms_complex(struct ParseState *Parser, struct Value *ReturnValue,
 // utils java methods
 //
 
-// get location: latitude, longitude, and altitude & alt_is_msl
+// get location: latitude, longitude, and altitude & alt_is_wgs84
 void Util_get_location(struct ParseState *Parser, struct Value *ReturnValue,
         struct Value **Param, int NumArgs)
 {
-    double *lat =        (double*)Param[0]->Val->Pointer;
-    double *lng =        (double*)Param[1]->Val->Pointer;
-    double *alt =        (double*)Param[2]->Val->Pointer;
-    bool   *alt_is_msl = (bool*)Param[3]->Val->Pointer;
+    double *lat          = (double*)Param[0]->Val->Pointer;
+    double *lng          = (double*)Param[1]->Val->Pointer;
+    double *alt          = (double*)Param[2]->Val->Pointer;
+    bool   *alt_is_wgs84 = (bool*)Param[3]->Val->Pointer;
 
-    util_get_location(lat, lng, alt, alt_is_msl);
+    util_get_location(lat, lng, alt, alt_is_wgs84);
 }
 
 // text to speech
@@ -1498,7 +1498,7 @@ struct LibraryFunction UtilsFunctions[] = {
     { Util_rms_float,           "double util_rms_float(float *x, int n);" },
     { Util_rms_complex,         "double util_rms_complex(complex_t *x, int n);" },
     // call java: location
-    { Util_get_location,        "void util_get_location(double *latitude, double *longitude, double *altitude, bool *alt_is_msl);" },
+    { Util_get_location,        "void util_get_location(double *latitude, double *longitude, double *altitude, bool *alt_is_wgs84);" },
     // call java: text to speech
     { Util_text_to_speech,      "void util_text_to_speech(char *text);" },
     { Util_text_to_speech_stop, "void util_text_to_speech_stop(void);" },

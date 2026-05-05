@@ -112,7 +112,7 @@ double util_rms_complex(complex_t *x, int n);
 // CALL ANDROID JAVA CODE, NOT AVAILABLE IN PICOC
 // ----------------------------------------------
 
-void util_get_location(double *latitude, double *longitude, double *altitude, bool *alt_is_msl);
+void util_get_location(double *latitude, double *longitude, double *altitude, bool *alt_is_wgs84);
 
 void util_text_to_speech(char *text);
 void util_text_to_speech_stop(void);

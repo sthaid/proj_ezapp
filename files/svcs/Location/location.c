@@ -29,7 +29,7 @@ bool        test_loc_hist = false;
 // prototypes
 void add_entry_to_loc_hist(time_t t, double latitude, double longitude, char *name);
 char *most_recent_loc_hist_name(void);
-void create_loc_data_str(time_t t, double latitude, double longitude, double altitude, bool alt_is_msl,
+void create_loc_data_str(time_t t, double latitude, double longitude, double altitude, bool alt_is_wgs84,
                          char *name, char *data_str);
 void add_simulated_entries_to_loc_hist(void);
 double rand_double(void);
@@ -163,7 +163,7 @@ void add_entry_to_loc_hist(time_t t, double latitude, double longitude, char *na
 
     // add entry
     create_loc_data_str(t, latitude, longitude, 
-                        INVALID_NUMBER, false,    // altitude/alt_is_msl not included in loc_hist
+                        INVALID_NUMBER, false,    // altitude/alt_is_wgs84 not included in loc_hist
                         name, loc_hist->loc[loc_hist->count].data_str);
     loc_hist->count++;
 
@@ -195,9 +195,7 @@ char *most_recent_loc_hist_name(void)
     return name;
 }
 
-#define METERS_TO_FEET 3.28084
-
-void create_loc_data_str(time_t t, double latitude, double longitude, double altitude, bool alt_is_msl,
+void create_loc_data_str(time_t t, double latitude, double longitude, double altitude, bool alt_is_wgs84,
                          char *name, char *data_str)
 {
     struct tm *tm;
@@ -223,9 +221,8 @@ void create_loc_data_str(time_t t, double latitude, double longitude, double alt
         p += sprintf(p, "%s\n%s\nLocation Unavailable\n", name, time_str);
     }
     if (altitude != INVALID_NUMBER && altitude != 0) {
-        p += sprintf(p, "alt %0.0f %s ft\n", 
-                     altitude * METERS_TO_FEET,
-                     alt_is_msl ? "MSL" : "WGS84");
+        p += sprintf(p, "alt %0.0f ft %s\n", 
+                     altitude, alt_is_wgs84 ? "WGS84" : "");
     }
     p += sprintf(p, "\n");
 }
@@ -282,11 +279,11 @@ void process_req(svc_req_t *req)
     case SVC_LOCATION_REQ_GET_LOC_INFO: {
         double latitude, longitude, altitude, miles;
         char name[MAX_NAME];
-        bool alt_is_msl;
+        bool alt_is_wgs84;
 
-        util_get_location(&latitude, &longitude, &altitude, &alt_is_msl);
+        util_get_location(&latitude, &longitude, &altitude, &alt_is_wgs84);
         find_closest_loc_data(latitude, longitude, name, &miles);
-        create_loc_data_str(time(NULL), latitude, longitude, altitude, alt_is_msl, name, req->data);
+        create_loc_data_str(time(NULL), latitude, longitude, altitude, alt_is_wgs84, name, req->data);
         svc_req_completed(req, SVC_REQ_OK);
         break; }
     case SVC_LOCATION_REQ_ADD_COUNTRY_INFO: {
