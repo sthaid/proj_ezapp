@@ -1,16 +1,24 @@
-new altitude app
-- altitude
-  - Modern Solutions: Android 14+ introduces Location.getMslAltitudeMeters to provide orthometric 
-    altitude directly. Alternatively, some specialized GNSS tools in Android use custom geoid files
-   (.bin format) to correct the data in real-time.
-- https://developer.android.com/reference/android/location/altitude/AltitudeConverter
-      addMslAltitudeToLocation(Context context, Location location)
+New Apps
+- Altitude
+- Pressure
 
-in Location, dont display the offset x.x mi  IN PROGRESS
+New capabilities
+- speech to text
+     https://developer.android.com/reference/android/speech/SpeechRecognizer
 
-reversi
-- add undo  ?
-- edge heuristic
+new name
+- MiniC
+  - minish  ??
+- Android mini apps are lightweight, web-based applications (often 2–4 MB) 
+  that run inside "super apps" (like Telegram or WeChat) via WebView, requiring 
+  no installation or complex download. They use HTML, CSS, and JavaScript for cross-platform 
+  functionality. Common uses include quick services like food delivery, payments, and navigation
+- icon
+  - maybe change name to miniApps or MiniC
+
+developer mode password
+
+review all for xxx
 
 battery usage
 - leave the phone sleeping, with ezapp fg running, check usage
@@ -24,23 +32,14 @@ git checkout the ttf and mixer too
 
 make new cleaned repo
 
+reversi
+- add undo  ?
+- edge heuristic
+
 -------------------
 ---- LATER --------
 -------------------
 
-developer mode password
-
-review all for xxx
-
-doc files
-
-altitude
-- To convert WGS84 ellipsoidal heights (
-  ) to Mean Sea Level (MSL), or orthometric heights (
-  ), subtract the geoid height (
-  ) at that location using the formula 
-  . This requires a geoid model, such as EGM96 or EGM2008, which maps the difference between the ellipsoid and the sea-level surfac
-  
 documentation
 - make doc dir, with all README files
    . android

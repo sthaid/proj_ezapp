@@ -230,12 +230,15 @@ void process_event(sdlx_event_t *ev, sdlx_audio_state_t *as)
             if (util_file_exists(files_dir, ".record.mp3")) {
                 char *input = sdlx_get_input_str("RecordedFileName", NULL, false, COLOR_BLACK);
                 char  new_name[100];
+                char  cmd[200];
                 if (input[0] != '\0') {
                     sprintf(new_name, "%s.mp3", input);
                 } else {
                     strcpy(new_name, "New.mp3");
                 }
                 util_rename_file(files_dir, ".record.mp3", files_dir, new_name);
+                sprintf(cmd, "touch %s", files_dir);
+                system(cmd);
             }
             break;
 
