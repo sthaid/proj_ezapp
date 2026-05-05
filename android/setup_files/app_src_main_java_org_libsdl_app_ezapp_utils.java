@@ -92,11 +92,13 @@ public class ezapp_utils {
                     latitude = location.getLatitude();
                     longitude = location.getLongitude();
 
-                    // try to attach altitude Mean-Sea-Lvel (MSL) converter;
+                    // attach altitude Mean-Sea-Lvel (MSL) converter;
                     // when attached, getMslAltitudeMeters can be called, which provides
                     // more accurate altitude than getAltitude
                     try {
-                        altitudeConverter.addMslAltitudeToLocation(cx, location);
+                        if (location.hasAltitude()) {
+                            altitudeConverter.addMslAltitudeToLocation(cx, location);
+                        }
                     } catch (IOException e) {
                         Log.e(TAG, "addMsAltitudeToLocation failed");
                     }
