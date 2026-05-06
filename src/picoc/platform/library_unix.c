@@ -1379,10 +1379,10 @@ void Util_get_location(struct ParseState *Parser, struct Value *ReturnValue,
 {
     double *lat          = (double*)Param[0]->Val->Pointer;
     double *lng          = (double*)Param[1]->Val->Pointer;
-    double *alt          = (double*)Param[2]->Val->Pointer;
+    double *alt_ft       = (double*)Param[2]->Val->Pointer;
     bool   *alt_is_wgs84 = (bool*)Param[3]->Val->Pointer;
 
-    util_get_location(lat, lng, alt, alt_is_wgs84);
+    util_get_location(lat, lng, alt_ft, alt_is_wgs84);
 }
 
 // text to speech
@@ -1498,7 +1498,7 @@ struct LibraryFunction UtilsFunctions[] = {
     { Util_rms_float,           "double util_rms_float(float *x, int n);" },
     { Util_rms_complex,         "double util_rms_complex(complex_t *x, int n);" },
     // call java: location
-    { Util_get_location,        "void util_get_location(double *latitude, double *longitude, double *altitude, bool *alt_is_wgs84);" },
+    { Util_get_location,        "void util_get_location(double *latitude, double *longitude, double *altitude_ft, bool *alt_is_wgs84);" },
     // call java: text to speech
     { Util_text_to_speech,      "void util_text_to_speech(char *text);" },
     { Util_text_to_speech_stop, "void util_text_to_speech_stop(void);" },
