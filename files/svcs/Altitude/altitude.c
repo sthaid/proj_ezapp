@@ -9,7 +9,7 @@
 #include <utils.h>
 #include <svcs.h>
 
-#include "svcs/Steps/steps.h"
+#include "svcs/Altitude/altitude.h"
 
 // defines
 #define CREATE_IF_NEEDED true
@@ -20,8 +20,8 @@ char *progname;
 char *data_dir;
 
 // variables
-bool          end_program = false;
-steps_file_t *steps_file;
+bool             end_program = false;
+altitude_file_t *altitude_file;
 
 // prototypes
 void process_req(svc_req_t *req);
@@ -36,6 +36,7 @@ int main(int argc, char **argv)
 {
     svc_req_t *req;
     int        rc;
+    time_t     timeout=0;
 
     // save args
     progname = argv[0];
@@ -57,7 +58,8 @@ int main(int argc, char **argv)
     // service runtime loop
     while (!end_program) {
         // wait for req or timeout
-        rc = svc_wait_for_req(progname, &req, time(NULL)+5);
+        timeout = (timeout == 0 ? time(NULL)+5 : time(NULL)+300);
+        rc = svc_wait_for_req(progname, &req, timeout);
 
         // if an unexpected error is returned, then delay and try again
         if (rc != 0 && rc != SVC_REQ_WAIT_ERROR_TIMEDOUT) {
@@ -66,7 +68,7 @@ int main(int argc, char **argv)
             continue;
         }
 
-        // if scv_wait_for_req timedout then perform periodic svc processing
+        // if scv_wait_for_req timedout then do periodic svc processing
         if (rc == SVC_REQ_WAIT_ERROR_TIMEDOUT) {
             periodic_processing();
             continue;
@@ -92,24 +94,27 @@ int initialize(void)
     int tries = 0;
     int created_flag;
 
-    printf("I %s: sizeof(steps_file_t) = 0x%zx %0.3f MB\n",
-           progname, sizeof(steps_file_t), (double)sizeof(steps_file_t)/0x100000);
+    printf("I %s: sizeof(altitude_file_t) = 0x%zx %0.3f MB\n",
+           progname, sizeof(altitude_file_t), (double)sizeof(altitude_file_t)/0x100000);
 
-    // map the steps data file;
+    // map the altitude data file;
     // create the file if needed because either it doesn't exist or has incorrect size
-    steps_file = util_map_file(data_dir, STEPS_FILENAME, sizeof(steps_file_t),
-                               CREATE_IF_NEEDED, READ_WRITE, &created_flag);
-    if (steps_file == NULL) {
-        printf("E %s: failed to map %s\n", progname, STEPS_FILENAME);
+    altitude_file = util_map_file(data_dir, ALTITUDE_FILENAME, sizeof(altitude_file_t),
+                                  CREATE_IF_NEEDED, READ_WRITE, &created_flag);
+    if (altitude_file == NULL) {
+        printf("E %s: failed to map %s\n", progname, ALTITUDE_FILENAME);
         return -1;
     }
 
     // if file was created or has incorrect version then init the file
-    if (created_flag || steps_file->version != STEPS_FILE_VERSION) {
-        printf("I %s: initializing steps_file\n", progname);
-        memset(steps_file, 0, sizeof(steps_file_t));
-        steps_file->version = STEPS_FILE_VERSION;
-        util_sync_file(steps_file, sizeof(steps_file_t));
+    if (created_flag || altitude_file->version != ALTITUDE_FILE_VERSION) {
+        printf("I %s: initializing altitude_file\n", progname);
+        altitude_file->version = ALTITUDE_FILE_VERSION;
+        int *tmp = (int*)&altitude_file->altitude_ft[0][0][0][0];
+        for (int i = 0; i < sizeof(altitude_file->altitude_ft)/sizeof(int); i++) {
+            tmp[i] = NO_ALTITUDE_DATA;
+        }
+        util_sync_file(altitude_file, sizeof(altitude_file_t));
     }
 
     // success
@@ -118,9 +123,9 @@ int initialize(void)
 
 void cleanup(void)
 {
-    if (steps_file) {
-        util_unmap_file(steps_file, sizeof(steps_file_t));
-        steps_file = NULL;
+    if (altitude_file) {
+        util_unmap_file(altitude_file, sizeof(altitude_file_t));
+        altitude_file = NULL;
     }
 }
 
@@ -147,14 +152,14 @@ void process_req(svc_req_t *req)
 
 void periodic_processing(void)
 {
-    unsigned long step_count_sensor;
-    int           steps, rc, year, month, day, hour;
+    double        altitude_ft;
+    bool          alt_is_wgs84;
+    int           year, month, day, hour;
     time_t        t_now;
     struct tm     tm;
 
-    static time_t        t_last_sync, t_last_call;
-    static bool          sync_request;
-    static unsigned long last_step_count_sensor;
+    static time_t t_last_call;
+    static bool   wgs84_warning_printed;
 
     // get current time
     t_now = time(NULL);
@@ -165,53 +170,33 @@ void periodic_processing(void)
     }
     t_last_call = t_now;
 
-    // if sync_request is pending and steps_file has not been synced for 60 seconds
-    // then sync the steps file
-    if (sync_request && (t_now - t_last_sync > 60)) {
-        printf("I %s: calling util_sync_file\n", progname);
-        util_sync_file(steps_file, sizeof(steps_file_t));
-        t_last_sync = t_now;
-        sync_request = false;
-    }
+    // get the current altitude;
+    util_get_location(NULL, NULL, &altitude_ft, &alt_is_wgs84);
 
-    // read step counter sensor
-    rc = sdlx_sensor_read_step_counter(&step_count_sensor);
-    if (rc != 0) {
-        printf("E %s: failed to read step counter sensor\n", progname);
+    // if no data then return
+    if (altitude_ft == INVALID_NUMBER) {
+        printf("E %s: failed to get altitude_ft\n", progname);
         return;
     }
 
-    // if don't yet have the last_step_count_sensor value then set it and return
-    if (last_step_count_sensor == 0) {
-        last_step_count_sensor = step_count_sensor;
-        printf("I %s: init last_step_count_sensor %ld\n", progname, last_step_count_sensor);
-        return;
+    // if altitude is wgs84 then print warning once
+    if (alt_is_wgs84 && !wgs84_warning_printed) {
+        printf("E %s: WARNING altitude is WGS84\n", progname);
+        wgs84_warning_printed = true;
     }
 
-    // determine number of steps since previous read of the sensor
-    steps = (step_count_sensor - last_step_count_sensor);
-    last_step_count_sensor = step_count_sensor;
-
-    // if no new steps then return
-    if (steps == 0) {
-        return;
-    }
-
-    // accumulate steps to memory mapped steps_file
+    // accumulate altitude to memory mapped altitude_file
     localtime_r(&t_now, &tm);
     year  = tm.tm_year + 1900 - YEAR0;
     month = tm.tm_mon;       // 0 - 11
     day   = tm.tm_mday - 1;  // 0 - 30
     hour  = tm.tm_hour;      // 0 - 23 
-    steps_file->year[year]                   += steps;
-    steps_file->month[year][month]           += steps;
-    steps_file->day[year][month][day]        += steps;
-    steps_file->hour[year][month][day][hour] += steps;
-
-    // set sync_request flag
-    sync_request = true;
+    if (altitude_ft > altitude_file->altitude_ft[year][month][day][hour]) {
+        altitude_file->altitude_ft[year][month][day][hour] = altitude_ft;
+        util_sync_file(&altitude_file->altitude_ft[year][month][day][hour], sizeof(int));
+    }
 
     // debug print
-    printf("I %s: ymdh=%d %d %d %d  steps=%d  sensor=%ld\n", 
-           progname, year, month, day, hour, steps, step_count_sensor);
+    printf("I %s: ymdh=%d %d %d %d  altitude_ft=%0.0f\n", 
+           progname, year, month, day, hour, altitude_ft);
 }

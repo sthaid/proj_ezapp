@@ -89,6 +89,7 @@ public class ezapp_utils {
 
                 for (Location location : locationResult.getLocations()) {
                     // get current latitude and longitude
+                    // xxx is check needed here?
                     latitude = location.getLatitude();
                     longitude = location.getLongitude();
 
@@ -113,6 +114,7 @@ public class ezapp_utils {
                         alt_type = WGS84;
                     } else {
                         altitude_ft = INVALID_NUMBER;
+                        alt_type = MSL;
                     }
                         
                     // debug print location/altitude result

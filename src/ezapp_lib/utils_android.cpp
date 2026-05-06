@@ -78,10 +78,18 @@ void util_get_location(double *latitude, double *longitude, double *altitude_ft,
             *altitude_ft = call_java1("get_altitude");
             if (*altitude_ft == INVALID_NUMBER) {
                 failed = true;
+                if (alt_is_wgs84) *alt_is_wgs84 = false;
+            } else if (*altitude_ft > (1000000 - 2000)) {
+                // notes:
+                // - if the altitude is wgs84 the java code adds 1000000 to it,
+                //   so that this code knows it is wgs84 altitude
+                // - the '- 2000' is to allow for negative wgs84 altitude values
+                // - wgs84 altitude is height above a reference ellipsoid, which can be
+                //   as much as 350 ft different than mean-sea-level altitude
+                *altitude_ft -= 1000000;
+                if (alt_is_wgs84) *alt_is_wgs84 = true;
             } else {
-                bool is_wgs84 = *altitude_ft > (1000000 - 1000);
-                if (is_wgs84) *altitude_ft -= 1000000;
-                if (alt_is_wgs84) *alt_is_wgs84 = is_wgs84;
+                if (alt_is_wgs84) *alt_is_wgs84 = false;
             }
         }
 
