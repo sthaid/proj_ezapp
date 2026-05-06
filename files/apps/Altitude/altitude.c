@@ -7,7 +7,7 @@
 #include <sdlx.h>
 #include <utils.h>
 
-#include "svcs/Steps/steps.h"
+#include "svcs/Altitude/altitude.h"
 
 // defines
 #define ONE_SEC         1000000
@@ -17,30 +17,19 @@
 
 #define EVID_PREV         1
 #define EVID_NEXT         2
-#define EVID_VIEW_SELECT  3
 #define EVID_GOTO_TODAY   4
-#define EVID_SETTINGS     5
-
-#define VIEW_DAY    0
-#define VIEW_MONTH  1
-#define VIEW_YEAR   2
-#define VIEW_STR (view == VIEW_DAY ? "DAY" : (view == VIEW_MONTH ? "MONTH" : "YEAR"))
 
 #define GRAPH_H            800 
 #define GRAPH_Y_TOP        700
 #define GRAPH_Y_BOTTOM     (GRAPH_Y_TOP + GRAPH_H - 1)
 
-#define DEFAULT_YMAX_HOUR   3
-#define DEFAULT_YMAX_DAY    15
-#define DEFAULT_YMAX_MONTH  30
-#define DEFAULT_STEP_LEN    30.0   // inches
+#define DEFAULT_GRAPH_MIN_ALT 0
+#define DEFAULT_GRAPH_MAX_ALT 500
 
 // typedefs
 typedef struct {
-    double ymax_hour;
-    double ymax_day;
-    double ymax_month;
-    double step_len;
+    int graph_min_alt;
+    int graph_max_alt;
 } params_t;
 
 // variables
@@ -48,17 +37,15 @@ char *progname;
 char *data_dir;
 bool  end_program;
 
-steps_file_t *steps_file;
-int           view;
-int           year;    // 0 = 2026
-int           month;   // 0 = Jan
-int           day;     // 0 = first day of month
-params_t      params;
+altitude_file_t *altitude_file;
+int              year;    // 0 = 2026
+int              month;   // 0 = Jan
+int              day;     // 0 = first day of month
+params_t         params;
     
 // prototypes
 void draw_display(void);
 void process_event(sdlx_event_t *event);
-void settings(void);
 
 // prototypes for utils
 char *get_month_str(int month);
@@ -128,30 +115,27 @@ int initialize(void)
     struct tm    tm;
     int          y, m, d;
 
-    // initialize the view to the current day
-    view = VIEW_DAY;
+    // get current date
     get_current_ymd(&year, &month, &day);
 
-    // map steps.dat
-    steps_file = util_map_file("svcs/Steps", STEPS_FILENAME, sizeof(steps_file_t),
+    // map altitude.dat
+    altitude_file = util_map_file("svcs/Altitude", ALTITUDE_FILENAME, sizeof(altitude_file_t),
                                DO_NOT_CREATE, READ_ONLY, NULL);
-    if (steps_file == NULL) {
-        printf("E %s: failed to map %s\n", progname, STEPS_FILENAME);
+    if (altitude_file == NULL) {
+        printf("E %s: failed to map %s\n", progname, ALTITUDE_FILENAME);
         return -1;
     }
 
-    // validate steps.dat version
-    if (steps_file->version != STEPS_FILE_VERSION) {
-        printf("E %s: unsupported steps.dat version=%lx, expected=%lx\n",
-               progname, steps_file->version, STEPS_FILE_VERSION);
+    // validate altitude.dat version
+    if (altitude_file->version != ALTITUDE_FILE_VERSION) {
+        printf("E %s: unsupported altitude.dat version=%lx, expected=%lx\n",
+               progname, altitude_file->version, ALTITUDE_FILE_VERSION);
         return -1;
     }
 
     // read params
-    params.ymax_hour  = util_get_numeric_param(data_dir, "ymax_hour",  DEFAULT_YMAX_HOUR);
-    params.ymax_day   = util_get_numeric_param(data_dir, "ymax_day",   DEFAULT_YMAX_DAY);
-    params.ymax_month = util_get_numeric_param(data_dir, "ymax_month", DEFAULT_YMAX_MONTH);
-    params.step_len   = util_get_numeric_param(data_dir, "step_len",   DEFAULT_STEP_LEN);
+    params.graph_min_alt  = util_get_numeric_param(data_dir, "graph_min_alt",  DEFAULT_GRAPH_MIN_ALT);
+    params.graph_max_alt  = util_get_numeric_param(data_dir, "graph_max_alt",  DEFAULT_GRAPH_MAX_ALT);
 
     // success
     return 0;
@@ -159,9 +143,9 @@ int initialize(void)
 
 void cleanup(void)
 {
-    if (steps_file) {
-        util_unmap_file(steps_file, sizeof(steps_file_t));
-        steps_file = NULL;
+    if (altitude_file) {
+        util_unmap_file(altitude_file, sizeof(altitude_file_t));
+        altitude_file = NULL;
     }
 }
 
@@ -169,7 +153,42 @@ void cleanup(void)
 
 void draw_display(void)
 {
-    unsigned int steps;
+    double altitude_ft;
+    bool   alt_is_wgs84;
+
+    // display current altitude
+    util_get_location(NULL, NULL, &altitude_ft, &alt_is_wgs84);
+    sdlx_render_printf_ex2(sdlx_win_width/2, ROW2Y(1), FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR,
+                           "Current");
+    if (altitude_ft == INVALID_NUMBER) {
+        sdlx_render_printf_ex2(sdlx_win_width/2, ROW2Y(2), FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR,
+                               "Alt = Unavailable");
+    } else {
+        sdlx_render_printf_ex2(sdlx_win_width/2, ROW2Y(2), FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR,
+                               "Alt = %0.0f ft %s",
+                               altitude_ft,
+                               alt_is_wgs84 ? "WGS84" : "MSL");
+    }
+
+    // draw rectangle around the graph area
+    sdlx_render_rect(0,
+                     GRAPH_Y_TOP-5,
+                     sdlx_win_width,
+                     GRAPH_H+10,
+                     5, // line_width
+                     COLOR_WHITE);
+
+    // display graph
+
+    // display graph title lines
+
+    // display graph y axis min,max
+
+    // register events to change graph ymin/ymax
+
+    // xxx
+#if 0
+    unsigned int altitude;
     double miles;
     sdlx_loc_t *loc;
     sdlx_color_t color;
@@ -198,13 +217,13 @@ void draw_display(void)
                                year + YEAR0);
     }
 
-    // display steps and miles
-    steps = (view == VIEW_DAY   ? steps_file->day[year][month][day] :
-            (view == VIEW_MONTH ? steps_file->month[year][month] :
-                                  steps_file->year[year]));
-    miles = steps * params.step_len / INCHES_PER_MILE;
+    // display altitude and miles
+    altitude = (view == VIEW_DAY   ? altitude_file->day[year][month][day] :
+            (view == VIEW_MONTH ? altitude_file->month[year][month] :
+                                  altitude_file->year[year]));
+    miles = altitude * params.step_len / INCHES_PER_MILE;
 
-    sdlx_render_printf_ex2(COL2X(5), ROW2Y(3), FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, "%d", steps);
+    sdlx_render_printf_ex2(COL2X(5), ROW2Y(3), FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, "%d", altitude);
     sdlx_render_printf_ex2(COL2X(5), ROW2Y(4), FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, "Steps");
     sdlx_render_printf_ex2(COL2X(14), ROW2Y(3), FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, "%0.2f", miles);
     sdlx_render_printf_ex2(COL2X(14), ROW2Y(4), FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, "Miles");
@@ -214,34 +233,27 @@ void draw_display(void)
                            FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, 
                            "step_len = %g", params.step_len);
 
-    // draw rectangle around the graph area
-    sdlx_render_rect(0,
-                     GRAPH_Y_TOP-5,
-                     sdlx_win_width,
-                     GRAPH_H+10,
-                     5, // line_width
-                     COLOR_WHITE);
 
     // display graph, based on the current view selected
-    unsigned int max_idx, *steps_array, max_graph;
+    unsigned int max_idx, *altitude_array, max_graph;
     if (view == VIEW_DAY) {
         max_idx = 24;
-        steps_array = steps_file->hour[year][month][day];
+        altitude_array = altitude_file->hour[year][month][day];
         max_graph = params.ymax_hour;
     } else if (view == VIEW_MONTH) {
         max_idx = 31;
-        steps_array = steps_file->day[year][month];
+        altitude_array = altitude_file->day[year][month];
         max_graph = params.ymax_day;;
     } else {  // year
         max_idx = 12;
-        steps_array = steps_file->month[year];
+        altitude_array = altitude_file->month[year];
         max_graph = params.ymax_month;
     }
     int idx, h;
     double w = (double)(sdlx_win_width-10) / max_idx;
     for (idx = 0; idx < max_idx; idx++) {
-        steps = steps_array[idx];
-        miles = steps * params.step_len / INCHES_PER_MILE;
+        altitude = altitude_array[idx];
+        miles = altitude * params.step_len / INCHES_PER_MILE;
 
         h = miles / max_graph * GRAPH_H;
         if (h > GRAPH_H) h = GRAPH_H;
@@ -308,6 +320,7 @@ void draw_display(void)
                                  EVID_NEXT, ">",
                                  EVID_QUIT, "X",
                                  COLOR_WHITE, COLOR_BLACK);
+#endif
 }
 
 // -----------------  PROCESS EVENT  ---------------------------
@@ -327,63 +340,30 @@ void process_event(sdlx_event_t *event)
     case EVID_NEXT:
         next();
         break;
-    case EVID_VIEW_SELECT:
-        view = (view + 1) % 3;
-        break;
     case EVID_GOTO_TODAY:
-        view = VIEW_DAY;
         get_current_ymd(&year, &month, &day);
-        break;
-    case EVID_SETTINGS:
-        settings();
         break;
     }
 }
 
 void previous(void)
 {
-    // decrement year,month,day based on current view selected
-    if (view == VIEW_DAY) {
-        if (--day < 0) {
-            if (--month < 0) {
-                month = 0;
-                if (--year < 0) year = 0;
-            }
-            day = days_in_month(year, month) - 1;
-        }
-    } else if (view == VIEW_MONTH) {
+    if (--day < 0) {
         if (--month < 0) {
             month = 0;
             if (--year < 0) year = 0;
         }
-        day = 0;
-    } else { // year
-        if (--year < 0) year = 0;
-        month = 0;
-        day = 0;
+        day = days_in_month(year, month) - 1;
     }
 }
 
 void next(void)
 {
-    // increment year,month,day based on current view selected
-    if (view == VIEW_DAY) {
-        if (++day >= days_in_month(year, month)) {
-            if (++month >= 12) {
-                month = 0;
-                if (++year >= MAX_YEAR) year = MAX_YEAR-1;
-            }
-            day = 0;
-        }
-    } else if (view == VIEW_MONTH) {
+    if (++day >= days_in_month(year, month)) {
         if (++month >= 12) {
             month = 0;
-            if (year >= MAX_YEAR) year = MAX_YEAR-1;
+            if (++year >= MAX_YEAR) year = MAX_YEAR-1;
         }
-        day = 0;
-    } else { // year
-        if (++year >= MAX_YEAR) year = MAX_YEAR-1;
-        month = 0;
         day = 0;
     }
 
@@ -395,104 +375,6 @@ void next(void)
         month = m;
         day = d;
     }
-}
-
-// -----------------  SETTINGS  -----------------------------------
-
-#define EVID_STEP_LEN   1
-#define EVID_YMAX_HOUR  2
-#define EVID_YMAX_DAY   3
-#define EVID_YMAX_MONTH 4
-
-void reg_setting_event(int *y, char *name, double value, int event_id);
-
-void settings(void)
-{
-    bool         done = false;
-    sdlx_event_t event;
-    int          y, cnt;
-    double       value;
-    char        *str;
-
-    while (!done) {
-        // init the backbuffer
-        sdlx_display_init(COLOR_BLACK, PORTRAIT);
-
-        // display title line
-        sdlx_render_printf_ex2(sdlx_win_width/2, ROW2Y(1), 
-                               FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, 
-                               "SETTINGS");
-
-        // register events to change setting value
-        y = 3*sdlx_char_height_dflt;
-        reg_setting_event(&y, "step_len",   params.step_len,   EVID_STEP_LEN);
-        reg_setting_event(&y, "ymax_hour",  params.ymax_hour,  EVID_YMAX_HOUR);
-        reg_setting_event(&y, "ymax_day",   params.ymax_day,   EVID_YMAX_DAY);
-        reg_setting_event(&y, "ymax_month", params.ymax_month, EVID_YMAX_MONTH);
-
-        // register control event to exit settings display
-        sdlx_register_control_events(0, NULL,
-                                     0, NULL,
-                                     EVID_QUIT, "X",
-                                     COLOR_WHITE, COLOR_BLACK);
-
-        // present the display
-        sdlx_display_present();
-
-        // wait for event, infinite timeout
-        sdlx_get_event(-1, &event);
-        if (event.event_id == -1) {
-            continue;
-        }
-
-        // process events
-        switch (event.event_id) {
-        case EVID_STEP_LEN:
-            str = sdlx_get_input_str("step_len", NULL, true, COLOR_BLACK);
-            if (sscanf(str, "%lf", &value) == 1) {
-                params.step_len = value;
-                util_set_numeric_param(data_dir, "step_len", params.step_len);
-            }
-            break;
-        case EVID_YMAX_HOUR: 
-            str = sdlx_get_input_str("ymax_hour", NULL, true, COLOR_BLACK);
-            if (sscanf(str, "%lf", &value) == 1) {
-                params.ymax_hour = nearbyint(value);
-                util_set_numeric_param(data_dir, "ymax_hour", params.ymax_hour);
-            }
-            break;
-        case EVID_YMAX_DAY: 
-            str = sdlx_get_input_str("ymax_day", NULL, true, COLOR_BLACK);
-            if (sscanf(str, "%lf", &value) == 1) {
-                params.ymax_day = nearbyint(value);
-                util_set_numeric_param(data_dir, "ymax_day", params.ymax_day);
-            }
-            break;
-        case EVID_YMAX_MONTH: 
-            str = sdlx_get_input_str("ymax_month", NULL, true, COLOR_BLACK);
-            if (sscanf(str, "%lf", &value) == 1) {
-                params.ymax_month = nearbyint(value);
-                util_set_numeric_param(data_dir, "ymax_month", params.ymax_month);
-            }
-            break;
-        case EVID_QUIT:
-            done = true;
-            break;
-        }
-    }
-}
-
-void reg_setting_event(int *y, char *name, double value, int event_id)
-{
-    sdlx_loc_t *loc;
-    char str[50];
-
-    sprintf(str, "%s = %g", name, value);
-
-    loc = sdlx_render_printf_ex1(0, *y, FONT_NORMAL, COLOR_LIGHT_BLUE, "%s", str);
-    sdlx_register_event(loc, event_id);
-
-    *y += 2*sdlx_char_height_dflt;
 }
 
 // -----------------  UTILS  --------------------------------------
