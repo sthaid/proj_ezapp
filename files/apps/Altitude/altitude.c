@@ -13,7 +13,6 @@
 #define ONE_SEC         1000000
 #define DO_NOT_CREATE   false
 #define READ_ONLY       true
-#define INCHES_PER_MILE (5280 * 12)
 
 #define EVID_PREV         1
 #define EVID_NEXT         2
@@ -23,7 +22,7 @@
 #define EVID_INCR_GRAPH_MIN 7
 #define EVID_DECR_GRAPH_MIN 8
 
-#define GRAPH_H            800 
+#define GRAPH_H            800  // xxx maybe adjust these
 #define GRAPH_Y_TOP        700
 #define GRAPH_Y_BOTTOM     (GRAPH_Y_TOP + GRAPH_H - 1)
 
@@ -122,7 +121,7 @@ int initialize(void)
     // get current date
     get_current_ymd(&year, &month, &day);
 
-    // map altitude.dat
+    // map altitude.dat file
     altitude_file = util_map_file("svcs/Altitude", ALTITUDE_FILENAME, sizeof(altitude_file_t),
                                DO_NOT_CREATE, READ_ONLY, NULL);
     if (altitude_file == NULL) {
@@ -264,7 +263,7 @@ void process_event(sdlx_event_t *event)
     case EVID_GOTO_TODAY:
         get_current_ymd(&year, &month, &day);
         break;
-    case EVID_INCR_GRAPH_MAX:  // utils write params xxx
+    case EVID_INCR_GRAPH_MAX:
         params.graph_max += 100;
         util_set_numeric_param(data_dir, "graph_max",  params.graph_max);
         break;
@@ -385,6 +384,4 @@ void get_current_ymd(int *y, int *m, int *d)
     *y = tm.tm_year + 1900 - YEAR0;   // y : 0 is year 2026
     *m = tm.tm_mon;                   // m : 0 - 11
     *d = tm.tm_mday - 1;              // d : 0 - 30
-
-    //printf("I %s: current - y=%d m=%d d=%d\n", progname, y, m, d);
 }
