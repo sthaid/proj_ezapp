@@ -61,10 +61,10 @@ void process_event(sdlx_event_t *event);
 void settings(void);
 
 // prototypes for utils
-char *get_month_str(int month);
-char *get_weekday_str(int year, int month, int day);
+char *get_month_str(int m);
+char *get_weekday_str(int y, int m, int d);
 bool is_weekend(int y, int m, int d);
-int days_in_month(int year, int month);
+int days_in_month(int y, int m);
 void get_current_ymd(int *y, int *m, int *d);
 
 // -----------------  MAIN  ------------------------------------------
@@ -562,6 +562,4 @@ void get_current_ymd(int *y, int *m, int *d)
     *y = tm.tm_year + 1900 - YEAR0;   // y : 0 is year 2026
     *m = tm.tm_mon;                   // m : 0 - 11
     *d = tm.tm_mday - 1;              // d : 0 - 30
-
-    //printf("I %s: current - y=%d m=%d d=%d\n", progname, y, m, d);
 }
