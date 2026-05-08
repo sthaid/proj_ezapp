@@ -110,10 +110,24 @@ int initialize(void)
     if (created_flag || altitude_file->version != ALTITUDE_FILE_VERSION) {
         printf("I %s: initializing altitude_file\n", progname);
         altitude_file->version = ALTITUDE_FILE_VERSION;
+#if 1
         int *tmp = (int*)&altitude_file->altitude_ft[0][0][0][0];
         for (int i = 0; i < sizeof(altitude_file->altitude_ft)/sizeof(int); i++) {
             tmp[i] = NO_ALTITUDE_DATA;
         }
+#else
+        // xxx temp test code 
+        int y,m,d,h;
+        y = 0;
+        for (m = 0; m < 12; m++) {
+            for (d = 0; d < 31; d++) {
+                for (h = 0; h < 24; h++) {
+                    altitude_file->altitude_ft[y][m][d][h] = 100 * h + 100;
+                }
+            }
+        }
+        return 1;
+#endif
         util_sync_file(altitude_file, sizeof(altitude_file_t));
     }
 
