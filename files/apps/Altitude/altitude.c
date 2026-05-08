@@ -14,20 +14,20 @@
 #define DO_NOT_CREATE   false
 #define READ_ONLY       true
 
-#define EVID_PREV         1
-#define EVID_NEXT         2
-#define EVID_TODAY        4
-#define EVID_INCR_GRAPH_MAX 5
-#define EVID_DECR_GRAPH_MAX 6
-#define EVID_INCR_GRAPH_MIN 7
-#define EVID_DECR_GRAPH_MIN 8
+#define EVID_PREV           1
+#define EVID_NEXT           2
+#define EVID_TODAY          3
+#define EVID_INCR_GRAPH_MAX 4
+#define EVID_DECR_GRAPH_MAX 5
+#define EVID_INCR_GRAPH_MIN 6
+#define EVID_DECR_GRAPH_MIN 7
 
-#define GRAPH_H            800
+#define GRAPH_H            1000
 #define GRAPH_Y_TOP        600
 #define GRAPH_Y_BOTTOM     (GRAPH_Y_TOP + GRAPH_H - 1)
 
-#define DEFAULT_GRAPH_MIN_ALT 0
-#define DEFAULT_GRAPH_MAX_ALT 1000
+#define DEFAULT_GRAPH_MIN_ALT  0
+#define DEFAULT_GRAPH_MAX_ALT  1000
 #define GRAPH_INCR_DECR_AMOUNT 1000
 
 // typedefs
@@ -176,18 +176,18 @@ void draw_display(void)
                                alt_is_wgs84 ? "WGS84" : "MSL");
     }
 
-    // xxx horizontal bar
+    // display horizontal bar to divide the current altitude display section
+    // from the graph section
+    y = ((GRAPH_Y_TOP - ROW2Y(2)) + ROW2Y(3)) / 2;
+    sdlx_render_fill_rect(sdlx_win_width/4, y, sdlx_win_width/2, 10, COLOR_BLUE);
 
-#if 1
     // draw rectangle around the graph area
-    // xxx move down, or delete, or just draw top and bottom lines
     sdlx_render_rect(0,
                      GRAPH_Y_TOP-5,
                      sdlx_win_width,
                      GRAPH_H+10,
                      5, // line_width
                      COLOR_WHITE);
-#endif
 
     // display graph
     x = 0;
@@ -210,27 +210,27 @@ void draw_display(void)
         }
     }
 
-    // xxx comment
+    // display graph y-axis min,max; and
+    // register events to adjust the graph min/max
     y = GRAPH_Y_BOTTOM + 3*sdlx_char_height_dflt;
     sdlx_render_printf_ex2(sdlx_win_width/2, y,
                            FONT_NORMAL, COLOR_WHITE, FLAG_XY_CTR, 
                            "%5d - %-5d", params.graph_min, params.graph_max);
     reg_event(sdlx_win_width/2-COL2X(2), y-100, EVID_INCR_GRAPH_MIN, "+");
     reg_event(sdlx_win_width/2-COL2X(2), y+100, EVID_DECR_GRAPH_MIN, "-");
-
     reg_event(sdlx_win_width/2+COL2X(2), y-100, EVID_INCR_GRAPH_MAX, "+");
     reg_event(sdlx_win_width/2+COL2X(2), y+100, EVID_DECR_GRAPH_MAX, "-");
 
     // register motion event, for horizontal scrolling of the graph
     sdlx_register_event(NULL, EVID_MOTION);
 
-    // xxx
+    // register event to reset the graph to 'today'
     sdlx_loc_t *loc;
     loc = sdlx_render_printf_ex1(0, sdlx_win_height-2*sdlx_char_height_dflt,
                                  FONT_NORMAL, COLOR_LIGHT_BLUE, "TODAY");
     sdlx_register_event(loc, EVID_TODAY);
 
-    // register control event
+    // register control events to goto the previous or next days, and to end program
     sdlx_register_control_events(EVID_PREV, "<",
                                  EVID_NEXT, ">",
                                  EVID_QUIT, "X",
@@ -248,20 +248,18 @@ void reg_event(int x, int y, int evid, char *str)
 void display_day_graph(int x, int y, int m, int d)
 {
     double       w, h;
-    //sdlx_color_t color;
     int          hour;
     double       alt_ft;
     int          max = -999999;
     int          min =  999999;
     bool         have_min_max = false;
 
-    w = (double)(sdlx_win_width-10) / 24;  //xxx
+    w = (double)(sdlx_win_width-15) / 24;
 
     // display graph
     for (hour = 0; hour < 24; hour++) {
         alt_ft = altitude_file->altitude_ft[y][m][d][hour];
         if (alt_ft == NO_ALTITUDE_DATA) {
-            // xxx check this path taken
             continue;
         }
 
@@ -273,12 +271,12 @@ void display_day_graph(int x, int y, int m, int d)
         if (h <= 0) continue;
         if (h > GRAPH_H) h = GRAPH_H;
 
-        sdlx_render_fill_rect(x + 5+hour*w, GRAPH_Y_BOTTOM-h+1, w-6, h, COLOR_GREEN);
-
+        sdlx_render_fill_rect(x + 15 + hour*w, GRAPH_Y_BOTTOM-h+1, w-6, h, COLOR_GREEN);
     }
 
-    // display graph title lines
-    // - example: Thu May 7 2026 xxx more comment
+    // display graph title lines, for example
+    //  "   Thu May 7   "
+    //  " 100 - 2400 ft "
     sdlx_render_printf_ex2(x + sdlx_win_width/2, GRAPH_Y_TOP-2*sdlx_char_height_dflt, 
                            FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR,
                            "%s %s %d", 
@@ -292,7 +290,7 @@ void display_day_graph(int x, int y, int m, int d)
     }
 
     // display vertical line to delimit the days
-    sdlx_render_fill_rect(x, GRAPH_Y_TOP, 5, GRAPH_H, COLOR_RED);
+    sdlx_render_fill_rect(x+5, GRAPH_Y_TOP, 5, GRAPH_H, COLOR_RED);
 }
 
 // -----------------  PROCESS EVENT  ---------------------------
@@ -343,7 +341,7 @@ void process_event(sdlx_event_t *event)
         }
         if (X > 0) X = 0;
         break;
-    case EVID_TODAY: // xxx change to RESET
+    case EVID_TODAY:
         X = 0;
         break;
     }

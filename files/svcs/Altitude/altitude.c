@@ -122,7 +122,11 @@ int initialize(void)
         for (m = 0; m < 12; m++) {
             for (d = 0; d < 31; d++) {
                 for (h = 0; h < 24; h++) {
-                    altitude_file->altitude_ft[y][m][d][h] = 100 * h + 100;
+                    if (h == 0) {
+                        altitude_file->altitude_ft[y][m][d][h] = NO_ALTITUDE_DATA;
+                    } else {
+                        altitude_file->altitude_ft[y][m][d][h] = 100 * h + 100;
+                    }
                 }
             }
         }
