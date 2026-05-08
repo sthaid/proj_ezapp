@@ -215,11 +215,11 @@ void draw_display(void)
     sdlx_render_printf_ex2(sdlx_win_width/2, y,
                            FONT_NORMAL, COLOR_WHITE, FLAG_XY_CTR, 
                            "%5d - %-5d", params.graph_min, params.graph_max);
-    reg_event(sdlx_win_width/2-COL2X(3), y-100, EVID_INCR_GRAPH_MIN, "+");
-    reg_event(sdlx_win_width/2-COL2X(3), y+100, EVID_DECR_GRAPH_MIN, "-");
+    reg_event(sdlx_win_width/2-COL2X(2), y-100, EVID_INCR_GRAPH_MIN, "+");
+    reg_event(sdlx_win_width/2-COL2X(2), y+100, EVID_DECR_GRAPH_MIN, "-");
 
-    reg_event(sdlx_win_width/2+COL2X(3), y-100, EVID_INCR_GRAPH_MAX, "+");
-    reg_event(sdlx_win_width/2+COL2X(3), y+100, EVID_DECR_GRAPH_MAX, "-");
+    reg_event(sdlx_win_width/2+COL2X(2), y-100, EVID_INCR_GRAPH_MAX, "+");
+    reg_event(sdlx_win_width/2+COL2X(2), y+100, EVID_DECR_GRAPH_MAX, "-");
 
     // register motion event, for horizontal scrolling of the graph
     sdlx_register_event(NULL, EVID_MOTION);
