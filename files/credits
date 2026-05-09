@@ -10,40 +10,41 @@ permiissive licensed software, which has has made ezApp possible.
   https://github.com/libsdl-org/SDL_ttf
   https://github.com/libsdl-org/SDL_mixer
 
-* pcioc - lightweight, small-footprint C interpreter, designed 
-    primarily for scripting in embedded systems and robotic apps
+* pcioc - Small-footprint C interpreter, designed 
+    primarily for scripting in embedded systems and robotic apps.
   https://github.com/jpoirier/picoc
 
-* cJSON - lightweight, open-source JSON parser and generator
+* cJSON - Lightweight JSON parser and generator.
   https://github.com/DaveGamble/cJSON
 
 * kissfft - lightweight, FFT library, that follows the 
-    "Keep It Simple, Stupid" (KISS) principle
+    "Keep It Simple, Stupid" (KISS) principle.
   https://github.com/mborgerding/kissfft
 
-* lodepng - PNG image decoder and encoder
+* lodepng - PNG image decoder and encoder.
   https://github.com/lvandeve/lodepng
 
-* lame - stands for "LAME Ain't an MP3 Encoder", widely considered
+* lame - Stands for "LAME Ain't an MP3 Encoder", widely considered
     the highest quality MPEG Audio Layer III encoder available.
   https://github.com/zlargon/lame
 
 Thanks also goes to the following for providing free or public 
 domain content.
 
-* geoapify - provides locations of cities, towns, and villages.
+* geoapify - Provides locations of cities, towns, and villages.
   https://www.geoapify.com/download-all-the-cities-towns-villages/
-  Credit also goes to 
+  Credit also goes to:
     https://www.openstreetmap.org and its contributors.
 
-* USA weather forecast - weather forecast provided by the USA gov
+* USA weather forecast - Free weather forecast provided by 
+    the USA government.
   https://api.weather.gov
 
-* Sunset and Sunrise times API - free API that provides sunset 
-    and sunrise times 
+* Sunset and Sunrise times API - Free API that provides sunset 
+    and sunrise times.
   https://api.sunrise-sunset.org
 
-* Beginner Piano pieces
+* Public domain beginner Piano pieces:
   . Twinkle, Twinkle, Little Star
   . Mary Had a Little Lamb
   . Jingle Bells
