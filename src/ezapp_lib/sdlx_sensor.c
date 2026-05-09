@@ -273,7 +273,7 @@ int sdlx_sensor_read_roll_pitch(double *roll, double *pitch)
     *roll  = -atan(ax / sqrt(ay*ay + az*az)) * RAD_TO_DEG;
     *pitch = -atan(-ay / sqrt(ax*ax + az*az)) * RAD_TO_DEG;
 
-    // if nan then set mag_heading to INVALID_NUMBER, 
+    // if nan then set roll/pitch to INVALID_NUMBER, 
     // note: picoc does not support nan
     if (isnan(*roll) || isnan(*pitch)) {
         *roll = INVALID_NUMBER;

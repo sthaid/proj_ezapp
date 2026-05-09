@@ -1,47 +1,52 @@
-I sincerely thank the following organizations for providing permiissive licensed 
-software, which has made ezApp possible.
 
-* SDL, SDL_mixer, SDL_ttf - Simple DirectMedia Layer (SDL) is a cross-platform development 
-    library designed to provide low level access to audio, keyboard, mouse, joystick, 
-    and graphics hardware via OpenGL and Direct3D
+I sincerely thank the following organizations for providing
+permiissive licensed software, which has has made ezApp possible.
+
+* SDL, SDL_mixer, SDL_ttf - Simple DirectMedia Layer (SDL) is a 
+    cross-platform development library designed to provide low 
+    level access to audio, keyboard, mouse, joystick, and graphics 
+    hardware via OpenGL and Direct3D.
   https://github.com/libsdl-org/SDL
   https://github.com/libsdl-org/SDL_ttf
   https://github.com/libsdl-org/SDL_mixer
 
-* pcioc - lightweight, small-footprint C interpreter, designed primarily
-         for scripting in embedded systems and robotic applications
+* pcioc - lightweight, small-footprint C interpreter, designed 
+    primarily for scripting in embedded systems and robotic apps
   https://github.com/jpoirier/picoc
 
-* cJSON - an ultra-lightweight, open-source JSON parser and generator
+* cJSON - lightweight, open-source JSON parser and generator
   https://github.com/DaveGamble/cJSON
 
-* kissfft - lightweight, Fast Fourier Transform (FFT) library, written in C,
-             that follows the "Keep It Simple, Stupid" (KISS) principle
+* kissfft - lightweight, FFT library, that follows the 
+    "Keep It Simple, Stupid" (KISS) principle
   https://github.com/mborgerding/kissfft
 
-* lodepng - open-source PNG image decoder and encoder written in C and C++
+* lodepng - PNG image decoder and encoder
   https://github.com/lvandeve/lodepng
 
-* lame - which stands for "LAME Ain't an MP3 Encoder", is widely considered
-         the highest quality MPEG Audio Layer III (MP3) encoder available.
+* lame - stands for "LAME Ain't an MP3 Encoder", widely considered
+    the highest quality MPEG Audio Layer III encoder available.
   https://github.com/zlargon/lame
 
-Thanks also goes to the following for providing free or public domain content.
+Thanks also goes to the following for providing free or public 
+domain content.
 
-* geoapify - provides location database of cities, towns, and villages.
+* geoapify - provides locations of cities, towns, and villages.
   https://www.geoapify.com/download-all-the-cities-towns-villages/
-  Credit also goes to https://www.openstreetmap.org and its contributors.
+  Credit also goes to 
+    https://www.openstreetmap.org and its contributors.
 
-* USA weather forecast - weather forecast provided by the USA government
+* USA weather forecast - weather forecast provided by the USA gov
   https://api.weather.gov
 
-* Sunset and Sunrise times API - free API that provides sunset and sunrise times 
+* Sunset and Sunrise times API - free API that provides sunset 
+    and sunrise times 
   https://api.sunrise-sunset.org
 
-* Beginner piano pieces
-  - Twinkle, Twinkle, Little Star
-  - Mary Had a Little Lamb
-  - Jingle Bells
-  - Frere Jacques
+* Beginner Piano pieces
+  . Twinkle, Twinkle, Little Star
+  . Mary Had a Little Lamb
+  . Jingle Bells
+  . Frere Jacques
 
 Thanks also to Wikipedia and Google AI Powered Search.

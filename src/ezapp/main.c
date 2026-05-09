@@ -702,7 +702,7 @@ static void sanitize_input(char *s)
 
 // -----------------  SETTINGS  -----------------------------------
 
-static void show_file(char *filename);
+static void show_file(char *filename, int orientation, int fontid);
 static double get_number(char *prompt, double min, double max) __attribute__ ((unused));
 
 static void settings(void)
@@ -893,10 +893,10 @@ static void settings(void)
         // process the event
         switch (event.event_id) {
         case EVID_COPYRIGHT:
-            show_file("copyright");
+            show_file("copyright", PORTRAIT, FONT_TINY);
             break;
         case EVID_CREDITS:
-            show_file("credits");
+            show_file("credits", LANDSCAPE, FONT_SMALL);
             break;
         case EVID_DEVEL_MODE:
             params.devel_mode = (params.devel_mode ? 0 : 1);
@@ -1031,7 +1031,7 @@ static double get_number(char *prompt1, double min, double max)
     return number;
 }
 
-static void show_file(char *filename)
+static void show_file(char *filename, int orientation, int fontid)
 {
     double      y;
     int         y_top, y_bottom;
@@ -1047,8 +1047,8 @@ static void show_file(char *filename)
         return;
     }
 
-    // use tiny font
-    sdlx_print_set_default(FONT_TINY, COLOR_BLACK);
+    // select font
+    sdlx_print_set_default(fontid, COLOR_BLACK);
 
     // init vars
     y_top    = 0;
@@ -1058,8 +1058,8 @@ static void show_file(char *filename)
     // display filename lines
     while (true) {
         // display file lines and register for motion (scrolling) & exit events
-        sdlx_display_init(COLOR_WHITE, PORTRAIT);
-        sdlx_render_multiline_text(0, y, y_top, y_bottom, FONT_TINY, lines, NULL, 1);
+        sdlx_display_init(COLOR_WHITE, orientation);
+        sdlx_render_multiline_text(0, y, y_top, y_bottom, fontid, lines, NULL, 1);
         sdlx_register_control_events(0, NULL, 0, NULL, EVID_QUIT, "X", COLOR_WHITE, BG_COLOR); // xxx why BG_COLOR
         sdlx_register_event(NULL, EVID_MOTION);
         sdlx_display_present();
