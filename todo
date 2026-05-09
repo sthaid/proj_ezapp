@@ -1,33 +1,16 @@
-// xxx put back warning for unused variables  <=======
-// xxx eztest, build for linux too
+test -  util_rename_file(NULL, "files.tar.sig", NULL, "files.tar.sig.save"); 
 
+move testlib and testprog to devel dir
 
-file list scrolling in ColrOrgn
+------------
 
-New Apps
-- Altitude
-- Pressure
-
-New capabilities
-- speech to text
-     https://developer.android.com/reference/android/speech/SpeechRecognizer
-
-new name
-- MiniC
-  - minish  ??
-- Android mini apps are lightweight, web-based applications (often 2–4 MB) 
-  that run inside "super apps" (like Telegram or WeChat) via WebView, requiring 
-  no installation or complex download. They use HTML, CSS, and JavaScript for cross-platform 
-  functionality. Common uses include quick services like food delivery, payments, and navigation
-- icon
-  - maybe change name to miniApps or MiniC
-
-developer mode password
+put back warning for unused variables
+linux build in eztest
+xxx
+rename dirs ezapp and ezapp_lib
+set version OR eliminate version and just use build date
 
 review all for xxx
-
-battery usage
-- leave the phone sleeping, with ezapp fg running, check usage
 
 documentation
 - license and credits AND add to Settings
@@ -36,11 +19,28 @@ documentation
 git checkout the ttf and mixer too
 - check if they have tagged versions now
 
-make new cleaned repo
+Apps:
+- reversi
+  - add undo  ?
+  - edge heuristic
 
-reversi
-- add undo  ?
-- edge heuristic
+make new repo
+- new name
+  - MiniC ?
+  - Android mini apps are lightweight, web-based applications (often 2–4 MB) 
+    that run inside "super apps" (like Telegram or WeChat) via WebView, requiring 
+    no installation or complex download. They use HTML, CSS, and JavaScript for cross-platform 
+    functionality. Common uses include quick services like food delivery, payments, and navigation
+  - icon
+    - maybe change name to miniApps or MiniC
+
+developer mode password
+
+-------------------
+---- TEST NEEDED  -
+-------------------
+
+file list scrolling in ColrOrgn                              TEST NEEDED
 
 -------------------
 ---- LATER --------
@@ -80,7 +80,22 @@ BUGS
 CODE REVIEWS
 - mmap / munmap - code reveiw,  make sure fd is closed
 
+-------------------
+---- MAYBE LATER --------
+-------------------
 
+battery usage
+- leave the phone sleeping, with ezapp fg running, check usage
+
+eztest, build for linux too
+
+New capabilities
+- speech to text
+     https://developer.android.com/reference/android/speech/SpeechRecognizer
+
+=================================================
+=================================================
+=================================================
 =================================================
 
 issues with open source ...

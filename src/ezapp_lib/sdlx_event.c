@@ -122,7 +122,7 @@ void sdlx_register_event(sdlx_loc_t *loc, int event_id)
 void sdlx_register_control_events(int evid1, char *evstr1, 
                                   int evid2, char *evstr2, 
                                   int evid3, char *evstr3, 
-                                  sdlx_color_t print_color, sdlx_color_t bg_color)
+                                  sdlx_color_t print_color, sdlx_color_t bg_color)  //xxx last 2 args not needed
 {
     sdlx_loc_t *loc;
     int i, x, y;

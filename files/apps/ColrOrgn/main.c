@@ -400,11 +400,13 @@ void register_events(void)
             y_files_list_top    = LINE_SPACING;
             y_files_list_bottom = sdlx_win_height;
         }
+
         if (orientation != last_orientation) {
             y_files_list = y_files_list_top;
             last_orientation = orientation;
         }
-        if (y_files_list >= y_files_list_top) {
+
+        if (y_files_list >= y_files_list_top || max_files <= 1) {
             y_files_list = y_files_list_top;
         }
 
@@ -414,7 +416,7 @@ void register_events(void)
 
             // handle scrolling of the files list
             y = y_files_list + i * LINE_SPACING;
-            if (y+30 < y_files_list_top) continue;
+            if (y < y_files_list_top) continue;
             if (y+sdlx_char_height_dflt > y_files_list_bottom) break;
 
             // register event to play the file

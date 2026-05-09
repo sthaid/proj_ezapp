@@ -79,6 +79,7 @@ static perm_granted_t perm_granted;
 // prototypes
 //
 
+static void display_menu_cleanup(void);
 static void processing(void);
 static int devel_mode_server_thread(void *cx);
 
@@ -104,6 +105,7 @@ int MAIN(int argc, char **argv)
 
     cleanup();
 
+    INFO("TERMINATING\n");
     return 0;
 }
 
@@ -183,8 +185,7 @@ static int init(void)
     // create devel mode server thread
     sdlx_create_detached_thread(devel_mode_server_thread, NULL);
 
-    // init sdl xxx move
-    // xxx need to init sensors and possibly audio, after permissions
+    // init sdl
     sdlx_init(SUBSYS_VIDEO | SUBSYS_AUDIO | SUBSYS_SENSOR);
     INFO("sdlx_win_width,height = %d %d  sdlx_char_width,height=%d %d\n",
          sdlx_win_width, sdlx_win_height, sdlx_char_width_dflt, sdlx_char_height_dflt);
@@ -200,19 +201,22 @@ static int init(void)
         util_stop_foreground();
     }
 
-    // init services, this will xxx
+    // init services, this will start all autostart svcs
     svcs_init(run);
 
     // success
     return 0;
 }
 
-// xxx is this ever called
-// xxx are other cleanup routines called?
-// xxx free svc_call allocations ?
 static void cleanup(void)
 {
-    INFO("TERMINATING\n");
+    // note that this routine may not free all program allocation;
+    // but that shouldn't matter, because the program is terminating
+
+    INFO("cleanup starting\n");
+
+    INFO("free allocations\n");
+    display_menu_cleanup();
 
     INFO("stopping services\n");
     svcs_stop_all();
@@ -229,7 +233,7 @@ static void cleanup(void)
 static void create_files(int action)
 {
 #ifndef ANDROID
-    INFO("this routine is only executed when on Android\n");
+    INFO("this routine is only executed when running on Android\n");
     return;
 #endif
 
@@ -264,7 +268,7 @@ static void create_files(int action)
             sdlx_copy_asset_file("files.tar", ".");
             sdlx_copy_asset_file("files.tar.sig", ".");
             system("tar -xvf files.tar");
-            system("mv files.tar.sig files.tar.sig.save");  // xxx add util for this
+            util_rename_file(".", "files.tar.sig", ".", "files.tar.sig.save");
         } else {
             INFO("not extracting\n");
         }
@@ -395,7 +399,7 @@ static int run(char *name, bool is_svc)
     char          *p;
     char           picoc_args[1000];
 
-    // xxx comment
+    // construct path to the directory of the app or svc being run
     if (!is_svc) {
         sprintf(dir_path, "apps/%s", name);
     } else {
@@ -425,7 +429,8 @@ static int run(char *name, bool is_svc)
         return 99;
     }
 
-    // xxx comment
+    // add progname and data_dir args, which will be passed to the
+    // app or svc which will be run by picoc
     p += sprintf(p, " - %s %s", name, dir_path);
 
     // run the app using the picoc c language interpreter
@@ -439,18 +444,19 @@ static int run(char *name, bool is_svc)
 
 // -----------------  DISPLAY MENU  -------------------------------
 
+static sdlx_texture_t *circle;
 static sdlx_texture_t *create_filled_circle_texture(int radius, sdlx_color_t color);
+static void sanitize_input(char *s);
 
 static void display_menu(void)
 {
-    static sdlx_texture_t *circle;
     int first, last;
 
     #define RADIUS 100
 
     // allocate circle texture, which is used when displaying menu items
     if (circle == NULL) {
-        circle = create_filled_circle_texture(RADIUS, COLOR_BLUE);  // xxx free?
+        circle = create_filled_circle_texture(RADIUS, COLOR_BLUE);
     }
 
     // get the list of apps: 
@@ -462,14 +468,6 @@ static void display_menu(void)
 
     first = page * 18;
     last  = first + 17;
-
-#if 0 //xxx del
-    if (LAST_PAGE > 0) { // xxx test multiple pages
-        sdlx_render_printf_ex1(sdlx_win_width/2, sdlx_char_height_dflt/2, 
-                               FONT_SMALL, COLOR_WHITE, 
-                               "Page %d", page);
-    }
-#endif
 
     for (int i = first; i <= last; i++) {
         char     *name = apps[i];
@@ -540,6 +538,12 @@ static void display_menu(void)
         loc.h = 2 * RADIUS;
         sdlx_register_event(&loc, i);
     }
+}
+
+static void display_menu_cleanup(void)
+{
+    sdlx_destroy_texture(circle);
+    circle = NULL;
 }
 
 static sdlx_texture_t *create_filled_circle_texture(int radius, sdlx_color_t color)
@@ -626,11 +630,15 @@ static void get_list_of_apps(void)
     while (fgets(str, sizeof(str), fp)) {
         line_num++;
 
-        // xxx cleanup input str by removing terminating newline 
-        // and removing leading spaces
+        // sanitize input string
+        // - remove trailing newline
+        // - remove comments
+        // - remove leading spaces
+        // - remove trailing spaces
+        sanitize_input(str);
 
-        // ignore lines that begin with '#', space, or newline
-        if (str[0] == '\n' || str[0] == ' ' || str[0] == '#') {
+        // if str is empty then continue
+        if (str[0] == '\0') {
             continue;
         }
 
@@ -661,10 +669,41 @@ static void get_list_of_apps(void)
     }
 }
 
+static void sanitize_input(char *s)
+{
+    int len, i;
+    char *p;
+
+    // remove trailing newline
+    len = strlen(s);
+    if (len > 0 && s[len-1] == '\n') s[len-1] = '\0';
+
+    // remove comments
+    p = strchr(s, '#');
+    if (p) *p = '\0';
+
+    // remove leading spaces
+    i = 0;
+    while (s[i] == ' ' && s[i] != '\0') {
+        i++;
+    }
+    memmove(s, &s[i], strlen(&s[i]));
+
+    // remove trailing spaces
+    i = strlen(s) - 1;
+    while (i >= 0) {
+        if (s[i] == ' ')
+            s[i] = '\0';
+        else
+            break;
+        i--;
+    }
+}
+
 // -----------------  SETTINGS  -----------------------------------
 
-static void copyright(void);
-static double get_number(char *prompt, double min, double max) __attribute__ ((unused)); // xxx use in other places
+static void show_file(char *filename);
+static double get_number(char *prompt, double min, double max) __attribute__ ((unused));
 
 static void settings(void)
 {
@@ -676,16 +715,17 @@ static void settings(void)
     #define RECORD_TEST_FILENAME "record_test.mp3"
 
     #define EVID_COPYRIGHT            1001
-    #define EVID_DEVEL_MODE           1002
-    #define EVID_DEVEL_PORT           1003
-    #define EVID_DEVEL_PASSWORD       1004
-    #define EVID_SERVICES             1005
-    #define EVID_RECORD_GAIN          1006
-    #define EVID_RECORD_SILENCE       1007
-    #define EVID_RECORD_TEST          1008
-    #define EVID_RESET_APPS_AND_SVCS  1020
-    #define EVID_FOREGROUND           1021
-    #define EVID_EVENT_BOX_ENABLE     1022
+    #define EVID_CREDITS              1002
+    #define EVID_DEVEL_MODE           1003
+    #define EVID_DEVEL_PORT           1004
+    #define EVID_DEVEL_PASSWORD       1005
+    #define EVID_SERVICES             1006
+    #define EVID_RECORD_GAIN          1007
+    #define EVID_RECORD_SILENCE       1008
+    #define EVID_RECORD_TEST          1009
+    #define EVID_RESET_APPS_AND_SVCS  1010
+    #define EVID_FOREGROUND           1011
+    #define EVID_EVENT_BOX_ENABLE     1012
 
     #define GET_Y2 ({ y2 += 2*sdlx_char_height_dflt; \
                       y2 >= y_top - 1.5 * sdlx_char_height_dflt && y2 <= y_bottom; })
@@ -724,6 +764,12 @@ static void settings(void)
         if (GET_Y2) {
             loc = sdlx_render_printf(0, y2, "Copyright");
             sdlx_register_event(loc, EVID_COPYRIGHT);
+        }
+
+        // display credits
+        if (GET_Y2) {
+            loc = sdlx_render_printf(0, y2, "Credits");
+            sdlx_register_event(loc, EVID_CREDITS);
         }
 
         // display Devel_Mode
@@ -847,9 +893,11 @@ static void settings(void)
         // process the event
         switch (event.event_id) {
         case EVID_COPYRIGHT:
-            copyright();
+            show_file("copyright");
             break;
-        // xxx add case for credits
+        case EVID_CREDITS:
+            show_file("credits");
+            break;
         case EVID_DEVEL_MODE:
             params.devel_mode = (params.devel_mode ? 0 : 1);
             util_set_numeric_param(".", "devel_mode", params.devel_mode);
@@ -983,7 +1031,7 @@ static double get_number(char *prompt1, double min, double max)
     return number;
 }
 
-static void copyright(void)
+static void show_file(char *filename)
 {
     double      y;
     int         y_top, y_bottom;
@@ -992,27 +1040,27 @@ static void copyright(void)
     bool        done = false;
     char       *lines[1];
 
-    // read the copyright file
-    lines[0] = util_read_file(".", "copyright", &len);
+    // read the file
+    lines[0] = util_read_file(".", filename, &len);
     if (lines[0] == NULL) {
-        ERROR("failed to read copyright file\n");
+        ERROR("failed to read %s\n", filename);
         return;
     }
 
     // use tiny font
-    sdlx_print_set_default(FONT_TINY, COLOR_WHITE);
+    sdlx_print_set_default(FONT_TINY, COLOR_BLACK);
 
     // init vars
     y_top    = 0;
     y_bottom = sdlx_win_height;
     y        = y_top;
 
-    // display copyright
+    // display filename lines
     while (true) {
-        // display copyright and register for motion (scrolling) & exit events
-        sdlx_display_init(BG_COLOR, PORTRAIT);
+        // display file lines and register for motion (scrolling) & exit events
+        sdlx_display_init(COLOR_WHITE, PORTRAIT);
         sdlx_render_multiline_text(0, y, y_top, y_bottom, FONT_TINY, lines, NULL, 1);
-        sdlx_register_control_events(0, NULL, 0, NULL, EVID_QUIT, "X", COLOR_WHITE, BG_COLOR);
+        sdlx_register_control_events(0, NULL, 0, NULL, EVID_QUIT, "X", COLOR_WHITE, BG_COLOR); // xxx why BG_COLOR
         sdlx_register_event(NULL, EVID_MOTION);
         sdlx_display_present();
 
@@ -1034,7 +1082,7 @@ static void copyright(void)
         }
     }
 
-    // free allocated copyrght buffer
+    // free allocation
     free(lines[0]);
 }
 
@@ -1054,7 +1102,6 @@ static int devel_mode_server_thread(void *cx)
 
 again:
     // wait for developer mode to be enabled
-    // xxx should this terminate when program closes
     INFO("waiting for devel_mode enabled\n");
     sleep(1);
     while (params.devel_mode == false) {
@@ -1188,7 +1235,7 @@ static int process_req_thread(void *cx)
     get_str(sockfp, password, sizeof(password));
 
     // validate password
-    if (strcmp(password, params.devel_password) == 0) {  // xxx get from param
+    if (strcmp(password, params.devel_password) == 0) {
         put_fmt(sockfp, "%s\n", "password okay");
     } else {
         put_fmt(sockfp, "%s\n", "password invalid");

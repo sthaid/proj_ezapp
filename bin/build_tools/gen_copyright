@@ -9,16 +9,26 @@ echo -e "\n---------- EZAPP COPYRIGHT ----------\n" > $tmp_copyright
 cat LICENSE >> $tmp_copyright
 
 echo -e "\n---------- SDL COPYRIGHT ----------\n" >> $tmp_copyright
-cat android/SDL/LICENSE.txt >> $tmp_copyright
-
-echo -e "\n---------- PICOC COPYRIGHT ----------\n" >> $tmp_copyright
-picoc/picoc -c >> $tmp_copyright
+cat src/SDL/LICENSE.txt >> $tmp_copyright
 
 echo -e "\n---------- CJSON COPYRIGHT ----------\n" >> $tmp_copyright
-cat cJSON/LICENSE >> $tmp_copyright
+cat src/cJSON/LICENSE >> $tmp_copyright
+
+echo -e "\n---------- KISSFFT COPYRIGHT --------\n" >> $tmp_copyright
+cat src/kissfft/COPYING               >> $tmp_copyright
+echo -e "\nUnlicense:\n"          >> $tmp_copyright
+cat src/kissfft/LICENSES/Unlicense    >> $tmp_copyright
+echo -e "\nBSD-3-Clause\n"        >> $tmp_copyright
+cat src/kissfft/LICENSES/BSD-3-Clause >> $tmp_copyright
 
 echo -e "\n---------- LODEPNG COPYRIGHT --------\n" >> $tmp_copyright
-cat lodepng/LICENSE >> $tmp_copyright
+cat src/lodepng/LICENSE >> $tmp_copyright
+
+echo -e "\n---------- MP3LAME COPYRIGHT --------\n" >> $tmp_copyright
+cat src/mp3lame/lame/LICENSE >> $tmp_copyright
+
+echo -e "\n---------- PICOC COPYRIGHT ----------\n" >> $tmp_copyright
+cat src/picoc/LICENSE >> $tmp_copyright
 
 fmt -w 40 $tmp_copyright > files/copyright
 
