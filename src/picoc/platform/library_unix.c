@@ -695,10 +695,8 @@ void Sdlx_register_control_events(struct ParseState *Parser, struct Value *Retur
     char *       evstr2      = (char *)Param[3]->Val->Pointer;
     int          evid3       = (int)Param[4]->Val->Integer;
     char *       evstr3      = (char *)Param[5]->Val->Pointer;
-    sdlx_color_t print_color = (sdlx_color_t)Param[6]->Val->UnsignedInteger;
-    sdlx_color_t bg_color    = (sdlx_color_t)Param[7]->Val->UnsignedInteger;
 
-    sdlx_register_control_events(evid1, evstr1, evid2, evstr2, evid3, evstr3, print_color, bg_color);
+    sdlx_register_control_events(evid1, evstr1, evid2, evstr2, evid3, evstr3);
 }
 
 void Sdlx_get_event(struct ParseState *Parser, struct Value *ReturnValue,
@@ -827,7 +825,7 @@ struct LibraryFunction SdlFunctions[] = {
 
     // events
     { Sdlx_register_event,           "void sdlx_register_event(sdlx_loc_t *loc, int event_id);" },
-    { Sdlx_register_control_events,  "void sdlx_register_control_events(int evid1, char *evstr1, int evid2, char *evstr2, int evid3, char *evstr3, sdlx_color_t print_color, sdlx_color_t bg_color);" },
+    { Sdlx_register_control_events,  "void sdlx_register_control_events(int evid1, char *evstr1, int evid2, char *evstr2, int evid3, char *evstr3);" },
     { Sdlx_get_event,                "void sdlx_get_event(long timeout_us, sdlx_event_t *event);" },
 
     // misc

@@ -233,8 +233,7 @@ void draw_display(void)
     // register control events to goto the previous or next days, and to end program
     sdlx_register_control_events(EVID_PREV, "<",
                                  EVID_NEXT, ">",
-                                 EVID_QUIT, "X",
-                                 COLOR_WHITE, COLOR_BLACK);
+                                 EVID_QUIT, "X");
 }
 
 void reg_event(int x, int y, int evid, char *str)

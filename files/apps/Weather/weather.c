@@ -171,8 +171,7 @@ int main(int argc, char **argv)
                                           : "Hour"));
         sdlx_register_control_events(EVID_MODE_SELECT, mode_str,
                                      EVID_RELOAD_FORECAST, "R",
-                                     EVID_QUIT, "X",
-                                     COLOR_WHITE, COLOR_BLACK);
+                                     EVID_QUIT, "X");
         sdlx_register_event(NULL, EVID_MOTION);
 
         // present the display
@@ -830,8 +829,7 @@ void display_detailed_forecast(int idx)
         // register events
         sdlx_register_control_events(EVID_PREVIOUS, "^",
                                      EVID_NEXT, "v",
-                                     EVID_QUIT, "X",
-                                     COLOR_WHITE, COLOR_BLACK);
+                                     EVID_QUIT, "X");
 
         // present the display
         sdlx_display_present();

@@ -350,8 +350,7 @@ static void update_display_and_register_events(board_t *b, int game_state, char 
     // register control event to end program
     sdlx_register_control_events(0, NULL,
                                  0, NULL,
-                                 EVID_QUIT, "X",
-                                 COLOR_WHITE, COLOR_BLACK);
+                                 EVID_QUIT, "X");
 
     // register game start and reset events
     if (game_state == GAME_STATE_READY) {

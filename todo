@@ -1,143 +1,24 @@
+weather 'Loading' delay
+
+Memo exit should stop audio
+
 get rid of 2 extra args to control_events
 
 move testlib and testprog to devel dir
 
-work on credits
-=====================
-
-
-The Location App uses geoapify.com to download a location database of cities, towns, and villages.
-Https://www.geoapify.com/download-all-the-cities-towns-villages/ says ...
-Copyright and License
-- The data contained in this dataset is compiled from the OpenStreetMap (OSM) 
-  database and is subject to the copyright terms and conditions of 
-  OSM contributors.
-- OpenStreetMap® is open data, licensed under the Open Data Commons Open 
-  Database License (ODbL) by the OpenStreetMap Foundation (OSMF).
-- You are free to copy, distribute, transmit, and adapt the data, as long as you
-  credit OpenStreetMap and its contributors. If you alter or build upon our 
-  data, you may distribute the result only under the same license.
-OpenStreetMap URL: https://www.openstreetmap.org/#map=5/38.01/-95.84
-
----------
-
-The Weather App obtains the weather forecast from https://api.weather.gov/.
-Https://www.weather.gov/documentation/services-web-api says ...
-  All of the information presented via the API is intended to be open data, 
-  free to use for any purpose. As a public service of the United States Government, 
-  we do not charge any fees for the usage of this service, although there are 
-  reasonable rate limits in place to prevent abuse and help ensure that everyone 
-  has access. The rate limit is not public information, but allows a generous 
-  amount for typical use. If the rate limit is execeed a request will return 
-  with an error, and may be retried after the limit clears 
-  (typically within 5 seconds). Proxies are more likely to reach the limit, 
-  whereas requests directly from clients are not likely.
-
------
-
-SDL3, SDL_ttf, SDL_mixer
-
-https://www.libsdl.org/ says ...
-
-Simple DirectMedia Layer is a cross-platform development library designed to provide low level access to audio, keyboard, mouse, joystick, and graphics hardware via OpenGL and Direct3D. It is used by video playback software, emulators, and popular games including Valve's award winning catalog and many Humble Bundle games.
-
-SDL is distributed under the zlib license. This license allows you to use SDL freely in any software.
-
-Google AI Overview ...
-
-SDL3 officially supports Android and is designed to run on it, allowing for cross-platform development. It provides a dedicated Android project template in its source code to bridge C++ code with the Android Java frontend and supports compilation via Gradle and CMake
-
-SDL_ttf and SDL_mixer are not part of the core SDL library (Simple DirectMedia Layer), but are official extension libraries (SDL_ttf, SDL_mixer). They are developed by the same team, maintain the same open-source license, and are designed to work alongside SDL to add font rendering (TTF) and audio mixing (Mixer) functionality
-
-SDL3 is primarily developed in C and designed to work natively with C++, making them the top choices for building applications
-
-ezApp includes some enhancements to the SDL3 
-- capture device audio
-- foreground mode
-- text to speech
-- location, lat,longitude, altitude MSL
-- flashlight
-
---------------  
-
-https://github.com/jpoirier/picoc
-
-PicoC is a tiny C interpreter designed for scripting and embedded systems.
-
-PicoC is a very small C interpreter for scripting. It was originally written as a script language for a UAV on-board flight system. It's also very suitable for other robotic, embedded and non-embedded applications.
-
-The core C source code is around 3500 lines of code. It's not intended to be a complete implementation of ISO C but it has all the essentials. 
-
-ezApp uses picoc to run the mini Apps
-
-
-
----------------------------
-
-
-
-
-
-Wikipedia
-Google AI Powered Search
-
-
-
-
-
-
-
-
-
-
-
-General help
-- fft
-- sunrise/set
-    - wikipedia
-    - https://api.sunrise-sunset.org/json?lat=%0.4f&lng=%0.4f&formatted=0
-- compass compensate for roll / pitch
-- game theory minimax with alpha beta pruning
-
-----------------------------------------------------------------
---- PUBLIC DOMAIN BEGINNER PIECES WITH LETTER / SPN NOTATION ---
-----------------------------------------------------------------
-
-Public Domain Beginner Pieces with Letter/SPN Notation
-The following popular, free tunes are in the public domain
-and often arranged for beginners with letter notation:
-
-- Ode to Joy (Beethoven): Often arranged in C Major starting on E4 or E5.
-- Twinkle, Twinkle, Little Star: Commonly played in C4-G4 position.
-- Mary Had a Little Lamb: Ideal for learning E4, D4, C4.
-- Jingle Bells: Simple melody often starting on E5.
-- Amazing Grace: Usually arranged for beginners to play in G Major or C Major.
-- Lavender’s Blue: A beginner-friendly, public-domain folk song.
-- Frere Jacques: Simple, repetitive, and often set in C4-
-
-
-
-------------
-
 put back warning for unused variables
-linux build in eztest
-xxx
-rename dirs ezapp and ezapp_lib
-set version OR eliminate version and just use build date
+
+- - - 
 
 review all for xxx
 
+linux build in eztest  ???
+
+set version OR eliminate version and just use build date
+
 documentation
-- license and credits AND add to Settings
+- make a doc dir, decide where README files belong
 - document foreground 
-
-git checkout the ttf and mixer too
-- check if they have tagged versions now
-
-Apps:
-- reversi
-  - add undo  ?
-  - edge heuristic
 
 make new repo
 - new name
@@ -151,11 +32,14 @@ make new repo
 
 developer mode password
 
--------------------
----- TEST NEEDED  -
--------------------
+more apps work:
+- reversi
+  - add undo  ?
+  - edge heuristic
 
-file list scrolling in ColrOrgn                              TEST NEEDED
+--------------------------
+---- TESTING NEEDED  -----
+--------------------------
 
 -------------------
 ---- LATER --------
@@ -195,9 +79,9 @@ BUGS
 CODE REVIEWS
 - mmap / munmap - code reveiw,  make sure fd is closed
 
--------------------
+-------------------------
 ---- MAYBE LATER --------
--------------------
+-------------------------
 
 battery usage
 - leave the phone sleeping, with ezapp fg running, check usage
@@ -225,7 +109,6 @@ issues with open source ...
   - Logical Presentation
       - ask SDL team bout LogicalPresentation issues
 - picoc, many issues
-
 
 ===========================================================
 ====================  LATER  ==============================

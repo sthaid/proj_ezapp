@@ -135,8 +135,7 @@ int main(int argc, char **argv)
         sdlx_register_event(NULL, EVID_MOTION);
         sdlx_register_control_events(EVID_SETTINGS, "stg",
                                      EVID_GOTO_TOP, "top",
-                                     EVID_QUIT, "X",
-                                     COLOR_WHITE, COLOR_BLACK);
+                                     EVID_QUIT, "X");
 
         // present the display
         sdlx_display_present();
@@ -251,8 +250,7 @@ void settings(void)
         }
 
         // register for quit event
-        sdlx_register_control_events(0, NULL, 0, NULL, EVID_QUIT, "X", 
-                                     COLOR_WHITE, COLOR_BLACK);
+        sdlx_register_control_events(0, NULL, 0, NULL, EVID_QUIT, "X");
 
         // present the display
         sdlx_display_present();

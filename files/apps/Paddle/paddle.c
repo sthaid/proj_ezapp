@@ -199,18 +199,15 @@ int main(int argc, char **argv)
         if (state == STATE_READY) {
             sdlx_register_control_events(EVID_START,    "START", 
                                          EVID_SETTINGS, "STG",   
-                                         EVID_QUIT,     "X", 
-                                         COLOR_WHITE, COLOR_BLACK);
+                                         EVID_QUIT,     "X");
         } else if (state == STATE_SERVING || state == STATE_SERVING_DELAY || state == STATE_RUNNING) {
             sdlx_register_control_events(EVID_PAUSE,    "PAUSE", 
                                          EVID_RESET,    "RESET",   
-                                         EVID_QUIT,     "X", 
-                                         COLOR_WHITE, COLOR_BLACK);
+                                         EVID_QUIT,     "X");
         } else if (state == STATE_PAUSED) {
             sdlx_register_control_events(EVID_CONT,     "CONT", 
                                          EVID_RESET,    "RESET",   
-                                         EVID_QUIT,     "X", 
-                                         COLOR_WHITE, COLOR_BLACK);
+                                         EVID_QUIT,     "X");
         } else {
             printf("E %s: invalid state %d\n", progname, state);
         }
@@ -492,8 +489,7 @@ void settings(void)
         // register control event to exit the settings screen
         sdlx_register_control_events(0, NULL, 
                                      0, NULL, 
-                                     EVID_QUIT, "X",
-                                     COLOR_WHITE, COLOR_BLACK);
+                                     EVID_QUIT, "X");
 
         // present the display
         sdlx_display_present();

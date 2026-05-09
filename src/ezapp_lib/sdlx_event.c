@@ -121,13 +121,15 @@ void sdlx_register_event(sdlx_loc_t *loc, int event_id)
 
 void sdlx_register_control_events(int evid1, char *evstr1, 
                                   int evid2, char *evstr2, 
-                                  int evid3, char *evstr3, 
-                                  sdlx_color_t print_color, sdlx_color_t bg_color)  //xxx last 2 args not needed
+                                  int evid3, char *evstr3)
 {
     sdlx_loc_t *loc;
     int i, x, y;
     char *evstr[3];
     int  evid[3];
+
+    #define FG_COLOR   COLOR_WHITE
+    #define BG_COLOR   COLOR_TEAL
 
     evstr[0] = evstr1;
     evstr[1] = evstr2;
@@ -137,18 +139,14 @@ void sdlx_register_control_events(int evid1, char *evstr1,
     evid[1] = evid2;
     evid[2] = evid3;
 
-    // xxx these args not needed
-    print_color = COLOR_WHITE;
-    bg_color = COLOR_TEAL;
-
-    // fill entire control events area with bg_color
+    // fill entire control events area with background color
     if (orientation == PORTRAIT) {
         y = logical_win_height - CONTROL_AREA_SIZE;
-        sdlx_render_fill_rect(0, y, logical_win_width, logical_win_height-y, bg_color);
+        sdlx_render_fill_rect(0, y, logical_win_width, logical_win_height-y, BG_COLOR);
     } else {
         sdlx_render_fill_rect(logical_win_width - CONTROL_AREA_SIZE, 0,  // x,y
                               CONTROL_AREA_SIZE, logical_win_height,      // w,h  xxx name
-                              bg_color);
+                              BG_COLOR);
     }
 
     // display the 3 control events at the display bottom
@@ -168,7 +166,7 @@ void sdlx_register_control_events(int evid1, char *evstr1,
                 x = logical_win_width - (strlen(evstr[2]) * chw / 2);
             }
             y = logical_win_height - (CONTROL_AREA_SIZE / 2);
-            loc = sdlx_render_printf_ex2(x, y, FONT_NORMAL, print_color, FLAG_XY_CTR, "%s", evstr[i]);
+            loc = sdlx_render_printf_ex2(x, y, FONT_NORMAL, FG_COLOR, FLAG_XY_CTR, "%s", evstr[i]);
         } else {
             y = (logical_win_height/3/2) + i * (logical_win_height/3);
             if (i == 0 && y < strlen(evstr[0]) * chw / 2) {
@@ -180,7 +178,7 @@ void sdlx_register_control_events(int evid1, char *evstr1,
             x = logical_win_width - (CONTROL_AREA_SIZE / 2);
             loc = sdlx_render_printf_ex2(
                         x, logical_win_height - y,
-                        FONT_NORMAL, print_color, FLAG_XY_CTR|FLAG_ROT_CTR_270, "%s", evstr[i]);
+                        FONT_NORMAL, FG_COLOR, FLAG_XY_CTR|FLAG_ROT_CTR_270, "%s", evstr[i]);
         }
 
         sdlx_register_event(loc, evid[i]);

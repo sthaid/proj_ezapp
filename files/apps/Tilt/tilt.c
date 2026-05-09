@@ -164,8 +164,7 @@ void no_accelerometer(void)
     sdlx_display_init(COLOR_BLACK, PORTRAIT);
     sdlx_register_control_events(0, NULL,
                                  0, NULL,
-                                 EVID_QUIT, "X",
-                                 COLOR_WHITE, COLOR_BLACK);
+                                 EVID_QUIT, "X");
     sdlx_render_printf_ex2(sdlx_win_width/2, sdlx_win_height/2, 
                            FONT_NORMAL, COLOR_WHITE, FLAG_XY_CTR, 
                            "%s", "No Accelerometer");
@@ -324,8 +323,7 @@ void display_tilt_horizontal(double ax, double ay, double az, double roll_raw, d
     // - adjust max_bulls_eye
     sdlx_register_control_events(EVID_HORIZ_DECR_MAX_BULLS_EYE, "-",
                                  EVID_HORIZ_INCR_MAX_BULLS_EYE, "+",
-                                 EVID_QUIT, "X",
-                                 COLOR_WHITE, COLOR_BLACK);
+                                 EVID_QUIT, "X");
 
     // present the display
     sdlx_display_present();
@@ -528,8 +526,7 @@ void display_tilt_vertical(double ax, double ay, double az, double roll, double 
     // register control event to adjust the arc span and end-program
     sdlx_register_control_events(EVID_VERT_MINUS, "-",
                                  EVID_VERT_PLUS, "+",
-                                 EVID_QUIT, "X",
-                                 COLOR_WHITE, COLOR_BLACK);
+                                 EVID_QUIT, "X");
 
     // present the display
     sdlx_display_present();

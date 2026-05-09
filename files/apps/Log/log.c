@@ -119,8 +119,7 @@ int main(int argc, char **argv)
         // register control events
         sdlx_register_control_events(EVID_RELOAD,      "RELOAD",
                                      EVID_FONT_SELECT, "FONT",  
-                                     EVID_QUIT,        "X",
-                                     COLOR_WHITE, COLOR_BLACK);
+                                     EVID_QUIT,        "X");
         sdlx_register_event(NULL, EVID_MOTION);
 
         // present the display

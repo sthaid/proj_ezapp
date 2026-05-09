@@ -99,8 +99,7 @@ int main(int argc, char **argv)
         // register control event to end program
         sdlx_register_control_events(0, NULL, 
                                      0, NULL, 
-                                     EVID_QUIT, "X", 
-                                     COLOR_WHITE, COLOR_BLACK);
+                                     EVID_QUIT, "X");
 
         // present the display
         sdlx_display_present();

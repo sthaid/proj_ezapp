@@ -335,13 +335,11 @@ static void processing(void)
         if (LAST_PAGE > 0) {
             sdlx_register_control_events(EVID_PAGE_DECREMENT, "<",
                                          EVID_PAGE_INCREMENT, ">",
-                                         EVID_MINIMIZE, "X",
-                                         COLOR_WHITE, BG_COLOR);
+                                         EVID_MINIMIZE, "X");
         } else {
             sdlx_register_control_events(0, NULL, 
                                          0, NULL, 
-                                         EVID_MINIMIZE, "X",
-                                         COLOR_WHITE, BG_COLOR);
+                                         EVID_MINIMIZE, "X");
         }
 
         // display message when devel mode is enabled
@@ -878,7 +876,7 @@ static void settings(void)
 
         // register motion and control events
         sdlx_register_event(NULL, EVID_MOTION);
-        sdlx_register_control_events(0, NULL, 0, NULL, EVID_QUIT, "X", COLOR_WHITE, BG_COLOR);
+        sdlx_register_control_events(0, NULL, 0, NULL, EVID_QUIT, "X");
 
         // present the display
         sdlx_display_present();
@@ -1060,7 +1058,7 @@ static void show_file(char *filename, int orientation, int fontid)
         // display file lines and register for motion (scrolling) & exit events
         sdlx_display_init(COLOR_WHITE, orientation);
         sdlx_render_multiline_text(0, y, y_top, y_bottom, fontid, lines, NULL, 1);
-        sdlx_register_control_events(0, NULL, 0, NULL, EVID_QUIT, "X", COLOR_WHITE, BG_COLOR); // xxx why BG_COLOR
+        sdlx_register_control_events(0, NULL, 0, NULL, EVID_QUIT, "X");
         sdlx_register_event(NULL, EVID_MOTION);
         sdlx_display_present();
 

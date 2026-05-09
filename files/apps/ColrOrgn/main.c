@@ -459,8 +459,7 @@ void register_events(void)
     // register control events
     sdlx_register_control_events(EVID_SETTINGS, "STG",
                                  EVID_SHOW_CONTROLS, (!show_controls ? "SHOW" : "HIDE"),
-                                 EVID_QUIT, "X",
-                                 COLOR_WHITE, COLOR_BLACK);
+                                 EVID_QUIT, "X");
 }
 
 void reg_event(int x, int y, sdlx_color_t color, char *name, int event_id)
