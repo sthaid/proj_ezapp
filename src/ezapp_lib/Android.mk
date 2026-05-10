@@ -8,7 +8,7 @@ LOCAL_C_INCLUDES += $(LOCAL_PATH)/include \
                     $(LOCAL_PATH)/../SDL/include \
                     $(LOCAL_PATH)/../SDL_mixer/include \
                     $(LOCAL_PATH)/../SDL_ttf/include \
-                    $(LOCAL_PATH)/../mp3lame/include \
+                    $(LOCAL_PATH)/../libmp3lame/include \
                     $(LOCAL_PATH)/../cJSON/include \
                     $(LOCAL_PATH)/../kissfft/include \
                     $(LOCAL_PATH)/../lodepng/include \

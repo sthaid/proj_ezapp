@@ -600,7 +600,7 @@ static void mp3_file_write(void *cx_arg, float *samples, int num_samples)
     while (num_samples) {
         process_samples = (num_samples > MAX_SAMPLES_MP3_FILE_WRITE ? MAX_SAMPLES_MP3_FILE_WRITE : num_samples);
 
-        // mp3lame requires s16 format
+        // libmp3lame requires s16 format
         for (int i = 0; i < process_samples; i++) {
             samples_s16[i] = samples[i] * 32767;
         }
