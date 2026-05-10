@@ -29,8 +29,8 @@ long util_file_size(char *dir, char *fn);
 // DIRECTORY UTILS
 // --------------------
 
-// "rm -rf <dir>/<dir_to_delete>"
-void util_delete_dir(char *dir, char *dir_to_delete);
+void util_create_dir(char *dir, char *dir_to_create);  // "mkdir -p <dir>/<dir_to_create>"
+void util_delete_dir(char *dir, char *dir_to_delete);  // "rm -rf <dir>/<dir_to_delete>"
 
 // --------------------
 // MAP FILE UTILS

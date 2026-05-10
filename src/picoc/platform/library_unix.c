@@ -1105,6 +1105,15 @@ void Util_file_size (struct ParseState *Parser, struct Value *ReturnValue,
 // utils directory routines
 //
 
+void Util_create_dir (struct ParseState *Parser, struct Value *ReturnValue,
+	struct Value **Param, int NumArgs)
+{
+    char *dir            = Param[0]->Val->Pointer;
+    char *dir_to_create  = Param[1]->Val->Pointer;
+
+    util_create_dir(dir, dir_to_create);
+}
+
 void Util_delete_dir (struct ParseState *Parser, struct Value *ReturnValue,
 	struct Value **Param, int NumArgs)
 {
@@ -1468,6 +1477,7 @@ struct LibraryFunction UtilsFunctions[] = {
     { Util_file_mtime,       "long util_file_mtime(char *dir, char *fn);" },
     { Util_file_size,        "long util_file_size(char *dir, char *fn);" },
     // directory utils
+    { Util_create_dir,       "void util_create_dir(char *dir, char *dir_to_create);" },
     { Util_delete_dir,       "void util_delete_dir(char *dir, char *dir_to_delete);" },
     // file map
     { Util_map_file,         "void *util_map_file(char *dir, char *file, int len, bool create_if_needed, bool read_only, int *created_flag);" },

@@ -214,6 +214,17 @@ long util_file_size(char *dir, char *fn)
 
 // -----------------  DIRECTORY UTILS  -----------------------
 
+void util_create_dir(char *dir, char *dir_to_create)
+{
+    char path[200], cmd[220];
+
+    concat(dir, dir_to_create, path);
+    INFO("creating dir %s\n", path);
+
+    sprintf(cmd, "mkdir -p %s", path);
+    system(cmd);
+}
+
 void util_delete_dir(char *dir, char *dir_to_delete)
 {
     char path[200], cmd[220];

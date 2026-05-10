@@ -111,10 +111,8 @@ int main(int argc, char **argv)
     data_dir = argv[1];
     printf("I %s: starting, data_dir=%s\n", progname, data_dir);
 
-    // construct icon_dir path, and create icon dir
-    sprintf(icon_dir, "%s/%s", data_dir, "icon");
-    sprintf(cmd, "mkdir -p %s", icon_dir);
-    system(cmd);
+    // create icon dir
+    util_make_dir(data_dir, "icon");
 
     // init variables that define the display region
     y_top    = 100;
@@ -252,7 +250,7 @@ void cleanup_forecast(forecast_t *forecast)
 // -----------------  GET FORECAST JSON FILES  ---------------
 
 #define HEADER "\"User-Agent: (ezApp-Weather, stevenhaid@gmail.com)\""
-#define ONE_HOUR 3600
+#define ONE_HOUR 3600 // xxx increase
 
 bool is_new_forecast_needed(void)
 {
