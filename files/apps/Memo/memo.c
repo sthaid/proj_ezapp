@@ -208,6 +208,7 @@ int main(int argc, char **argv)
     }
 
     // cleanup and end program
+    sdlx_audio_stop();
     cleanup_filename_allocations();
     printf("I %s: terminating\n", progname);
     return 0;

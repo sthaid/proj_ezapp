@@ -1,14 +1,12 @@
-change Copyright to Licenses
+libmp3lame
 
 weather 'Loading' delay
 
-Memo exit should stop audio
-
-get rid of 2 extra args to control_events                DONE
+Memo exit should stop audio                          TEST THIS
 
 move testlib and testprog to devel dir
 
-put back warning for unused variables, and build
+picoc should free all unfreed allocations
 
 - - - 
 
