@@ -400,12 +400,19 @@ void register_events(void)
             y_files_list_bottom = sdlx_win_height;
         }
 
+        // xxx comments needed
         if (orientation != last_orientation) {
             y_files_list = y_files_list_top;
             last_orientation = orientation;
         }
 
-        if (y_files_list >= y_files_list_top || max_files <= 1) {
+        if (y_files_list >= y_files_list_top) {
+            y_files_list = y_files_list_top;
+        }
+
+        if ((orientation == PORTRAIT && max_files <= 6) ||
+            (orientation == LANDSCAPE && max_files <= 5))
+        {
             y_files_list = y_files_list_top;
         }
 
