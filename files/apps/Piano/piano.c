@@ -354,7 +354,7 @@ void sanitize_input(char *s);
 void read_tone_seq_file(char *filename)
 {
     FILE *fp;
-    char  s[1000], pathname[100], *p;
+    char  s[1000], pathname[100];
     char  title[100];
     char  items[MAX_ITEMS_STR];
     int   cnt, octave=4;

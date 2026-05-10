@@ -91,7 +91,6 @@ int main(int argc, char **argv)
 
 int initialize(void)
 {
-    int tries = 0;
     int created_flag;
 
     printf("I %s: sizeof(altitude_file_t) = 0x%zx %0.3f MB\n",

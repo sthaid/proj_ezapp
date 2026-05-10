@@ -57,8 +57,6 @@ int get_device_orientation(void);
 
 // -----------------  MAIN  ------------------------------------------
     
-// xxx when program starts, is the initial orientation always PORTRAIT
-
 int main(int argc, char **argv)
 {
     int          rc;
@@ -66,7 +64,6 @@ int main(int argc, char **argv)
     bool         done = false;
     int          orientation;
     int          last_orientation;
-    sdlx_loc_t  *loc;
 
     // save args
     progname = argv[0];

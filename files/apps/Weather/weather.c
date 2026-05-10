@@ -791,7 +791,7 @@ void display_detailed_forecast(int idx)
 {
     forecast_t  *x = (mode == HOURLY ? &hourly[idx] : &daily[idx]);
     sdlx_event_t event;
-    int          flags, wrap;
+    int          wrap;
     bool         done = false;
 
     while (!done) {

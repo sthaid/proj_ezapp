@@ -124,10 +124,6 @@ int main(int argc, char **argv)
 
 int initialize(void)
 {
-    time_t       t;
-    struct tm    tm;
-    int          y, m, d;
-
     // initialize the view to the current day
     view = VIEW_DAY;
     get_current_ymd(&year, &month, &day);
@@ -409,7 +405,7 @@ void settings(void)
 {
     bool         done = false;
     sdlx_event_t event;
-    int          y, cnt;
+    int          y;
     double       value;
     char        *str;
 

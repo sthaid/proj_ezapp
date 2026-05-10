@@ -330,7 +330,6 @@ void process_event(sdlx_event_t *ev, sdlx_audio_state_t *as)
 
 void register_events(void)
 {
-    sdlx_loc_t *loc;
     int x_controls, y_controls;
     int y_files_list_top;
     int y_files_list_bottom;
