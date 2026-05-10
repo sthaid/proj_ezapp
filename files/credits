@@ -24,8 +24,9 @@ permiissive licensed software.
 * lodepng - PNG image decoder and encoder.
   https://github.com/lvandeve/lodepng
 
-* lame - Stands for "LAME Ain't an MP3 Encoder", widely considered
-    the highest quality MPEG Audio Layer III encoder available.
+* libmp3lame - Stands for "LAME Ain't an MP3 Encoder", widely
+    considered the highest quality MPEG Audio Layer III encoder
+    available.
   https://github.com/zlargon/lame
 
 Thanks also goes to the following for providing free or public 

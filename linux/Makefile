@@ -1,7 +1,7 @@
 CMAKE_INSTALL_PREFIX = $(shell pwd)/local
 CMAKE_PREFIX_PATH    = $(shell pwd)/local
 
-all: SDL SDL_ttf SDL_mixer lodepng kissfft cJSON mp3lame ezapp_lib picoc ezapp
+all: SDL SDL_ttf SDL_mixer lodepng kissfft cJSON libmp3lame ezapp_lib picoc ezapp
 
 ezapp:
 	../bin/build_tools/gen_version
@@ -11,7 +11,7 @@ ezapp:
 
 kissfft: CMAKE_MORE_OPTS = -DKISSFFT_STATIC=ON -DKISSFFT_TEST=OFF -DKISSFFT_TOOLS=OFF
 
-SDL SDL_ttf SDL_mixer lodepng kissfft cJSON mp3lame ezapp_lib picoc:
+SDL SDL_ttf SDL_mixer lodepng kissfft cJSON libmp3lame ezapp_lib picoc:
 	mkdir -p build/$@
 	cd build/$@; cmake  ../../../src/$@ -DCMAKE_INSTALL_PREFIX=$(CMAKE_INSTALL_PREFIX) $(CMAKE_MORE_OPTS)
 	cd build/$@; cmake --build . # --verbose
@@ -26,6 +26,6 @@ clean:
 	rm -f  ../src/ezapp/version.h
 	rm -rf build local
 
-.PHONY: SDL SDL_ttf SDL_mixer lodepng kissfft cJSON mp3lame ezapp_lib picoc
+.PHONY: SDL SDL_ttf SDL_mixer lodepng kissfft cJSON libmp3lame ezapp_lib picoc
 .PHONY: ezapp run all clean
 

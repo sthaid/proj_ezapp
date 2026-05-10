@@ -1,8 +1,7 @@
 libmp3lame
+https://github.com/gypified/libmp3lame
 
-weather 'Loading' delay
 
-Memo exit should stop audio                          TEST THIS
 
 picoc should free all unfreed allocations
 

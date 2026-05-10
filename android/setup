@@ -61,7 +61,7 @@ echo "==== ADD SYMLINKS TO SRC ===="
 cd $BUILD_DIR/app/jni
 ln -s $REPO_TOP/src/cJSON .
 ln -s $REPO_TOP/src/kissfft .
-ln -s $REPO_TOP/src/mp3lame .
+ln -s $REPO_TOP/src/libmp3lame .
 ln -s $REPO_TOP/src/lodepng .
 ln -s $REPO_TOP/src/picoc .
 ln -s $REPO_TOP/src/SDL_mixer .
