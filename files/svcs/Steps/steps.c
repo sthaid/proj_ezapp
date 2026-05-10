@@ -151,18 +151,21 @@ void periodic_processing(void)
     time_t        t_now;
     struct tm     tm;
 
-    static time_t        t_last_sync, t_last_call;
+    static time_t        t_last_sync;
     static bool          sync_request;
     static unsigned long last_step_count_sensor;
 
     // get current time
     t_now = time(NULL);
 
+#if 0
     // print interval since last call
+    static time_t t_last_call;
     if (t_last_call != 0) {
         printf("I %s: periodic interval = %ld secs\n", progname, t_now-t_last_call);
     }
     t_last_call = t_now;
+#endif
 
     // if sync_request is pending and steps_file has not been synced for 60 seconds
     // then sync the steps file
