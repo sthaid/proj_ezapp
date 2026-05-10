@@ -15,5 +15,7 @@ picoc:
 
 clean:
 	rm -f picoc
+	rm -f libgen/libgen libgen/libgen_out1.h libgen/libgen_out2.h
+	rm -f tests/fred.txt
 
 .PHONY: picoc

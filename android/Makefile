@@ -10,10 +10,6 @@ uninstall:
 	adb uninstall org.sthaid.ezApp
 
 clean:
-	cd SDL/build/org.sthaid.ezApp; \
-        ./gradlew clean
-
-clobber:
 	rm -rf SDL 
 	rm -rf assets 
 	rm -rf setup_files/orig

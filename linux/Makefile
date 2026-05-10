@@ -1,7 +1,8 @@
 CMAKE_INSTALL_PREFIX = $(shell pwd)/local
 CMAKE_PREFIX_PATH    = $(shell pwd)/local
 
-all: SDL SDL_ttf SDL_mixer lodepng kissfft cJSON libmp3lame ezapp_lib picoc ezapp
+build_all: SDL SDL_ttf SDL_mixer lodepng kissfft cJSON libmp3lame ezapp_lib picoc ezapp
+build_quick: ezapp_lib picoc ezapp
 
 ezapp:
 	../bin/build_tools/gen_version
@@ -16,8 +17,6 @@ SDL SDL_ttf SDL_mixer lodepng kissfft cJSON libmp3lame ezapp_lib picoc:
 	cd build/$@; cmake  ../../../src/$@ -DCMAKE_INSTALL_PREFIX=$(CMAKE_INSTALL_PREFIX) $(CMAKE_MORE_OPTS)
 	cd build/$@; cmake --build . # --verbose
 	cd build/$@; cmake --install .
-
-build: ezapp_lib picoc ezapp
 
 run: build
 	cd ../files; ../linux/build/ezapp/ezapp 2>&1 | ezlogfilter
