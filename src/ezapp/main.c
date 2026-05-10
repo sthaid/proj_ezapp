@@ -712,7 +712,7 @@ static void settings(void)
 
     #define RECORD_TEST_FILENAME "record_test.mp3"
 
-    #define EVID_COPYRIGHT            1001
+    #define EVID_LICENSES             1001
     #define EVID_CREDITS              1002
     #define EVID_DEVEL_MODE           1003
     #define EVID_DEVEL_PORT           1004
@@ -756,12 +756,12 @@ static void settings(void)
         // init display and font size/color
         sdlx_display_init(BG_COLOR, PORTRAIT);
 
-        // display Copyright
+        // display Licenses 
         sdlx_print_set_default(FONT_NORMAL, COLOR_LIGHT_BLUE);
         y2 = nearbyint(y - 2*sdlx_char_height_dflt);
         if (GET_Y2) {
-            loc = sdlx_render_printf(0, y2, "Copyright");
-            sdlx_register_event(loc, EVID_COPYRIGHT);
+            loc = sdlx_render_printf(0, y2, "Licenses");
+            sdlx_register_event(loc, EVID_LICENSES);
         }
 
         // display credits
@@ -890,8 +890,8 @@ static void settings(void)
 
         // process the event
         switch (event.event_id) {
-        case EVID_COPYRIGHT:
-            show_file("copyright", PORTRAIT, FONT_TINY);
+        case EVID_LICENSES:
+            show_file("licenses", PORTRAIT, FONT_TINY);
             break;
         case EVID_CREDITS:
             show_file("credits", LANDSCAPE, FONT_SMALL);
