@@ -61,6 +61,7 @@ char       *data_dir;
 char        icon_dir[100];
 
 int         mode = DAILY;
+bool        force_reload;
 
 info_t      info;
 forecast_t  daily[MAX_FORECAST];
@@ -78,11 +79,12 @@ void cleanup_all(void);
 void cleanup_info(void);
 void cleanup_forecast(forecast_t *forecast);
 
-bool is_new_forecast_needed(void);
-char *initiate_forecast_download(void);
+bool is_forecast_download_needed(void);
+char *download_and_parse_forecast(void);
 
 int parse_info(void);
-void parse_forecast(int which);
+int parse_forecast(int which);
+void create_icon_texture_if_needed(forecast_t *x);
 
 void display_forecast(void);
 void display_detailed_forecast(int idx);
@@ -94,13 +96,9 @@ char *get_day_name(char * str, bool unabbreviated);
 int main(int argc, char **argv)
 {
     sdlx_event_t  event;
-    bool          done = false;
-    char          cmd[200];
+    bool          end_program = false;
     char         *mode_str;
-    long          timeout;
-    bool          daily_forecast_parsed = false;
-    bool          hourly_forecast_parsed = false;
-    char         *download_status = "";
+    char         *state = "Loading";
 
     // save args
     progname = argv[0];
@@ -112,55 +110,29 @@ int main(int argc, char **argv)
     printf("I %s: starting, data_dir=%s\n", progname, data_dir);
 
     // create icon dir
-    util_make_dir(data_dir, "icon");
+    util_create_dir(data_dir, "icon");
+    sprintf(icon_dir, "%s/%s", data_dir, "icon");
 
     // init variables that define the display region
     y_top    = 100;
     y_bottom = sdlx_win_height;
     y        = y_top;
 
-    // initiate weather forecast download;
-    // a new forecast will be downloaded if the existing forecast
-    // json files are more than one hour old
-    if (is_new_forecast_needed()) {
-        download_status = initiate_forecast_download();
-        daily_forecast_parsed = false;
-        hourly_forecast_parsed = false;
-    }
-
-    // if info.json file is not yet parsed then do so
-    if (info.city == NULL) {
-        parse_info();
-    }
-
     // init font size and color
     sdlx_print_set_default(FONT_SMALL, COLOR_WHITE);
 
     // runtime loop
-    while (!done) {
+    while (!end_program) {
         // init the backbuffer
         sdlx_display_init(COLOR_BLACK, PORTRAIT);
 
-        // if forecast is available but not parsed then parse it
-        if (!daily_forecast_parsed && util_file_exists(data_dir, "daily.json")) {
-            parse_forecast(PARSE_DAILY_FORECAST);
-            daily_forecast_parsed = true;
-        }
-        if (!hourly_forecast_parsed && util_file_exists(data_dir, "hourly.json")) {
-            parse_forecast(PARSE_HOURLY_FORECAST);
-            hourly_forecast_parsed = true;
-        }
-
         // display forecast         
-        if ((mode == DAILY || mode == DAY_AND_NIGHT) && daily_forecast_parsed) {
-            display_forecast();
-        } else if (mode == HOURLY && hourly_forecast_parsed) {
+        if (strcmp(state, "Loaded") == 0) {
             display_forecast();
         } else {
-            sdlx_render_printf_ex2(
-                sdlx_win_width/2, sdlx_win_height/2, 
-                FONT_NORMAL, COLOR_WHITE, FLAG_XY_CTR, 
-                "%s", download_status);
+            sdlx_render_printf_ex2(sdlx_win_width/2, sdlx_win_height/2, 
+                                   FONT_NORMAL, COLOR_WHITE, FLAG_XY_CTR, 
+                                   "%s", state);
         }
 
         // register events
@@ -175,19 +147,23 @@ int main(int argc, char **argv)
         // present the display
         sdlx_display_present();
 
-        // wait for event, timeout is either 100ms or infinite
-        timeout = (!daily_forecast_parsed || !hourly_forecast_parsed) ? 100000 : -1;
-        sdlx_get_event(timeout, &event);
+        // if state is "Loading" then call download_and_parse_forecast
+        if (strcmp(state, "Loading") == 0) {
+            state = download_and_parse_forecast();
+            continue;
+        }
+
+        // wait for event, with infinite timeout
+        sdlx_get_event(-1, &event);
 
         // process events
         switch (event.event_id) {
         case EVID_QUIT:
-            done = true;
+            end_program = true;
             break;
         case EVID_RELOAD_FORECAST:
-            download_status = initiate_forecast_download();
-            daily_forecast_parsed = false;
-            hourly_forecast_parsed = false;
+            state = "Loading";
+            force_reload = true;
             break;
         case EVID_MODE_SELECT:
             mode = (mode + 1) % MAX_MODE;
@@ -200,6 +176,7 @@ int main(int argc, char **argv)
             }
         }
 
+        // if event is to display the detailed forecast then do so
         if (event.event_id >= EVID_FORECAST && event.event_id < EVID_FORECAST+MAX_FORECAST) {
             int idx = event.event_id - EVID_FORECAST;
             display_detailed_forecast(idx);
@@ -250,25 +227,31 @@ void cleanup_forecast(forecast_t *forecast)
 // -----------------  GET FORECAST JSON FILES  ---------------
 
 #define HEADER "\"User-Agent: (ezApp-Weather, stevenhaid@gmail.com)\""
-#define ONE_HOUR 3600 // xxx increase
+#define AGE_LIMIT (4*3600)
 
-bool is_new_forecast_needed(void)
+bool is_forecast_download_needed(void)
 {
     long tnow, mtime;
 
+    if (force_reload) {
+        printf("I %s: download forecast needed, due to force_reload\n", progname);
+        force_reload = false;
+        return true;
+    }
+
     tnow = time(NULL);
     mtime = util_file_mtime(data_dir, "info.json");
-    if (mtime == 0 || tnow - mtime/1000000 > ONE_HOUR) {
+    if (mtime == 0 || tnow - mtime/1000000 > AGE_LIMIT) {
         printf("I %s: download forecast needed\n", progname);
         return true;
     }
     mtime = util_file_mtime(data_dir, "daily.json");
-    if (mtime == 0 || tnow - mtime/1000000 > ONE_HOUR) {
+    if (mtime == 0 || tnow - mtime/1000000 > AGE_LIMIT) {
         printf("I %s: download forecast needed\n", progname);
         return true;
     }
     mtime = util_file_mtime(data_dir, "hourly.json");
-    if (mtime == 0 || tnow - mtime/1000000 > ONE_HOUR) {
+    if (mtime == 0 || tnow - mtime/1000000 > AGE_LIMIT) {
         printf("I %s: download forecast needed\n", progname);
         return true;
     }
@@ -277,87 +260,108 @@ bool is_new_forecast_needed(void)
     return false;
 }
 
-char *initiate_forecast_download(void)
+char *download_and_parse_forecast(void)
 {
     char   url[200], cmd[1000];
-    char   daily_temp[200], daily_json[200];
-    char   hourly_temp[200], hourly_json[200];
+    char   daily_json[200];
+    char   hourly_json[200];
     long   start_us;
     int    rc;
     double latitude, longitude;
 
-    printf("I %s: initiate_forecast_download starting\n", progname);
     start_us = util_microsec_timer();
 
-    // cleanup forecast data structures
-    cleanup_all();
+    if (is_forecast_download_needed()) {
+        printf("I %s: download_and_parse_forecast starting\n", progname);
 
-    // delete existing forecast files
-    util_delete_file(data_dir, "info.json");
-    util_delete_file(data_dir, "daily.json");
-    util_delete_file(data_dir, "hourly.json");
+        // cleanup forecast data structures
+        cleanup_all();
 
-    util_delete_file(data_dir, "info.temp");
-    util_delete_file(data_dir, "daily.temp");
-    util_delete_file(data_dir, "hourly.temp");
+        // delete existing forecast files
+        util_delete_file(data_dir, "info.json");
+        util_delete_file(data_dir, "daily.json");
+        util_delete_file(data_dir, "hourly.json");
 
-    // get lat/long
-    util_get_location(&latitude, &longitude, NULL, NULL);
-    if (latitude == INVALID_NUMBER || longitude == INVALID_NUMBER) {
-        printf("E %s: failed to get lat/long\n", progname);
-        return "Get Loc Failure";
+        // get lat/long
+        util_get_location(&latitude, &longitude, NULL, NULL);
+        if (latitude == INVALID_NUMBER || longitude == INVALID_NUMBER) {
+            printf("E %s: failed to get lat/long\n", progname);
+            return "Get Loc Failure";
+        }
+        printf("I %s: long/lat = %0.4f %0.4f\n", progname, latitude, longitude);
+
+        // get forecast information, save to info.json
+        sprintf(url, "https://api.weather.gov/points/%0.4f,%0.4f", latitude, longitude);
+        sprintf(cmd, "curl --silent --max-time 30 --output %s/%s --header %s %s",
+                data_dir, "info.json", HEADER, url);
+        printf("I %s: RUNNING '%s'\n", progname, cmd);
+        rc = system(cmd);
+        rc = WEXITSTATUS(rc);
+        if (rc != 0) {
+            printf("E %s: system curl info.json failed, rc=0x%x\n", progname, rc);
+            return "Failed 1";
+        }
+
+        // parse file info.json, this will obtain the following, which are used below:
+        // - info.forecast_daily_url
+        // - info.forecast_hourly_url
+        rc = parse_info();
+        if (rc != 0) {
+            printf("E %s: parse info.json failed\n", progname);
+            return "Failed 2";
+        }
+
+        // dowload daily forecast, save to daily.json
+        sprintf(daily_json, "%s/daily.json", data_dir);
+        sprintf(cmd, "curl --silent --max-time 30 --output %s --header %s %s",
+                daily_json, HEADER, info.forecast_daily_url);
+        printf("I %s: RUNNING '%s'\n", progname, cmd);
+        rc = system(cmd);
+        rc = WEXITSTATUS(rc);
+        if (rc != 0) {
+            printf("E %s: system curl daily.json failed, rc=0x%x\n", progname, rc);
+            return "Failed 3";
+        }
+
+        // dowload hourly forecast, save to hourly.json
+        sprintf(hourly_json, "%s/hourly.json", data_dir);
+        sprintf(cmd, "curl --silent --max-time 30 --output %s --header %s %s",
+                hourly_json, HEADER, info.forecast_hourly_url);
+        printf("I %s: RUNNING '%s'\n", progname, cmd);
+        rc = system(cmd);
+        rc = WEXITSTATUS(rc);
+        if (rc != 0) {
+            printf("E %s: system curl hourly.json failed, rc=0x%x\n", progname, rc);
+            return "Failed 4";
+        }
     }
-    printf("I %s: long/lat = %0.4f %0.4f\n", progname, latitude, longitude);
 
-    // get forecast information, save to info.json
-    sprintf(url, "https://api.weather.gov/points/%0.4f,%0.4f", latitude, longitude);
-    sprintf(cmd, "curl --silent --max-time 30 --output %s/%s --header %s %s",
-            data_dir, "info.json", HEADER, url);
-    printf("I %s: RUNNING '%s'\n", progname, cmd);
-    rc = system(cmd);
-    rc = WEXITSTATUS(rc);
-    if (rc != 0) {
-        printf("E %s: system curl info.json failed, rc=0x%x\n", progname, rc);
-        return "No Forecast";
+    // verify that the daily.json and hourly.json files exist
+    if (!util_file_exists(data_dir, "daily.json")) {
+        printf("E %s: daily.json does not exist\n", progname);
+        return "Failed 5";
+    }
+    if (!util_file_exists(data_dir, "hourly.json")) {
+        printf("E %s: hourly.json does not exist\n", progname);
+        return "Failed 6";
     }
 
-    // parse file info.json, this will obtain the following, which are used below:
-    // - info.forecast_daily_url
-    // - info.forecast_hourly_url
-    rc = parse_info();
+    // parse the daily and hourly forecast json files
+    rc = parse_forecast(PARSE_DAILY_FORECAST);
     if (rc != 0) {
-        printf("E %s: parse info.json failed\n", progname);
-        return "No Forecast";
+        printf("E %s: parse daily forecast failed\n", progname);
+        return "Failed 7";
     }
-
-    // initiate dowload daily forecast, save to daily.json
-    sprintf(daily_temp, "%s/daily.temp", data_dir);
-    sprintf(daily_json, "%s/daily.json", data_dir);
-    sprintf(cmd, "(curl --silent --max-time 30 --output %s --header %s %s; mv %s %s) &",
-            daily_temp, HEADER, info.forecast_daily_url, daily_temp, daily_json);
-    printf("I %s: RUNNING '%s'\n", progname, cmd);
-    rc = system(cmd);
-    rc = WEXITSTATUS(rc);
+    rc = parse_forecast(PARSE_HOURLY_FORECAST);
     if (rc != 0) {
-        printf("E %s: system curl daily.json failed, rc=0x%x\n", progname, rc);
-    }
-
-    // initiate dowload hourly forecast, save to hourly.json
-    sprintf(hourly_temp, "%s/hourly.temp", data_dir);
-    sprintf(hourly_json, "%s/hourly.json", data_dir);
-    sprintf(cmd, "(curl --silent --max-time 30 --output %s --header %s %s; mv %s %s) &",
-            hourly_temp, HEADER, info.forecast_hourly_url, hourly_temp, hourly_json);
-    printf("I %s: RUNNING '%s'\n", progname, cmd);
-    rc = system(cmd);
-    rc = WEXITSTATUS(rc);
-    if (rc != 0) {
-        printf("E %s: system curl hourly.json failed, rc=0x%x\n", progname, rc);
+        printf("E %s: parse hourly forecast failed\n", progname);
+        return "Failed 8";
     }
 
     // print completed, with duration this routine took
-    printf("I %s: initiate_forecast_download done, %.1f secs\n", 
+    printf("I %s: download_and_parse_forecast done, %.1f secs\n", 
            progname, (util_microsec_timer() - start_us) / 1000000.);
-    return "Loading";
+    return "Loaded";
 }
 
 // -----------------  PARSE JSON FILES  ---------------------------
@@ -430,7 +434,7 @@ cleanup_and_return:
     return ret;
 }
 
-void parse_forecast(int which)
+int parse_forecast(int which)
 {
     char *str = NULL;
     void *json = NULL;
@@ -458,7 +462,7 @@ void parse_forecast(int which)
     str = util_read_file(data_dir, json_filename, &len_ret);
     if (str == NULL) {
         printf("E %s: parse_forecast, read forecast json, %s\n", progname, strerror(errno));
-        return;
+        return -1;
     }
 
     // init json parser
@@ -466,10 +470,10 @@ void parse_forecast(int which)
     if (json == NULL) {
         printf("E %s: parse_forecast, parse json\n", progname);
         free(str);
-        return;
+        return -1;
     }
 
-    // loop over the periods of the json file
+    // loop over the periods in the json file
     for (int i = 0; i < MAX_FORECAST; i++) {
         forecast_t   *x = &forecast[i];
         json_value_t *value;
@@ -674,43 +678,59 @@ void parse_forecast(int which)
         }
     }
 
-    // create icon_texture for each forecast element
-    for (int i = 0; i < MAX_FORECAST; i++) {
-        forecast_t     *x = &forecast[i];
-        unsigned char  *pixels = NULL;
-        int             rc, w, h;
-        sdlx_texture_t *icon_texture;
-
-        if (!x->valid) {
-            continue;
-        }
-
-        if (util_file_exists(icon_dir, x->icon_filename)) {
-            rc = util_read_png_file(icon_dir, x->icon_filename, &pixels, &w, &h);
-            if (rc != 0) {
-                printf("E %s failed to decode png file %s\n", progname, x->icon_filename);
-            } else {
-                icon_texture = sdlx_create_texture(w, h);
-                if (icon_texture == NULL) {
-                    printf("E %s failed to create icon_texture\n", progname);
-                } else {
-                    x->icon_texture = icon_texture;
-                    sdlx_set_texture_pixels(icon_texture, (sdlx_color_t*)pixels);
-                }
-                free(pixels);
-            }
-        }
-    }
-
     // cleanup and return
     printf("I %s: parse_forecast %s completed, %0.3f secs\n", 
            progname, json_filename, 
            (util_microsec_timer() - start_us) / 1000000.0);
     util_json_free(json);
     free(str);
+    return 0;
 }
 
-// -----------------  DISPLAY DAILY FORECAST  ----------------
+void create_icon_texture_if_needed(forecast_t *x)
+{
+    sdlx_texture_t *t;
+    int w, h, rc;
+    unsigned char *pixels = NULL;
+
+    // if icon_texture already exists then return
+    if (x->icon_texture) {
+        return;
+    }
+
+    // if no icon_filename then print error and return
+    if (x->icon_filename == NULL) {
+        printf("E %s: no icon_filename\n", progname);
+        return;
+    }
+
+    // if png read of the icon_file failed then print and return error
+    rc = util_read_png_file(icon_dir, x->icon_filename, &pixels, &w, &h);
+    if (rc != 0) {
+        printf("E %s: failed to decode png file %s\n", progname, x->icon_filename);
+        return;
+    }
+
+    // create the texture
+    printf("I %s: creating texture for %s\n", progname, x->icon_filename);
+    t = sdlx_create_texture(w, h);
+    if (t == NULL) {
+        printf("E %s failed to create icon_texture\n", progname);
+        free(pixels);
+        return;
+    }
+
+    // copy the png file pixels in to the texture
+    sdlx_set_texture_pixels(t, (sdlx_color_t*)pixels);
+
+    // done with the png file pixels
+    free(pixels);
+
+    // save ptr to the created texture in x->icon_texture
+    x->icon_texture = t;
+}
+
+// -----------------  DISPLAY FORECAST  ---------------------------
 
 #define ICON_WH 200  // width and height of forecast icon
 #define Y_STEP  250
@@ -754,6 +774,7 @@ void display_forecast(void)
         }
 
         // display the forecast icon
+        create_icon_texture_if_needed(x);
         if (x->icon_texture) {
             sdlx_render_texture_ex1(x->icon_texture, 0, y2, ICON_WH, ICON_WH);
 
@@ -797,6 +818,7 @@ void display_detailed_forecast(int idx)
         sdlx_display_init(COLOR_BLACK, PORTRAIT);
 
         // display the forecast icon
+        create_icon_texture_if_needed(x);
         if (x->icon_texture) {
             sdlx_render_texture_ex1(x->icon_texture, 0, y_top, ICON_WH, ICON_WH);
         }
