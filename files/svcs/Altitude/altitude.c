@@ -175,17 +175,19 @@ void periodic_processing(void)
     time_t        t_now;
     struct tm     tm;
 
-    static time_t t_last_call;
     static bool   wgs84_warning_printed;
 
     // get current time
     t_now = time(NULL);
 
+#if 0
     // print interval since last call
+    static time_t t_last_call;
     if (t_last_call != 0) {
         printf("I %s: periodic interval = %ld secs\n", progname, t_now-t_last_call);
     }
     t_last_call = t_now;
+#endif
 
     // get the current altitude;
     util_get_location(NULL, NULL, &altitude_ft, &alt_is_wgs84);

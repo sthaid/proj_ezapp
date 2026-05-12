@@ -15,6 +15,7 @@ bool end_program = false;
 
 // prototypes
 void process_req(svc_req_t *req);
+void periodic_processing(void);
 
 // -----------------  TEMPLATE SERVICE  --------------------------------------
 
@@ -46,7 +47,7 @@ int main(int argc, char **argv)
 
         // if scv_wait_for_req timedout then do periodic svc processing
         if (rc == SVC_REQ_WAIT_ERROR_TIMEDOUT) {
-            printf("I %s: do some processing\n", progname);
+            periodic_processing();
             continue;
         }
 
@@ -61,6 +62,8 @@ int main(int argc, char **argv)
     printf("I %s: terminating\n", progname);
     return 0;
 }
+
+// -----------------  PROCESS REQ  ---------------------------------
 
 void process_req(svc_req_t *req)
 {
@@ -79,3 +82,16 @@ void process_req(svc_req_t *req)
     }
 }
 
+// -----------------  PERIODIC PROCESSING  -------------------------
+
+void periodic_processing(void)
+{
+#if 1
+    // print interval since last call
+    static time_t t_last_call;
+    if (t_last_call != 0) {
+        printf("I %s: periodic interval = %ld secs\n", progname, t_now-t_last_call);
+    }
+    t_last_call = t_now;
+#endif
+}

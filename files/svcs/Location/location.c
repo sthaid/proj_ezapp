@@ -25,21 +25,22 @@ bool        end_program   = false;
 bool        test_loc_hist = false;
 
 // prototypes
+void periodic_processing(void);
+
+void process_req(svc_req_t *req);
+
 void add_entry_to_loc_hist(time_t t, double latitude, double longitude, char *name);
 char *most_recent_loc_hist_name(void);
 void create_loc_data_str(time_t t, double latitude, double longitude, double altitude, bool alt_is_wgs84,
                          char *name, char *data_str);
-void add_simulated_entries_to_loc_hist(void);
-double rand_double(void);
 void clear_loc_history(void);
-void process_req(svc_req_t *req);
+
+void add_simulated_entries_to_loc_hist(void);
 
 // -----------------  MAIN  -----------------------------------------
 
 int main(int argc, char **argv)
 {
-    char          name[MAX_NAME];
-    double        latitude, longitude, miles;
     svc_req_t    *req;
     int           rc;
     int           created;
@@ -76,9 +77,8 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    // when test_mode is enabled and the loc_hist file was just created,
-    // add simulated entries to the loc_hist file
-    if (test_loc_hist && created) {
+    // if test_mode is enabled add simulated entries to the loc_hist file
+    if (test_loc_hist) {
         add_simulated_entries_to_loc_hist();
     }
 
@@ -99,25 +99,9 @@ int main(int argc, char **argv)
             continue;
         }
 
-        // if svc_wait_for_req timedout
-        // - find location in database that is closest to current lat/long;
-        // - if name is different than most recent entry in loc_file
-        //    then add new entry to loc file, 
-        // endif
+        // if scv_wait_for_req timedout then do periodic svc processing
         if (rc == SVC_REQ_WAIT_ERROR_TIMEDOUT) {
-            if (param_enabled) {
-                // find location in database that is closest to current lat/long;
-                util_get_location(&latitude, &longitude, NULL, NULL);
-                find_closest_loc_data(latitude, longitude, name, &miles);
-
-                // if name is different than most recent entry in loc_file
-                // then add new entry to loc file, 
-                if (strcmp(name, "Not Found") != 0 &&
-                    strcmp(most_recent_loc_hist_name(), name) != 0)
-                {
-                    add_entry_to_loc_hist(time(NULL), latitude, longitude, name);
-                }
-            }
+            periodic_processing();
             continue;
         }
 
@@ -134,130 +118,42 @@ int main(int argc, char **argv)
     return 0;
 }
 
-// -----------------  LOC_HIST SUPPORT  -----------------------------
+// -----------------  PERIODIC PROCESSSING  -------------------------
 
-void add_entry_to_loc_hist(time_t t, double latitude, double longitude, char *name)
+void periodic_processing(void)
 {
-    // if buffer is full then discard the first half (oldest data)
-    if (loc_hist->count == MAX_LOC_HIST) {
-        memmove(&loc_hist->loc[0], 
-                &loc_hist->loc[MAX_LOC_HIST-MAX_LOC_HIST/2], 
-                (MAX_LOC_HIST/2)*sizeof(loc_hist->loc[0]));
-
-        memset(&loc_hist->loc[MAX_LOC_HIST/2],
-               0,
-               (MAX_LOC_HIST-MAX_LOC_HIST/2)*sizeof(loc_hist->loc[0]));
-
-        loc_hist->count = MAX_LOC_HIST/2;
-    }
-
-    // add entry
-    create_loc_data_str(t, latitude, longitude, 
-                        INVALID_NUMBER, false,    // altitude/alt_is_wgs84 not included in loc_hist
-                        name, loc_hist->loc[loc_hist->count].data_str);
-    loc_hist->count++;
-
-    // sync memory mapped buffer to storage
-    util_sync_file(loc_hist, sizeof(loc_hist_t));
-}
-
-char *most_recent_loc_hist_name(void)
-{
-    static char name[MAX_NAME];
-    char *ptr, *data_str;
-
-    if (loc_hist->count == 0) {
-        return "";
-    }
-
-    data_str = loc_hist->loc[loc_hist->count-1].data_str;
-
-    ptr = strchr(data_str, '\n');
-    if (ptr == NULL) {
-        printf("E %s: newline char not found in data_str '%s'\n", progname, data_str);
-        return "";
-    }
-
-    memcpy(name, data_str, ptr-data_str);
-    name[ptr-data_str] = '\0';
-
-    printf("I %s: most recent name = '%s'\n", progname, name);
-    return name;
-}
-
-void create_loc_data_str(time_t t, double latitude, double longitude, double altitude, bool alt_is_wgs84,
-                         char *name, char *data_str)
-{
-    struct tm *tm;
-    char time_str[50];
-    char *p;
-
-    // example:
-    //   Bolton
-    //   Dec 5 23:00 EST
-    //   -42.1234 -130.1234
-    // optional altitude line
-    //    alt 300 MSL ft
-
-    // create time string
-    tm = localtime(&t);
-    strftime(time_str, sizeof(time_str), "%b %d %H:%M %Z", tm);
-
-    // sprint location info to str
-    p = data_str;
-    if (latitude != INVALID_NUMBER && longitude != INVALID_NUMBER) {
-        p += sprintf(p, "%s\n%s\n%0.4f %0.4f\n", name, time_str, latitude, longitude);
-    } else {
-        p += sprintf(p, "%s\n%s\nLocation Unavailable\n", name, time_str);
-    }
-    if (altitude != INVALID_NUMBER && altitude != 0) {
-        p += sprintf(p, "alt %0.0f ft %s\n", 
-                     altitude, alt_is_wgs84 ? "WGS84" : "");
-    }
-    p += sprintf(p, "\n");
-}
-
-void add_simulated_entries_to_loc_hist(void)
-{
+    char   name[MAX_NAME];
     double latitude, longitude, miles;
-    char name[MAX_NAME];
-    time_t t;
 
-    t = time(NULL) - 30 * 86400;
-    t = t / 3600 * 3600;
+#if 1
+    // print interval since last call
+    static time_t t_last_call;
+    time_t t_now = time(NULL);
+    if (t_last_call != 0) {
+        printf("I %s: periodic interval = %ld secs\n", progname, t_now-t_last_call);
+    }
+    t_last_call = t_now;
+#endif
 
-    for (int i = 0; i < 20; i++) {
-        // get random location in Massachusett
-        latitude  = 41.23 + (42.88 - 41.23) * rand_double();
-        longitude = -(69.93 + (73.50 - 69.93) * rand_double());
+    // if location history is not enabled then return
+    if (!param_enabled) {
+        return;
+    }
 
-        // find closest location from loc_data
-        find_closest_loc_data(latitude, longitude, name, &miles);
+    // find location in database that is closest to current lat/long;
+    util_get_location(&latitude, &longitude, NULL, NULL);
+    find_closest_loc_data(latitude, longitude, name, &miles);
 
-        // add to loc_hist file
-        add_entry_to_loc_hist(t, latitude, longitude, name);
-
-        // advance time one hour
-        t += 3600;
+    // if name is different than most recent entry in loc_file
+    // then add new entry to loc file, 
+    if (strcmp(name, "Not Found") != 0 &&
+        strcmp(most_recent_loc_hist_name(), name) != 0)
+    {
+        add_entry_to_loc_hist(time(NULL), latitude, longitude, name);
     }
 }
 
-double rand_double(void)
-{
-    double rand;
-
-    rand = (double)random() / 0x7fffffff;
-    return rand;
-}
-
-void clear_loc_history(void)
-{
-    loc_hist->count++;
-    memset(loc_hist, 0, sizeof(loc_hist_t));
-    util_sync_file(loc_hist, sizeof(loc_hist_t));
-}
-
-// -----------------  PROCESS REQ SUPPORT  --------------------------
+// -----------------  PROCESS REQ  ----------------------------------
 
 void process_req(svc_req_t *req)
 {
@@ -345,3 +241,131 @@ void process_req(svc_req_t *req)
         break;
     }
 }
+
+// -----------------  LOC_HIST SUPPORT  -----------------------------
+
+void add_entry_to_loc_hist(time_t t, double latitude, double longitude, char *name)
+{
+    // if buffer is full then discard the first half (oldest data)
+    if (loc_hist->count == MAX_LOC_HIST) {
+        memmove(&loc_hist->loc[0], 
+                &loc_hist->loc[MAX_LOC_HIST-MAX_LOC_HIST/2], 
+                (MAX_LOC_HIST/2)*sizeof(loc_hist->loc[0]));
+
+        memset(&loc_hist->loc[MAX_LOC_HIST/2],
+               0,
+               (MAX_LOC_HIST-MAX_LOC_HIST/2)*sizeof(loc_hist->loc[0]));
+
+        loc_hist->count = MAX_LOC_HIST/2;
+    }
+
+    // add entry
+    create_loc_data_str(t, latitude, longitude, 
+                        INVALID_NUMBER, false,    // altitude/alt_is_wgs84 not included in loc_hist
+                        name, loc_hist->loc[loc_hist->count].data_str);
+    loc_hist->count++;
+
+    // sync memory mapped buffer to storage
+    util_sync_file(loc_hist, sizeof(loc_hist_t));
+}
+
+char *most_recent_loc_hist_name(void)
+{
+    static char name[MAX_NAME];
+    char *ptr, *data_str;
+
+    if (loc_hist->count == 0) {
+        return "";
+    }
+
+    data_str = loc_hist->loc[loc_hist->count-1].data_str;
+
+    ptr = strchr(data_str, '\n');
+    if (ptr == NULL) {
+        printf("E %s: newline char not found in data_str '%s'\n", progname, data_str);
+        return "";
+    }
+
+    memcpy(name, data_str, ptr-data_str);
+    name[ptr-data_str] = '\0';
+
+    printf("I %s: most recent name = '%s'\n", progname, name);
+    return name;
+}
+
+void create_loc_data_str(time_t t, double latitude, double longitude, double altitude, bool alt_is_wgs84,
+                         char *name, char *data_str)
+{
+    struct tm *tm;
+    char time_str[50];
+    char *p;
+
+    // example:
+    //   Bolton
+    //   Dec 5 23:00 EST
+    //   -42.1234 -130.1234
+    // optional altitude line
+    //    alt 300 MSL ft
+
+    // create time string
+    tm = localtime(&t);
+    strftime(time_str, sizeof(time_str), "%b %d %H:%M %Z", tm);
+
+    // sprint location info to str
+    p = data_str;
+    if (latitude != INVALID_NUMBER && longitude != INVALID_NUMBER) {
+        p += sprintf(p, "%s\n%s\n%0.4f %0.4f\n", name, time_str, latitude, longitude);
+    } else {
+        p += sprintf(p, "%s\n%s\nLocation Unavailable\n", name, time_str);
+    }
+    if (altitude != INVALID_NUMBER && altitude != 0) {
+        p += sprintf(p, "alt %0.0f ft %s\n", 
+                     altitude, alt_is_wgs84 ? "WGS84" : "");
+    }
+    p += sprintf(p, "\n");
+}
+
+void clear_loc_history(void)
+{
+    loc_hist->count++;
+    memset(loc_hist, 0, sizeof(loc_hist_t));
+    util_sync_file(loc_hist, sizeof(loc_hist_t));
+}
+
+// -----------------  TEST USING SIMULATED LOCATION HISTORY  --------
+
+double rand_double(void);
+
+void add_simulated_entries_to_loc_hist(void)
+{
+    double latitude, longitude, miles;
+    char name[MAX_NAME];
+    time_t t;
+
+    t = time(NULL) - 30 * 86400;
+    t = t / 3600 * 3600;
+
+    for (int i = 0; i < 20; i++) {
+        // get random location in Massachusett
+        latitude  = 41.23 + (42.88 - 41.23) * rand_double();
+        longitude = -(69.93 + (73.50 - 69.93) * rand_double());
+
+        // find closest location from loc_data
+        find_closest_loc_data(latitude, longitude, name, &miles);
+
+        // add to loc_hist file
+        add_entry_to_loc_hist(t, latitude, longitude, name);
+
+        // advance time one hour
+        t += 3600;
+    }
+}
+
+double rand_double(void)
+{
+    double rand;
+
+    rand = (double)random() / 0x7fffffff;
+    return rand;
+}
+
