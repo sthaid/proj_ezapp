@@ -15,8 +15,6 @@
 #include "svcs/Location/common.h"
 
 // defines
-#define INTERVAL (15*60)  // 15 minutes
-
 #define CREATE_IF_NEEDED true
 #define READ_WRITE       false
 
@@ -42,10 +40,10 @@ int main(int argc, char **argv)
 {
     char          name[MAX_NAME];
     double        latitude, longitude, miles;
-    long          abstime;
     svc_req_t    *req;
     int           rc;
     int           created;
+    time_t        timeout = 0;
 
     // save args
     progname = argv[0];
@@ -88,15 +86,11 @@ int main(int argc, char **argv)
     param_enabled = util_get_numeric_param(data_dir, "enabled", 1);
     printf("I %s: history collection is %s\n", progname, param_enabled ? "enabled" : "disabled");
 
-    // set absolute time at which svc_wait_for_req will timeout;
-    // this time is rounded down to the prior INTERVAL so that the first
-    // call to svc_wait_for_req will timeout immedeately
-    abstime = time(NULL) / INTERVAL * INTERVAL;
-
     // service runtime loop
     while (!end_program) {
         // wait for req or timeout
-        rc = svc_wait_for_req(progname, &req, abstime);
+        timeout = (timeout == 0 ? time(NULL)+5 : time(NULL)+300);
+        rc = svc_wait_for_req(progname, &req, timeout);
 
         // if an unexpected error is returned, then delay and try again
         if (rc != 0 && rc != SVC_REQ_WAIT_ERROR_TIMEDOUT) {
@@ -109,7 +103,6 @@ int main(int argc, char **argv)
         // - find location in database that is closest to current lat/long;
         // - if name is different than most recent entry in loc_file
         //    then add new entry to loc file, 
-        // - increment abstime
         // endif
         if (rc == SVC_REQ_WAIT_ERROR_TIMEDOUT) {
             if (param_enabled) {
@@ -125,9 +118,6 @@ int main(int argc, char **argv)
                     add_entry_to_loc_hist(time(NULL), latitude, longitude, name);
                 }
             }
-
-            // update abstime to next hour
-            abstime += INTERVAL;
             continue;
         }
 

@@ -3,6 +3,8 @@
 
 // xxx comments needed
 
+extern int svc_eztest_mode;
+
 void svcs_init(int (*run_proc)(char *name, bool is_svc));
 void svcs_stop_all(void);
 void svcs_acquire_mutex(void);

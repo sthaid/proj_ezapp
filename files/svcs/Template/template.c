@@ -21,7 +21,6 @@ void process_req(svc_req_t *req);
 int main(int argc, char **argv)
 {
     svc_req_t *req;
-    long abstime;
     int rc;
 
     // save args
@@ -33,15 +32,10 @@ int main(int argc, char **argv)
     data_dir = argv[1];
     printf("I %s: starting, data_dir=%s\n", progname, data_dir);
 
-    // set absolute time at which svc_wait_for_req will timeout;
-    // this time is rounded down to the prior minute so that the first
-    // call to svc_wait_for_req will timeout immedeately
-    abstime = time(NULL) / 60 * 60;
-
     // service runtime loop
     while (!end_program) {
         // wait for req or timeout
-        rc = svc_wait_for_req(progname, &req, abstime);
+        rc = svc_wait_for_req(progname, &req, time(NULL)+5);
 
         // if an unexpected error is returned, then delay and try again
         if (rc != 0 && rc != SVC_REQ_WAIT_ERROR_TIMEDOUT) {
@@ -53,7 +47,6 @@ int main(int argc, char **argv)
         // if scv_wait_for_req timedout then do periodic svc processing
         if (rc == SVC_REQ_WAIT_ERROR_TIMEDOUT) {
             printf("I %s: do some processing\n", progname);
-            abstime += 60;
             continue;
         }
 

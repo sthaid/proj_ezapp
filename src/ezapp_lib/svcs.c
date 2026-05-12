@@ -57,6 +57,9 @@ static svc_t  svcs[MAX_SVCS];
 static int    max_svcs;
 static int  (*run)(char *name, bool is_svc);
 
+// set by eztest when testing a svc
+int svc_eztest_mode;
+
 //
 // prototypes
 //
@@ -386,6 +389,13 @@ int svc_wait_for_req(char *svc_name, svc_req_t **req, long timeout_abstime_secs)
     //INFO("svc_name=%s timeout_abstime_secs=%ld time_until_timeout=%ld\n", 
     //     svc_name, timeout_abstime_secs, timeout_abstime_secs-time(NULL));
  
+    // this flag is set when eztest is run on a svc;
+    // improves eztest ability to test a svc
+    if (svc_eztest_mode) {
+        sleep(timeout_abstime_secs - time(NULL));
+        return SVC_REQ_WAIT_ERROR_TIMEDOUT;
+    }
+
 try_again:
 
     // get svc id for the svc_name

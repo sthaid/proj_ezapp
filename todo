@@ -1,20 +1,26 @@
+colororgn
+- blank display
+- rename working?
+- use of 'touch'
+
 picoc should free all unfreed allocations
+calloc, malloc, realloc
 
 colrorgn scale, go below 5
 
-consolidtae devel directories
-
-- - - 
-
-review all for xxx
-
 linux build in eztest  ???
 
-set version OR eliminate version and just use build date
+developer mode password
+
+- - - 
 
 documentation
 - make a doc dir, decide where README files belong
 - document foreground 
+
+review all for xxx
+
+set version OR eliminate version and just use build date
 
 make new repo
 - new name
@@ -25,8 +31,6 @@ make new repo
     functionality. Common uses include quick services like food delivery, payments, and navigation
   - icon
     - maybe change name to miniApps or MiniC
-
-developer mode password
 
 more apps work:
 - reversi

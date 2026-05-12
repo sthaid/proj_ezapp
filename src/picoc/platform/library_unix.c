@@ -1597,6 +1597,7 @@ void Svc_req_completed(struct ParseState *Parser, struct Value *ReturnValue,
 
 void SvcsSetupFunction(Picoc *pc)
 {
+    PLATFORM_VAR(svc_eztest_mode, &pc->IntType, true);
 }
 
 struct LibraryFunction SvcsFunctions[] = {
