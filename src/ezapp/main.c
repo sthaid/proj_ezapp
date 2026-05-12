@@ -12,9 +12,6 @@
 
 #include "version.h"
 
-// xxx
-// - update comments throughout
-
 //
 // defines
 //
@@ -237,6 +234,10 @@ static void create_files(int action)
     return;
 #endif
 
+    // If apps or svcs dirs don't exist or if there is a new files.tar
+    // then extract files.tar.
+    // Existing files, such as params or mp3, are not removed.
+    // This is done when ezapp initializes.
     if (action == CREATE_FILES_INIT) {
         bool extract_needed = false;
         int  rc;
@@ -273,6 +274,7 @@ static void create_files(int action)
             INFO("not extracting\n");
         }
             
+    // remove existing apps and svcs, and recreate
     } else if (action ==  CREATE_FILES_RESET_APPS_AND_SVCS) {
         svcs_stop_all();
         system("rm -rf apps svcs");
@@ -320,8 +322,6 @@ static void settings(void);
 static void processing(void)
 {
     sdlx_event_t event;
-
-    // sdlx_show_toast("STARTING");
 
     while (true) {
         // clear the display, and set the font to default
@@ -424,6 +424,11 @@ static int run(char *name, bool is_svc)
     // error if no source code found in dir_path
     if (picoc_args[0] == '\0') {
         ERROR("%s: no source code in %s\n", name, dir_path);
+
+        char err_msg[150];
+        sprintf(err_msg, "No source code in %s", dir_path);
+        sdlx_show_toast(err_msg);
+
         return 99;
     }
 
@@ -470,17 +475,18 @@ static void display_menu(void)
     for (int i = first; i <= last; i++) {
         char     *name = apps[i];
         char      s1[10], s2[10];
-        int       len, l1, l2, lmax, x, y;
-        double    chw, chh, numchars;
+        int       len, l1, l2, lmax, x, y, fontid;
+        double    chw, chh;
         sdlx_loc_t loc;
 
+        // if no app at this menu loction then continue
         if (name == NULL) {
             continue;
         }
 
+        // break app name into one or two strings, depending the name length
         len  = strlen(name);
         if (len > 8) len = 8;
-
         if (len <= 4) {
             l1 = len;
             l2 = 0;
@@ -497,14 +503,16 @@ static void display_menu(void)
             lmax = l2;
         }
 
+        // determine the fontid, and font char width/height;
+        // which will be used below when displaying the menu item text
         if (s2[0] == '\0') {
             double k = (len == 1 ? 1 : 1.5);
             chw = (k * RADIUS) / lmax;
-            numchars = sdlx_win_width / chw;
+            fontid = sdlx_win_width / chw;
         } else {
             double k = ((len == 5 || len == 6) ? 1.35 : 1.5);
             chw = (k * RADIUS) / lmax;
-            numchars = sdlx_win_width / chw;
+            fontid = sdlx_win_width / chw;
         }
         chh = chw / 0.6;
 
@@ -518,14 +526,14 @@ static void display_menu(void)
         sdlx_render_texture(circle, x-RADIUS, y-RADIUS);
         if (s2[0] == '\0') {
             sdlx_render_printf_ex2(x, y, 
-                                   numchars, COLOR_WHITE, FLAG_XY_CTR, 
+                                   fontid, COLOR_WHITE, FLAG_XY_CTR, 
                                    "%s", s1);
         } else {
             sdlx_render_printf_ex2(x, nearbyint(y-0.5*chh), 
-                                   numchars, COLOR_WHITE, FLAG_XY_CTR, 
+                                   fontid, COLOR_WHITE, FLAG_XY_CTR, 
                                    "%s", s1);
             sdlx_render_printf_ex2(x, nearbyint(y+0.5*chh), 
-                                   numchars, COLOR_WHITE, FLAG_XY_CTR, 
+                                   fontid, COLOR_WHITE, FLAG_XY_CTR, 
                                    "%s", s2);
         }
 
@@ -1205,9 +1213,6 @@ char *get_str(FILE *fp, char *s, int s_len)
 
     p = fgets(s, s_len, fp);
     if (p == NULL) {
-        //if (!feof(fp)) {
-        //    printf("ERROR: get failed - error=%d\n", ferror(fp));
-        //}
         return NULL;
     }
 

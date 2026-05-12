@@ -18,7 +18,7 @@ SDL SDL_ttf SDL_mixer lodepng kissfft cJSON libmp3lame ezapp_lib picoc:
 	cd build/$@; cmake --build . # --verbose
 	cd build/$@; cmake --install .
 
-run: build
+run: build_quick
 	cd ../files; ../linux/build/ezapp/ezapp 2>&1 | ezlogfilter
 
 clean:
@@ -26,5 +26,5 @@ clean:
 	rm -rf build local
 
 .PHONY: SDL SDL_ttf SDL_mixer lodepng kissfft cJSON libmp3lame ezapp_lib picoc
-.PHONY: ezapp run all clean
+.PHONY: ezapp run build_all build_quick clean
 

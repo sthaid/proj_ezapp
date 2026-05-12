@@ -1,24 +1,34 @@
-colororgn
-- blank display
-- rename working?
-- use of 'touch'
-
-picoc should free all unfreed allocations
-calloc, malloc, realloc
-
-colrorgn scale, go below 5
-
-linux build in eztest  ???
+test "no soruce code"
 
 developer mode password
+- force it to be init
 
-- - - 
+colororgn
+- colrorgn scale, go below 5
+- when exitting and recording, save the file
+- provide default record file name, such as new1.mp3
+- blank display issue
+- is rename working?
+- use of 'touch'
+- save initial record.mp3 in datadir
+
+picoc should free all unfreed allocations
+- calloc, malloc, realloc, strdup
+- open, fopen
+- util_map_file 
+
+document each app with a README file
+- define format of file
 
 documentation
-- make a doc dir, decide where README files belong
+- toplevel README.md
+- make a doc dir, for other README files
 - document foreground 
 
 review all for xxx
+
+- - - 
+
 
 set version OR eliminate version and just use build date
 
