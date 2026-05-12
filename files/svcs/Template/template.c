@@ -53,7 +53,6 @@ int main(int argc, char **argv)
 
         // if req was recvd then process the req
         if (req != NULL) {
-            printf("I %s: req=%p req->req_id=%d\n", progname, req, req->req_id);
             process_req(req);
         }
     }
@@ -89,6 +88,7 @@ void periodic_processing(void)
 #if 1
     // print interval since last call
     static time_t t_last_call;
+    time_t t_now = time(NULL);
     if (t_last_call != 0) {
         printf("I %s: periodic interval = %ld secs\n", progname, t_now-t_last_call);
     }
