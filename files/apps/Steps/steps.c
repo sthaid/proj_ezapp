@@ -442,28 +442,28 @@ void settings(void)
         // process events
         switch (event.event_id) {
         case EVID_STEP_LEN:
-            str = sdlx_get_input_str("step_len", NULL, true, COLOR_BLACK);
+            str = sdlx_get_input_str("step_len", true);
             if (sscanf(str, "%lf", &value) == 1) {
                 params.step_len = value;
                 util_set_numeric_param(data_dir, "step_len", params.step_len);
             }
             break;
         case EVID_YMAX_HOUR: 
-            str = sdlx_get_input_str("ymax_hour", NULL, true, COLOR_BLACK);
+            str = sdlx_get_input_str("ymax_hour", true);
             if (sscanf(str, "%lf", &value) == 1) {
                 params.ymax_hour = nearbyint(value);
                 util_set_numeric_param(data_dir, "ymax_hour", params.ymax_hour);
             }
             break;
         case EVID_YMAX_DAY: 
-            str = sdlx_get_input_str("ymax_day", NULL, true, COLOR_BLACK);
+            str = sdlx_get_input_str("ymax_day", true);
             if (sscanf(str, "%lf", &value) == 1) {
                 params.ymax_day = nearbyint(value);
                 util_set_numeric_param(data_dir, "ymax_day", params.ymax_day);
             }
             break;
         case EVID_YMAX_MONTH: 
-            str = sdlx_get_input_str("ymax_month", NULL, true, COLOR_BLACK);
+            str = sdlx_get_input_str("ymax_month", true);
             if (sscanf(str, "%lf", &value) == 1) {
                 params.ymax_month = nearbyint(value);
                 util_set_numeric_param(data_dir, "ymax_month", params.ymax_month);

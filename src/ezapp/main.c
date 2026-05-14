@@ -158,7 +158,9 @@ static int init(void)
     // get params, if they don't exist, set to default value
     params.devel_mode = util_get_numeric_param(".", "devel_mode", false);
     params.devel_port = util_get_numeric_param(".", "devel_port", DEFAULT_DEVEL_PORT);
-    strcpy(params.devel_password, util_get_str_param(".", "devel_password", DEFAULT_DEVEL_PASSWORD));
+    char *s = util_get_str_param(".", "devel_password", DEFAULT_DEVEL_PASSWORD);
+    strcpy(params.devel_password, s);
+    free(s);
     params.foreground_enabled = util_get_numeric_param(".", "foreground_enabled", 1);
     params.record_gain = util_get_numeric_param(".", "record_gain", DEFAULT_RECORD_GAIN);
     params.record_silence = util_get_numeric_param(".", "record_silence", DEFAULT_RECORD_SILENCE);
@@ -709,7 +711,7 @@ static void sanitize_input(char *s)
 // -----------------  SETTINGS  -----------------------------------
 
 static void show_file(char *filename, int orientation, int fontid);
-static double get_number(char *prompt, double min, double max) __attribute__ ((unused));
+static double get_number(char *prompt, double min, double max);
 
 static void settings(void)
 {
@@ -739,8 +741,6 @@ static void settings(void)
     bool                done = false;
     sdlx_event_t        event;
     sdlx_loc_t         *loc;
-    char               *msg = NULL;
-    long                msg_time = 0;
     char               *ipaddr;
     int                 record_test_state = IDLE;
     sdlx_audio_params_t ap;
@@ -876,12 +876,6 @@ static void settings(void)
         sdlx_render_printf(0, ROW2Y(2), "%s", BUILD_DATE);
         sdlx_render_printf(0, ROW2Y(3), "%s:%d", ipaddr, params.devel_port);
 
-        // if a message is requested for display then do so;
-        // otherwise, when in developer mode, display ipaddr:port
-        if (msg && (util_microsec_timer() - msg_time) < 3000000) {
-            sdlx_render_printf(0, sdlx_win_height-300, "%s", msg);
-        }
-
         // register motion and control events
         sdlx_register_event(NULL, EVID_MOTION);
         sdlx_register_control_events(0, NULL, 0, NULL, EVID_QUIT, "X");
@@ -915,7 +909,7 @@ static void settings(void)
         case EVID_DEVEL_PORT: {
             char *str; 
             int cnt, port;
-            str = sdlx_get_input_str("Port", "1024 - 49151", true, BG_COLOR);
+            str = sdlx_get_input_str("Port\n1024 - 49151", true);
             cnt = sscanf(str, "%d", &port);
             if (cnt == 1 && (port >= 1024 && port <= 49151)) {
                 params.devel_port = port;
@@ -928,15 +922,13 @@ static void settings(void)
             break; }
         case EVID_DEVEL_PASSWORD: {
             char *str; 
-            str = sdlx_get_input_str("Password", "Min Length 4", false, BG_COLOR);
+            str = sdlx_get_input_str("Password\nMin Length 4", false);
             if (strlen(str) >= 4) {
                 strcpy(params.devel_password, str);
                 util_set_str_param(".", "devel_password", str);
-                msg = "Password changed";
-                msg_time = util_microsec_timer();
+                sdlx_show_toast("Password changed");
             } else {
-                msg = "Password too short";
-                msg_time = util_microsec_timer();
+                sdlx_show_toast("Password too short");
             }
             break; }
         case EVID_SERVICES:
@@ -971,13 +963,12 @@ static void settings(void)
             break; }
         case EVID_RESET_APPS_AND_SVCS: {
             char *str; 
-            str = sdlx_get_input_str("Reset y/n", "", false, BG_COLOR);
+            str = sdlx_get_input_str("Reset y/n", false);
             if (strcasecmp(str, "y") != 0) {
                 break;
             }
             create_files(CREATE_FILES_RESET_APPS_AND_SVCS);
-            msg = "Apps/Svcs are reset";
-            msg_time = util_microsec_timer();
+            sdlx_show_toast("Apps/Svcs are reset");
             break; }
         case EVID_FOREGROUND: {
             params.foreground_enabled = (params.foreground_enabled ? false : true);
@@ -1018,15 +1009,15 @@ static void settings(void)
     }
 }
 
-static double get_number(char *prompt1, double min, double max)
+static double get_number(char *prompt_arg, double min, double max)
 {
     char  *input_str; 
     double number;
-    char   prompt2[100];
+    char   prompt[100];
 
-    sprintf(prompt2, "%0.1f - %0.1f", min, max);
+    sprintf(prompt, "%s\n%0.1f - %0.1f", prompt_arg, min, max);
 
-    input_str = sdlx_get_input_str(prompt1, prompt2, true, BG_COLOR);
+    input_str = sdlx_get_input_str(prompt, true);
     if (sscanf(input_str, "%lf", &number) != 1) {
         return INVALID_NUMBER;
     }

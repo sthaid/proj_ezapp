@@ -10,10 +10,6 @@ void log_msg(const char *lvl, const char *func, const char *fmt, ...)
     char    msg[1000];
     int     len;
 
-    static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
-
-    pthread_mutex_lock(&mutex);
-
     // construct msg
     va_start(ap, fmt);
     len = vsnprintf(msg, sizeof(msg), fmt, ap);
@@ -27,8 +23,6 @@ void log_msg(const char *lvl, const char *func, const char *fmt, ...)
 
     // log to stderr, which is redirected to the log fifo
     fprintf(stderr, "%s %s: %s\n", lvl, func, msg);
-
-    pthread_mutex_unlock(&mutex);
 }
 
 #ifdef ANDROID
@@ -66,9 +60,6 @@ int log_init(void)
         ERROR("failed to dup stdout to stderr, %s\n", strerror(errno));
         return -1;
     }
-
-    fprintf(stdout, "test print to stdout\n");  // xxx temp
-    fprintf(stderr, "test print to stderr\n");  // xxx temp
 
     return 0;
 }

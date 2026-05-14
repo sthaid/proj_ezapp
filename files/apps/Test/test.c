@@ -884,7 +884,7 @@ static void page_7_process_event(sdlx_event_t *ev)
         } else if (ev->event_id == EVID_AUDIO_PLAY_TONE_FREQ_DOWN) {
             tone_freq -= 100;
         } else if (ev->event_id == EVID_AUDIO_PLAY_TONE_GET_FREQ) {
-            str = sdlx_get_input_str("Frequency", NULL, true, COLOR_BLACK);
+            str = sdlx_get_input_str("Frequency", true);
             if (sscanf(str, "%d", &tone_freq) != 1) {
                 break;
             }

@@ -7,36 +7,18 @@
 #include <SDL3/SDL.h>
 #include <SDL3_mixer/SDL_mixer.h>
 
-// xxx - search for yyy
-//
-// xxx - higher priority
-// - incl fps and num_ch in the state ?
-// - check that filenams provided  have mp3 extension
-// - try lame 96 kbps
-// - why is so much record gain needed
-// - consider sdlx_audio_get_state return ptr to audio state
-// - better way to detect microphone silence
+// Capabilities:
+// - record from microphone
+// - record Android device audio
+// - play sequence of tones
+// - play from buffer
+// - play from file
 
-// xxx - medium priority
-// - use VERBOSE prints for commented out prints ?
-// - util_start_playbackcapture should return status
-
-// xxx document capabilities
-// - record from mic
-// - record from device
-// - play file
-// - play tones
-// - play buff
-
-// xxx - needs final verification
-// - make volume a double in 0-1 ranage
-// - check that pause and resume work corretly
+// xxx util_start_playbackcapture should return status
 
 //
 // defines
 //
-
-//#define VERBOSE
 
 #define TWO_MS  2000
 
@@ -48,7 +30,7 @@
 #define MP3_LAME_MODE_DUAL_CHANNEL     2
 #define MP3_LAME_MODE_MONO             3
 
-#define MAX_RECORD_SECS (12 * 3600)   // xxx perhaps a diffeent approach 
+#define MAX_RECORD_SECS (12 * 3600)
 
 //
 // typedefs
@@ -195,6 +177,7 @@ static int audio_init(void)
         return -1;
     }
 
+    // xxx this is where the CPU load is from
     mixer = MIX_CreateMixerDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &playback_request_spec);
     if (mixer == NULL) {
         ERROR("MIX_CreateMixerDevice failed, %s\n", SDL_GetError());
@@ -282,23 +265,26 @@ static int audio_stop(void)
     return 0;
 }
 
+// xxx try to eliminate this routine
 static int audio_reset(void)
 {
+    // stop in progress audio, if any
     if (audio_stop() != 0) {
         ERROR("failed to stop audio\n");
         return -1;
     }
 
+    // if audio is already initialized then return
     if (audio_is_initialized) {
         return 0;
     }
 
+    // initialize audio
     return audio_init();
 }
 
 // -----------------  CONTROL / STATE / PARAMS  -------------------
 
-// yyy comments needed this section
 int sdlx_audio_stop(void)
 {
     if (audio_stop() != 0) {
@@ -306,6 +292,7 @@ int sdlx_audio_stop(void)
         return -1;
     }
 
+    // xxx try to not do this
     audio_cleanup();
 
     return 0;
@@ -504,7 +491,7 @@ static char *concat_dir_and_filename(char *dir, char *fn, char *path)
 // Lame is initialized in sdlx_audio_init.
 // - num_channels   = 2
 // - frames_per_sec = 48000
-// - bit rate       = 64 kbps
+// - bit rate       = 128 kbps
 // - mode           = joint stereo
 // - quality        = 2  (high)
 
@@ -596,7 +583,7 @@ static void mp3_file_write(void *cx_arg, float *samples, int num_samples)
         return;
     }
 
-    // yyy comment
+    // loop until all samples have been processed
     while (num_samples) {
         process_samples = (num_samples > MAX_SAMPLES_MP3_FILE_WRITE ? MAX_SAMPLES_MP3_FILE_WRITE : num_samples);
 
@@ -923,7 +910,6 @@ static int record_dev_thread(void *cx_arg)
         save_audio_samples(samples, MAX_SAMPLES, 2);
 
         // calculate volume
-        // yyx should there be a different routine to calc_volume for stereo
         state.volume = calc_volume(samples, MAX_SAMPLES);
 
         // if not paused then perform recording  
@@ -1085,7 +1071,10 @@ static int tones_thread(void *cx_arg)
 
         //INFO("tone[%d] freq=%d millisecs=%d\n", i, t->freq, t->intvl_ms);
 
-        // xxx comment
+        // update audio state fields:
+        // - play_tones_freq: the frequency of the tone being played; or 0 for silent gap
+        // - play_tones_seqnum: incremented for each tone/gap playedA;
+        //     an app can poll the seqnum to determine if a new tone is being played
         seqnum++;
         state.play_tones_freq = t->freq;
         state.play_tones_seqnum = seqnum;
@@ -1355,7 +1344,7 @@ int sdlx_audio_play_file(char *dir, char *filename)
         return -1;
     }
 
-    // get audio format xxx print error if these are not expected
+    // get audio format
     MIX_GetAudioFormat(audio, &play_file_spec);
     INFO("format = %s 0x%x  channels=%d  freq = %d\n", 
          audio_fmt_str(play_file_spec.format), 
@@ -1419,8 +1408,7 @@ void sdlx_audio_set_play_file_time(int secs)
         return;
     }
 
-    // update audio state.play_current_secs_
-    // xxx this may not be needed
+    // update audio state.play_current_secs;
     frames = MIX_GetTrackPlaybackPosition(track);
     state.play_current_secs = MIX_TrackFramesToMS(track, frames) / 1000;
     INFO("readback of play file time = %d\n", state.play_current_secs);
@@ -1446,6 +1434,7 @@ static void mixer_track_raw_callback(void *userdata, MIX_Track *track, const SDL
 
 static void mixer_track_stopped_callback(void *userdata, MIX_Track *track)
 {
+    // xxxx  remove allocs here
     MIX_DestroyAudio(audio);
     audio = NULL;
     state.state = AUDIO_STATE_IDLE;
@@ -1467,41 +1456,7 @@ static char *audio_fmt_str(int fmt)
     return "SDL_AUDIO_INVALID_FMT";
 }
 
-#if 0
-// possibly can't call tthis while a file is playing;
-// seems to be not needed, so commented out
-int sdlx_audio_file_duration_secs(char *dir, char *filename)
-{
-    char path[200];
-    MIX_Audio *audio_lcl;
-    int duration_secs;
-    long frames;
-
-
-    concat_dir_and_filename(dir, filename, path);
-
-    audio_lcl = MIX_LoadAudio(mixer, path, false);
-    if (audio_lcl == NULL) {
-        ERROR("MIX_LoadAudio, %s\n", SDL_GetError());
-        return 0;
-    }
-
-    frames = MIX_GetAudioDuration(audio_lcl);
-    if (frames < 0) {
-        ERROR("failed to get duration of %s, frames=%ld\n", path, frames);
-        frames = 0;
-    }
-    duration_secs = MIX_AudioFramesToMS(audio_lcl,frames) / 1000;
-
-    MIX_DestroyAudio(audio_lcl);
-
-    return duration_secs;
-}
-#endif
-
 // -----------------  CREATE TEST MP3 FILE  -------------------
-
-// xxx add to both Test and ColrOrgn ?
 
 void sdlx_create_test_file(char *dir, char *filename, int freq1, int freq2, int duration_secs)
 {

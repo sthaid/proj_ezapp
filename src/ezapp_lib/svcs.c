@@ -283,8 +283,6 @@ void svcs_stop_all(void)
 
 int svc_make_req(char *svc_name, int req_id, char *req_data, int req_data_len, int timeout_secs)
 {
-    #define TIMEOUT_USEC (20L * SEC)  // xxx needs arg
-
     int        svc_id, i, req_status;
     svc_t     *x;
     svc_req_t *req;

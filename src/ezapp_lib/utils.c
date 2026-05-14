@@ -82,8 +82,6 @@ static char *concat(char *s1, char *s2, char *result)
     return result;
 }
 
-// xxx maybe separating dir is too confusing
-// xxx maybe a concat util instead
 int util_write_file(char *dir, char *fn, void *buf, int len)
 {
     int fd, ret;
@@ -374,9 +372,11 @@ void util_sync_file(void *addr, int len)
 
 // -----------------  GET / SET PARAMS  ----------------------
 
-#define MAX_PARAMS 32
+static pthread_mutex_t params_mutex = PTHREAD_MUTEX_INITIALIZER;
+#define PARAMS_LOCK    do { pthread_mutex_lock(&params_mutex); } while (0)
+#define PARAMS_UNLOCK  do { pthread_mutex_unlock(&params_mutex); } while (0)
 
-// xxx keep multiple copies for each data_dir
+#define MAX_PARAMS 50
 static struct {
     char *name;
     char *value;
@@ -406,6 +406,10 @@ static void read_params_file(char *dir)
 
     INFO("reading params file in dir '%s'\n", dir);
 
+    for (int i = 0; i < max_params; i++) {
+        free(params[i].name);
+        free(params[i].value);
+    }
     memset(params, 0, sizeof(params));
     max_params = 0;
 
@@ -426,7 +430,6 @@ static void read_params_file(char *dir)
             return;
         }
 
-        // xxx is this a mem leak
         params[max_params].name = strdup(name);
         params[max_params].value = strdup(s+n);
         max_params++;
@@ -470,11 +473,12 @@ static void write_params_file(char *dir)
     fclose(fp);
 }
 
+// caller must free the returned string
 char *util_get_str_param(char *dir, char *name, char *default_value)
 {
     int i;
 
-    // xxx locking needed
+    PARAMS_LOCK;
 
     // if haven't read the params file then do so
     read_params_file(dir);
@@ -492,16 +496,20 @@ char *util_get_str_param(char *dir, char *name, char *default_value)
     //   add param, set to default value, and write file
     // endif
     if (i < max_params) {
-        return params[i].value;
+        char *param_value = strdup(params[i].value);
+        PARAMS_UNLOCK;
+        return param_value;
     } else {
         if (max_params >= MAX_PARAMS) {
             ERROR("params tbl is full\n");
+            PARAMS_UNLOCK;
             return default_value;
         }
         params[max_params].name = strdup(name);
         params[max_params].value = strdup(default_value);
         max_params++;
         write_params_file(dir);
+        PARAMS_UNLOCK;
         return default_value;
     }
 }
@@ -510,7 +518,7 @@ void util_set_str_param(char *dir, char *name, char *value)
 {
     int i;
 
-    // xxx locking needed
+    PARAMS_LOCK;
 
     // if haven't read the params file then do so
     read_params_file(dir);
@@ -530,6 +538,7 @@ void util_set_str_param(char *dir, char *name, char *value)
     // endif
     if (i < max_params) {
         if (strcmp(params[i].value, value) == 0) {
+            PARAMS_UNLOCK;
             return;
         }
         free(params[i].value);
@@ -537,6 +546,7 @@ void util_set_str_param(char *dir, char *name, char *value)
     } else {
         if (max_params >= MAX_PARAMS) {
             ERROR("params tbl is full\n");
+            PARAMS_UNLOCK;
             return;
         }
         params[max_params].name = strdup(name);
@@ -546,6 +556,8 @@ void util_set_str_param(char *dir, char *name, char *value)
 
     // write the params file
     write_params_file(dir);
+
+    PARAMS_UNLOCK;
 }
 
 double util_get_numeric_param(char *dir, char *name, double dflt_val)
@@ -562,6 +574,7 @@ double util_get_numeric_param(char *dir, char *name, double dflt_val)
 
     // convert value_str, returned by util_get_str_param, to 'value'
     cnt = sscanf(value_str, "%lf", &value);
+    free(value_str);
 
     // the conversion can fail if value_str is not a number,
     // if the conversion fails then call util_set_numeric_param, and 
@@ -589,7 +602,7 @@ void util_print_params(char *dir)
 {
     int i;
 
-    // xxx locking
+    PARAMS_LOCK;
 
     read_params_file(dir);
 
@@ -597,6 +610,8 @@ void util_print_params(char *dir)
     for (i = 0; i < max_params; i++) {
         INFO("  %s = %s\n", params[i].name, params[i].value);
     }
+
+    PARAMS_UNLOCK;
 }
 
 // -----------------  NETWORK  -------------------------------
@@ -748,7 +763,7 @@ int util_read_png_file(char *dir, char *filename, unsigned char **pixels, int *w
     concat(dir, filename, path);
     //INFO("reading png file %s\n", path);
 
-    rc = lodepng_decode32_file(pixels, (unsigned int*)w, (unsigned int*)h, path); // xxx check this doent allocate pixels on err
+    rc = lodepng_decode32_file(pixels, (unsigned int*)w, (unsigned int*)h, path);
     if (rc != 0) {
         ERROR("lodepng_decode32_file %s failed, rc=%d\n", path, rc);
         return -1;
@@ -973,7 +988,6 @@ static void fft_test_check(char *test_name, int n, float *array1, float *array2)
 
 #define MAX_CACHE 4
 
-// xxx xxx inuse flag?
 static struct {
     kiss_fftr_cfg cfg;
     int n_fft;

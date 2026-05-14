@@ -212,7 +212,7 @@ void process_event(sdlx_event_t *ev, sdlx_audio_state_t *as)
     } else if (ev->event_id >= EVID_RENAME_FILE && ev->event_id < EVID_RENAME_FILE+MAX_FILES) {
         // rename the selected file
         int idx = ev->event_id - EVID_RENAME_FILE;
-        char *input = sdlx_get_input_str("RecordedFileName", NULL, false, COLOR_BLACK);
+        char *input = sdlx_get_input_str("RecordedFileName", false);
         char  new_name[100];
         if (input[0] != '\0') {
             sprintf(new_name, "%s.mp3", input);
@@ -228,7 +228,7 @@ void process_event(sdlx_event_t *ev, sdlx_audio_state_t *as)
 
             // if recorded file exists then rename it
             if (util_file_exists(files_dir, ".record.mp3")) {
-                char *input = sdlx_get_input_str("RecordedFileName", NULL, false, COLOR_BLACK);
+                char *input = sdlx_get_input_str("RecordedFileName", false);
                 char  new_name[100];
                 char  cmd[200];
                 if (input[0] != '\0') {

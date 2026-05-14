@@ -152,10 +152,7 @@ void sdlx_copy_asset_file(char *asset_filename, char *dest_dir)
     }
 #else  // not Android
     char cmd[250];
-    //char *storage_path;  xxx
 
-    //storage_path = sdlx_get_storage_path();
-    //sprintf(cmd, "cp %s/../assets/%s %s", storage_path, asset_filename, dest_path);
     sprintf(cmd, "cp ../assets/%s %s", asset_filename, dest_path);
     rc = system(cmd);
     if (rc != 0) {

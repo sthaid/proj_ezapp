@@ -10,8 +10,8 @@
 // defines
 //
 
-#define ONE_MS       1000
-#define EVID_KEYBD   9999 
+#define MAX_EVENT 200
+#define ONE_MS    1000
 
 //
 // typedefs
@@ -26,48 +26,35 @@ typedef struct {
 // variables
 //
 
-// defined in sdlx_video.c
-extern SDL_Window * window; // xxx move to private.h or sdlx.h
+extern SDL_Window *window;
 
-static event_t      event_tbl[100];
-static int          max_event;
-
-static bool         evid_motion_registered;
-static bool         evid_keybd_registered;
-
-static int          event_quit_rcvd;
-
-static bool         event_box_enable=0; //xxx move to sdlx.h ?
-
-extern int          logical_win_width, logical_win_height;  // xxx move to sdlx.h
-extern int          logical_win_width_portrait;
+static event_t event_tbl[MAX_EVENT];
+static int     max_event;
+static bool    evid_motion_registered;
+static bool    evid_keybd_registered;
+static int     event_quit_rcvd;
+static bool    event_box_enable;
 
 //
 // prototypes
 //
 
 static void process_sdlx_event(SDL_Event *ev, sdlx_event_t *event);
+static char *event_type_to_str(enum SDL_EventType evtype);
 
-// xxx cleanup and sections needed
-
-// -----------------  EVENTS  -----------------------------
-
-void sdlx_reset_events(void)
-{
-    max_event = 0;
-    evid_motion_registered = false;
-    evid_keybd_registered = false;
-}
-
-void sdlx_event_box_ctrl(bool enable)
-{
-    event_box_enable = enable;
-}
+// -----------------  REGISTER EVENTS  --------------------
 
 void sdlx_register_event(sdlx_loc_t *loc, int event_id)
 {
     sdlx_loc_t loc2;
 
+    // if event_tbl is full print error msg and return
+    if (max_event == MAX_EVENT) {
+        ERROR("event_tbl is full\n");
+        return;
+    }
+
+    // 
     if (event_id == EVID_MOTION) {
         evid_motion_registered = true;
         return;
@@ -95,12 +82,15 @@ void sdlx_register_event(sdlx_loc_t *loc, int event_id)
         loc2.y -= delta/2;
     }
 
-    // xxx comment  
+    // event box aids development;
+    // when enabled a rectangle is drawn around the event display area
     if (event_box_enable) {
         sdlx_render_rect(loc2.x, loc2.y, loc2.w, loc2.h, 3, COLOR_WHITE);
     }
 
-    // rotate the loc2  xxx comment
+    // if the display orientation is landscape then the caller supplied 
+    // landscape event location is converted to a portrait location;
+    // the portrait location is what is stored the event_tbl
     if (orientation == LANDSCAPE) { 
         int x,y,w,h;
         x = logical_win_width_portrait - loc2.y - loc2.h;
@@ -114,6 +104,7 @@ void sdlx_register_event(sdlx_loc_t *loc, int event_id)
         loc2.h = h;
     }
 
+    // save the event location in the event_tbl
     event_tbl[max_event].loc = loc2;
     event_tbl[max_event].event_id  = event_id; 
     max_event++;
@@ -145,7 +136,7 @@ void sdlx_register_control_events(int evid1, char *evstr1,
         sdlx_render_fill_rect(0, y, logical_win_width, logical_win_height-y, BG_COLOR);
     } else {
         sdlx_render_fill_rect(logical_win_width - CONTROL_AREA_SIZE, 0,  // x,y
-                              CONTROL_AREA_SIZE, logical_win_height,      // w,h  xxx name
+                              CONTROL_AREA_SIZE, logical_win_height,      // w,h
                               BG_COLOR);
     }
 
@@ -185,6 +176,20 @@ void sdlx_register_control_events(int evid1, char *evstr1,
     }
 }
 
+void sdlx_reset_events(void)
+{
+    max_event = 0;
+    evid_motion_registered = false;
+    evid_keybd_registered = false;
+}
+
+void sdlx_event_box_ctrl(bool enable)
+{
+    event_box_enable = enable;
+}
+
+// -----------------  GET AN EVENT  -----------------------
+
 // arg timeout_us:
 //   -1:     wait forever
 //    0:     don't wait
@@ -195,22 +200,21 @@ void sdlx_get_event(long timeout_us, sdlx_event_t *event)
     long waited = 0;
     bool got_event;
 
-    // xxx move
-    memset(event, 0, sizeof(*event));
-    event->event_id = -1;
-
     // if SDL_QUIT has been received then
     // repeat returning EVID_QUIT
     if (event_quit_rcvd > 0) {
         event_quit_rcvd--;
+        memset(event, 0, sizeof(*event));
         event->event_id = EVID_QUIT;
         return;
     }
 
 try_again:
-    //SDL_UpdateSensors(); // xxx is this needed?
+    // preset return sdlx event 
+    memset(event, 0, sizeof(*event));
+    event->event_id = -1;
 
-    // get event
+    // get SDL event
     got_event = SDL_PollEvent(&ev);
 
     // no event available, either return error or try again to get event
@@ -219,9 +223,10 @@ try_again:
             // dont wait
             return;
         } else if (timeout_us < 0 || waited < timeout_us) {
+            // xxx keep this change from 1 ms to 10 ms?
             // either wait forever or time waited is less than timeout_us
-            usleep(ONE_MS);
-            waited += ONE_MS;
+            usleep(10*ONE_MS);
+            waited += 10*ONE_MS;
             goto try_again;
         } else {
             // time waited exceeds timeout_us
@@ -287,6 +292,7 @@ static void process_sdlx_event(SDL_Event *ev, sdlx_event_t *event)
             }
         }
         break; }
+
     case SDL_EVENT_MOUSE_MOTION: {
         if ((ev->motion.state & SDL_BUTTON_LMASK) && evid_motion_registered) {
             //INFO("MOUSE_MOTION x=%f y=%f xrel=%f yrel=%f\n",
@@ -309,30 +315,7 @@ static void process_sdlx_event(SDL_Event *ev, sdlx_event_t *event)
             }
         }
         break; }
-    case SDL_EVENT_SENSOR_UPDATE: {
-        SDL_SensorEvent *x = &ev->sensor;
-        // xxx why is step counter not working
-        // xxx cleanup
-        if (x->which == 14 || x->which == 15) { // xxx clean up these prints
-            // xxx long stepc = *(long*)x->data;
-            unsigned long stepc;
-            memcpy(&stepc, x->data, sizeof(stepc));
-            INFO("SENSOR: which=%d data=%f %f %f %f %f %f stepc=%ld timestamp=%ld\n",
-                 x->which,
-                 x->data[0], x->data[1], x->data[2], x->data[3], x->data[4], x->data[5],
-                 stepc, x->sensor_timestamp);
-        }
-        break; }
-#if 0
-    case SDL_EVENT_TEXT_INPUT: {
-        SDL_TextInputEvent *x = &ev->text;
-        INFO("SDL_EVENT_TEXT_INPUT: '%s'\n", x->text);
-        break; }
-    case SDL_EVENT_TEXT_EDITING: {
-        SDL_TextEditingEvent *x = &ev->edit;
-        INFO("SDL_EVENT_TEXT_EDITING: '%s' %d %d\n", x->text, x->start, x->length);
-        break; }
-#endif
+
     case SDL_EVENT_KEY_DOWN:
     case SDL_EVENT_KEY_UP: {
         SDL_KeyboardEvent *x = &ev->key;
@@ -348,13 +331,8 @@ static void process_sdlx_event(SDL_Event *ev, sdlx_event_t *event)
         event->event_id = EVID_KEYBD;
         event->u.keybd.ch = keycode;
         break; }
-    case SDL_EVENT_FINGER_DOWN:
-    case SDL_EVENT_FINGER_UP:
-    case SDL_EVENT_FINGER_MOTION: {
-        // xxx maybe support pinch
-        // not used
-        break; }
-    case SDL_EVENT_QUIT: { //xxx
+
+    case SDL_EVENT_QUIT: {
         // the event_quit_rcvd variable is set so that 
         // this routine will repeat returning EVID_QUIT, so that
         // a running app will first process the EVID_QUIT, and 
@@ -363,36 +341,103 @@ static void process_sdlx_event(SDL_Event *ev, sdlx_event_t *event)
         event->event_id = EVID_QUIT;
         break; }
 
-    // xxx  these dont seem to be invoked
-    case SDL_EVENT_WILL_ENTER_BACKGROUND:
-        // Pause your game loop and background tasks
-        INFO("App is about to be backgrounded\n");
-        break;
-    case SDL_EVENT_DID_ENTER_BACKGROUND:
-        INFO("App is now in the background\n");
-        break;
-    case SDL_EVENT_WILL_ENTER_FOREGROUND:
-        INFO("App is about to be foregrounded\n");
-        break;
-    case SDL_EVENT_DID_ENTER_FOREGROUND:
-        // Resume your game loop and tasks
-        INFO("App is now in the foreground\n");
+    case SDL_EVENT_FINGER_DOWN:
+    case SDL_EVENT_FINGER_UP:
+    case SDL_EVENT_FINGER_MOTION:
+    case SDL_EVENT_SENSOR_UPDATE:
+        // these occur frequently
         break;
 
     default: {
-        //INFO("event_type %d - not supported\n", ev->type);
+        // debug print the events that are not supported
+        INFO("unsupported sdl event %s\n", event_type_to_str(ev->type));
         break; }
     }
 }
 
-char *sdlx_get_input_str(char *prompt1, char *prompt2, bool numeric_keybd, sdlx_color_t bg_color)
+static char *event_type_to_str(enum SDL_EventType evtype)
+{
+    #define CASE(et) case et: return #et
+    static char str[20];
+
+    switch (evtype) {
+    CASE(SDL_EVENT_WILL_ENTER_BACKGROUND);    // these must be handled in a callback
+    CASE(SDL_EVENT_DID_ENTER_BACKGROUND);     // set with SDL_AddEventWatch
+    CASE(SDL_EVENT_WILL_ENTER_FOREGROUND);
+    CASE(SDL_EVENT_DID_ENTER_FOREGROUND);
+
+    CASE(SDL_EVENT_WINDOW_SHOWN);
+    CASE(SDL_EVENT_WINDOW_HIDDEN);
+    CASE(SDL_EVENT_WINDOW_EXPOSED);
+    CASE(SDL_EVENT_WINDOW_MOVED);
+    CASE(SDL_EVENT_WINDOW_RESIZED);
+    CASE(SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED);
+    CASE(SDL_EVENT_WINDOW_METAL_VIEW_RESIZED);
+    CASE(SDL_EVENT_WINDOW_MINIMIZED);
+    CASE(SDL_EVENT_WINDOW_MAXIMIZED);
+    CASE(SDL_EVENT_WINDOW_RESTORED);
+    CASE(SDL_EVENT_WINDOW_MOUSE_ENTER);
+    CASE(SDL_EVENT_WINDOW_MOUSE_LEAVE);
+    CASE(SDL_EVENT_WINDOW_FOCUS_GAINED);
+    CASE(SDL_EVENT_WINDOW_FOCUS_LOST);
+    CASE(SDL_EVENT_WINDOW_CLOSE_REQUESTED);
+    CASE(SDL_EVENT_WINDOW_HIT_TEST);
+    CASE(SDL_EVENT_WINDOW_ICCPROF_CHANGED);
+    CASE(SDL_EVENT_WINDOW_DISPLAY_CHANGED);
+    CASE(SDL_EVENT_WINDOW_DISPLAY_SCALE_CHANGED);
+    CASE(SDL_EVENT_WINDOW_SAFE_AREA_CHANGED);
+    CASE(SDL_EVENT_WINDOW_OCCLUDED);
+    CASE(SDL_EVENT_WINDOW_ENTER_FULLSCREEN);
+    CASE(SDL_EVENT_WINDOW_LEAVE_FULLSCREEN);
+    CASE(SDL_EVENT_WINDOW_DESTROYED);
+    CASE(SDL_EVENT_WINDOW_HDR_STATE_CHANGED);
+
+    CASE(SDL_EVENT_MOUSE_MOTION);
+    CASE(SDL_EVENT_MOUSE_BUTTON_DOWN);
+    CASE(SDL_EVENT_MOUSE_BUTTON_UP);
+    CASE(SDL_EVENT_MOUSE_WHEEL);
+    CASE(SDL_EVENT_MOUSE_ADDED);
+    CASE(SDL_EVENT_MOUSE_REMOVED);
+
+    CASE(SDL_EVENT_FINGER_DOWN);
+    CASE(SDL_EVENT_FINGER_UP);
+    CASE(SDL_EVENT_FINGER_MOTION);
+
+    CASE(SDL_EVENT_KEY_DOWN);
+    CASE(SDL_EVENT_KEY_UP);
+    CASE(SDL_EVENT_TEXT_EDITING);
+    CASE(SDL_EVENT_TEXT_INPUT);
+    CASE(SDL_EVENT_KEYMAP_CHANGED);
+    CASE(SDL_EVENT_KEYBOARD_ADDED);
+    CASE(SDL_EVENT_KEYBOARD_REMOVED);
+    CASE(SDL_EVENT_TEXT_EDITING_CANDIDATES);
+    CASE(SDL_EVENT_SCREEN_KEYBOARD_SHOWN);
+    CASE(SDL_EVENT_SCREEN_KEYBOARD_HIDDEN);
+
+    CASE(SDL_EVENT_AUDIO_DEVICE_ADDED);
+    CASE(SDL_EVENT_AUDIO_DEVICE_REMOVED);
+    CASE(SDL_EVENT_AUDIO_DEVICE_FORMAT_CHANGED);
+
+    CASE(SDL_EVENT_CLIPBOARD_UPDATE);
+
+    CASE(SDL_EVENT_SENSOR_UPDATE);
+
+    CASE(SDL_EVENT_QUIT);
+
+    default:
+        sprintf(str, "0x%04x", evtype);
+        return str;
+    }
+}
+
+// -----------------  GET INPUT STR  ----------------------
+
+char *sdlx_get_input_str(char *prompt, bool numeric_keybd)
 {
     static char        input[100];
     int                max_input, row;
     sdlx_loc_t        *loc;
     sdlx_event_t       event;
-
-    // xxx comments
 
     // init
     memset(input, 0, sizeof(input));
@@ -404,11 +449,11 @@ char *sdlx_get_input_str(char *prompt1, char *prompt2, bool numeric_keybd, sdlx_
     SDL_SetBooleanProperty(props, SDL_PROP_TEXTINPUT_AUTOCORRECT_BOOLEAN, false);
     SDL_SetNumberProperty(props, SDL_PROP_TEXTINPUT_CAPITALIZATION_NUMBER, SDL_CAPITALIZE_NONE);
     if (numeric_keybd == false) {
-        // use full keyboard
+        // use full keyboard; enable SDL_TEXTINPUT_TYPE_TEXT_PASSWORD_VISIBLE to
+        // prevent Android from modifying the keyboard input
         SDL_SetNumberProperty(props, SDL_PROP_TEXTINPUT_TYPE_NUMBER, SDL_TEXTINPUT_TYPE_TEXT_PASSWORD_VISIBLE);
     } else {
-        // use numeric keypad
-        // notes:
+        // use numeric keypad: notes - 
         //   2    = TYPE_CLASS_NUMBER
         //   8192 = TYPE_NUMBER_FLAG_DECIMAL
         //   4096 = TYPE_NUMBER_FLAG_SIGNED  (not working well in conjunction with TYPE_NUMBER_FLAG_DECIMAL)
@@ -422,20 +467,17 @@ char *sdlx_get_input_str(char *prompt1, char *prompt2, bool numeric_keybd, sdlx_
     // start text input, with properties initialized above
     SDL_StartTextInputWithProperties(window, props);
 
-    //  xxx comment
+    // loop, adding chars to the input string, until newline char rcvd or cancelled
     while (true) {
-        // clear backbuffer to bg_color
-        sdlx_display_init(bg_color, PORTRAIT);
+        // clear backbuffer
+        sdlx_display_init(COLOR_BLACK, PORTRAIT);
 
-        // display prompt line(s)
+        // display prompt line(s), the prompt arg str can contain newline chars
         row = 0;
-        if (prompt1 && prompt1[0] != '\0') {
+        if (prompt && prompt[0] != '\0') {
             row += 1;
-            sdlx_render_printf_ex2(0, ROW2Y(row), FONT_NORMAL, COLOR_WHITE, 0, "%s", prompt1);
-        }
-        if (prompt2 && prompt2[0] != '\0') {
-            row += 1;
-            sdlx_render_printf_ex2(0, ROW2Y(row), FONT_NORMAL, COLOR_WHITE, 0, "%s", prompt2);
+            loc = sdlx_render_printf_ex2(0, ROW2Y(1), FONT_NORMAL, COLOR_WHITE, 0, "%s", prompt);
+            row += nearbyint((double)loc->h / sdlx_char_height_dflt);
         }
 
         // display input value string
@@ -458,28 +500,26 @@ char *sdlx_get_input_str(char *prompt1, char *prompt2, bool numeric_keybd, sdlx_
         // wait for event
         sdlx_get_event(-1, &event);
 
-        // process event
+        // process sdlx events EVID_KEYBD and EVID_QUIT
         if (event.event_id == EVID_KEYBD) {
             int ch = event.u.keybd.ch;
 
             if (ch >= 0x20 && ch < 0x7f) {
+                // add the printable char to the input array
                 if (max_input < sizeof(input)) {
-                    // sometimes the './-' key on numeric keybd 
-                    // does not work, so allow ',' to be used instead of '.'
-                    if (numeric_keybd && ch == ',') ch = '.';
                     input[max_input++] = ch;
                     input[max_input] = '\0';
                 }
             } else if (ch == '\b') {
+                // backspace char: remove last char in input array
                 if (max_input > 0) {
                     input[--max_input] = '\0';
                 }
             } if (ch == '\r') {
+                // <cr> char: done with input, break out of loop
                 break;
             }
-        }
-
-        if (event.event_id == EVID_QUIT) {
+        } else if (event.event_id == EVID_QUIT) {
             input[0] = '\0';
             break;
         }

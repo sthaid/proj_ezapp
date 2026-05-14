@@ -172,7 +172,6 @@ typedef struct {
     int    play_tones_freq;
     int    play_tones_seqnum;
     double volume;
-    // xxx add fps and num_channels ?
 } sdlx_audio_state_t;
 
 // - - - - - -
@@ -276,8 +275,10 @@ int sdlx_sensor_read_humidity(double *percent);
 // EVENTS   
 // --------------------
 
+// define common events
 #define EVID_MOTION  9990
-#define EVID_QUIT    9991
+#define EVID_KEYBD   9991 
+#define EVID_QUIT    9992
 
 typedef struct {
     int event_id;
@@ -316,26 +317,27 @@ void sdlx_get_event(long timeout_us, sdlx_event_t *event);
 void sdlx_show_toast(char *message);
 
 // get string, uses virtual keyboard on Android
-char *sdlx_get_input_str(char *prompt1, char *prompt2, bool numeric_keybd, sdlx_color_t bg_color);
+char *sdlx_get_input_str(char *prompt, bool numeric_keybd);
 
 // --------------------
-// NOT AVAILABLE IN PICOC
+// THE FOLLOWING ARE PRIVATE,
+// NOT MADE AVAILABLE IN PICOC
 // --------------------
-
-// xxx put these in private.h  ???
 
 // sdlx_video.c
-// xxx put event_box_enable flag here
-extern double scale_render;
-extern double scale_events_x;
-extern double scale_events_y;
-extern int    orientation;
+extern double      scale_events_x;
+extern double      scale_events_y;
+extern int         orientation;
+extern int         logical_win_width, logical_win_height;
+extern int         logical_win_width_portrait, logical_win_height_portrait;
+extern int         logical_win_width_landscape, logical_win_height_landscape;
 
 int sdlx_video_init(void);
 void sdlx_video_quit(void);
 void sdlx_minimize_window(void);
 
 // sdlx_audio.c
+// xxx just pick one value for the gain
 #ifdef ANDROID
     #define DEFAULT_RECORD_GAIN 5
 #else

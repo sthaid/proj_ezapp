@@ -8,10 +8,6 @@
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
 
-// xxx review sdl3 port
-// - routines now return succ
-// - and use of floats instead of ints
-
 //
 // defines
 // 
@@ -55,18 +51,18 @@ int sdlx_char_height_dflt;
 // variables
 //
 
-// xxx move some of these to sdlx.h private section
-SDL_Window          *window;
+SDL_Window          *window;  // also used by sdlx_event.c
+
 static SDL_Renderer *renderer;
 static font_t        font[MAX_FONT_PTSIZE];
-double               scale_events_x;
-double               scale_events_y;
-sdlx_texture_t      *texture;  // xxx name
+sdlx_texture_t      *texture_dflt;
 int                  orientation;
 int                  real_win_width, real_win_height;
 int                  logical_win_width, logical_win_height;
 int                  logical_win_width_portrait, logical_win_height_portrait;
 int                  logical_win_width_landscape, logical_win_height_landscape;
+double               scale_events_x;
+double               scale_events_y;
 
 //
 // prototypes
@@ -95,8 +91,17 @@ int sdlx_video_init(void)
 {
     int num, i;
     int w, h;
+    bool succ;
 
     INFO("initializing\n");
+
+    // xxx keep this?
+    // disable block on paues;
+    // this allows the ColrOrgn app to continue audio playback when ezapp is backgrounded
+    succ = SDL_SetHint(SDL_HINT_ANDROID_BLOCK_ON_PAUSE, "0");
+    if (!succ) {
+        ERROR("disable SDL_HINT_ANDROID_BLOCK_ON_PAUSE failed\n");
+    }
 
     // initialize SDL video
     if (!SDL_Init(SDL_INIT_VIDEO)) {
@@ -110,9 +115,6 @@ int sdlx_video_init(void)
     for (i = 0; i < num; i++) {
         INFO("   %s\n",  SDL_GetVideoDriver(i));
     }
-
-    // xxx add comment about the common aspect ratio, and the logical sizes used
-    // xxx   1080 x 2340    2.1666    = 19.5/9
 
     // create SDL Window and Renderer
 #ifdef ANDROID
@@ -139,19 +141,19 @@ int sdlx_video_init(void)
     //   display size of WxH = 1080 x 2340   (aspect_ratio = 2.1666).
     // * For best results this program should be run on a device with
     //   one of these taller aspect ratios.
-    // * This program scales the display size to 1000x2350. 
-    // * 150 pixels at the bottom of the display are reserved space for 
-    //   master controls.
+    // * This program scales the display size to 1000x2350; aspect ratio 2.35
+    // * 150 pixels at the bottom of the display are reserved space for master controls.
     // * Apps that run within this program should assume a fixed logical
     //   display size of 1000 x 2200. This size excludes the master control area.
     //
-    // When landscape mode is selected the useable logical display area becomes 2200 x 1000.
+    // When landscape mode is selected the logical display area becomes 2200 x 1000.
     // Note that the orientation is selected by apps when calling sdlx_display_init().
     // Since apps call sdlx_display_init periodically, the apps can dynamically change
     // screen orientation.
     //
     // These global variables should be used for display size.
-    // These varaibles are initialized by the sdlx_display_init routine.
+    // These varaibles are initialized by the sdlx_display_init routine, to 
+    // the following values:
     //                   PORTRAIT   LANDSCAPE
     // sdlx_win_width  =  1000        2200
     // sdlx_win_height =  2200        1000
@@ -202,17 +204,16 @@ int sdlx_video_init(void)
     sdlx_print_set_default(FONT_NORMAL, COLOR_WHITE);
     INFO("sdlx_print_set(%d) char_width=%d char_height=%d\n", FONT_NORMAL, sdlx_char_width_dflt, sdlx_char_height_dflt);
     if (sdlx_char_width_dflt != 50 || sdlx_char_height_dflt != 83) {
-        // xxx this is off by 1
         ERROR("chw,chh, expected = 50,83  actual = %d,%d\n", sdlx_char_width_dflt, sdlx_char_height_dflt);
     }
 
     // enable alpha blending
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 
-    // this is needed so that the first actual display present works
+    // workaround: needed so that the first actual display present works
     sdlx_display_init(COLOR_BLACK, PORTRAIT);
     sdlx_display_present();
-    usleep(50000);  // xxx comment
+    usleep(50000);
     sdlx_event_t event;
     sdlx_get_event(0, &event);
 
@@ -251,14 +252,9 @@ void sdlx_minimize_window(void)
 // xxx will this be needed
 static bool event_watcher(void* userdata, SDL_Event* event)
 {
-    static SDL_Renderer * save_renderer;
-
     switch (event->type) {
     case SDL_EVENT_WILL_ENTER_BACKGROUND:
-        save_renderer = renderer;
-        renderer = NULL;
-        sleep(1);
-        // pause app here
+        // pause here, if needed
         INFO("App is about to be backgrounded\n");
         break;
     case SDL_EVENT_DID_ENTER_BACKGROUND:
@@ -268,8 +264,7 @@ static bool event_watcher(void* userdata, SDL_Event* event)
         INFO("App is about to be foregrounded\n");
         break;
     case SDL_EVENT_DID_ENTER_FOREGROUND:
-        renderer = save_renderer;
-        // resume app here
+        // resume here, if needed
         INFO("App is now in the foreground\n");
         break;
     default:
@@ -277,19 +272,6 @@ static bool event_watcher(void* userdata, SDL_Event* event)
     }
     return 0;
 }
-
-#if 0 // xxx del later
-    // set hints
-    bool succ;
-    succ = SDL_SetHint(SDL_HINT_ANDROID_BLOCK_ON_PAUSE, "0");
-    if (!succ) {
-        ERROR("failed to set SDL_HINT_ANDROID_BLOCK_ON_PAUSE\n");
-    }
-    succ = SDL_SetHint(SDL_HINT_ENABLE_SCREEN_KEYBOARD, "1");
-    if (!succ) {
-        ERROR("failed to set SDL_HINT_ENABLE_SCREEN_KEYBOARD\n");
-    }
-#endif
 
 // ----------------- DISPLAY INIT / PRESENT ---------------
 
@@ -301,29 +283,29 @@ void sdlx_display_init(sdlx_color_t color, int orientation_arg)
 
     orientation = orientation_arg;
 
-    if (!texture || (texture_orientation != orientation)) {
-        sdlx_destroy_texture(texture);
-        texture = NULL;
+    if (!texture_dflt || (texture_orientation != orientation)) {
+        sdlx_destroy_texture(texture_dflt);
+        texture_dflt = NULL;
 
         if (orientation == PORTRAIT) {
             logical_win_width = logical_win_width_portrait;
             logical_win_height = logical_win_height_portrait;
-            texture = sdlx_create_texture(logical_win_width, logical_win_height);
+            texture_dflt = sdlx_create_texture(logical_win_width, logical_win_height);
             texture_orientation = PORTRAIT;
             sdlx_win_width  = logical_win_width;
             sdlx_win_height = logical_win_height - CONTROL_AREA_SIZE;
         } else {
             logical_win_width = logical_win_width_landscape;
             logical_win_height = logical_win_height_landscape;
-            texture = sdlx_create_texture(logical_win_width, logical_win_height);
+            texture_dflt = sdlx_create_texture(logical_win_width, logical_win_height);
             texture_orientation = LANDSCAPE;
             sdlx_win_width  = logical_win_width - CONTROL_AREA_SIZE;
             sdlx_win_height = logical_win_height;
         }
     }
 
-    SDL_SetRenderTarget(renderer, (SDL_Texture*)texture);
-    sdlx_clear_texture(texture, color);
+    SDL_SetRenderTarget(renderer, (SDL_Texture*)texture_dflt);
+    sdlx_clear_texture(texture_dflt, color);
 }
 
 void sdlx_display_present(void)
@@ -331,9 +313,9 @@ void sdlx_display_present(void)
     SDL_SetRenderTarget(renderer, NULL);
 
     if (orientation == PORTRAIT) {
-        sdlx_render_texture_ex1(texture, 0, 0, real_win_width, real_win_height);
+        sdlx_render_texture_ex1(texture_dflt, 0, 0, real_win_width, real_win_height);
     } else {
-        sdlx_render_texture_ex3(texture,
+        sdlx_render_texture_ex3(texture_dflt,
                                 0, 0, real_win_height, real_win_width,
                                 90,
                                 real_win_width/2, real_win_width/2);
@@ -430,12 +412,7 @@ static void set_render_draw_color(sdlx_color_t color)
 
 // -----------------  RENDER TEXT  ------------------------
 
-// - - - - - - - - - set print default - - - - - - - - - - - 
-
-static struct {
-    int          fontid;
-    sdlx_color_t color;
-} print_dflt;
+// - - - - - - - - - font create - - - - - - - - - - -
 
 static void font_create(int ptsize)
 {
@@ -467,6 +444,13 @@ static void font_create(int ptsize)
     f->chw  = nearbyint(f->chh * 0.6);
 }
 
+// - - - - - - - - - set print default - - - - - - - - - - - 
+
+static struct {
+    int          fontid;
+    sdlx_color_t color;
+} print_dflt;
+
 void sdlx_print_set_default(int fontid, sdlx_color_t color)
 {
     int ptsize;
@@ -480,6 +464,8 @@ void sdlx_print_set_default(int fontid, sdlx_color_t color)
     sdlx_char_height_dflt = nearbyint(ptsize);
     sdlx_char_width_dflt  = nearbyint(sdlx_char_height_dflt * 0.6);
 }
+
+// - - - - - - - - - get char width/height for fontid - - - -
 
 int sdlx_char_width(int fontid)
 {
@@ -570,7 +556,6 @@ static unsigned int calc_hash_idx(char *key)
     return (hash_value % MAX_HASH_LIST);
 }
 
-// xxx prints for number of hash hits and misses
 static sdlx_loc_t *render_text(int x, int y, int fontid, sdlx_color_t color, unsigned int flags, char *str)
 {
     char         key[1000];
@@ -632,7 +617,6 @@ static sdlx_loc_t *render_text(int x, int y, int fontid, sdlx_color_t color, uns
 
     // hash table entry not found ...
 
-    // xxx put prints in here to test this
     // if number of textures allocated is max then
     //   discard the least recently used texture
     // endif
@@ -647,7 +631,7 @@ static sdlx_loc_t *render_text(int x, int y, int fontid, sdlx_color_t color, uns
     }
 
     // create surface containing the rendered text
-    if (flags & FLAG_BG_BLACK) {  // xxx this has Wrapped option too
+    if (flags & FLAG_BG_BLACK) {
         surface = TTF_RenderText_Shaded_Wrapped(
                         font[ptsize].font, str, 0,
                         sdlx_color(color), sdlx_color(COLOR_BLACK),
@@ -883,17 +867,11 @@ void sdlx_render_lines(sdlx_point_t *points, int count, sdlx_color_t color)
 void sdlx_render_circle(int x_ctr, int y_ctr, int radius, int line_width, sdlx_color_t color)
 {
     int count = 0, i, angle, x, y;
-    int x_center, y_center;
     SDL_FPoint points[370];
 
     static int sin_table[370];
     static int cos_table[370];
     static bool first_call = true;
-
-    // apply scale factor
-    x_center = nearbyint(x_ctr);
-    y_center = nearbyint(y_ctr);
-    radius   = nearbyint(radius);
 
     // on first call make table of sin and cos indexed by degrees
     if (first_call) {
@@ -911,8 +889,8 @@ void sdlx_render_circle(int x_ctr, int y_ctr, int radius, int line_width, sdlx_c
     for (i = 0; i < line_width; i++) {
         // draw circle
         for (angle = 0; angle < 362; angle++) {
-            x = x_center + ((radius * sin_table[angle]) >> 10);
-            y = y_center + ((radius * cos_table[angle]) >> 10);
+            x = x_ctr + ((radius * sin_table[angle]) >> 10);
+            y = y_ctr + ((radius * cos_table[angle]) >> 10);
             points[count].x = x;
             points[count].y = y;
             count++;
@@ -932,10 +910,6 @@ void sdlx_render_circle(int x_ctr, int y_ctr, int radius, int line_width, sdlx_c
 void sdlx_render_fill_circle(int x_ctr, int y_ctr, int radius, sdlx_color_t color)
 {
     int x, y, error;
-
-    x_ctr  = nearbyint(x_ctr);
-    y_ctr  = nearbyint(y_ctr);
-    radius = nearbyint(radius);
 
     x     = radius;
     y     = 0;
@@ -1371,7 +1345,7 @@ void sdlx_set_render_target(sdlx_texture_t *t)
     bool succ;
 
     if (t == NULL) {
-        succ = SDL_SetRenderTarget(renderer, (SDL_Texture*)texture);
+        succ = SDL_SetRenderTarget(renderer, (SDL_Texture*)texture_dflt);
     } else {
         succ = SDL_SetRenderTarget(renderer, (SDL_Texture*)t);
     }
@@ -1388,9 +1362,12 @@ void sdlx_show_toast(char *message)
     INFO("%s\n", message);
 
 #ifdef ANDROID
+    https://developer.android.com/reference/android/view/Gravity
+
     #define DURATION_SHORT  0
     #define DURATION_LONG   1
     #define GRAVITY_CENTER  17
+    // xxx maybe change gravity to lower
     SDL_ShowAndroidToast(message, DURATION_LONG, GRAVITY_CENTER, 0, 0);
 #endif
 }

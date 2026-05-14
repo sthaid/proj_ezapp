@@ -723,13 +723,11 @@ void Sdlx_show_toast(struct ParseState *Parser, struct Value *ReturnValue,
 void Sdlx_get_input_str(struct ParseState *Parser, struct Value *ReturnValue,
         struct Value **Param, int NumArgs)
 {
-    char *       prompt1       = (char *)Param[0]->Val->Pointer;
-    char *       prompt2       = (char *)Param[1]->Val->Pointer;
-    bool         numeric_keybd = (bool)Param[2]->Val->Integer;
-    sdlx_color_t bg_color      = (sdlx_color_t)Param[3]->Val->UnsignedInteger;
+    char *prompt        = (char *)Param[0]->Val->Pointer;
+    bool  numeric_keybd = (bool)Param[2]->Val->Integer;
 
     char * retval;
-    retval = sdlx_get_input_str(prompt1, prompt2, numeric_keybd, bg_color);
+    retval = sdlx_get_input_str(prompt, numeric_keybd);
     ReturnValue->Val->Pointer = retval;
 }
 
@@ -830,7 +828,7 @@ struct LibraryFunction SdlFunctions[] = {
 
     // misc
     { Sdlx_show_toast,               "void sdlx_show_toast(char *message);" },
-    { Sdlx_get_input_str,            "char *sdlx_get_input_str(char *prompt1, char *prompt2, bool numeric_keybd, sdlx_color_t bg_color);" },
+    { Sdlx_get_input_str,            "char *sdlx_get_input_str(char *prompt, bool numeric_keybd);" },
 
     { NULL, NULL } };
 
@@ -970,7 +968,8 @@ typedef struct { \n\
 \n\
 /* events */ \n\
 #define EVID_MOTION  9990 \n\
-#define EVID_QUIT    9991 \n\
+#define EVID_KEYBD   9991 \n\
+#define EVID_QUIT    9992 \n\
 typedef struct { \n\
     int event_id; \n\
     union { \n\
