@@ -7,6 +7,10 @@
 #include <SDL3/SDL.h>
 #include <SDL3_mixer/SDL_mixer.h>
 
+// xxx is mutex needed
+// xxx util_start_playbackcapture should return status
+// xxx full review
+
 // Capabilities:
 // - record from microphone
 // - record Android device audio
@@ -14,7 +18,8 @@
 // - play from buffer
 // - play from file
 
-// xxx util_start_playbackcapture should return status
+// notes:
+// - syntax: __attribute__((unused))
 
 //
 // defines
@@ -40,41 +45,28 @@
 // variables
 //
 
-static SDL_AudioStream *audio_stream;
-
-static MIX_Mixer *mixer;
-static MIX_Track *track;
-static MIX_Audio *audio;
-
-static lame_global_flags *gfp;
-static unsigned char     *mp3buf;
-
 static sdlx_audio_state_t  state;
-static bool                audio_is_initialized;
 static sdlx_audio_params_t audio_params = { DEFAULT_RECORD_GAIN, DEFAULT_RECORD_SILENCE };
+
+static lame_global_flags  *gfp;
+static unsigned char      *mp3buf;
+
+static SDL_AudioStream    *audio_stream;
+static MIX_Track          *track;
 
 //
 // prototypes
-// syntax note: __attribute__((unused))
 //
 
-static void audio_print_list_of_devices(void);
-
-static int audio_init(void);
-static void audio_cleanup(void);
-static int audio_reset(void);
-static int audio_stop(void);
-
 static double calc_volume(float *samples, int n);
-
-static void mixer_track_raw_callback(void *userdata, MIX_Track *track, const SDL_AudioSpec *spec, float *pcm, int samples);
-static void mixer_track_stopped_callback(void *userdata, MIX_Track *track);
 
 static void *mp3_file_open(char *dir, char *filename, int num_channels, bool append);
 static void mp3_file_write(void *cx_arg, float *samples, int num_samples);
 static void mp3_file_close(void *cx_arg);
 
 // -----------------  INITIALIZE  ---------------------------------
+
+static void audio_print_list_of_devices(void);
 
 int sdlx_audio_init(void)
 {
@@ -98,9 +90,15 @@ int sdlx_audio_init(void)
         return -1;
     }
 
-    // init SDL audio subsys and SDL Mixer
-    if (audio_init() != 0) {
-        ERROR("audio_init failed\n");
+    // initialize SDL audio
+    if (!SDL_InitSubSystem(SDL_INIT_AUDIO)) {
+        ERROR("SDL_Init AUDIO failed, %s\n", SDL_GetError());
+        return -1;
+    }
+
+    // initializing SDL_mixer
+    if (!MIX_Init()) {
+        ERROR("MIX_Init failed, %s\n", SDL_GetError());
         return -1;
     }
 
@@ -116,17 +114,23 @@ void sdlx_audio_quit(void)
     INFO("quitting\n");
 
     // stop audio
-    audio_stop();
+    sdlx_audio_stop();
 
-    // cleanup SDL Mixer and SDL Audio subsystem
-    audio_cleanup();
+    // quit mixer
+    MIX_Quit();
+
+    // quit SDL audio subsystem
+    SDL_QuitSubSystem(SDL_INIT_AUDIO);
 
     // cleanup lame mp3 encoder
     if (gfp) {
         lame_close(gfp);
         gfp = NULL;
     }
-    free(mp3buf);
+    if (mp3buf) {
+        free(mp3buf);
+        mp3buf = NULL;
+    }
 }
 
 static void audio_print_list_of_devices(void)
@@ -152,96 +156,27 @@ static void audio_print_list_of_devices(void)
     SDL_free(devid);
 }
 
-// - - - - - - - - - - - - 
+// -----------------  CONTROL & STATE  ----------------------------
 
-static int audio_init(void)
+void sdlx_audio_get_state(sdlx_audio_state_t *x)
 {
-    // return error if audio is already initialized
-    if (audio_is_initialized) {
-        ERROR("audio is already initialized\n");
-        return -1;
-    }
-
-    // initialize SDL audio
-    if (!SDL_InitSubSystem(SDL_INIT_AUDIO)) {
-        ERROR("SDL_Init AUDIO failed, %s\n", SDL_GetError());
-        return -1;
-    }
-
-    // initializing SDL_mixer
-    const SDL_AudioSpec playback_request_spec = { SDL_AUDIO_F32, 2, FRAMES_PER_SEC };
-    SDL_AudioSpec playback_actual_spec;
-
-    if (!MIX_Init()) {
-        ERROR("MIX_Init failed, %s\n", SDL_GetError());
-        return -1;
-    }
-
-    // xxx this is where the CPU load is from
-    mixer = MIX_CreateMixerDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &playback_request_spec);
-    if (mixer == NULL) {
-        ERROR("MIX_CreateMixerDevice failed, %s\n", SDL_GetError());
-        return -1;
-    }
-
-    MIX_GetMixerFormat(mixer, &playback_actual_spec);
-    INFO("actual_spec: format=0x%x channels=%d freq=%d\n", 
-         playback_actual_spec.format, playback_actual_spec.channels, playback_actual_spec.freq);
-
-    track = MIX_CreateTrack(mixer);
-    if (track == NULL) {
-        ERROR("MIX_CreateTrack failed, %s\n", SDL_GetError());
-        return -1;
-    }
-
-    MIX_SetTrackRawCallback(track, mixer_track_raw_callback, NULL);
-    MIX_SetTrackStoppedCallback(track, mixer_track_stopped_callback, NULL);
-
-    // success
-    audio_is_initialized = true;
-    return 0;
+    *x = state;
 }
 
-static void audio_cleanup(void)
-{
-    // cleanup SDL_mixer
-    if (audio) {
-        MIX_DestroyAudio(audio);
-        audio = NULL;
-    }
-    if (track) {
-        MIX_DestroyTrack(track);
-        track = NULL;
-    }
-    if (mixer) {
-        MIX_DestroyMixer(mixer);
-        mixer = NULL;
-    }
-    MIX_Quit();
-
-    // cleanup SDL audio
-    if (audio_stream != NULL) {
-        SDL_DestroyAudioStream(audio_stream);
-        audio_stream = NULL;
-    }
-    SDL_QuitSubSystem(SDL_INIT_AUDIO);
-
-    // success
-    audio_is_initialized = false;
-}
-
-static int audio_stop(void)
+int sdlx_audio_stop(void)
 {
     // if audio is idle then return success
     if (state.state == AUDIO_STATE_IDLE) {
         return 0;
     }
 
-    // set audio state to stopping
+    // set audio state to stopping, 
+    // this will stop in progress: record_mic, record_dev, or play_buff
     state.stopping = true;
 
-    // if SDL Mixer is playing a track then stop it
-    if (audio) {
+    // if SDL Mixer is playing a track then stop it,
+    // this will stop in progress: play_file
+    if (track) {
         int fade_out_frames = 0;
         MIX_StopTrack(track, fade_out_frames);
     }
@@ -258,58 +193,23 @@ static int audio_stop(void)
         }
     }
 
-    // clear audio state
-    memset(&state, 0, sizeof(state));
-
     // return success
     return 0;
 }
 
-// xxx try to eliminate this routine
-static int audio_reset(void)
-{
-    // stop in progress audio, if any
-    if (audio_stop() != 0) {
-        ERROR("failed to stop audio\n");
-        return -1;
-    }
-
-    // if audio is already initialized then return
-    if (audio_is_initialized) {
-        return 0;
-    }
-
-    // initialize audio
-    return audio_init();
-}
-
-// -----------------  CONTROL / STATE / PARAMS  -------------------
-
-int sdlx_audio_stop(void)
-{
-    if (audio_stop() != 0) {
-        ERROR("audio_stop failed\n");
-        return -1;
-    }
-
-    // xxx try to not do this
-    audio_cleanup();
-
-    return 0;
-}
-
+// xxx review these 2 routines
 void sdlx_audio_pause(void)
 {
     if (state.state == AUDIO_STATE_IDLE || state.paused) {
         return;
     }
 
-    if (audio) {
+    if (track) {
         MIX_PauseTrack(track);
     }
 
     if (audio_stream) {
-        if (state.state != AUDIO_STATE_RECORD_FROM_MIC) {
+        if (state.state != AUDIO_STATE_RECORD_FROM_MIC) { //xxx pause mic too
             SDL_PauseAudioStreamDevice(audio_stream);  
         }
     }
@@ -324,27 +224,23 @@ void sdlx_audio_resume(void)
         return;
     }
 
+    // xxx okay because monitoring
     if ((state.state == AUDIO_STATE_RECORD_FROM_MIC || state.state == AUDIO_STATE_RECORD_FROM_DEVICE) &&
         (state.pathname[0] == '\0'))
     {
         return;
     }
 
-    if (audio) {
+    if (track) {
         MIX_ResumeTrack(track);
-    }
-
-    if (audio_stream) {
+    } else if (audio_stream) {
         SDL_ResumeAudioStreamDevice(audio_stream);  
     }
 
     state.paused = false;
 }
 
-void sdlx_audio_get_state(sdlx_audio_state_t *x)
-{
-    *x = state;
-}
+// -----------------  PARAMS  -------------------------------------
 
 void sdlx_audio_set_params(sdlx_audio_params_t *ap)
 {
@@ -651,9 +547,9 @@ int sdlx_audio_record_from_mic(char *dir, char *filename, int auto_stop_secs, bo
     record_mic_cx_t    *cx = NULL;
     const SDL_AudioSpec record_spec = { SDL_AUDIO_F32, 1, FRAMES_PER_SEC };
 
-    // reset audio
-    if (audio_reset() != 0) {
-        ERROR("failed to reset audio\n");
+    // stop audio 
+    if (sdlx_audio_stop() != 0) {
+        ERROR("failed to stop audio\n");
         return -1;
     }
 
@@ -832,10 +728,7 @@ int sdlx_audio_record_from_device(char *dir, char *filename, bool append, bool s
     record_dev_cx_t *cx = NULL;
     int              rc;
 
-    // call sdlx_audio_stop, which will:
-    // - stop a currently running record or playback
-    // - uninitialize SDL audio and SDL Mixer, because SDL audio is
-    //   not used when recording from device
+    // stop audio 
     if (sdlx_audio_stop() != 0) {
         ERROR("sdlx_audio_stop failed\n");
         return -1;
@@ -981,9 +874,9 @@ int sdlx_audio_play_tones(sdlx_tone_t *tones)
     play_tones_cx_t *cx;
     const SDL_AudioSpec playback_spec = { SDL_AUDIO_F32, 1, FRAMES_PER_SEC };
 
-    // reset audio
-    if (audio_reset() != 0) {
-        ERROR("failed to reset audio\n");
+    // stop audio 
+    if (sdlx_audio_stop() != 0) {
+        ERROR("failed to stop audio\n");
         return -1;
     }
 
@@ -1233,9 +1126,9 @@ int sdlx_audio_play_buff(float *samples, int num_samples, int num_channels, int 
     int duration_ms;
     play_buff_cx_t *cx;
 
-    // reset audio
-    if (audio_reset() != 0) {
-        ERROR("failed to reset audio\n");
+    // stop audio 
+    if (sdlx_audio_stop() != 0) {
+        ERROR("failed to stop audio\n");
         return -1;
     }
 
@@ -1304,29 +1197,35 @@ static int play_buff_thread(void *cx_arg)
 // -----------------  PLAY FILE  --------------------------
 
 // variables
+static MIX_Mixer *mixer;
+static MIX_Audio *audio;
 static SDL_AudioSpec play_file_spec;
 
 // prototypes
+static void mixer_track_raw_callback(void *userdata, MIX_Track *track, const SDL_AudioSpec *spec, float *pcm, int samples);
+static void mixer_track_stopped_callback(void *userdata, MIX_Track *track);
 static char *audio_fmt_str(int fmt);
 
 int sdlx_audio_play_file(char *dir, char *filename)
 {
     char path[200];
     bool succ;
-    long duration_frames, duration_ms;
+    long duration_frames;
+    long duration_ms;
 
-    // reset audio
-    if (audio_reset() != 0) {
-        ERROR("failed to reset audio\n");
+    const SDL_AudioSpec playback_request_spec = { SDL_AUDIO_F32, 2, FRAMES_PER_SEC };
+    SDL_AudioSpec       playback_actual_spec;
+
+    // stop audio 
+    if (sdlx_audio_stop() != 0) {
+        ERROR("failed to stop audio\n");
         return -1;
     }
 
-    // audio struct should have been destroyed;
-    // if not then print error message, destory audio and continue
-    if (audio != NULL) {
-        ERROR("audio not NULL, destroy audio and continue anyway\n");
-        MIX_DestroyAudio(audio);
-        audio = NULL;
+    // verify mixer, track, and audio are all NULL
+    // xxx
+    if (/*mixer ||*/ track || audio) {
+        ERROR("nut null - mixer=%p track=%p audio=%p\n", mixer, track, audio);
         return -1;
     }
 
@@ -1337,18 +1236,60 @@ int sdlx_audio_play_file(char *dir, char *filename)
         return -1;
     }
 
+    // create mixer device
+    if (mixer == NULL) { //xxx
+    mixer = MIX_CreateMixerDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &playback_request_spec);
+    if (mixer == NULL) {
+        ERROR("MIX_CreateMixerDevice failed, %s\n", SDL_GetError());
+        return -1;
+    }
+    }
+
+    // get the actual playback spec, and 
+    // verify the actual playback spec values match the playback_request_spec
+    MIX_GetMixerFormat(mixer, &playback_actual_spec);
+    INFO("actual_spec: format=%s channels=%d freq=%d\n", 
+         audio_fmt_str(playback_actual_spec.format), 
+         playback_actual_spec.channels, 
+         playback_actual_spec.freq);
+    if (playback_actual_spec.format != playback_request_spec.format) {
+        ERROR("actual/request format: %s %s\n",
+            audio_fmt_str(playback_actual_spec.format), audio_fmt_str(playback_request_spec.format));
+    }
+    if (playback_actual_spec.channels != playback_request_spec.channels) {
+        ERROR("actual/request channels: %d %d\n",
+            playback_actual_spec.channels, playback_request_spec.channels);
+    }
+    if (playback_actual_spec.freq != playback_request_spec.freq) {
+        ERROR("actual/request freq: %d %d\n",
+            playback_actual_spec.freq, playback_request_spec.freq);
+    }
+
+    // create mixer track, and
+    // set track callbacks
+    track = MIX_CreateTrack(mixer);
+    if (track == NULL) {
+        ERROR("MIX_CreateTrack failed, %s\n", SDL_GetError());
+        MIX_DestroyMixer(mixer); mixer = NULL;
+        return -1;
+    }
+    MIX_SetTrackRawCallback(track, mixer_track_raw_callback, NULL);
+    MIX_SetTrackStoppedCallback(track, mixer_track_stopped_callback, NULL);
+
     // load the file, set predecode arg to false
     audio = MIX_LoadAudio(mixer, path, false);
     if (audio == NULL) {
         ERROR("MIX_LoadAudio, %s\n", SDL_GetError());
+        MIX_DestroyTrack(track); track = NULL;
+        MIX_DestroyMixer(mixer); mixer = NULL;
         return -1;
     }
 
     // get audio format
     MIX_GetAudioFormat(audio, &play_file_spec);
-    INFO("format = %s 0x%x  channels=%d  freq = %d\n", 
-         audio_fmt_str(play_file_spec.format), 
-         play_file_spec.format, 
+    INFO("file %s: format = %s 0x%x  channels=%d  freq = %d\n", 
+         path,
+         audio_fmt_str(play_file_spec.format), play_file_spec.format, 
          play_file_spec.channels, 
          play_file_spec.freq);
     if (play_file_spec.channels != 2 || play_file_spec.freq != FRAMES_PER_SEC) {
@@ -1367,11 +1308,17 @@ int sdlx_audio_play_file(char *dir, char *filename)
     succ = MIX_SetTrackAudio(track, audio);
     if (!succ) {
         ERROR("MIX_SetTrackAudio failed, %s\n", SDL_GetError());
+        MIX_DestroyAudio(audio); audio = NULL;
+        MIX_DestroyTrack(track); track = NULL;
+        MIX_DestroyMixer(mixer); mixer = NULL;
         return -1;
     }
     succ = MIX_PlayTrack(track, 0);
     if (!succ) {
         ERROR("MIX_PlayTrack failed, %s\n", SDL_GetError());
+        MIX_DestroyAudio(audio); audio = NULL;
+        MIX_DestroyTrack(track); track = NULL;
+        MIX_DestroyMixer(mixer); mixer = NULL;
         return -1;
     }
 
@@ -1395,8 +1342,8 @@ void sdlx_audio_set_play_file_time(int secs)
     INFO("setting play file time to %d secs\n", secs);
 
     // verify file play is in progress
-    if (state.state != AUDIO_STATE_PLAY_FILE || audio == NULL || track == NULL) {
-        ERROR("state is not AUDIO_STATE_PLAY_FILE or audio or track is NULL\n");
+    if (state.state != AUDIO_STATE_PLAY_FILE || track == NULL) {
+        ERROR("state is not AUDIO_STATE_PLAY_FILE or track is NULL\n");
         return;
     }
 
@@ -1408,7 +1355,7 @@ void sdlx_audio_set_play_file_time(int secs)
         return;
     }
 
-    // update audio state.play_current_secs;
+    // update state.play_current_secs;
     frames = MIX_GetTrackPlaybackPosition(track);
     state.play_current_secs = MIX_TrackFramesToMS(track, frames) / 1000;
     INFO("readback of play file time = %d\n", state.play_current_secs);
@@ -1417,11 +1364,11 @@ void sdlx_audio_set_play_file_time(int secs)
 static void mixer_track_raw_callback(void *userdata, MIX_Track *track, const SDL_AudioSpec *spec,
                                      float *samples, int num_samples)
 {
-    // update audio state.play_current_secs_
+    // update state.play_current_secs_
     long frames = MIX_GetTrackPlaybackPosition(track);
     state.play_current_secs = MIX_TrackFramesToMS(track, frames) / 1000;
 
-    // update audio state.volume
+    // update state.volume
     state.volume = calc_volume(samples, num_samples);
 
     //INFO("fmt=%s  num_samples=%d  volume=%d  play_current=%d secs\n", 
@@ -1432,11 +1379,30 @@ static void mixer_track_raw_callback(void *userdata, MIX_Track *track, const SDL
     save_audio_samples(samples, num_samples, play_file_spec.channels);
 }
 
-static void mixer_track_stopped_callback(void *userdata, MIX_Track *track)
+static void mixer_track_stopped_callback(void *userdata, MIX_Track *track_arg)
 {
-    // xxxx  remove allocs here
-    MIX_DestroyAudio(audio);
-    audio = NULL;
+    // sanity check
+    if (track_arg != track) {
+        ERROR("track_arg != track\n");
+    }
+
+    // track has completed, free allocations
+    if (audio) {
+        MIX_DestroyAudio(audio);
+        audio = NULL;
+    }
+    if (track_arg) {
+        MIX_DestroyTrack(track);
+        track = NULL;
+    }
+#if 0 //xxx
+    if (mixer) {
+        MIX_DestroyMixer(mixer);
+        mixer = NULL;
+    }
+#endif
+
+    // set state to idle
     state.state = AUDIO_STATE_IDLE;
     memset(&state, 0, sizeof(state));
 }

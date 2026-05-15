@@ -149,7 +149,7 @@ void display_update(void)
     static bool first_call = true;
 
     static int  last_play_tones_seqnum;
-    static bool highlight_keynum;
+    static int  highlight_keynum;
     static long highlight_start;
     static int  white_key_w;
     static int  white_key_h;
