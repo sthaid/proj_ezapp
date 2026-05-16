@@ -58,6 +58,7 @@ int main(int argc, char **argv)
     double             y;
     int                y2;
     sdlx_audio_state_t audio_state;
+    char               active_filename[100];
 
     // save args
     progname = argv[0];
@@ -67,6 +68,9 @@ int main(int argc, char **argv)
     }
     data_dir = argv[1];
     printf("I %s: starting, data_dir=%s\n", progname, data_dir);
+
+    // init active_filenam variable to empty string
+    active_filename[0] = '\0';
 
     // init variables which define the vertical region of the display
     // being used for the filename list
@@ -88,6 +92,11 @@ int main(int argc, char **argv)
         // get current audio state
         sdlx_audio_get_state(&audio_state);
 
+        // if audio state has become idle then there is no active filename
+        if (audio_state.state == AUDIO_STATE_IDLE) {
+            active_filename[0] = '\0';
+        }
+
         // display the audio filename, followed by events to append, or delete
         for (int idx = 0; idx < max_filename; idx++) {
             sdlx_loc_t  *loc;
@@ -103,7 +112,7 @@ int main(int argc, char **argv)
             // - GREEN:      playing
             // - RED:        recording
             // - LIGHT_BLUE: idle
-            if (strstr(audio_state.pathname, filename[idx]) != NULL) {
+            if (strcmp(active_filename, filename[idx]) == 0) {
                 color = (audio_state.state == AUDIO_STATE_PLAY_FILE       ? COLOR_GREEN :   // xxx picoc problem
                         (audio_state.state == AUDIO_STATE_RECORD_FROM_MIC ? COLOR_RED :
                                                                             COLOR_LIGHT_BLUE));
@@ -181,26 +190,22 @@ int main(int argc, char **argv)
             localtime_r(&t, &tm);
             sprintf(new_filename, "%04d%02d%02d%02d%02d%02d.mp3",
                     tm.tm_year+1900, tm.tm_mon+1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
-            //printf("I %s: EVID_NEW recording to '%s'\n", progname, new_filename);
-            // append         = false
-            // start_paused   = false
+            // append = false, start_paused = false
             sdlx_audio_record_from_mic(data_dir, new_filename, AUTO_STOP_SECS, false, false);
+            strcpy(active_filename, new_filename);
         } else if (event.event_id == EVID_STOP) {
-            //printf("I %s: EVID_STOP\n", progname);
             sdlx_audio_stop();
         } else if (event.event_id >= EVID_PLAY && event.event_id < EVID_PLAY + max_filename) {
             int idx = event.event_id - EVID_PLAY;
-            //printf("I %s: EVID_PLAY %d\n", progname, idx);
             sdlx_audio_play_file(data_dir, filename[idx]);
+            strcpy(active_filename, filename[idx]);
         } else if (event.event_id >= EVID_APPEND && event.event_id < EVID_APPEND + max_filename) {
             int idx = event.event_id - EVID_APPEND;
-            //printf("I %s: EVID_APPEND %d\n", progname, idx);
-            // append         = true  
-            // start_paused   = false
+            // append = true, start_paused  = false
             sdlx_audio_record_from_mic(data_dir, filename[idx], AUTO_STOP_SECS, true, false);
+            strcpy(active_filename, filename[idx]);
         } else if (event.event_id >= EVID_DELETE && event.event_id < EVID_DELETE + max_filename) {
             int idx = event.event_id - EVID_DELETE;
-            //printf("I %s: EVID_DELETE %d\n", progname, idx);
             util_delete_file(data_dir, filename[idx]);
         } else if (event.event_id == EVID_QUIT) {
             end_program = true;

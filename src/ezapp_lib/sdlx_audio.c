@@ -7,9 +7,12 @@
 #include <SDL3/SDL.h>
 #include <SDL3_mixer/SDL_mixer.h>
 
+// xxx make a routine to clear the state, to ensure that the state field is cleared last
 // xxx is mutex needed
 // xxx util_start_playbackcapture should return status
 // xxx full review
+// xxx notes on locking
+// xxx notes on any remaining issues
 
 // Capabilities:
 // - record from microphone
@@ -17,9 +20,6 @@
 // - play sequence of tones
 // - play from buffer
 // - play from file
-
-// notes:
-// - syntax: __attribute__((unused))
 
 //
 // defines
@@ -52,7 +52,10 @@ static lame_global_flags  *gfp;
 static unsigned char      *mp3buf;
 
 static SDL_AudioStream    *audio_stream;
+
+static MIX_Mixer          *mixer;
 static MIX_Track          *track;
+static MIX_Audio          *audio;
 
 //
 // prototypes
@@ -177,8 +180,14 @@ int sdlx_audio_stop(void)
     // if SDL Mixer is playing a track then stop it,
     // this will stop in progress: play_file
     if (track) {
+        // request Mixer stop playing the track
         int fade_out_frames = 0;
         MIX_StopTrack(track, fade_out_frames);
+
+        // destroy mixer resources
+        MIX_DestroyAudio(audio); audio = NULL;
+        MIX_DestroyTrack(track); track = NULL;
+        MIX_DestroyMixer(mixer); mixer = NULL;
     }
 
     // wait for in progress audio to stop
@@ -197,37 +206,39 @@ int sdlx_audio_stop(void)
     return 0;
 }
 
-// xxx review these 2 routines
 void sdlx_audio_pause(void)
 {
+    // if audio is idle, or is already paused, then return
     if (state.state == AUDIO_STATE_IDLE || state.paused) {
         return;
     }
 
+    // if play_file track is running then pause the track
     if (track) {
         MIX_PauseTrack(track);
     }
 
+    // pause the audio_stream, except if recording from mic;
+    // when recording from mic the stream is left running so that 
+    // the mic volume and sampling will continue
     if (audio_stream) {
-        if (state.state != AUDIO_STATE_RECORD_FROM_MIC) { //xxx pause mic too
+        if (state.state != AUDIO_STATE_RECORD_FROM_MIC) {
             SDL_PauseAudioStreamDevice(audio_stream);  
         }
     }
 
+    // set state to paused, and volume to 0;
     state.paused = true;
-    state.volume = 0;
+    if (state.state != AUDIO_STATE_RECORD_FROM_MIC && 
+        state.state != AUDIO_STATE_RECORD_FROM_DEVICE) 
+    {
+        state.volume = 0;
+    }
 }
 
 void sdlx_audio_resume(void)
 {
     if (!state.paused) {
-        return;
-    }
-
-    // xxx okay because monitoring
-    if ((state.state == AUDIO_STATE_RECORD_FROM_MIC || state.state == AUDIO_STATE_RECORD_FROM_DEVICE) &&
-        (state.pathname[0] == '\0'))
-    {
         return;
     }
 
@@ -572,9 +583,6 @@ int sdlx_audio_record_from_mic(char *dir, char *filename, int auto_stop_secs, bo
     state.record_secs = 0;
     state.volume      = 0;
     state.paused      = start_paused;
-    if (dir && filename) {
-        sprintf(state.pathname, "%s/%s", dir, filename);
-    }
 
     // create thread to xfer microphone data to mp3 file
     cx = calloc(1, sizeof(record_mic_cx_t));
@@ -753,9 +761,6 @@ int sdlx_audio_record_from_device(char *dir, char *filename, bool append, bool s
     state.record_secs = 0;
     state.volume      = 0;
     state.paused      = start_paused;
-    if (dir && filename) {
-        sprintf(state.pathname, "%s/%s", dir, filename);
-    }
 
     // if requested, initialize to paused state
     if (start_paused) {
@@ -1197,8 +1202,6 @@ static int play_buff_thread(void *cx_arg)
 // -----------------  PLAY FILE  --------------------------
 
 // variables
-static MIX_Mixer *mixer;
-static MIX_Audio *audio;
 static SDL_AudioSpec play_file_spec;
 
 // prototypes
@@ -1223,8 +1226,7 @@ int sdlx_audio_play_file(char *dir, char *filename)
     }
 
     // verify mixer, track, and audio are all NULL
-    // xxx
-    if (/*mixer ||*/ track || audio) {
+    if (mixer || track || audio) {
         ERROR("nut null - mixer=%p track=%p audio=%p\n", mixer, track, audio);
         return -1;
     }
@@ -1237,12 +1239,10 @@ int sdlx_audio_play_file(char *dir, char *filename)
     }
 
     // create mixer device
-    if (mixer == NULL) { //xxx
     mixer = MIX_CreateMixerDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &playback_request_spec);
     if (mixer == NULL) {
         ERROR("MIX_CreateMixerDevice failed, %s\n", SDL_GetError());
         return -1;
-    }
     }
 
     // get the actual playback spec, and 
@@ -1328,7 +1328,6 @@ int sdlx_audio_play_file(char *dir, char *filename)
     state.play_current_secs = 0;
     state.play_total_secs   = duration_ms / 1000;
     state.volume            = 0;
-    sprintf(state.pathname, "%s/%s", dir, filename);
 
     // return success
     return 0;
@@ -1386,25 +1385,29 @@ static void mixer_track_stopped_callback(void *userdata, MIX_Track *track_arg)
         ERROR("track_arg != track\n");
     }
 
-    // track has completed, free allocations
-    if (audio) {
-        MIX_DestroyAudio(audio);
-        audio = NULL;
-    }
-    if (track_arg) {
-        MIX_DestroyTrack(track);
-        track = NULL;
-    }
-#if 0 //xxx
-    if (mixer) {
-        MIX_DestroyMixer(mixer);
-        mixer = NULL;
-    }
-#endif
-
     // set state to idle
     state.state = AUDIO_STATE_IDLE;
     memset(&state, 0, sizeof(state));
+}
+
+void sdlx_audio_main_thread_periodic(void)
+{
+    // The purpose of this routine is to destroy mixer resources when the 
+    // audio state is idle. These resources can also be destroyed by call to
+    // sdlx_audio_stop. But if sdlx_audio_stop is not called (such as when a
+    // playing track completes), then this routine will destroy the resources.
+    //
+    // The destroying of the resources must be done on the main thread, for the
+    // call to MIX_DestroyMixer. The audio and track are also being destroyed here.
+    //
+    // If mixer is not destroyed, the Android SDLAudioP15 thread continues to run,
+    // using about 15% CPU, even though it doesn't seem to be doing anything.
+
+    if (state.state == AUDIO_STATE_IDLE) {
+        if (audio) { MIX_DestroyAudio(audio); audio = NULL; }
+        if (track) { MIX_DestroyTrack(track); track = NULL; }
+        if (mixer) { MIX_DestroyMixer(mixer); mixer = NULL; }
+    }
 }
 
 static char *audio_fmt_str(int fmt)

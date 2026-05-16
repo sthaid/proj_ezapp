@@ -1,3 +1,12 @@
+audio state pathname
+get_str
+get_num
+
+audi cpu usage
+audio code review and retest
+
+xxxxxxxxxxxx
+
 	modified:   android/setup_files/app_src_main_AndroidManifest.xml
 	modified:   files/apps/ColrOrgn/color_organ.c
 	modified:   files/apps/ColrOrgn/main.c

@@ -740,13 +740,6 @@ static void page_7_draw(void)
     } else {
         sdlx_render_printf_ex1(0, ROW2Y(row), FONT_NORMAL, COLOR_RED, "%s", state_str);
     }
-    row++;
-
-    // display pathname
-    if (state.pathname[0] != '\0') {
-        strcpy(pathname_copy, state.pathname);
-        sdlx_render_printf(0, ROW2Y(row), "%s", basename(pathname_copy));
-    }
     row += 2;
 
     // controls: stop, pause, resume

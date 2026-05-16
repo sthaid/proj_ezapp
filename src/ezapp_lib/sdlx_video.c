@@ -279,14 +279,30 @@ void sdlx_display_init(sdlx_color_t color, int orientation_arg)
 {
     static int texture_orientation = -1;
 
+    // sdlx_audio needs to be called periodically from the main thread
+    sdlx_audio_main_thread_periodic();
+
+    // clear existing event registrations from last cycle
     sdlx_reset_events();
 
+    // set global display orientation variable
     orientation = orientation_arg;
 
+    // if default rendering texture has not yet been allocated, or
+    // the display orientation has changed, then ...
     if (!texture_dflt || (texture_orientation != orientation)) {
+        // destroy the current default rendering texture
         sdlx_destroy_texture(texture_dflt);
         texture_dflt = NULL;
 
+        // based on new display orientation:
+        // - set the logical width/height to: 
+        //   . landscape = 1000/2200
+        //   . portrait  = 2200/1000
+        // - create new default rendering texture with size equal to the 
+        //   logical_win_width/height
+        // - init the sdlx_win_width/height; this is the same as the 
+        //   logical_win_width/height, except for not including the CONTROL_AREA_SIZE
         if (orientation == PORTRAIT) {
             logical_win_width = logical_win_width_portrait;
             logical_win_height = logical_win_height_portrait;
@@ -304,14 +320,20 @@ void sdlx_display_init(sdlx_color_t color, int orientation_arg)
         }
     }
 
+    // set the textrue_dflt as the rendering target
     SDL_SetRenderTarget(renderer, (SDL_Texture*)texture_dflt);
+
+    // clear the texture_dflt to the caller supplied color
     sdlx_clear_texture(texture_dflt, color);
 }
 
 void sdlx_display_present(void)
 {
+    // set rendering target to the display
     SDL_SetRenderTarget(renderer, NULL);
 
+    // render the texture_dflt to the display;
+    // when orientation is landscpe, the texture_dflt is rotated by 90 degrees
     if (orientation == PORTRAIT) {
         sdlx_render_texture_ex1(texture_dflt, 0, 0, real_win_width, real_win_height);
     } else {
@@ -321,6 +343,7 @@ void sdlx_display_present(void)
                                 real_win_width/2, real_win_width/2);
     }
 
+    // present the display
     SDL_RenderPresent(renderer);
 }
 

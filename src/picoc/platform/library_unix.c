@@ -919,7 +919,6 @@ typedef struct { \n\
     int    play_current_secs; \n\
     int    play_total_secs; \n\
     int    record_secs; \n\
-    char   pathname[100]; \n\
     int    play_tones_freq; \n\
     int    play_tones_seqnum; \n\
     double volume; \n\

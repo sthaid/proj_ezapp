@@ -168,7 +168,6 @@ typedef struct {
     int    play_current_secs;
     int    play_total_secs;
     int    record_secs;
-    char   pathname[100];  // xxx if not used then delete
     int    play_tones_freq;
     int    play_tones_seqnum;
     double volume;
@@ -324,6 +323,8 @@ char *sdlx_get_input_str(char *prompt, bool numeric_keybd);
 // NOT MADE AVAILABLE IN PICOC
 // --------------------
 
+#define ATTRIBUTE_UNUSED __attribute__((unused))
+
 // sdlx_video.c
 extern double      scale_events_x;
 extern double      scale_events_y;
@@ -352,6 +353,7 @@ typedef struct {
 
 int sdlx_audio_init(void);
 void sdlx_audio_quit(void);
+void sdlx_audio_main_thread_periodic(void);
 void sdlx_audio_set_params(sdlx_audio_params_t *ap);
 void sdlx_audio_get_params(sdlx_audio_params_t *ap);
 
