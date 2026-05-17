@@ -723,11 +723,12 @@ void Sdlx_show_toast(struct ParseState *Parser, struct Value *ReturnValue,
 void Sdlx_get_input_str(struct ParseState *Parser, struct Value *ReturnValue,
         struct Value **Param, int NumArgs)
 {
-    char *prompt        = (char *)Param[0]->Val->Pointer;
-    bool  numeric_keybd = (bool)Param[1]->Val->Integer;
+    char *prompt         = (char *)Param[0]->Val->Pointer;
+    bool  numeric_keybd  = (bool)Param[1]->Val->Integer;
+    char *dflt_input_str = (char *)Param[2]->Val->Pointer;
 
     char * retval;
-    retval = sdlx_get_input_str(prompt, numeric_keybd);
+    retval = sdlx_get_input_str(prompt, numeric_keybd, dflt_input_str);
     ReturnValue->Val->Pointer = retval;
 }
 
@@ -828,7 +829,7 @@ struct LibraryFunction SdlFunctions[] = {
 
     // misc
     { Sdlx_show_toast,               "void sdlx_show_toast(char *message);" },
-    { Sdlx_get_input_str,            "char *sdlx_get_input_str(char *prompt, bool numeric_keybd);" },
+    { Sdlx_get_input_str,            "char *sdlx_get_input_str(char *prompt, bool numeric_keybd, char *dflt_input_str);" },
 
     { NULL, NULL } };
 

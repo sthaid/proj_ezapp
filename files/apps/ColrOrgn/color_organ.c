@@ -592,17 +592,17 @@ void color_organ_settings(void)
             sdlx_create_test_file(files_dir, "test_span.mp3", 100, 6000, 10);
             break;
         case EVID_SETTINGS_EXP_FLTR_K:
-            str = sdlx_get_input_str("exp_fltr_k", true);
+            str = sdlx_get_input_str("exp_fltr_k", true, NULL); // xxx display default, 3 places
             if (sscanf(str, "%f", &exp_fltr_k) != 1) break;
             util_set_numeric_param(data_dir, "exp_fltr_k", exp_fltr_k);
             break;
         case EVID_SETTINGS_SNAP_FLTR_DECAY:
-            str = sdlx_get_input_str("snap_fltr_decay", true);
+            str = sdlx_get_input_str("snap_fltr_decay", true, NULL);
             if (sscanf(str, "%f", &snap_fltr_decay) != 1) break;
             util_set_numeric_param(data_dir, "snap_fltr_decay", snap_fltr_decay);
             break;
         case EVID_SETTINGS_DEBUG_FLAGS:
-            str = sdlx_get_input_str("debug_flags", true);
+            str = sdlx_get_input_str("debug_flags", true, NULL);
             if (sscanf(str, "%x", &debug_flags) != 1) break;
             util_set_numeric_param(data_dir, "debug_flags", debug_flags);
             break;

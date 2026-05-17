@@ -509,7 +509,7 @@ void settings(void)
             break;
         case EVID_MIN_BALL_SPEED:
             sprintf(prompt, "min_ball_speed\n%.1f-%.1f", MIN_BALL_SPEED, MAX_BALL_SPEED);
-            str = sdlx_get_input_str(prompt, true);
+            str = sdlx_get_input_str(prompt, true, NULL);
             sscanf(str, "%lf", &param_min_ball_speed);
             clip(&param_min_ball_speed, MIN_BALL_SPEED, MAX_BALL_SPEED);
             ball_speed_court_per_sec = param_min_ball_speed;  //xxx is this also needed below
@@ -517,7 +517,7 @@ void settings(void)
             break;
         case EVID_MAX_BALL_SPEED:
             sprintf(prompt, "max_ball_speed\n%.1f-%.1f", MIN_BALL_SPEED, MAX_BALL_SPEED);
-            str = sdlx_get_input_str(prompt, true);
+            str = sdlx_get_input_str(prompt, true, NULL);
             sscanf(str, "%lf", &param_max_ball_speed);
             clip(&param_max_ball_speed, MIN_BALL_SPEED, MAX_BALL_SPEED);
             util_set_numeric_param(data_dir, "max_ball_speed", param_max_ball_speed);

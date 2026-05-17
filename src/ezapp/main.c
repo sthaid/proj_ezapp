@@ -909,7 +909,7 @@ static void settings(void)
         case EVID_DEVEL_PORT: {
             char *str; 
             int cnt, port;
-            str = sdlx_get_input_str("Port\n1024 - 49151", true);
+            str = sdlx_get_input_str("Port\n1024 - 49151", true, NULL);
             cnt = sscanf(str, "%d", &port);
             if (cnt == 1 && (port >= 1024 && port <= 49151)) {
                 params.devel_port = port;
@@ -922,7 +922,7 @@ static void settings(void)
             break; }
         case EVID_DEVEL_PASSWORD: {
             char *str; 
-            str = sdlx_get_input_str("Password\nMin Length 4", false);
+            str = sdlx_get_input_str("Password\nMin Length 4", false, NULL);
             if (strlen(str) >= 4) {
                 strcpy(params.devel_password, str);
                 util_set_str_param(".", "devel_password", str);
@@ -963,7 +963,7 @@ static void settings(void)
             break; }
         case EVID_RESET_APPS_AND_SVCS: {
             char *str; 
-            str = sdlx_get_input_str("Reset y/n", false);
+            str = sdlx_get_input_str("Reset y/n", false, NULL);
             if (strcasecmp(str, "y") != 0) {
                 break;
             }
@@ -1017,7 +1017,7 @@ static double get_number(char *prompt_arg, double min, double max)
 
     sprintf(prompt, "%s\n%0.1f - %0.1f", prompt_arg, min, max);
 
-    input_str = sdlx_get_input_str(prompt, true);
+    input_str = sdlx_get_input_str(prompt, true, NULL);
     if (sscanf(input_str, "%lf", &number) != 1) {
         return INVALID_NUMBER;
     }

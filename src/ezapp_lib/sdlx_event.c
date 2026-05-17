@@ -54,7 +54,7 @@ void sdlx_register_event(sdlx_loc_t *loc, int event_id)
         return;
     }
 
-    // 
+    // xxx comment
     if (event_id == EVID_MOTION) {
         evid_motion_registered = true;
         return;
@@ -64,6 +64,7 @@ void sdlx_register_event(sdlx_loc_t *loc, int event_id)
         return;
     }
 
+    // xxx comment
     if (loc == NULL || loc->w == 0 || loc->h == 0) {
         ERROR("invalid loc, event_id=%d\n", event_id);
         return;
@@ -430,105 +431,3 @@ static char *event_type_to_str(enum SDL_EventType evtype)
     }
 }
 
-// -----------------  GET INPUT STR  ----------------------
-
-char *sdlx_get_input_str(char *prompt, bool numeric_keybd)
-{
-    static char        input[100];
-    int                max_input, row;
-    sdlx_loc_t        *loc;
-    sdlx_event_t       event;
-
-    // init
-    memset(input, 0, sizeof(input));
-    max_input = 0;
-
-    // init text input properties
-#ifdef ANDROID
-    SDL_PropertiesID props = SDL_CreateProperties();
-    SDL_SetBooleanProperty(props, SDL_PROP_TEXTINPUT_AUTOCORRECT_BOOLEAN, false);
-    SDL_SetNumberProperty(props, SDL_PROP_TEXTINPUT_CAPITALIZATION_NUMBER, SDL_CAPITALIZE_NONE);
-    if (numeric_keybd == false) {
-        // use full keyboard; enable SDL_TEXTINPUT_TYPE_TEXT_PASSWORD_VISIBLE to
-        // prevent Android from modifying the keyboard input
-        SDL_SetNumberProperty(props, SDL_PROP_TEXTINPUT_TYPE_NUMBER, SDL_TEXTINPUT_TYPE_TEXT_PASSWORD_VISIBLE);
-    } else {
-        // use numeric keypad: notes - 
-        //   2    = TYPE_CLASS_NUMBER
-        //   8192 = TYPE_NUMBER_FLAG_DECIMAL
-        //   4096 = TYPE_NUMBER_FLAG_SIGNED  (not working well in conjunction with TYPE_NUMBER_FLAG_DECIMAL)
-        SDL_SetNumberProperty(props, SDL_PROP_TEXTINPUT_ANDROID_INPUTTYPE_NUMBER, 2 | 8192);
-    }
-#else  // Linux
-    SDL_PropertiesID props = SDL_CreateProperties();
-    SDL_SetNumberProperty(props, SDL_PROP_TEXTINPUT_TYPE_NUMBER, SDL_TEXTINPUT_TYPE_TEXT);
-#endif
-
-    // start text input, with properties initialized above
-    SDL_StartTextInputWithProperties(window, props);
-
-    // loop, adding chars to the input string, until newline char rcvd or cancelled
-    while (true) {
-        // clear backbuffer
-        sdlx_display_init(COLOR_BLACK, PORTRAIT);
-
-        // display prompt line(s), the prompt arg str can contain newline chars
-        row = 0;
-        if (prompt && prompt[0] != '\0') {
-            row += 1;
-            loc = sdlx_render_printf_ex2(0, ROW2Y(1), FONT_NORMAL, COLOR_WHITE, 0, "%s", prompt);
-            row += nearbyint((double)loc->h / sdlx_char_height_dflt);
-        }
-
-        // display input value string
-        row += 2;
-        loc = sdlx_render_printf_ex2(0, ROW2Y(row), FONT_NORMAL, COLOR_WHITE, 0, "? %s", input);
-        sdlx_render_printf_ex2(loc->x+loc->w, loc->y, FONT_NORMAL, COLOR_WHITE, 0, "%s", "_");
-
-        // register cancel event;
-        // this event is needed to deal with the keybd being dismissed
-        row += 3;
-        loc = sdlx_render_printf_ex2(0, ROW2Y(row), FONT_NORMAL, COLOR_LIGHT_BLUE, 0, "Cancel");
-        sdlx_register_event(loc, EVID_QUIT);
-
-        // register for keyboard events
-        sdlx_register_event(NULL, EVID_KEYBD);
-
-        // present display
-        sdlx_display_present();
-
-        // wait for event
-        sdlx_get_event(-1, &event);
-
-        // process sdlx events EVID_KEYBD and EVID_QUIT
-        if (event.event_id == EVID_KEYBD) {
-            int ch = event.u.keybd.ch;
-
-            if (ch >= 0x20 && ch < 0x7f) {
-                // add the printable char to the input array
-                if (max_input < sizeof(input)) {
-                    input[max_input++] = ch;
-                    input[max_input] = '\0';
-                }
-            } else if (ch == '\b') {
-                // backspace char: remove last char in input array
-                if (max_input > 0) {
-                    input[--max_input] = '\0';
-                }
-            } if (ch == '\r') {
-                // <cr> char: done with input, break out of loop
-                break;
-            }
-        } else if (event.event_id == EVID_QUIT) {
-            input[0] = '\0';
-            break;
-        }
-    }
-
-    // cleanup
-    SDL_StopTextInput(window);
-    SDL_DestroyProperties(props);
-
-    // return input string
-    return input;
-}

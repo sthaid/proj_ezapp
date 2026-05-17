@@ -316,7 +316,7 @@ void sdlx_get_event(long timeout_us, sdlx_event_t *event);
 void sdlx_show_toast(char *message);
 
 // get string, uses virtual keyboard on Android
-char *sdlx_get_input_str(char *prompt, bool numeric_keybd);
+char *sdlx_get_input_str(char *prompt, bool numeric_keybd, char *dflt_input_str);
 
 // --------------------
 // THE FOLLOWING ARE PRIVATE,

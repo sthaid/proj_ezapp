@@ -267,7 +267,7 @@ void settings(void)
         case EVID_ADD_COUNTRY: {
             char *country_code;
 
-            country_code = sdlx_get_input_str("2 Char Country Code", false);
+            country_code = sdlx_get_input_str("2 Char Country Code", false, NULL);
             if (country_code == NULL) {
                 break;
             }
@@ -294,7 +294,7 @@ void settings(void)
             char prompt[50], *yn;
 
             sprintf(prompt, "Delete %s", countries[idx]);
-            yn = sdlx_get_input_str(prompt, false);
+            yn = sdlx_get_input_str(prompt, false, NULL);
             if (yn[0] != 'y' && yn[0] != 'Y') {
                 printf("I %s: cancel delete %s\n", progname, countries[idx]);
                 break;
@@ -316,7 +316,7 @@ void settings(void)
         case EVID_CLEAR_HISTORY: {
             char *yn;
 
-            yn = sdlx_get_input_str("Clear History", false);
+            yn = sdlx_get_input_str("Clear History", false, NULL);
             if (yn[0] != 'y' && yn[0] != 'Y') {
                 printf("I %s: cancel clear history\n", progname);
                 break;
