@@ -7,11 +7,9 @@
 #include <SDL3/SDL.h>
 #include <SDL3_mixer/SDL_mixer.h>
 
-// xxx make a routine to clear the state, to ensure that the state field is cleared last
-// xxx is mutex needed
 // xxx util_start_playbackcapture should return status
 // xxx full review
-// xxx notes on locking
+// xxx notes on locking - is mutex needed
 // xxx notes on any remaining issues
 
 // Capabilities:
@@ -51,7 +49,7 @@ static sdlx_audio_params_t audio_params = { DEFAULT_RECORD_GAIN, DEFAULT_RECORD_
 static lame_global_flags  *gfp;
 static unsigned char      *mp3buf;
 
-static SDL_AudioStream    *audio_stream;
+static SDL_AudioStream    *Audio_stream;
 
 static MIX_Mixer          *mixer;
 static MIX_Track          *track;
@@ -60,6 +58,8 @@ static MIX_Audio          *audio;
 //
 // prototypes
 //
+
+static void set_state_idle(void);
 
 static double calc_volume(float *samples, int n);
 
@@ -220,9 +220,9 @@ void sdlx_audio_pause(void)
     // pause the audio_stream, except if recording from mic;
     // when recording from mic the stream is left running so that 
     // the mic volume and sampling will continue
-    if (audio_stream) {
+    if (Audio_stream) {
         if (state.state != AUDIO_STATE_RECORD_FROM_MIC) {
-            SDL_PauseAudioStreamDevice(audio_stream);  
+            SDL_PauseAudioStreamDevice(Audio_stream);  
         }
     }
 
@@ -243,11 +243,32 @@ void sdlx_audio_resume(void)
 
     if (track) {
         MIX_ResumeTrack(track);
-    } else if (audio_stream) {
-        SDL_ResumeAudioStreamDevice(audio_stream);  
+    } else if (Audio_stream) {
+        SDL_ResumeAudioStreamDevice(Audio_stream);  
     }
 
     state.paused = false;
+}
+
+// Setting audio state to idle is done from the threads.
+// To reduce chance of a race condition between the threads setting
+// the state to idle, and the main thread observing that it is idle,
+// the following steps are used:
+// - the state structure is first cleared, except for the state.state field,
+//   which is not changed
+// - sync_synchronize is called to ensure the order
+// - finally state.state is set to AUDIO_STATE_IDLE
+static void set_state_idle(void)
+{
+    sdlx_audio_state_t tmp_state;
+
+    memset(&tmp_state, 0, sizeof(tmp_state));
+    tmp_state.state = state.state;
+    state = tmp_state;
+
+    __sync_synchronize();
+
+    state.state = AUDIO_STATE_IDLE;
 }
 
 // -----------------  PARAMS  -------------------------------------
@@ -554,8 +575,9 @@ static int record_mic_thread(void *cx_arg);
 
 int sdlx_audio_record_from_mic(char *dir, char *filename, int auto_stop_secs, bool append, bool start_paused)
 {
-    record_mic_cx_t    *cx = NULL;
-    const SDL_AudioSpec record_spec = { SDL_AUDIO_F32, 1, FRAMES_PER_SEC };
+    record_mic_cx_t        *cx = NULL;
+    const SDL_AudioSpec     record_spec = { SDL_AUDIO_F32, 1, FRAMES_PER_SEC };
+    static SDL_AudioStream *audio_stream;
 
     // stop audio 
     if (sdlx_audio_stop() != 0) {
@@ -570,11 +592,14 @@ int sdlx_audio_record_from_mic(char *dir, char *filename, int auto_stop_secs, bo
     }
 
     // open sdl audio to record
-    audio_stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_RECORDING, &record_spec, NULL, NULL);
     if (audio_stream == NULL) {
-        ERROR("SDL_OpenAudioDeviceStream failed for record\n");
-        return -1;
+        audio_stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_RECORDING, &record_spec, NULL, NULL);
+        if (audio_stream == NULL) {
+            ERROR("SDL_OpenAudioDeviceStream failed for record\n");
+            return -1;
+        }
     }
+    Audio_stream = audio_stream;
 
     // init state
     memset(&state, 0, sizeof(state));
@@ -610,7 +635,7 @@ static int record_mic_thread(void *cx_arg)
 
     // start audio stream;
     // the audio stream is running even when state is paused, to provide saved audio samples
-    SDL_ResumeAudioStreamDevice(audio_stream);  
+    SDL_ResumeAudioStreamDevice(Audio_stream);  
 
     while (true) {
         // if in stopping state then goto done;
@@ -620,7 +645,7 @@ static int record_mic_thread(void *cx_arg)
 
         // get audio data
         // note: last arg is buffer length, in bytes
-        bytes = SDL_GetAudioStreamData(audio_stream, mono_buff, sizeof(mono_buff));  
+        bytes = SDL_GetAudioStreamData(Audio_stream, mono_buff, sizeof(mono_buff));  
         if (bytes == -1) {
             ERROR("SDL_GetAudioStreamData failed, %s\n", SDL_GetError());
             break;
@@ -689,7 +714,8 @@ static int record_mic_thread(void *cx_arg)
     }
 
     // pause and clear the record stream
-    SDL_PauseAudioStreamDevice(audio_stream);  
+    SDL_PauseAudioStreamDevice(Audio_stream);  
+    SDL_ClearAudioStream(Audio_stream);
 
     // add short tone to end of file
     static float *tone;
@@ -712,11 +738,9 @@ static int record_mic_thread(void *cx_arg)
     if (mp3_cx) {
         mp3_file_close(mp3_cx);
     }
-    SDL_DestroyAudioStream(audio_stream);
-    audio_stream = NULL;
+    Audio_stream = NULL;
     free(cx);
-    state.state = AUDIO_STATE_IDLE;
-    memset(&state, 0, sizeof(state));
+    set_state_idle();
     return 0;
 }
 
@@ -842,8 +866,7 @@ static int record_dev_thread(void *cx_arg)
         mp3_file_close(mp3_cx);
     }
     free(cx);
-    state.state = AUDIO_STATE_IDLE;
-    memset(&state, 0, sizeof(state));
+    set_state_idle();
     return 0;
 }
 
@@ -874,9 +897,10 @@ static void play_buff(float *samples, int num_samples, int num_channels, int *to
 
 int sdlx_audio_play_tones(sdlx_tone_t *tones)
 {
-    int num_tones, duration_ms, i;
-    play_tones_cx_t *cx;
-    const SDL_AudioSpec playback_spec = { SDL_AUDIO_F32, 1, FRAMES_PER_SEC };
+    int                     num_tones, duration_ms, i;
+    play_tones_cx_t        *cx;
+    const SDL_AudioSpec     playback_spec = { SDL_AUDIO_F32, 1, FRAMES_PER_SEC };
+    static SDL_AudioStream *audio_stream;
 
     // stop audio 
     if (sdlx_audio_stop() != 0) {
@@ -885,13 +909,14 @@ int sdlx_audio_play_tones(sdlx_tone_t *tones)
     }
 
     // open sdl audio for playback
-    if (audio_stream == NULL) { //xxx
-    audio_stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &playback_spec, NULL, NULL);
     if (audio_stream == NULL) {
-        ERROR("SDL_OpenAudioDeviceStream failed for playback\n");
-        return -1;
+        audio_stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &playback_spec, NULL, NULL);
+        if (audio_stream == NULL) {
+            ERROR("SDL_OpenAudioDeviceStream failed for playback\n");
+            return -1;
+        }
     }
-    }
+    Audio_stream = audio_stream;
 
     // loop over tones to determine total duration and num_tones
     num_tones = 0;
@@ -961,7 +986,7 @@ static int tones_thread(void *cx_arg)
     }
 
     // start playing tones
-    SDL_ResumeAudioStreamDevice(audio_stream);  
+    SDL_ResumeAudioStreamDevice(Audio_stream);  
 
     // loop over the tones
     for (int i = 0; i < cx->num_tones; i++) {
@@ -1014,20 +1039,16 @@ static int tones_thread(void *cx_arg)
     }
 
     // wait for all queued audio to be played
-    while (SDL_GetAudioStreamQueued(audio_stream) > 0) {  
+    while (SDL_GetAudioStreamQueued(Audio_stream) > 0) {  
         usleep(TWO_MS);
     }
 
 done:
     // cleanup and return
-    //SDL_DestroyAudioStream(audio_stream);  xxx
-    //audio_stream = NULL;  xxx
+    Audio_stream = NULL;
     free(cx);
     free(samples);
-    state.state = AUDIO_STATE_IDLE;
-    state.play_tones_freq = 0;
-    state.play_tones_seqnum = 0;
-    memset(&state, 0, sizeof(state));
+    set_state_idle();
     return 0;
 }
 
@@ -1064,7 +1085,7 @@ static void smooth(float *samples, int num_samples)
     }
 }
 
-// returns with 200 ms or less, still being played
+// returns with 40 ms or less, still being played
 static void play_buff(float *samples, int num_samples, int num_channels, int *total_queued_samples)
 {
     int num_xfer_samples, num_remaining_samples;
@@ -1074,9 +1095,15 @@ static void play_buff(float *samples, int num_samples, int num_channels, int *to
 
     num_remaining_samples = num_samples;
     while (num_remaining_samples) {
-        if (state.stopping) {
+        // If stopping and there is more than 1 sec of samples remaining
+        // then stop immedeately, otherwise let the remaining samples finish.
+        // Letting remaining samples finish avoids audio click or pop sound
+        // that occurs when the audio is stopped abrubptly.
+        if (state.stopping && num_remaining_samples > FRAMES_PER_SEC*num_channels) {
             break;
         }
+
+        // if paused then short sleep and contnue
         if (state.paused) {
             usleep(TWO_MS);
             continue;
@@ -1086,7 +1113,7 @@ static void play_buff(float *samples, int num_samples, int num_channels, int *to
         num_xfer_samples = (num_remaining_samples > 960*num_channels 
                             ? 960*num_channels : 
                             num_remaining_samples);
-        SDL_PutAudioStreamData(audio_stream, samples, num_xfer_samples*sizeof(float));
+        SDL_PutAudioStreamData(Audio_stream, samples, num_xfer_samples*sizeof(float));
 
         // publish duration played
         *total_queued_samples += num_xfer_samples;
@@ -1101,7 +1128,7 @@ static void play_buff(float *samples, int num_samples, int num_channels, int *to
         // sleep while there is more than 40 ms queued;
         // break out of this sleep loop if audio state has become stopping or paused
         do {
-            queued_ms = (SDL_GetAudioStreamQueued(audio_stream) / (sizeof(float) * num_channels)) / FRAMES_PER_MS;
+            queued_ms = (SDL_GetAudioStreamQueued(Audio_stream) / (sizeof(float) * num_channels)) / FRAMES_PER_MS;
             usleep(TWO_MS);
             if (state.stopping || state.paused) {
                 break;
@@ -1128,9 +1155,10 @@ static int play_buff_thread(void *cx_arg);
 
 int sdlx_audio_play_buff(float *samples, int num_samples, int num_channels, int loops, bool free_samples_when_done)
 {
-    const SDL_AudioSpec playback_spec = { SDL_AUDIO_F32, num_channels, FRAMES_PER_SEC };
-    int duration_ms;
-    play_buff_cx_t *cx;
+    const SDL_AudioSpec     playback_spec = { SDL_AUDIO_F32, num_channels, FRAMES_PER_SEC };
+    int                     duration_ms;
+    play_buff_cx_t         *cx;
+    static SDL_AudioStream *audio_stream[3];
 
     // stop audio 
     if (sdlx_audio_stop() != 0) {
@@ -1138,12 +1166,21 @@ int sdlx_audio_play_buff(float *samples, int num_samples, int num_channels, int 
         return -1;
     }
 
-    // open sdl audio for playback
-    audio_stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &playback_spec, NULL, NULL);
-    if (audio_stream == NULL) {
-        ERROR("SDL_OpenAudioDeviceStream failed for playback\n");
+    // sanity check num_channels_arg
+    if (num_channels != 1 && num_channels != 2) {
+        ERROR("num_channelse = %d\n", num_channels);
         return -1;
     }
+
+    // open sdl audio for playback
+    if (audio_stream[num_channels] == NULL) {
+        audio_stream[num_channels] = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &playback_spec, NULL, NULL);
+        if (audio_stream[num_channels] == NULL) {
+            ERROR("SDL_OpenAudioDeviceStream failed for playback\n");
+            return -1;
+        }
+    }
+    Audio_stream = audio_stream[num_channels];
 
     // calculate duration
     duration_ms = (num_samples / num_channels) / FRAMES_PER_MS * loops;
@@ -1173,7 +1210,7 @@ static int play_buff_thread(void *cx_arg)
     play_buff_cx_t *cx = cx_arg;
     int total_queued_samples = 0;
 
-    SDL_ResumeAudioStreamDevice(audio_stream);  
+    SDL_ResumeAudioStreamDevice(Audio_stream);  
 
     // call play_buff for the specified number of loops
     for (int i = 0; cx->loops == 0 || i < cx->loops; i++) {
@@ -1184,19 +1221,17 @@ static int play_buff_thread(void *cx_arg)
     }
 
     // wait for all queued audio to be played
-    while ((SDL_GetAudioStreamQueued(audio_stream) > 0) && (!state.stopping && !state.paused)) {
+    while ((SDL_GetAudioStreamQueued(Audio_stream) > 0) && (!state.stopping && !state.paused)) {
         usleep(TWO_MS);
     }
 
     // cleanup and return
-    SDL_DestroyAudioStream(audio_stream);
-    audio_stream = NULL;
+    Audio_stream = NULL;
     if (cx->free_samples_when_done) {
         free(cx->samples);
     }
     free(cx);
-    state.state = AUDIO_STATE_IDLE;
-    memset(&state, 0, sizeof(state));
+    set_state_idle();
     return 0;
 }
 
@@ -1404,7 +1439,8 @@ void sdlx_audio_main_thread_periodic(void)
     // If mixer is not destroyed, the Android SDLAudioP15 thread continues to run,
     // using about 15% CPU, even though it doesn't seem to be doing anything.
 
-    if (state.state == AUDIO_STATE_IDLE) {
+    if (state.state == AUDIO_STATE_IDLE && (audio || track || mixer)) {
+        INFO("mix destroy audio, track and mixer\n");
         if (audio) { MIX_DestroyAudio(audio); audio = NULL; }
         if (track) { MIX_DestroyTrack(track); track = NULL; }
         if (mixer) { MIX_DestroyMixer(mixer); mixer = NULL; }
