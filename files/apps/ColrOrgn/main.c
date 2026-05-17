@@ -68,6 +68,7 @@ void register_events(void);
 
 // utils
 void get_list_of_files(void);
+char *get_new_mp3_filename(void);
 void remove_trailing_newline(char *s);
 char *get_state_str(void);
 int get_device_orientation(void);
@@ -160,7 +161,9 @@ int main(int argc, char **argv)
     color_organ_cleanup();
     state = STATE_STOPPED;
     playing_file[0] = '\0';
-    util_delete_file(files_dir, ".record.mp3");
+    if (util_file_exists(data_dir, "recording.mp3")) {
+        util_rename_file(data_dir, "recording.mp3", files_dir, get_new_mp3_filename());
+    }
 
     // terminate
     printf("I %s: terminating\n", progname);
@@ -227,24 +230,21 @@ void process_event(sdlx_event_t *ev, sdlx_audio_state_t *as)
             playing_file[0] = '\0';
 
             // if recorded file exists then rename it
-            if (util_file_exists(files_dir, ".record.mp3")) {
+            if (util_file_exists(data_dir, "recording.mp3")) {
                 char *input = sdlx_get_input_str("RecordedFileName", false);
                 char  new_name[100];
-                char  cmd[200];
                 if (input[0] != '\0') {
                     sprintf(new_name, "%s.mp3", input);
                 } else {
-                    strcpy(new_name, "New.mp3");
+                    strcpy(new_name, get_new_mp3_filename());
                 }
-                util_rename_file(files_dir, ".record.mp3", files_dir, new_name);
-                sprintf(cmd, "touch %s", files_dir);
-                system(cmd);
+                util_rename_file(data_dir, "recording.mp3", files_dir, new_name);
             }
             break;
 
         // monitor or record device, applies when in STATE_STOPPED
         case EVID_MON_REC:
-            sdlx_audio_record_from_device(files_dir, ".record.mp3", NO_APPEND, START_PAUSED);
+            sdlx_audio_record_from_device(data_dir, "recording.mp3", NO_APPEND, START_PAUSED);
             state = STATE_MONITORING_DEV;
             playing_file[0] = '\0';
             break;
@@ -519,6 +519,22 @@ void get_list_of_files(void)
         }
         pclose(fp);
     }
+}
+
+char *get_new_mp3_filename(void)
+{
+    int i, cnt, n, max_n=0;
+    static char new_mp3_filename[20];
+    
+    for (i = 0; i < max_files; i++) {
+        cnt = sscanf(files[i], "new_%d.mp3", &n);
+        if (cnt == 1 && n > max_n) {
+            max_n = n;
+        }
+    }
+
+    sprintf(new_mp3_filename, "new_%d.mp3", max_n+1);
+    return new_mp3_filename;
 }
 
 char *get_state_str(void)

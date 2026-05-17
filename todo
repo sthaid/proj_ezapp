@@ -1,74 +1,36 @@
-check on stack trace in adb_logcat
-
-sdlx_audio dont destroy
-get_str, get_num   different file
 color_orgn,  save recording.dat in different dir
 
-morse
-piano              clicking
-colr orgn
-memo
-test               select 1000 causes crash
-colr orgn record   select stop caused problem
+check on stack trace in adb_logcat
 
-audio clicking in piano
+get_str, get_num   different file
+
+finish work on xxx
 
 
-audio state pathname
-get_str
-get_num
+audio:
+- audio check cpu usage
+- audio code review and retest
 
-audi cpu usage
-audio code review and retest
-
-xxxxxxxxxxxx
-
-	modified:   android/setup_files/app_src_main_AndroidManifest.xml
-	modified:   files/apps/ColrOrgn/color_organ.c
-	modified:   files/apps/ColrOrgn/main.c
-	modified:   files/apps/Location/location.c
-	modified:   files/apps/Paddle/paddle.c
-	modified:   files/apps/Steps/steps.c
-	modified:   files/apps/Test/test.c
-	modified:   src/ezapp/main.c
-	modified:   src/ezapp_lib/include/sdlx.h
-	modified:   src/ezapp_lib/logging.c
-	modified:   src/ezapp_lib/sdlx_audio.c
-	modified:   src/ezapp_lib/sdlx_event.c
-	modified:   src/ezapp_lib/sdlx_misc.c
-	modified:   src/ezapp_lib/sdlx_video.c
-	modified:   src/ezapp_lib/svcs.c
-	modified:   src/ezapp_lib/utils.c
-	modified:   src/picoc/platform/library_unix.c
-	modified:   todo
-
---------------------
-
-what continue to run when app is in background?
-- add print statemnents
-- adjust periodicity of polling when in the backgound, 
-   - PollEvent
-   - Services
-- dont init audio when not needed?
-- experiments
-    20 ms
-    HINT 
-    do not init audio
-
-
-sdlx_get_input_str -> sdlx_get_str
-and add sdlx_get_number ??
+work on minimizing cpu load
+- what continue to run when app is in background?
+   - add print statemnents
+   - adjust periodicity of polling when in the backgound, 
+      - PollEvent
+      - Services
+   - dont init audio when not needed?
+   - experiments
+       20 ms
+       HINT 
+       do not init audio
 
 altitude back 1 day not working
 
-lock portrait orientation
-
 use show toast for error popups
+
+--------------------
 
 developer mode password
 - force it to be init
-
-review all for xxx
 
 colororgn
 - colrorgn scale, go below 5
@@ -92,14 +54,15 @@ documentation
 - make a doc dir, for other README files
 - document foreground 
 
-icon
 
 report record_gain problem, to SDL team
 - first reproduce it
 
-- - - 
+final prep 
+- icon
+- set version OR eliminate version and just use build date
 
-set version OR eliminate version and just use build date
+- - - 
 
 make new repo
 - new name
