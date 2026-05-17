@@ -180,14 +180,8 @@ int sdlx_audio_stop(void)
     // if SDL Mixer is playing a track then stop it,
     // this will stop in progress: play_file
     if (track) {
-        // request Mixer stop playing the track
         int fade_out_frames = 0;
         MIX_StopTrack(track, fade_out_frames);
-
-        // destroy mixer resources
-        MIX_DestroyAudio(audio); audio = NULL;
-        MIX_DestroyTrack(track); track = NULL;
-        MIX_DestroyMixer(mixer); mixer = NULL;
     }
 
     // wait for in progress audio to stop
@@ -201,6 +195,11 @@ int sdlx_audio_stop(void)
             return -1;
         }
     }
+
+    // destroy mixer resources
+    if (audio) { MIX_DestroyAudio(audio); audio = NULL; }
+    if (track) { MIX_DestroyTrack(track); track = NULL; }
+    if (mixer) { MIX_DestroyMixer(mixer); mixer = NULL; }
 
     // return success
     return 0;
@@ -886,10 +885,12 @@ int sdlx_audio_play_tones(sdlx_tone_t *tones)
     }
 
     // open sdl audio for playback
+    if (audio_stream == NULL) { //xxx
     audio_stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &playback_spec, NULL, NULL);
     if (audio_stream == NULL) {
         ERROR("SDL_OpenAudioDeviceStream failed for playback\n");
         return -1;
+    }
     }
 
     // loop over tones to determine total duration and num_tones
@@ -1019,8 +1020,8 @@ static int tones_thread(void *cx_arg)
 
 done:
     // cleanup and return
-    SDL_DestroyAudioStream(audio_stream);
-    audio_stream = NULL;
+    //SDL_DestroyAudioStream(audio_stream);  xxx
+    //audio_stream = NULL;  xxx
     free(cx);
     free(samples);
     state.state = AUDIO_STATE_IDLE;

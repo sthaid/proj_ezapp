@@ -724,7 +724,7 @@ void Sdlx_get_input_str(struct ParseState *Parser, struct Value *ReturnValue,
         struct Value **Param, int NumArgs)
 {
     char *prompt        = (char *)Param[0]->Val->Pointer;
-    bool  numeric_keybd = (bool)Param[2]->Val->Integer;
+    bool  numeric_keybd = (bool)Param[1]->Val->Integer;
 
     char * retval;
     retval = sdlx_get_input_str(prompt, numeric_keybd);
