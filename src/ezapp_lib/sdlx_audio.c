@@ -16,6 +16,7 @@
 
 // xxx issues
 // - SDLAudioP/C threads persist 
+//     SDL_DestroyAudioStream(Audio_stream);
 
 //
 // defines
@@ -1046,7 +1047,7 @@ static int tones_thread(void *cx_arg)
     while (!state.paused && SDL_GetAudioStreamQueued(Audio_stream) > 0) {  
         usleep(TWO_MS);
     }
-    SDL_ClearAudioStream(Audio_stream);  // xxx new
+    SDL_ClearAudioStream(Audio_stream);
 
 done:
     // cleanup and return
@@ -1453,6 +1454,8 @@ void sdlx_audio_main_thread_periodic(void)
         if (track) { MIX_DestroyTrack(track); track = NULL; }
         if (mixer) { MIX_DestroyMixer(mixer); mixer = NULL; }
     }
+
+    // xxx also Destory streams if not used for 30 seconds
 }
 
 static char *audio_fmt_str(int fmt)
