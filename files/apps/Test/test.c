@@ -727,7 +727,6 @@ static void page_7_draw(void)
     char              *state_str;
     bool               is_recording;
     sdlx_loc_t        *loc;
-    char               pathname_copy[100];
     double             row=1;
 
     // get audio state

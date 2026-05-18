@@ -7,17 +7,15 @@
 #include <SDL3/SDL.h>
 #include <SDL3_mixer/SDL_mixer.h>
 
-// xxx util_start_playbackcapture should return status
-// xxx full review
-// xxx notes on locking - is mutex needed
-// xxx notes on any remaining issues
-
 // Capabilities:
 // - record from microphone
 // - record Android device audio
 // - play sequence of tones
 // - play from buffer
 // - play from file
+
+// xxx issues
+// - SDLAudioP/C threads persist 
 
 //
 // defines
@@ -256,7 +254,7 @@ void sdlx_audio_resume(void)
 // the following steps are used:
 // - the state structure is first cleared, except for the state.state field,
 //   which is not changed
-// - sync_synchronize is called to ensure the order
+// - sync_synchronize is called to ensure memory write ordering
 // - finally state.state is set to AUDIO_STATE_IDLE
 static void set_state_idle(void)
 {
@@ -473,7 +471,6 @@ static void *mp3_file_open(char *dir, char *filename, int num_channels, bool app
             ERROR("failed to open for append '%s', %s\n", path, strerror(errno));
             return NULL;
         }
-
         lseek(fd, 0, SEEK_END);
     }
 
@@ -545,16 +542,23 @@ static void mp3_file_close(void *cx_arg)
         return;
     }
 
-    // flush lame internal buffers
-    len = lame_encode_flush(gfp, mp3buf, MAX_MP3_BUF);
-    if (len < 0) {
-        ERROR("lame_encode_flush failed, rc=%d\n", len);
-        return;
-    }
+    while (true) {
+        // flush lame internal buffers
+        len = lame_encode_flush(gfp, mp3buf, MAX_MP3_BUF);
+        if (len < 0) {
+            ERROR("lame_encode_flush failed, rc=%d\n", len);
+            break;
+        }
 
-    // write final mp3 data
-    if (len > 0) {
-        write(cx->fd, mp3buf, len);
+        // if no remaining data then break
+        if (len == 0) {
+            break;
+        }
+
+        // write mp3 data
+        if (len > 0) {
+            write(cx->fd, mp3buf, len);
+        }
     }
 
     // close mp3 file. and free cx
@@ -638,7 +642,7 @@ static int record_mic_thread(void *cx_arg)
     SDL_ResumeAudioStreamDevice(Audio_stream);  
 
     while (true) {
-        // if in stopping state then goto done;
+        // if in stopping state then done
         if (state.stopping) {
             break;
         }
@@ -1034,14 +1038,15 @@ static int tones_thread(void *cx_arg)
         // play the tone, or gap
         play_buff(samples, n, 1, &total_queued_samples);
         if (state.stopping) {
-            goto done;
+            break;
         }
     }
 
     // wait for all queued audio to be played
-    while (SDL_GetAudioStreamQueued(Audio_stream) > 0) {  
+    while (!state.paused && SDL_GetAudioStreamQueued(Audio_stream) > 0) {  
         usleep(TWO_MS);
     }
+    SDL_ClearAudioStream(Audio_stream);  // xxx new
 
 done:
     // cleanup and return
@@ -1099,7 +1104,9 @@ static void play_buff(float *samples, int num_samples, int num_channels, int *to
         // then stop immedeately, otherwise let the remaining samples finish.
         // Letting remaining samples finish avoids audio click or pop sound
         // that occurs when the audio is stopped abrubptly.
-        if (state.stopping && num_remaining_samples > FRAMES_PER_SEC*num_channels) {
+        if ((state.stopping) && 
+            (state.paused || num_remaining_samples > FRAMES_PER_SEC*num_channels)) 
+        {
             break;
         }
 
@@ -1221,9 +1228,10 @@ static int play_buff_thread(void *cx_arg)
     }
 
     // wait for all queued audio to be played
-    while ((SDL_GetAudioStreamQueued(Audio_stream) > 0) && (!state.stopping && !state.paused)) {
+    while (!state.paused && SDL_GetAudioStreamQueued(Audio_stream) > 0) {
         usleep(TWO_MS);
     }
+    SDL_ClearAudioStream(Audio_stream);
 
     // cleanup and return
     Audio_stream = NULL;

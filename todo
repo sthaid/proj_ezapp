@@ -1,14 +1,29 @@
-color_orgn,  save recording.dat in different dir
+-------------- MORE TESTING ----------------
+color_orgn,  save recording.dat in different dir 
+get_str, get_num   different file               
+audio check cpu usage
+colr orgn when exitting and recording, save the file
+
+-----------------------------------------------
+
+steps, default to Month view
+
+colororgn - colrorgn scale, go below 5
+
+altitude back 1 day not working
+
+use show toast for error popups
+
+ez_bin wrappers
+
+developer mode password
+- force it to be init
 
 check on stack trace in adb_logcat
 
-get_str, get_num   different file
-
 finish work on xxx
 
-
 audio:
-- audio check cpu usage
 - audio code review and retest
 
 work on minimizing cpu load
@@ -23,23 +38,10 @@ work on minimizing cpu load
        HINT 
        do not init audio
 
-altitude back 1 day not working
-
-use show toast for error popups
-
 --------------------
 
-developer mode password
-- force it to be init
-
 colororgn
-- colrorgn scale, go below 5
-- when exitting and recording, save the file
-- provide default record file name, such as new1.mp3
-- blank display issue
-- is rename working?
-- use of 'touch'
-- save initial record.mp3 in datadir
+- blank display issue,  maybe no repro
 
 picoc should free all unfreed allocations
 - calloc, malloc, realloc, strdup
@@ -53,7 +55,6 @@ documentation
 - toplevel README.md
 - make a doc dir, for other README files
 - document foreground 
-
 
 report record_gain problem, to SDL team
 - first reproduce it
