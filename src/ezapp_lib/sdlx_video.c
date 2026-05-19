@@ -95,13 +95,16 @@ int sdlx_video_init(void)
 
     INFO("initializing\n");
 
-    // xxx keep this?
+    // comment this out because it is not an important feature, and
+    // enabling this may reduce battery life 
+#if 0
     // disable block on paues;
     // this allows the ColrOrgn app to continue audio playback when ezapp is backgrounded
     succ = SDL_SetHint(SDL_HINT_ANDROID_BLOCK_ON_PAUSE, "0");
     if (!succ) {
         ERROR("disable SDL_HINT_ANDROID_BLOCK_ON_PAUSE failed\n");
     }
+#endif
 
     // initialize SDL video
     if (!SDL_Init(SDL_INIT_VIDEO)) {
@@ -249,23 +252,22 @@ void sdlx_minimize_window(void)
     SDL_MinimizeWindow(window);
 }
 
-// xxx will this be needed
 static bool event_watcher(void* userdata, SDL_Event* event)
 {
     switch (event->type) {
     case SDL_EVENT_WILL_ENTER_BACKGROUND:
         // pause here, if needed
-        INFO("App is about to be backgrounded\n");
+        INFO("about to be backgrounded\n");
         break;
     case SDL_EVENT_DID_ENTER_BACKGROUND:
-        INFO("App is now in the background\n");
+        INFO("now in the background\n");
         break;
     case SDL_EVENT_WILL_ENTER_FOREGROUND:
-        INFO("App is about to be foregrounded\n");
+        INFO("about to be foregrounded\n");
         break;
     case SDL_EVENT_DID_ENTER_FOREGROUND:
         // resume here, if needed
-        INFO("App is now in the foreground\n");
+        INFO("now in the foreground\n");
         break;
     default:
         break;
@@ -1389,8 +1391,9 @@ void sdlx_show_toast(char *message)
 
     #define DURATION_SHORT  0
     #define DURATION_LONG   1
-    #define GRAVITY_CENTER  17
-    // xxx maybe change gravity to lower
-    SDL_ShowAndroidToast(message, DURATION_LONG, GRAVITY_CENTER, 0, 0);
+    #define GRAVITY_CENTER  0x11
+    #define GRAVITY_BOTTOM  0x50
+
+    SDL_ShowAndroidToast(message, DURATION_LONG, GRAVITY_BOTTOM, 0, 0);
 #endif
 }

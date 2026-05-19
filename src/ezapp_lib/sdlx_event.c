@@ -54,7 +54,7 @@ void sdlx_register_event(sdlx_loc_t *loc, int event_id)
         return;
     }
 
-    // xxx comment
+    // set registration flags when mouse motion, or keyboard events are registered
     if (event_id == EVID_MOTION) {
         evid_motion_registered = true;
         return;
@@ -64,7 +64,7 @@ void sdlx_register_event(sdlx_loc_t *loc, int event_id)
         return;
     }
 
-    // xxx comment
+    // sanity check loc arg
     if (loc == NULL || loc->w == 0 || loc->h == 0) {
         ERROR("invalid loc, event_id=%d\n", event_id);
         return;
@@ -224,7 +224,6 @@ try_again:
             // dont wait
             return;
         } else if (timeout_us < 0 || waited < timeout_us) {
-            // xxx keep this change from 1 ms to 10 ms?
             // either wait forever or time waited is less than timeout_us
             usleep(10*ONE_MS);
             waited += 10*ONE_MS;
