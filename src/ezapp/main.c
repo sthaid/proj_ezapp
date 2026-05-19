@@ -426,11 +426,7 @@ static int run(char *name, bool is_svc)
     // error if no source code found in dir_path
     if (picoc_args[0] == '\0') {
         ERROR("%s: no source code in %s\n", name, dir_path);
-
-        char err_msg[150];
-        sprintf(err_msg, "No source code in %s", dir_path);
-        sdlx_show_toast(err_msg);
-
+        sdlx_show_toast("NO SOURCE CODE");
         return 99;
     }
 
@@ -926,9 +922,9 @@ static void settings(void)
             if (strlen(str) >= 4) {
                 strcpy(params.devel_password, str);
                 util_set_str_param(".", "devel_password", str);
-                sdlx_show_toast("Password changed");
+                sdlx_show_toast("CHANGED");
             } else {
-                sdlx_show_toast("Password too short");
+                sdlx_show_toast("TOO SHORT");
             }
             break; }
         case EVID_SERVICES:
@@ -968,7 +964,7 @@ static void settings(void)
                 break;
             }
             create_files(CREATE_FILES_RESET_APPS_AND_SVCS);
-            sdlx_show_toast("Apps/Svcs are reset");
+            sdlx_show_toast("RESET DONE");
             break; }
         case EVID_FOREGROUND: {
             params.foreground_enabled = (params.foreground_enabled ? false : true);
