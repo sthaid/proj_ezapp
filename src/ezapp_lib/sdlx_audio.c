@@ -11,12 +11,8 @@
 // - record from microphone
 // - record Android device audio
 // - play sequence of tones
-// - play from buffer
-// - play from file
-
-// xxx issues
-// - SDLAudioP/C threads persist 
-//     SDL_DestroyAudioStream(Audio_stream);
+// - play buffer
+// - play file
 
 //
 // defines
@@ -408,7 +404,12 @@ void sdlx_audio_main_thread_periodic(void)
     static time_t t_idle_start;
     time_t        t_idle_duration;
 
-    // xxx comment
+    // This routine is called periodically on the main thread.
+    // If audio resources are allocated, and audio state has been idle for 30 seconds,
+    // then the audio resources are destroyed.
+    // If the audio resources are not destroyed then java threads SDLAudioPnn or SDLAudioCnn
+    // would persist, and these threads use significant CPU resources; which would discharge
+    // the device battery.
 
     // if nothing is allocated then return
     if (audio_stream_rec_mono == NULL &&
@@ -434,8 +435,7 @@ void sdlx_audio_main_thread_periodic(void)
     }
 
     // destroy allocations if audio state has been idle for 30 seconds
-    if (t_idle_duration > 10) { // xxx change 10 to 30
-        INFO("XXXXXXXXXX DESTROYING\n");
+    if (t_idle_duration > 30) {
         if (audio_stream_rec_mono) {
             SDL_DestroyAudioStream(audio_stream_rec_mono);
             audio_stream_rec_mono = NULL;
