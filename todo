@@ -5,6 +5,9 @@ color_orgn,  save recording.dat in different dir
 get_str, get_num   different file               
 audio check cpu usage
 colr orgn when exitting and recording, save the file
+use show toast for error popups
+ez_bin wrappers
+colororgn - colrorgn scale, go below 5
 
 audio retest:
 - memo
@@ -14,24 +17,22 @@ audio retest:
 - test
 - paddle
 
+check on stack trace in adb_logcat
+
 -----------------------------------------------
+
+need a way to clear cached params, maybe when app starts then clear params
+
+option for km and celsius
+
+finish work on xxx
 
 steps, default to Month view
 
-colororgn - colrorgn scale, go below 5
-
 altitude back 1 day not working
-
-use show toast for error popups
-
-ez_bin wrappers
 
 developer mode password
 - force it to be init
-
-check on stack trace in adb_logcat
-
-finish work on xxx
 
 audio:
 - audio code review and retest
