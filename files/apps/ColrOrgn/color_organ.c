@@ -403,7 +403,7 @@ void init_loc(sdlx_loc_t *loc, int x, int y, int w, int h)
 
 // -----------------  COLOR ORGAN EVENT HANDLING  --------------------
 
-//void init_loc(sdlx_loc_t *loc, int x, int y, int w, int h);
+void adjust_scale(int *scale, bool increase);
 
 void color_organ_process_event(sdlx_event_t *ev)
 {
@@ -422,8 +422,7 @@ void color_organ_process_event(sdlx_event_t *ev)
             disp_scale_factor = DISP_SCALE_FACTOR_DURATION;
             break;
         }
-        band_scale[LOW_BAND] += (ev->event_id == EVID_LOW_BAND_INCREASE ? 5 : -5);
-        if (band_scale[LOW_BAND] < 5) band_scale[LOW_BAND] = 5;
+        adjust_scale(&band_scale[LOW_BAND], ev->event_id==EVID_LOW_BAND_INCREASE);
         disp_scale_factor = DISP_SCALE_FACTOR_DURATION;
         util_set_numeric_param(data_dir, "low_band_scale", band_scale[LOW_BAND]);
         break;
@@ -433,8 +432,7 @@ void color_organ_process_event(sdlx_event_t *ev)
             disp_scale_factor = DISP_SCALE_FACTOR_DURATION;
             break;
         }
-        band_scale[MID_BAND] += (ev->event_id == EVID_MID_BAND_INCREASE ? 5 : -5);
-        if (band_scale[MID_BAND] < 5) band_scale[MID_BAND] = 5;
+        adjust_scale(&band_scale[MID_BAND], ev->event_id==EVID_MID_BAND_INCREASE);
         disp_scale_factor = DISP_SCALE_FACTOR_DURATION;
         util_set_numeric_param(data_dir, "mid_band_scale", band_scale[MID_BAND]);
         break;
@@ -444,8 +442,7 @@ void color_organ_process_event(sdlx_event_t *ev)
             disp_scale_factor = DISP_SCALE_FACTOR_DURATION;
             break;
         }
-        band_scale[HIGH_BAND] += (ev->event_id == EVID_HIGH_BAND_INCREASE ? 5 : -5);
-        if (band_scale[HIGH_BAND] < 5) band_scale[HIGH_BAND] = 5;
+        adjust_scale(&band_scale[HIGH_BAND], ev->event_id==EVID_HIGH_BAND_INCREASE);
         disp_scale_factor = DISP_SCALE_FACTOR_DURATION;
         util_set_numeric_param(data_dir, "high_band_scale", band_scale[HIGH_BAND]);
         break;
@@ -455,13 +452,31 @@ void color_organ_process_event(sdlx_event_t *ev)
             disp_scale_factor = DISP_SCALE_FACTOR_DURATION;
             break;
         }
-        fft_scale += (ev->event_id == EVID_FFT_INCREASE ? 5 : -5);
-        if (fft_scale < 5) fft_scale = 5;
+        adjust_scale(&fft_scale, ev->event_id==EVID_FFT_INCREASE);
         disp_scale_factor = DISP_SCALE_FACTOR_DURATION;
         util_set_numeric_param(data_dir, "fft_scale", fft_scale);
         break;
     }
 }
+
+void adjust_scale(int *scale, bool increase)
+{
+    if (increase) {
+        if (*scale < 5) {
+            *scale += 1;
+        } else {
+            *scale += 5;
+        }
+    } else {
+        if (*scale == 1) {
+            // do nothing
+        } else if (*scale <= 5) {
+            *scale -= 1;
+        } else {
+            *scale -= 5;
+        }
+    }
+}            
 
 // -----------------  COLOR ORGAN SETTINGS  --------------------------
 
