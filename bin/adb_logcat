@@ -10,4 +10,4 @@ set -x
 adb logcat -c -b all
 
 # view logs for SDL, SDL/APP and AndroidRuntim sources
-adb logcat -s --format=$fmt,color EZAPP:I SDL:I SDL/APP:I AndroidRuntime:I
+adb logcat -s --format=$fmt,color EZAPP:I SDL:I SDL/APP:I AndroidRuntime:I *:F

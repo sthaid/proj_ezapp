@@ -29,5 +29,10 @@ if (strncmp(argv[1], "svcs/", 5) == 0) {
 // call app/svc main routine
 main(2, argv);
 
+// if running an app then call sdlx_quit
+if (strncmp(data_dir, "apps/", 5) == 0) {
+    sdlx_quit(SUBSYS_VIDEO|SUBSYS_AUDIO|SUBSYS_SENSOR);
+}
+
 // done
 printf("I %s: eztest_picoc terminating\n", argv[0]);

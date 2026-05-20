@@ -43,6 +43,11 @@ int main(int argc, char **argv)
     // call the mini app main routine
     rc = MAIN(argc, argv);
 
+    // if running an app then call sdlx_quit
+    if (strncmp(data_dir, "apps/", 5) == 0) {
+        sdlx_quit(SUBSYS_VIDEO|SUBSYS_AUDIO|SUBSYS_SENSOR);
+    }
+
     // print result and return status
     if (rc == 0) {
         printf("I eztest_linux: normal termination\n");
