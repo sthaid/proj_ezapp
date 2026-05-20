@@ -91,7 +91,6 @@ int sdlx_video_init(void)
 {
     int num, i;
     int w, h;
-    bool succ;
 
     INFO("initializing\n");
 
@@ -100,7 +99,7 @@ int sdlx_video_init(void)
 #if 0
     // disable block on paues;
     // this allows the ColrOrgn app to continue audio playback when ezapp is backgrounded
-    succ = SDL_SetHint(SDL_HINT_ANDROID_BLOCK_ON_PAUSE, "0");
+    bool succ = SDL_SetHint(SDL_HINT_ANDROID_BLOCK_ON_PAUSE, "0");
     if (!succ) {
         ERROR("disable SDL_HINT_ANDROID_BLOCK_ON_PAUSE failed\n");
     }

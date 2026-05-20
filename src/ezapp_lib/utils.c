@@ -503,14 +503,14 @@ char *util_get_str_param(char *dir, char *name, char *default_value)
         if (max_params >= MAX_PARAMS) {
             ERROR("params tbl is full\n");
             PARAMS_UNLOCK;
-            return default_value;
+            return strdup(default_value);
         }
         params[max_params].name = strdup(name);
         params[max_params].value = strdup(default_value);
         max_params++;
         write_params_file(dir);
         PARAMS_UNLOCK;
-        return default_value;
+        return strdup(default_value);
     }
 }
 
