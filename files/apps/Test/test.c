@@ -120,7 +120,7 @@ int main(int argc, char **argv)
 // NOTE: picoc does not support this being static, causes crash;
 //      if declared static, the number of array elements must be provided
 char *page_title[] = {     // Page
-        "Unit Test",       //   0
+        "TEST",            //   0
         "Font",            //   1
         "Sizeof",          //   2
         "Multi Lines",     //   3
@@ -253,6 +253,8 @@ static void page_hndlr()
 
 // -----------------  PAGE 0: CLOCK  --------------------------
 
+#define EVID_CRASH 10
+
 int page_0_x, page_0_y;
 double page_0_xrel, page_0_yrel;
 
@@ -303,6 +305,11 @@ static void page_0_draw(void)
            "yrel = %0.3f", page_0_yrel);
     sdlx_render_point(page_0_x, page_0_y, COLOR_WHITE, 9);
     sdlx_register_event(NULL, EVID_MOTION);
+
+    // register event to crash this app
+    sdlx_loc_t *loc = sdlx_render_printf_ex1(0, sdlx_win_height-2*sdlx_char_height_dflt, 
+                                             FONT_NORMAL, COLOR_LIGHT_BLUE, "CRASH");
+    sdlx_register_event(loc, EVID_CRASH);
 }
 
 static void page_0_process_event(sdlx_event_t *ev)
@@ -314,6 +321,16 @@ static void page_0_process_event(sdlx_event_t *ev)
         page_0_xrel = ev->u.motion.xrel;
         page_0_yrel = ev->u.motion.yrel;
         break;
+    case EVID_CRASH: {
+        static int *null_ptr = (void*)1;
+        char *yn = sdlx_get_input_str("Crash EZAPP (y/n)", false, NULL);
+        bool do_crash = (strcasecmp(yn, "y") == 0);
+        sdlx_show_toast(do_crash ? "CRASHING EZAPP" : "ABORTED");
+        if (do_crash) {
+            printf("I %s: dereference null ptr\n", progname);
+            printf("I %s: %d\n", progname, *null_ptr);
+        }
+        break; }
     }
 }
 
