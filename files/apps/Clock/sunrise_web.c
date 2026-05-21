@@ -15,7 +15,7 @@
 static int run_curl(char *url, char *filename);
 static void *get_json_root(char *filename);
 
-void sunrise_sunset_web(char *sunrise, char *sunset, char *midday)
+void sunrise_sunset_web(char *sunrise, char *sunset, char *midday, char *daytime)
 {
     char         curl_url[200];
     json_value_t rise, set;
@@ -29,6 +29,7 @@ void sunrise_sunset_web(char *sunrise, char *sunset, char *midday)
     strcpy(sunrise, "N/A");
     strcpy(sunset, "N/A");
     strcpy(midday, "N/A");
+    strcpy(daytime, "N/A");
 
     // get location
     util_get_location(&latitude, &longitude, NULL, NULL);
@@ -86,13 +87,19 @@ void sunrise_sunset_web(char *sunrise, char *sunset, char *midday)
     sprintf(sunset, "%02d:%02d", tm.tm_hour, tm.tm_min);
 
     // calculate midday time, (solar noon)
-    //t_midday_gm = ((long)t_rise_gm + (long)t_set_gm) / 2;  // xxx why doesnt this work in picoc
     char s[100];
-    t_midday_gm = t_rise_gm / 2 + t_set_gm / 2;
+    t_midday_gm = (t_rise_gm + t_set_gm) / 2;
     localtime_r(&t_midday_gm, &tm);
     strftime(s, sizeof(s), "%c", &tm);
     printf("I %s: web  MID  %s\n", progname, s);
     sprintf(midday, "%02d:%02d", tm.tm_hour, tm.tm_min);
+
+    // determine the daytime length
+    int minutes, hours;
+    minutes = (t_set_gm - t_rise_gm) / 60;
+    hours = minutes / 60;
+    minutes -= 60 * hours;
+    sprintf(daytime, "%02d:%02d", hours, minutes);
 
 done:
     util_json_free(root);

@@ -42,9 +42,16 @@ int main(int argc, char **argv)
     data_dir = argv[1];
     printf("I %s: starting, data_dir=%s\n", progname, data_dir);
 
-    // get the sunrise, sunset, and midday (solar noon) times
+    // calculate the sunrise, sunset, and midday (solar noon) times
     sunrise_sunset_calc(sunrise_calc, sunset_calc, midday_calc, daytime_calc);
     printf("I %s: CALC  %s %s %s %s\n", progname, sunrise_calc, midday_calc, sunset_calc, daytime_calc);
+
+#if 0 // enable this to compare sunrise/sunset times from web api vs calculated
+    // obtain, from web api, the sunrise, sunset, and midday (solar noon) times
+    char sunrise_web[50], sunset_web[50], midday_web[50], daytime_web[50];
+    sunrise_sunset_web(sunrise_web, sunset_web, midday_web, daytime_web);
+    printf("I %s: WEB   %s %s %s %s\n", progname, sunrise_web, midday_web, sunset_web, daytime_web);
+#endif
 
     // set default font
     sdlx_print_set_default(FONT_NORMAL, COLOR_WHITE);
@@ -91,7 +98,7 @@ int main(int argc, char **argv)
         sdlx_render_printf(sdlx_win_width-5*sdlx_char_width_dflt, y, "%s", sunset_calc);
         y += 1.5 * sdlx_char_height_dflt;
 
-        // display daytime
+        // display daytime length
         sdlx_render_printf_ex2(sdlx_win_width/2, y, FONT_NORMAL, COLOR_WHITE,
                                FLAG_X_CTR, 
                                "DayTime %s", daytime_calc);
