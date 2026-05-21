@@ -238,9 +238,7 @@ static void add_tone(sdlx_tone_t **t, int freq, int intvl_ms);
 static void add_gap(sdlx_tone_t **t, int intvl_ms);
 static void add_terminator(sdlx_tone_t **t);
 
-static void generate_morse_code_tones(sdlx_tone_t **t, char *letters, int wpm)
-{
-    char *morse_chars[] = {  // xxx this cant be static due to picoc limitation
+static char *morse_chars[26] = {
                     /* A */ ".-",      /* B */ "-...",    /* C */ "-.-.",
                     /* D */ "-..",     /* E */ ".",       /* F */ "..-.",
                     /* G */ "--.",     /* H */ "....",    /* I */ "..",
@@ -250,6 +248,9 @@ static void generate_morse_code_tones(sdlx_tone_t **t, char *letters, int wpm)
                     /* S */ "...",     /* T */ "-",       /* U */ "..-",
                     /* V */ "...-",    /* W */ ".--",     /* X */ "-..-",
                     /* Y */ "-.--",    /* Z */ "--..", };
+
+static void generate_morse_code_tones(sdlx_tone_t **t, char *letters, int wpm)
+{
     int dit_dur         = 1200 / wpm;   // millisecs
     int dah_dur         = 3 * dit_dur;
     int dit_dah_gap_dur = dit_dur;
