@@ -1,0 +1,12 @@
+NAME: Calc
+
+DESCRIPTION:
+
+Calculator supports Hex / Decimal, in either 32 or 64 bits.
+
+Binary bitwise operators:     & | ^ << >>
+Unary bitwise operators:      ~
+Binary Arithmetic operators:  + - * /
+
+Floating point is not supported
+
