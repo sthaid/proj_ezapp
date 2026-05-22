@@ -106,6 +106,7 @@ int util_write_file(char *dir, char *fn, void *buf, int len)
 
 // note: an extra '\0' byte is added to the end of the data buffer;
 //       this extra char is not included in len_ret
+// xxx make len_ret optional
 void *util_read_file(char *dir, char *fn, int *len_ret)
 {
     int fd, ret;
@@ -532,7 +533,7 @@ void util_set_str_param(char *dir, char *name, char *value)
 
     // if found then
     //   if no change then return
-    //   replace its value
+    //   otherwise, replace its value
     // else
     //   add param to the end
     // endif
@@ -669,6 +670,7 @@ next:
 
 // ----------------- JSON --------------------
 
+// xxx make end_ptr optional
 void *util_json_parse(char *str, char **end_ptr)
 {
     if (str == NULL || end_ptr == NULL) {
