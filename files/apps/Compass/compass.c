@@ -109,7 +109,7 @@ int main(int argc, char **argv)
             sdlx_render_texture_ex2(compass, 50, 150, 900, 900, -compass_heading);
 
             // if show is enabled then draw a reference point at true north
-            if (show && true_heading != INVALID_NUMBER) {
+            if (show && view == MAGNETIC_COMPASS && true_heading != INVALID_NUMBER) {
                 x = 500 + 345 * sin((true_heading + 180) * DEG_TO_RAD);
                 y = 600 + 345 * cos((true_heading + 180) * DEG_TO_RAD);
                 sdlx_render_point(x, y, COLOR_BLUE, MAX_POINT_SIZE);
@@ -117,7 +117,7 @@ int main(int argc, char **argv)
 
             // print the heading and the heading abbreviation below 
             // the area where the compass is displayed
-            y = 1100 + 1.25 * sdlx_char_height(FONT_LARGE);
+            y = 1100 + 1.0 * sdlx_char_height(FONT_LARGE);
             sdlx_render_printf_ex2(sdlx_win_width / 2, y,
                                    FONT_LARGE, COLOR_WHITE, FLAG_XY_CTR, 
                                    "%s", view == MAGNETIC_COMPASS ? "MAG" : "TRUE");
