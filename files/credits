@@ -1,5 +1,5 @@
 
-I sincerely thank the following organizations for providing
+Thanks to the following organizations for providing
 permiissive licensed software.
 
 * SDL, SDL_mixer, SDL_ttf - Simple DirectMedia Layer (SDL) is a 
@@ -29,7 +29,7 @@ permiissive licensed software.
     available.
   https://github.com/zlargon/lame
 
-Thanks also goes to the following for providing free or public 
+Thanks also to the following for providing free or public 
 domain content.
 
 * geoapify - Provides locations of cities, towns, and villages.
@@ -40,6 +40,9 @@ domain content.
 * USA weather forecast - Free weather forecast provided by 
     the USA government.
   https://api.weather.gov
+
+* Magnetic Field Calculators - provided by the USA government.
+  https://www.ngdc.noaa.gov/geomag-web
 
 * Sunset and Sunrise times API - Free API that provides sunset 
     and sunrise times.

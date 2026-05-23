@@ -1,3 +1,17 @@
+NAME: Compass
+
+DESCRIPTION:
+
+Compass displays either Magnetic or True heading.
+
+When Show is enabled the magnetic declination is displayed, and 
+a blue dot is displayed at true north.
+
+On first use, or if location has substantially changed, the 
+magnetic declination is obtained from https://www.ngdc.noaa.gov/geomag-web.
+
+NOTES:
+
 The compass.png file is a licensed image from stock.adobe.com.
 
 It has a transparent background, as indicated by the checkerboard, and
