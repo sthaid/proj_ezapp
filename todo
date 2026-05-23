@@ -74,6 +74,8 @@ check on stack trace in adb_logcat
 
 -----------------------------------------------
 
+highlight today in Steps month view
+
 need a way to clear cached params, maybe when app starts then clear params
 
 option for km and celsius

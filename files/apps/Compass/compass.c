@@ -10,6 +10,7 @@
 #include <utils.h>
 
 #define EVID_SLCT 1
+#define EVID_SHOW 2
 
 #define MAGNETIC_COMPASS 0
 #define TRUE_COMPASS     1
@@ -23,6 +24,7 @@ char *data_dir;
 int             view     = MAGNETIC_COMPASS;
 double          mag_decl = INVALID_NUMBER;
 sdlx_texture_t *compass;
+bool            show;
 
 // prototypes
 int init_compass_texture(void);
@@ -30,14 +32,15 @@ void init_mag_decl(void);
 void cleanup(void);
 double smooth(double newval);
 char *abbreviation(double heading);
+void normalize(double *angle);
 
 // -----------------  MAIN  ------------------------------------------
 
 int main(int argc, char **argv)
 {
-    int          rc;
+    int          rc, x, y;
     sdlx_event_t event;
-    double       mag_heading, heading;
+    double       mag_heading, true_heading, compass_heading;
     bool         end_program = false;
 
     // save args
@@ -55,6 +58,8 @@ int main(int argc, char **argv)
         return 1;
     }
     init_mag_decl();
+    view = util_get_numeric_param(data_dir, "view", MAGNETIC_COMPASS);
+    show = util_get_numeric_param(data_dir, "show", false);
 
     // runtime loop
     while (!end_program) {
@@ -70,55 +75,65 @@ int main(int argc, char **argv)
 #endif
 
         // if magnetic heading is valid then
-        //   display heading info
+        //   display compass
         // else
         //   display "NO DATA"
         // endif
         if (mag_heading != INVALID_NUMBER) {
+            // determine true heading
+            if (mag_decl != INVALID_NUMBER) {
+                true_heading = mag_heading + mag_decl;
+                normalize(&true_heading);
+            } else {
+                true_heading = INVALID_NUMBER;
+                view = MAGNETIC_COMPASS;
+            }
+
             // display white background in the area where the compass 
             // will be displayed
             sdlx_render_fill_rect(0, 100, 1000, 1000, COLOR_WHITE);
 
             // draw reference mark at the top center 
-            for (int x = sdlx_win_width/2-3; x < sdlx_win_width/2+3; x++) {
+            for (x = sdlx_win_width/2-3; x < sdlx_win_width/2+3; x++) {
                 sdlx_render_line(x, 100, x, 150, COLOR_BLACK);
             }
 
-            // draw the compass rotated by heading
-            heading = (view == MAGNETIC_COMPASS ? mag_heading : mag_heading + mag_decl);
-            if (heading < 0) {
-                heading += 360;
-            } else if (heading >= 360) {
-                heading -= 360;
-            }
-            sdlx_render_texture_ex2(compass, 50, 150, 900, 900, -heading);
+            // determine compass heading, based on view selected
+            compass_heading = (view == MAGNETIC_COMPASS ? mag_heading : true_heading);
+            normalize(&compass_heading);
 
-            // if MAGNETIC_COMPASS, draw a reference point at the true north
-            if (view == MAGNETIC_COMPASS) {
-                int ctr_x, ctr_y, x, y;
-                double true_heading;
-                ctr_x = 500;
-                ctr_y = 600;
-                true_heading = mag_heading + mag_decl;
-                x = ctr_x + 450 * sin((true_heading + 180) * DEG_TO_RAD);
-                y = ctr_y + 450 * cos((true_heading + 180) * DEG_TO_RAD);
-                sdlx_render_point(x, y, COLOR_GREEN, MAX_POINT_SIZE);
+            // draw the compass rotated by compass_heading
+            sdlx_render_texture_ex2(compass, 50, 150, 900, 900, -compass_heading);
+
+            // if show is enabled then draw a reference point at true north
+            if (show && true_heading != INVALID_NUMBER) {
+                x = 500 + 345 * sin((true_heading + 180) * DEG_TO_RAD);
+                y = 600 + 345 * cos((true_heading + 180) * DEG_TO_RAD);
+                sdlx_render_point(x, y, COLOR_BLUE, MAX_POINT_SIZE);
             }
 
             // print the heading and the heading abbreviation below 
             // the area where the compass is displayed
-            // xxx display TRUE / MAG at top
-            // xxx display DECL = xx.x degrees
-            sdlx_render_printf_ex2(
-                sdlx_win_width / 2, 1100 + 1.25 * sdlx_char_height(FONT_LARGE),
-                FONT_LARGE, COLOR_WHITE, FLAG_XY_CTR, 
-                "%.0f %s", 
-                heading,
-                view == MAGNETIC_COMPASS ? "MAG" : "TRUE");
-            sdlx_render_printf_ex2(
-                sdlx_win_width / 2, 1100 + 2.75 * sdlx_char_height(FONT_LARGE), 
-                FONT_LARGE, COLOR_WHITE, FLAG_XY_CTR, 
-                "%s", abbreviation(heading));
+            y = 1100 + 1.25 * sdlx_char_height(FONT_LARGE);
+            sdlx_render_printf_ex2(sdlx_win_width / 2, y,
+                                   FONT_LARGE, COLOR_WHITE, FLAG_XY_CTR, 
+                                   "%s", view == MAGNETIC_COMPASS ? "MAG" : "TRUE");
+            y += 1.5 * sdlx_char_height(FONT_LARGE);
+            sdlx_render_printf_ex2(sdlx_win_width / 2, y,
+                                   FONT_LARGE, COLOR_WHITE, FLAG_XY_CTR, 
+                                   "%.0f", compass_heading);
+            y += 1.5 * sdlx_char_height(FONT_LARGE);
+            sdlx_render_printf_ex2(sdlx_win_width / 2, y,
+                                   FONT_LARGE, COLOR_WHITE, FLAG_XY_CTR, 
+                                   "%s", abbreviation(compass_heading));
+            y += 1.5 * sdlx_char_height(FONT_LARGE);
+
+            // if show is enabled and mag_decl is available then print the mag_decl
+            if (show && mag_decl != INVALID_NUMBER) {
+                sdlx_render_printf_ex2(sdlx_win_width / 2, y,
+                                       FONT_NORMAL, COLOR_WHITE, FLAG_XY_CTR, 
+                                       "decl = %0.1f", mag_decl);
+            }
         } else {
             sdlx_render_printf_ex2(
                 sdlx_win_width / 2, 500, 
@@ -127,8 +142,8 @@ int main(int argc, char **argv)
         }
 
         // register control event to end program
-        sdlx_register_control_events(EVID_SLCT, "SLCT",
-                                     0, NULL, 
+        sdlx_register_control_events(EVID_SLCT, "Slct",
+                                     EVID_SHOW, (show ? "Hide" : "Show"),
                                      EVID_QUIT, "X");
 
         // present the display
@@ -152,6 +167,11 @@ int main(int argc, char **argv)
             } else {
                 view = MAGNETIC_COMPASS;
             }
+            util_set_numeric_param(data_dir, "view", view);
+            break;
+        case EVID_SHOW:
+            show = !show;
+            util_set_numeric_param(data_dir, "show", show);
             break;
         }
     }
@@ -346,5 +366,16 @@ char *abbreviation(double heading)
         return "NW";
     } else {
         return "Invalid";
+    }
+}
+
+void normalize(double *angle)
+{
+    while (*angle < 0) {
+        *angle += 360;
+    }
+
+    while (*angle >= 360) {
+        *angle -= 360;
     }
 }
