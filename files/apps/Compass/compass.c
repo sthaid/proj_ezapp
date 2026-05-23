@@ -8,6 +8,8 @@
 
 #include <sdlx.h>
 #include <utils.h>
+#include <svcs.h>
+#include "svcs/Location/location.h"
 
 #define EVID_SLCT 1
 #define EVID_SHOW 2
@@ -21,8 +23,9 @@
 char *progname;
 char *data_dir;
 
-int             view     = MAGNETIC_COMPASS;
-double          mag_decl = INVALID_NUMBER;
+int             view = MAGNETIC_COMPASS;
+double          mag_decl_degrees = INVALID_NUMBER;
+char            mag_decl_locname[21];
 sdlx_texture_t *compass;
 bool            show;
 
@@ -81,8 +84,8 @@ int main(int argc, char **argv)
         // endif
         if (mag_heading != INVALID_NUMBER) {
             // determine true heading
-            if (mag_decl != INVALID_NUMBER) {
-                true_heading = mag_heading + mag_decl;
+            if (mag_decl_degrees != INVALID_NUMBER) {
+                true_heading = mag_heading + mag_decl_degrees;
                 normalize(&true_heading);
             } else {
                 true_heading = INVALID_NUMBER;
@@ -126,13 +129,17 @@ int main(int argc, char **argv)
             sdlx_render_printf_ex2(sdlx_win_width / 2, y,
                                    FONT_LARGE, COLOR_WHITE, FLAG_XY_CTR, 
                                    "%s", abbreviation(compass_heading));
-            y += 1.5 * sdlx_char_height(FONT_LARGE);
+            y += 1.0 * sdlx_char_height(FONT_LARGE);
 
-            // if show is enabled and mag_decl is available then print the mag_decl
-            if (show && mag_decl != INVALID_NUMBER) {
+            // if show is enabled and mag_decl_degrees is available then print the mag_decl_degrees
+            if (show && mag_decl_degrees != INVALID_NUMBER) {
                 sdlx_render_printf_ex2(sdlx_win_width / 2, y,
                                        FONT_NORMAL, COLOR_WHITE, FLAG_XY_CTR, 
-                                       "decl = %0.1f", mag_decl);
+                                       "decl = %0.1f", mag_decl_degrees);
+                y += 1.0 * sdlx_char_height(FONT_NORMAL);
+                sdlx_render_printf_ex2(sdlx_win_width / 2, y,
+                                       FONT_NORMAL, COLOR_WHITE, FLAG_XY_CTR, 
+                                       "%s", mag_decl_locname);
             }
         } else {
             sdlx_render_printf_ex2(
@@ -162,7 +169,7 @@ int main(int argc, char **argv)
             end_program = true;
             break;
         case EVID_SLCT:
-            if (view == MAGNETIC_COMPASS && mag_decl != INVALID_NUMBER) {
+            if (view == MAGNETIC_COMPASS && mag_decl_degrees != INVALID_NUMBER) {
                 view = TRUE_COMPASS;
             } else {
                 view = MAGNETIC_COMPASS;
@@ -226,34 +233,44 @@ void init_mag_decl(void)
     double        param_mag_decl_lat;
     double        param_mag_decl_long;
     double        param_mag_decl_degrees;
+    bool          okay_to_use;
 
     // preset mag_decl to invalid
-    mag_decl = INVALID_NUMBER;
+    mag_decl_degrees = INVALID_NUMBER;
 
-    // get location
+    // get current latitude and longitude
     util_get_location(&latitude, &longitude, NULL, NULL);
     if (latitude == INVALID_NUMBER || longitude == INVALID_NUMBER) {
         printf("E %s: failed to get lat/long\n", progname);
         return;
     }
 
-    // if mag_decl is available from params then use it
-    param_mag_decl_t       = util_get_numeric_param(data_dir, "mag_decl_t",       INVALID_NUMBER);
-    param_mag_decl_lat     = util_get_numeric_param(data_dir, "mag_decl_lat",     INVALID_NUMBER);
-    param_mag_decl_long    = util_get_numeric_param(data_dir, "mag_decl_long",    INVALID_NUMBER);
+    // if valid mag_decl_degrees is available from params then use it
+    // - read param_mag_decl_degrees, and check if the read succeeded
     param_mag_decl_degrees = util_get_numeric_param(data_dir, "mag_decl_degrees", INVALID_NUMBER);
-    if (param_mag_decl_t != INVALID_NUMBER &&
-        param_mag_decl_lat != INVALID_NUMBER &&
-        param_mag_decl_long != INVALID_NUMBER &&
-        param_mag_decl_degrees != INVALID_NUMBER &&
-        labs(time(NULL) - param_mag_decl_t) < ONE_YEAR &&
-        fabs(param_mag_decl_lat - latitude) < 0.5 &&
-        fabs(param_mag_decl_long - longitude) < 0.5)
-    {
-        mag_decl = param_mag_decl_degrees;
-        printf("I %s: using saved mag_decl %0.3f\n", progname, mag_decl);
-        return;
+    if (param_mag_decl_degrees != INVALID_NUMBER) {
+        // - read additional params and determine if param_mag_decl_degrees is okey to use
+        param_mag_decl_t    = util_get_numeric_param(data_dir, "mag_decl_t",    INVALID_NUMBER);
+        param_mag_decl_lat  = util_get_numeric_param(data_dir, "mag_decl_lat",  INVALID_NUMBER);
+        param_mag_decl_long = util_get_numeric_param(data_dir, "mag_decl_long", INVALID_NUMBER);
+        okay_to_use =  (labs(time(NULL) - param_mag_decl_t) < ONE_YEAR) &&
+                       (fabs(param_mag_decl_lat - latitude) < 0.5) &&
+                       (fabs(param_mag_decl_long - longitude) < 0.5);
+        // - if okay to use then set global variables mag_decl_degrees and mag_decl_locname, and return
+        if (okay_to_use) {
+            // - set global mag_decl_degrees from param value
+            mag_decl_degrees = param_mag_decl_degrees;
+            // - set global mag_decl_locname from param value
+            str = util_get_str_param(data_dir, "mag_decl_locname", "Loc Not Found");
+            strncpy(mag_decl_locname, str, sizeof(mag_decl_locname)-1);
+            free(str);
+            // - debug print and return
+            printf("I %s: using saved mag_decl %0.3f, loc %s\n", progname, mag_decl_degrees, mag_decl_locname);
+            return;
+        }
     }
+
+    // the following code acquires the mag_decl_degrees from www.ngdc.noaa.gov
 
     // delete existing mag_decl.json file
     util_delete_file(data_dir, MAG_DECL_JSON);
@@ -297,16 +314,29 @@ void init_mag_decl(void)
     }
 
     // set global mag_decl variable to the value obtained from the json
-    mag_decl = value->u.number;
-    printf("I %s: got new mag_decl = %0.3f\n", progname, mag_decl);
+    mag_decl_degrees = value->u.number;
+    printf("I %s: got new mag_decl = %0.3f\n", progname, mag_decl_degrees);
+
+    // get name of nearest city/town, and save in global variable mag_decl_locname
+    char req_data[MAX_SVC_REQ_DATA];
+    memset(req_data, 0, sizeof(req_data));
+    memcpy(&req_data[0], &latitude, 8);
+    memcpy(&req_data[8], &longitude, 8);
+    rc = svc_make_req("Location", SVC_LOCATION_REQ_GET_LOC_NAME_FROM_LAT_LONG, req_data, sizeof(req_data), 5);
+    if (rc == 0) {
+        strncpy(mag_decl_locname, req_data, sizeof(mag_decl_locname)-1);
+    } else {
+        strncpy(mag_decl_locname, "Loc Not Found", sizeof(mag_decl_locname)-1);
+    }
 
     // save mag_decl in params
     util_set_numeric_param(data_dir, "mag_decl_t",       time(NULL));
     util_set_numeric_param(data_dir, "mag_decl_lat",     latitude);
     util_set_numeric_param(data_dir, "mag_decl_long",    longitude);
-    util_set_numeric_param(data_dir, "mag_decl_degrees", mag_decl);
+    util_set_numeric_param(data_dir, "mag_decl_degrees", mag_decl_degrees);
+    util_set_str_param(data_dir,     "mag_decl_locname", mag_decl_locname);
 
-    // cleanup and reutn
+    // cleanup and return
     util_json_free(json);
     free(str);
     util_delete_file(data_dir, MAG_DECL_JSON);

@@ -73,6 +73,8 @@ void free_loc_data(void)
 // decreasing from approximately 364,000 feet (69 miles) at the equator to zero
 // at the poles. For a specific location, you can calculate this distance by
 // multiplying the distance at the equator by the cosine of your latitude
+//
+// miles arg is optional
 
 void find_closest_loc_data(double latitude, double longitude, char *name, double *miles)
 {
@@ -80,12 +82,18 @@ void find_closest_loc_data(double latitude, double longitude, char *name, double
     double ns, ew, distance_squared, min_distance_squared;
     double point5_div_cos_lat;
     char   closest_name[MAX_NAME];
+    double dummy_miles;
 
     // init
     min_distance_squared = 1e99;
     cos_lat = cos(latitude * (M_PI / 180));
     point5_div_cos_lat = 0.5 / cos_lat;
     closest_name[0] = '\0';
+
+    // supply dummy miles arg, if needed
+    if (miles == NULL) {
+        miles = &dummy_miles;
+    }
 
     // loop over all locations, and find the closest
     for (int i = 0; i < max_loc_data; i++) {

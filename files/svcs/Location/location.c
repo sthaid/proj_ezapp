@@ -172,6 +172,17 @@ void process_req(svc_req_t *req)
         create_loc_data_str(time(NULL), latitude, longitude, altitude, alt_is_wgs84, name, req->data);
         svc_req_completed(req, SVC_REQ_OK);
         break; }
+    case SVC_LOCATION_REQ_GET_LOC_NAME_FROM_LAT_LONG: {
+        double latitude, longitude;
+        char name[MAX_NAME];
+
+        memcpy(&latitude, &req->data[0], 8);
+        memcpy(&longitude, &req->data[8], 8);
+        find_closest_loc_data(latitude, longitude, name, NULL);
+
+        strcpy(req->data, name);
+        svc_req_completed(req, SVC_REQ_OK);
+        break; }
     case SVC_LOCATION_REQ_ADD_COUNTRY_INFO: {
         char *country_code = req->data;
 
