@@ -13,7 +13,7 @@ char *data_dir;
 int main(int argc, char **argv)
 {
     sdlx_event_t event;
-    bool         done = false;
+    bool         end_program = false;
 
     // save args
     progname = argv[0];
@@ -25,7 +25,7 @@ int main(int argc, char **argv)
     printf("I %s: starting, data_dir=%s\n", progname, data_dir);
 
     // runtime loop
-    while (!done) {
+    while (!end_program) {
         // init the backbuffer
         sdlx_display_init(COLOR_BLACK, PORTRAIT);
 
@@ -48,7 +48,7 @@ int main(int argc, char **argv)
         // process events
         switch (event.event_id) {
         case EVID_QUIT:
-            done = true;
+            end_program = true;
             break;
         }
     }

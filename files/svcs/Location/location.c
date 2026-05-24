@@ -240,7 +240,7 @@ void process_req(svc_req_t *req)
         break; }
     case SVC_LOCATION_REQ_SET_ENABLED: {
         param_enabled = req->data[0];
-        util_set_numeric_param("data_dir", "enabled", param_enabled);
+        util_set_numeric_param(data_dir, "enabled", param_enabled);
         printf("I %s: history collection is now %s\n",
                progname,
                param_enabled ? "enabled" : "disabled");

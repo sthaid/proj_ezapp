@@ -33,7 +33,6 @@
 #define EVID_DELETE_FILE         200     // delete file, range 200-299
 #define EVID_RENAME_FILE         300     // delete file, range 300-399
 
-
 #define STATE_STOPPED               0
 #define STATE_PLAYING_FILE          1
 #define STATE_PLAYING_FILE_PAUSED   2

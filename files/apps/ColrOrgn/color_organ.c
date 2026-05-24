@@ -47,7 +47,7 @@
 
 // default param values
 #define DFLT_COLOR_ORGAN       COLOR_ORGAN_BARS
-#define DFLT_FILTER            FILTER_EXP_SMOOTH
+#define DFLT_FILTER            FILTER_SNAP
 #define DFLT_LOW_BAND_SCALE    10
 #define DFLT_MID_BAND_SCALE    15
 #define DFLT_HIGH_BAND_SCALE   25

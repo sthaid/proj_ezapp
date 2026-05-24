@@ -19,24 +19,25 @@ xxxxxxxxxxxxx
 
 DOC apps
 Altitude
+Steps
+
 Calc            okay
 Clock           okay
-ColrOrgn
-Compass
+ColrOrgn          k
+Compass           k
 FlshLite          k
 Light              k
-Location
-Log
-Memo
+Location          k
+Log                    k
+Memo             k
 Morse             k
-Paddle
-Piano
-Reversi
-Steps
-Template
-Test
-Tilt
-Weather
+Paddle            k
+Piano              k
+Reversi             k
+Template          x
+Test              x
+Tilt             x
+Weather          x
 
 & | ^ << >> + - * / ~
 
@@ -73,6 +74,20 @@ audio retest:
 check on stack trace in adb_logcat
 
 -----------------------------------------------
+
+Tilt
+- put Calibrate button at bottom
+- 
+
+Paddle
+- adjust difficulty
+
+ColrOrgn
+- confirm DEL file
+
+Reversi
+- cleanup
+- Undo
 
 highlight today in Steps month view
 
