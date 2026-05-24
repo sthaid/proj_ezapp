@@ -1,83 +1,15 @@
-https://www.ngdc.noaa.gov/geomag-web/calculators/calculateDeclination?lat1=40&lon1=-105.25&key=zNEw7&resultFormat=xml
-
-https://www.ngdc.noaa.gov/geomag/CalcSurvey.shtml
-
-https://www.ngdc.noaa.gov/geomag/CalcSurveyFin.shtml
-
-
-   #define BOLTON_MASS_LATITUDE     42.4334
-    #define BOLTON_MASS_LONGITUDE   -71.6078
-    #define BOLTON_MASS_ALTITUDE_FT  450.0
-    
-curl "https://www.ngdc.noaa.gov/geomag-web/calculators/calculateDeclination?lat1=42.4334&lon1=-71.6078&key=zNEw7&resultFormat=json"
-
-
-The magnetic declination for Bolton, Massachusetts is approximately 13.33° West (13° 19' W).This means that a magnetic compass points roughly 13.3 degrees to the left of true geographic north in this area. Because magnetic north drifts slightly every year, you can check the NOAA Magnetic Declination Calculator or the Magnetic Declination Tool for up-to-date, hyper-localized readings.Magnetic Declination in Bolton, USAWhat is magnetic declination in Bolton, USA? Answer: -13.33° (-13°19') ... Cosmos Plus! ... Magnetic declination is calculated usi...www.magnetic-declination.comWhat is Declination? | Appalachian Mountain Club (AMC)Apr 24, 2017 — What is Declination? By AMC Staff What is declination? It's the angle between the geographic and magnetic north poles. Magnetic de...Appalachian Mountain ClubMaking sense of declination : r/SurvivalAug 7, 2022 — Then there is magnetic north. This is a large deposit of magnetic ore. And it moves a little bit each year. When maps are updated ...Reddit
-
-
-xxxxxxxxxxxxx
-
-DOC apps
-Altitude
-Steps
-
-Calc            okay
-Clock           okay
-ColrOrgn          k
-Compass           k
-FlshLite          k
-Light              k
-Location          k
-Log                    k
-Memo             k
-Morse             k
-Paddle            k
-Piano              k
-Reversi             k
-Template          x
-Test              x
-Tilt             x
-Weather          x
-
-& | ^ << >> + - * / ~
-
+README todo
+- svcs             xxx todo
+- Altitude         xxx todo
+- Steps            xxx todo
 NAME: Xxxxx
-
 DESCRIPTION:
-
-
 NOTES:
 
-
-
-
-setting to enable hint at start of main.c
-
--------------- MORE TESTING ----------------
-
-color_orgn,  save recording.dat in different dir 
-get_str, get_num   different file               
-audio check cpu usage
-colr orgn when exitting and recording, save the file
-use show toast for error popups
-ez_bin wrappers
-colororgn - colrorgn scale, go below 5
-
-audio retest:
-- memo
-- morse
-- piano
-- colrorgn
-- test
-- paddle
-
-check on stack trace in adb_logcat
-
------------------------------------------------
+Explore App
 
 Tilt
 - put Calibrate button at bottom
-- 
 
 Paddle
 - adjust difficulty
@@ -89,23 +21,19 @@ Reversi
 - cleanup
 - Undo
 
-highlight today in Steps month view
+Steps
+- highlight today in Steps month view
+- steps, default to Day view  , or have param for this
 
-need a way to clear cached params, maybe when app starts then clear params
+Altitude
+- altitude back 1 day not working
 
-option for km and celsius
+Common graphing routine
 
 finish work on xxx
 
-steps, default to Month view
-
-altitude back 1 day not working
-
 developer mode password
 - force it to be init
-
-audio:
-- audio code review and retest
 
 work on minimizing cpu load
 - what continue to run when app is in background?
@@ -118,6 +46,15 @@ work on minimizing cpu load
        20 ms
        HINT 
        do not init audio
+
+----LOWER-----------
+
+audio:
+- audio code review and retest
+
+setting to enable hint at start of main.c  ????
+may need a way to clear cached params, maybe when app starts then clear params
+option for km and celsius
 
 --------------------
 
