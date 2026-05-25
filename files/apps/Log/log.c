@@ -89,7 +89,7 @@ int main(int argc, char **argv)
     // runtime loop
     while (!done) {
         // init the backbuffer
-        orientation = get_device_orientation(progname);
+        orientation = get_device_orientation();
         sdlx_display_init(COLOR_BLACK, orientation);
 
         // if orientation has changed then

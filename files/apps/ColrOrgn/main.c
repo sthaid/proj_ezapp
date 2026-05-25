@@ -114,7 +114,7 @@ int main(int argc, char **argv)
         if (test_force_landscape) {
             orientation = LANDSCAPE;
         } else {
-            orientation = get_device_orientation(progname);
+            orientation = get_device_orientation();
         }
 
         // init the backbuffer

@@ -8,6 +8,7 @@
 #include <utils.h>
 
 #include "svcs/Steps/steps.h"
+#include "apps/lib/lib.h"
 
 // defines
 #define ONE_SEC         1000000
@@ -26,27 +27,16 @@
 #define VIEW_YEAR   2
 #define VIEW_STR (view == VIEW_DAY ? "DAY" : (view == VIEW_MONTH ? "MONTH" : "YEAR"))
 
-#define GRAPH_H            800 
-#define GRAPH_Y_TOP        700
-#define GRAPH_Y_BOTTOM     (GRAPH_Y_TOP + GRAPH_H - 1)
+#define GRAPH_Y 700
+#define GRAPH_H 800 
 
 #define DFLT_MAX_MILES_PER_HOUR   3     // must be a valid_max_value
 #define DFLT_MAX_MILES_PER_DAY    10    // must be a valid_max_value
 #define DFLT_MAX_MILES_PER_MONTH  50    // must be a valid_max_value
 #define DFLT_STEP_LEN_INCHES      30.0
 
-// xxx names?
-#define MAX_VALID 9
-int valid_max_values[MAX_VALID] = {3, 5, 10, 15, 20, 50, 100, 500, 1000};  
-int y_axis_3[10]    =  {1, 2, 3, INVALID_NUMBER};
-int y_axis_5[10]    =  {1, 2, 3, 4, 5, INVALID_NUMBER};
-int y_axis_10[10]   =  {2, 4, 6, 8, 10, INVALID_NUMBER};
-int y_axis_15[10]   =  {5, 10, 15, INVALID_NUMBER};
-int y_axis_20[10]   =  {5, 10, 15, 20, INVALID_NUMBER};
-int y_axis_50[10]   =  {10, 20, 30, 40, 50, INVALID_NUMBER};
-int y_axis_100[10]  =  {20, 40, 60, 80, 100, INVALID_NUMBER};
-int y_axis_500[10]  =  {100, 200, 300, 400, 500, INVALID_NUMBER};
-int y_axis_1000[10] =  {200, 400, 600, 800, 1000, INVALID_NUMBER};
+#define MAX_VALID 9   // xxx is this needed here
+int valid_max_values[MAX_VALID] = {3, 5, 10, 30, 50, 100, 300, 500, 1000};  
 
 // typedefs
 typedef struct {
@@ -223,84 +213,42 @@ void draw_display(void)
                            FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, 
                            "step_len = %g", params.step_len);
 
-    // draw rectangle around the graph area
-    sdlx_render_rect(0,
-                     GRAPH_Y_TOP-5,
-                     sdlx_win_width,
-                     GRAPH_H+10,
-                     5, // line_width
-                     COLOR_WHITE);
+    // display graph
+    double       values[32];
+    sdlx_color_t colors[32];
+    int          max_values;
+    int          max_y;
+    char        *x_axis;
+    double       cvt_steps_to_miles = params.step_len / INCHES_PER_MILE;
 
-    // display graph, based on the current view selected
-    unsigned int max_idx, *steps_array, max_graph;
+    cvt_steps_to_miles = params.step_len / INCHES_PER_MILE;
     if (view == VIEW_DAY) {
-        max_idx = 24;
-        steps_array = steps_file->hour[year][month][day];
-        max_graph = params.max_miles_per_hour;
-    } else if (view == VIEW_MONTH) {
-        max_idx = 31;
-        steps_array = steps_file->day[year][month];
-        max_graph = params.max_miles_per_day;;
-    } else {  // year
-        max_idx = 12;
-        steps_array = steps_file->month[year];
-        max_graph = params.max_miles_per_month;
-    }
-    int idx, h;
-    double w = (double)(sdlx_win_width-10) / max_idx;
-    for (idx = 0; idx < max_idx; idx++) {
-        steps = steps_array[idx];
-        miles = steps * params.step_len / INCHES_PER_MILE;
-
-        h = miles / max_graph * GRAPH_H;
-        if (h > GRAPH_H) h = GRAPH_H;
-
-        if (view == VIEW_DAY) {
-            color = is_weekend(year, month, day) ? COLOR_BLUE : COLOR_GREEN;
-        } else if (view == VIEW_MONTH) {
-            color = is_weekend(year, month, idx) ? COLOR_BLUE : COLOR_GREEN;
-        } else {
-            color = COLOR_GREEN;
+        max_values = 24;
+        for (int i = 0; i < max_values; i++) {
+            values[i] = steps_file->hour[year][month][day][i] * cvt_steps_to_miles;
+            colors[i] = is_weekend(year, month, day) ? COLOR_BLUE : COLOR_GREEN;
         }
-
-        sdlx_render_fill_rect(5+idx*w, GRAPH_Y_BOTTOM-h+1, w-6, h, color);
-    }
-
-    // display graph x-axis values
-    if (view == VIEW_DAY) {
-        sdlx_render_printf_ex1(3, GRAPH_Y_BOTTOM+5, 37, COLOR_WHITE, "%s",
-                               "00 02 04 06 08 10 12 14 16 18 20 22");
+        max_y = params.max_miles_per_hour;
+        x_axis = "00 02 04 06 08 10 12 14 16 18 20 22 ";
     } else if (view == VIEW_MONTH) {
-        sdlx_render_printf_ex1(3, GRAPH_Y_BOTTOM+5, 46, COLOR_WHITE, "%s",
-                               "01 03 05 07 09 11 13 15 17 19 21 23 25 27 29 31");
-    } else {
-        sdlx_render_printf_ex1(6, GRAPH_Y_BOTTOM+5, 23, COLOR_WHITE, "%s",
-                               "J F M A M J J A S O N D");
-    }
-
-    // display graph y-axis values
-    int *y_axis = NULL;
-    switch (max_graph) {
-    case 3:    y_axis = y_axis_3; break;
-    case 5:    y_axis = y_axis_5; break;
-    case 10:   y_axis = y_axis_10; break;
-    case 15:   y_axis = y_axis_15; break;
-    case 20:   y_axis = y_axis_20; break;
-    case 50:   y_axis = y_axis_50; break;
-    case 100:  y_axis = y_axis_100; break;
-    case 500:  y_axis = y_axis_500; break;
-    case 1000: y_axis = y_axis_1000; break;
-    }
-    if (y_axis) {
-        for (int i = 0; y_axis[i] != INVALID_NUMBER; i++) {
-            int y = GRAPH_Y_BOTTOM - 
-                    ((double)y_axis[i] / max_graph) * GRAPH_H -
-                    sdlx_char_height(FONT_SMALL) / 2;
-            sdlx_render_printf_ex2(0, y, 
-                                   FONT_SMALL, COLOR_WHITE, FLAG_BG_BLACK,
-                                   "%d", y_axis[i]);
+        max_values = 31;
+        for (int i = 0; i < max_values; i++) {
+            values[i] = steps_file->day[year][month][i] * cvt_steps_to_miles;
+            colors[i] = is_weekend(year, month, i) ? COLOR_BLUE : COLOR_GREEN;
         }
+        max_y = params.max_miles_per_day;
+        x_axis = "01 03 05 07 09 11 13 15 17 19 21 23 25 27 29 31";
+    } else { // year
+        max_values = 12;
+        for (int i = 0; i < max_values; i++) {
+            values[i] = steps_file->month[year][i] * cvt_steps_to_miles;
+            colors[i] = COLOR_GREEN;
+        }
+        max_y = params.max_miles_per_month;
+        x_axis = "J F M A M J J A S O N D";
     }
+    display_graph(0, GRAPH_Y, sdlx_win_width, GRAPH_H,
+                  values, colors, max_values, max_y, x_axis);
 
     // register events:
     // - EVID_VIEW_SELECT: used to choose DAY, MONTH, or YEAR view
@@ -442,10 +390,10 @@ void settings(void)
 
         // register events to change setting value
         y = 3*sdlx_char_height_dflt;
-        reg_setting_event(&y, "step_len",   params.step_len,   EVID_STEP_LEN);
+        reg_setting_event(&y, "step_len", params.step_len,            EVID_STEP_LEN);
         reg_setting_event(&y, "max_mph",  params.max_miles_per_hour,  EVID_YMAX_HOUR);
-        reg_setting_event(&y, "max_mpd",   params.max_miles_per_day,   EVID_YMAX_DAY);
-        reg_setting_event(&y, "max_mpm", params.max_miles_per_month, EVID_YMAX_MONTH);
+        reg_setting_event(&y, "max_mpd",  params.max_miles_per_day,   EVID_YMAX_DAY);
+        reg_setting_event(&y, "max_mpm",  params.max_miles_per_month, EVID_YMAX_MONTH);
 
         // register control event to exit settings display
         sdlx_register_control_events(0, NULL, 0, NULL, EVID_QUIT, "X");
