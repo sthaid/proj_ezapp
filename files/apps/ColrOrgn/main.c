@@ -8,6 +8,7 @@
 #include <utils.h>
 
 #include "apps/ColrOrgn/common.h"
+#include "apps/lib/lib.h"
 
 // xxx
 // - MON/REC core dump
@@ -70,7 +71,6 @@ void get_list_of_files(void);
 char *get_new_mp3_filename_noext(void);
 void remove_trailing_newline(char *s);
 char *get_state_str(void);
-int get_device_orientation(void);
 char *secs_to_mmss_str(int secs, char *str);
 char *remove_ext(char *filename);
 
@@ -111,7 +111,11 @@ int main(int argc, char **argv)
         }
 
         // get device orientation
-        orientation = get_device_orientation();
+        if (test_force_landscape) {
+            orientation = LANDSCAPE;
+        } else {
+            orientation = get_device_orientation(progname);
+        }
 
         // init the backbuffer
         sdlx_display_init(COLOR_BLACK, orientation);
@@ -564,39 +568,6 @@ void remove_trailing_newline(char *s)
     if (len > 0 && s[len-1] == '\n') {
         s[len-1] = '\0';
     }
-}
-
-int get_device_orientation(void)
-{
-    double ax, ay, az;
-    int rc;
-    static int orient = PORTRAIT;
-    static bool printed;
-
-    if (test_force_landscape) {
-        return LANDSCAPE;
-    }
-
-    rc = sdlx_sensor_read_accelerometer(&ax, &ay, &az);
-    if (rc != 0) {
-        if (!printed) {
-            printf("E %s: failed to read accelerometer\n", progname);
-            printed = true;
-        }
-        return orient;
-    }
-
-    if (ay > 7 && orient != PORTRAIT) {
-        printf("I %s: orientation is now PORTRAIT\n", progname);
-        orient = PORTRAIT;
-    }
-
-    if (ax > 7 && orient != LANDSCAPE) {
-        printf("I %s: orientation is now LANDSCAPE\n", progname);
-        orient = LANDSCAPE;
-    }
-
-    return orient;
 }
 
 char *secs_to_mmss_str(int secs, char *str)

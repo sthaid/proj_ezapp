@@ -9,6 +9,8 @@
 #include <sdlx.h>
 #include <utils.h>
 
+#include "apps/lib/lib.h"
+
 //
 // defines
 //
@@ -53,7 +55,6 @@ int           fontid;
 void init_xy_to_end_of_log(void);
 int log_load(void);
 void log_cleanup(void);
-int get_device_orientation(void);
 
 // -----------------  MAIN  ------------------------------------------
     
@@ -88,7 +89,7 @@ int main(int argc, char **argv)
     // runtime loop
     while (!done) {
         // init the backbuffer
-        orientation = get_device_orientation();
+        orientation = get_device_orientation(progname);
         sdlx_display_init(COLOR_BLACK, orientation);
 
         // if orientation has changed then
@@ -260,35 +261,4 @@ void log_cleanup(void)
     }
     num_lines = 0;
 }
-
-// -----------------  UTILS  -----------------------------------------
-
-int get_device_orientation(void)
-{
-    double ax, ay, az;
-    int rc;
-    static int orient = PORTRAIT;
-    static bool printed;
-
-    rc = sdlx_sensor_read_accelerometer(&ax, &ay, &az);
-    if (rc != 0) {
-        if (!printed) {
-            printf("E %s: failed to read accelerometer\n", progname);
-            printed = true;
-        }
-        return orient;
-    }
-    
-    if (ay > 7 && orient != PORTRAIT) {
-        printf("I %s: orientation is now PORTRAIT\n", progname);
-        orient = PORTRAIT;
-    }
-
-    if (ax > 7 && orient != LANDSCAPE) {
-        printf("I %s: orientation is now LANDSCAPE\n", progname);
-        orient = LANDSCAPE;
-    }
-    
-    return orient;
-}   
 

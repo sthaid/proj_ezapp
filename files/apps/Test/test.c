@@ -12,6 +12,7 @@
 #include <utils.h>
 
 #include "apps/Test/common.h"
+#include "apps/lib/lib.h"
 
 //
 // defines
@@ -89,6 +90,12 @@ int main(int argc, char **argv)
 
     // test calling a routine that is defined in another file
     test1_proc();
+
+    // test calling lib proc
+    int orient = get_device_orientation(progname);
+    printf("I %s: orientation is %s\n",
+           progname,
+           (orient == PORTRAIT ? "PORTRAIT" : "LANDSCAPE"));
 
     // test reading a file in the 'data_dir' dir
     int file_len;

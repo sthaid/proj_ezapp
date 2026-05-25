@@ -1,5 +1,17 @@
 #!/bin/bash
 
+# Usage:
+# - this must be invoked from an app or svc directory
+# - the git tracked files in this directory are transferred to the Android device
+# - if additional files need to be sent the additinal files are specified on the cmdline
+# - examples, (note - the current dir must be an app or svc director):
+#   - when making updates to an existing app or svc
+#       ezput
+#   - when making updates to an existing app and apps/lib files have also been updated
+#       ezput apps/lib/*.[ch]
+#   - when adding or updating a new app, that is not yet tracked by git
+#       ezput apps/MyNewApp/* apps/layout
+
 # verify parent directory is 'apps' or 'svcs'
 parent_dir=$(basename $(dirname $PWD))
 if [ "$parent_dir" != apps -a "$parent_dir" != svcs ]; then
@@ -7,61 +19,43 @@ if [ "$parent_dir" != apps -a "$parent_dir" != svcs ]; then
   exit 1
 fi
 
-# set filename_list equal to args
-filename_list="$*"
-
-# determine the destination dir (on android), and whether it exists
+# determine the code directory containing the app or svc code
 this_dir="$(basename $PWD)"
 if [ "$parent_dir" = apps ]; then
-  android_dir="apps/$this_dir"
+  code_dir="apps/$this_dir"
 else
-  android_dir="svcs/$this_dir"
-fi
-android_dir_exists=$(ezsh "if [ ! -d $android_dir ]; then echo NO; else echo YES; fi")
-
-# if invalid response received then ezApp may not be running or developer mode not entabled,
-# or invalid password
-if [ "$android_dir_exists" != NO -a "$android_dir_exists" != YES ]; then
-  echo $android_dir_exists
-  echo "ERROR: ezput failed"
-  exit 1
+  code_dir="svcs/$this_dir"
 fi
 
-# if the android_dir does not exist then prompt user to create it
-if [ "$android_dir_exists" != YES ]; then
-  echo "ERROR: android dir $android_dir does not exist"
-  read -p "Create y/n? " yn
-  if [ "$yn" != y ]; then
+# if more_files are specified in the caller args then 
+# - check that the file does not begin with '..' or '/'
+# - add the additional files to more_files variable
+# endif
+for i in $*; do
+  if [[ "$i" == ".."* || "$i" == "/"* ]]; then
+    echo "ERROR: $i invalid filename"
     exit 1
   fi
-  ezsh "mkdir $android_dir"
-fi
+  more_files="$more_files $i"
+done
 
-# if filename_list is empty then
-#   copy all git tracked files from this dir to Android;
-#    and copy the apps/layout and apps/svcs files
-# else
-#   copy filename_list
-# endif
-if [ "$filename_list" = "" ]; then
-  cd ../..
-  tar -cf /tmp/ezput.tar $(git ls-files $android_dir) apps/layout svcs/svcs
-  ezsh put /tmp/ezput.tar 
-  echo "Creating files on Android device ..."
-  ezsh tar -xvf ezput.tar
-  ezsh rm -f ezput.tar
-  rm -f /tmp/ezput.tar
-else
-  for filename in $filename_list; do
-    if [ ! -f "$filename" ]; then
-      echo "ERROR $filename does not exist"
-      exit 1
-    fi
-  done
-  for filename in $filename_list; do
-    echo "copying to android $android_dir/$filename"
-    ezsh "put $filename $android_dir/$filename"
-  done
+# copy to Android:
+# - git tracked files that are in the app/svc dir
+# - more files which the caller has requested on the cmdline
+cd ../..
+files="$(git ls-files $code_dir) $more_files"
+if [ "$files" = " " ]; then
+  echo "ERROR: no files"
+  exit 1
 fi
+tar -cf /tmp/ezput.tar  $files
+if [ $? -ne 0 ]; then
+  exit 1
+fi
+echo "Creating files on Android device ..."
+ezsh put /tmp/ezput.tar 
+ezsh tar -xvf ezput.tar
+ezsh rm -f ezput.tar
+rm -f /tmp/ezput.tar
 
 exit 0

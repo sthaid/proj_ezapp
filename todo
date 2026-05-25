@@ -6,7 +6,13 @@ NAME: Xxxxx
 DESCRIPTION:
 NOTES:
 
-Explore App
+Common code dir for apps and svcs
+
+Location
+- sometimes get somewhat random locatin values
+
+Weather
+- (null) (null)
 
 Tilt
 - put Calibrate button at bottom
@@ -20,6 +26,7 @@ ColrOrgn
 Reversi
 - cleanup
 - Undo
+- move display lower
 
 Steps
 - highlight today in Steps month view
