@@ -1,0 +1,31 @@
+#!/bin/bash
+
+# This script copies all git tracked files, from the files directory
+# to the Android device files directory.
+
+# cd to repo files dir
+top=$(git rev-parse --show-toplevel)
+if [ $? -ne 0 ]; then
+    echo "ERROR failed to get top repo directory"
+    exit 1
+fi
+cd $top/files
+
+# copy all git tracked files, in the files dir, to Android
+files="$(git ls-files $code_dir)"
+if [ "$files" = "" ]; then
+  echo "ERROR: no files"
+  exit 1
+fi
+tar -cf /tmp/ezputall.tar $files
+if [ $? -ne 0 ]; then
+  exit 1
+fi
+echo "Creating files on Android device ..."
+ezsh put /tmp/ezputall.tar 
+ezsh tar -xvf ezputall.tar
+ezsh rm -f ezputall.tar
+rm -f /tmp/ezputall.tar
+
+# done
+exit 0
