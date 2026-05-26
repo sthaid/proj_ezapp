@@ -6,6 +6,17 @@ NAME: Xxxxx
 DESCRIPTION:
 NOTES:
 
+Altitude
+- altitude back 1 day not working
+- use display_graph
+
+Common graphing routine
+
+finish work on xxx
+
+add Docs app
+- display the README files for the apps and svcs
+
 Common code dir for apps and svcs
 
 Location
@@ -32,12 +43,6 @@ Steps
 - highlight today in Steps month view
 - steps, default to Day view  , or have param for this
 
-Altitude
-- altitude back 1 day not working
-
-Common graphing routine
-
-finish work on xxx
 
 developer mode password
 - force it to be init

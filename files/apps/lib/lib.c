@@ -1,9 +1,13 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
+#include <time.h>
+
 #include <sdlx.h>
 
 #include "apps/lib/lib.h"
+
+// -----------------  ORIENTATION  --------------------------------
 
 int get_device_orientation(void)
 {
@@ -34,6 +38,8 @@ int get_device_orientation(void)
     return orient;
 }
 
+// -----------------  BAR GRAPH  ----------------------------------
+
 int y_axis_3[10]     =  {1, 2, 3, INVALID_NUMBER};
 int y_axis_5[10]     =  {1, 2, 3, 4, 5, INVALID_NUMBER};
 int y_axis_10[10]    =  {2, 4, 6, 8, 10, INVALID_NUMBER};
@@ -42,23 +48,46 @@ int y_axis_50[10]    =  {10, 20, 30, 40, 50, INVALID_NUMBER};
 int y_axis_100[10]   =  {20, 40, 60, 80, 100, INVALID_NUMBER};
 int y_axis_300[10]   =  {100, 200, 300, INVALID_NUMBER};
 int y_axis_500[10]   =  {100, 200, 300, 400, 500, INVALID_NUMBER};
-int y_axis_1000[10]  =  {2000, 4000, 6000, 8000, 10000, INVALID_NUMBER};
-// xxx will need more for altitude
+int y_axis_1000[10]  =  {200, 400, 600, 800, 1000, INVALID_NUMBER};
+int y_axis_3000[10]   =  {1000, 2000, 3000, INVALID_NUMBER};
+int y_axis_5000[10]   =  {1000, 2000, 3000, 4000, 5000, INVALID_NUMBER};
+int y_axis_10000[10]  =  {2000, 4000, 6000, 8000, 10000, INVALID_NUMBER};
+int y_axis_30000[10]   =  {10000, 20000, 30000, INVALID_NUMBER};
+int y_axis_50000[10]   =  {10000, 20000, 30000, 40000, 50000, INVALID_NUMBER};
+int y_axis_100000[10]  =  {20000, 40000, 60000, 80000, 100000, INVALID_NUMBER};
 
-void display_graph(
+int max_y_values[15] = {3, 5, 10, 
+                        30, 50, 100, 
+                        300, 500, 1000,
+                        3000, 5000, 10000,
+                        30000, 50000, 100000};
+
+void display_bar_graph(
         int graph_x, int graph_y, int graph_w, int graph_h,
         double *values, sdlx_color_t *colors, int max_values, int max_y,
         char *x_axis_str)
 {
     int idx, h;
     int graph_y_bottom;
+    int n = sizeof(max_y_values) / sizeof(int);
 
-    // xxx adjust to closest max_y
+    // max_y should normally be passed in containing one of the max_y_values;
+    // if not, then adjust max_y upward to the nearest max_y_value
+    for (int i = 0; i < n; i++) {
+        if (max_y <= max_y_values[i]) {
+            max_y = max_y_values[i];
+            break;
+        }
+    }
+    if (max_y > max_y_values[n-1]) {
+        max_y = max_y_values[n-1];
+    }
 
     // draw rectangle around the graph area
     sdlx_render_rect(graph_x, graph_y, graph_w, graph_h, 5, COLOR_WHITE);
 
-    // xxx comment
+    // shrink graph location by 10 pixels to compensate for the 
+    // rectangle that was drawn around the graph area
     graph_x += 5;
     graph_y += 5;
     graph_w -= 10;
@@ -70,7 +99,10 @@ void display_graph(
     for (idx = 0; idx < max_values; idx++) {
         h = values[idx] / max_y * graph_h;
         if (h > graph_h) h = graph_h;
-        sdlx_render_fill_rect(idx*w+8, graph_y_bottom-h, w-6, h, colors[idx]);
+        if (h < 0) h = 0;
+        if (h > 0) {
+            sdlx_render_fill_rect(idx*w+8, graph_y_bottom-h, w-6, h, colors[idx]);
+        }
     }
 
     // display graph x-axis labels
@@ -89,6 +121,12 @@ void display_graph(
     case 300:  y_axis = y_axis_300; break;
     case 500:  y_axis = y_axis_500;  break;
     case 1000: y_axis = y_axis_1000; break;
+    case 3000:  y_axis = y_axis_3000; break;
+    case 5000:  y_axis = y_axis_5000;  break;
+    case 10000: y_axis = y_axis_10000; break;
+    case 30000:  y_axis = y_axis_30000; break;
+    case 50000:  y_axis = y_axis_50000;  break;
+    case 100000: y_axis = y_axis_100000; break;
     }
     if (y_axis) {
         for (int i = 0; y_axis[i] != INVALID_NUMBER; i++) {
@@ -101,3 +139,171 @@ void display_graph(
         }
     }
 }
+
+void bar_graph_decrease_y_axis(int *max_y)
+{
+    int n = sizeof(max_y_values) / sizeof(int);
+
+    printf("decreasing\n");
+
+    if (*max_y <= max_y_values[0]) {
+        *max_y = max_y_values[0];
+        return;
+    }
+
+    for (int i = n-1; i >= 0; i--) {
+        if (*max_y > max_y_values[i]) {
+            *max_y = max_y_values[i];
+            return;
+        }
+        if (*max_y == max_y_values[i]) {
+            *max_y = max_y_values[i-1];
+            return;
+        }
+    }
+}
+
+void bar_graph_increase_y_axis(int *max_y)
+{
+    int n = sizeof(max_y_values) / sizeof(int);
+
+    if (*max_y >= max_y_values[n-1]) {
+        *max_y = max_y_values[n-1];
+        return;
+    }
+
+    for (int i = 0; i < n; i++) {
+        if (*max_y < max_y_values[i]) {
+            *max_y = max_y_values[i];
+            return;
+        }
+        if (*max_y == max_y_values[i]) {
+            *max_y = max_y_values[i+1];
+            return;
+        }
+    }
+}
+
+// -----------------  DATE UTILS  ---------------------------------
+
+// in the following code:
+// - y = year, for example 2026
+// - m = month, 1-12
+// - d = day, 1-31
+
+// notes regarding struct tm field values
+// - tm_mday  1-31
+// - tm_mon   0-11
+// - tm_year  year minus 1900
+
+char *month_str_tbl[12] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
+char *day_str_tbl[7] = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
+
+char *ymd_to_str(int y, int m, int d)
+{
+    static char ymd_str[20];
+    
+    sprintf(ymd_str, "%s %s %d, %d",
+            get_weekday_str(y, m, d), get_month_str(m), d, y);
+    return ymd_str;
+}
+
+char *get_month_str(int m)
+{
+    return month_str_tbl[m-1];
+}
+
+char *get_weekday_str(int y, int m, int d)
+{
+    struct tm tm;
+    time_t t;
+
+    memset(&tm, 0, sizeof(tm));
+    tm.tm_year = y - 1900;
+    tm.tm_mon  = m - 1;
+    tm.tm_mday = d;
+    tm.tm_isdst = -1;  // system will determine dst
+
+    t = mktime(&tm);
+    localtime_r(&t, &tm);
+    return day_str_tbl[tm.tm_wday];
+}
+
+bool is_weekend(int y, int m, int d)
+{
+    struct tm tm;
+    time_t t;
+
+    memset(&tm, 0, sizeof(tm));
+    tm.tm_year = y - 1900;
+    tm.tm_mon  = m - 1;
+    tm.tm_mday = d;
+    tm.tm_isdst = -1;  // system will determine dst
+
+    t = mktime(&tm);
+    localtime_r(&t, &tm);
+    return tm.tm_wday == 0 || tm.tm_wday == 6;
+}
+
+int days_in_month(int y, int m)
+{
+    if (m == 9 || m == 4 || m == 6 || m == 11) {
+        return 30;
+    } else if (m == 2) {
+        bool leap_year = (((y % 4) == 0) && !((y % 100) == 0)) || ((y % 400) == 0);
+        return leap_year ? 29 : 28;
+    } else {
+        return 31;
+    }
+}
+
+void get_current_ymd(int *y, int *m, int *d)
+{
+    time_t t;
+    struct tm tm;
+
+    t = time(NULL);
+    localtime_r(&t, &tm);
+    *y = tm.tm_year + 1900;
+    *m = tm.tm_mon + 1;
+    *d = tm.tm_mday;
+}
+
+void set_ymd_to_prior(int *y_arg, int *m_arg, int *d_arg)
+{
+    int y = *y_arg;
+    int m = *m_arg;
+    int d = *d_arg;
+
+    if (--d < 1) {
+        if (--m < 1) {
+            m = 12;
+            y--;
+        }
+        d = days_in_month(y, m);
+    }
+
+    *y_arg = y;
+    *m_arg = m;
+    *d_arg = d;
+}
+
+void set_ymd_to_next(int *y_arg, int *m_arg, int *d_arg)
+{
+    int y = *y_arg;
+    int m = *m_arg;
+    int d = *d_arg;
+
+    if (++d > days_in_month(y, m)) {
+        if (++m > 12) {
+            m = 1;
+            y++;
+        }
+        d = 1;
+    }
+
+    *y_arg = y;
+    *m_arg = m;
+    *d_arg = d;
+}
+

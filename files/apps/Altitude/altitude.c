@@ -8,33 +8,22 @@
 #include <utils.h>
 
 #include "svcs/Altitude/altitude.h"
+#include "apps/lib/lib.h"
 
 // defines
 #define ONE_SEC         1000000
 #define DO_NOT_CREATE   false
 #define READ_ONLY       true
 
-#define EVID_PREV           1
-#define EVID_NEXT           2
-#define EVID_TODAY          3
-#define EVID_INCR_GRAPH_MAX 4
-#define EVID_DECR_GRAPH_MAX 5
-#define EVID_INCR_GRAPH_MIN 6
-#define EVID_DECR_GRAPH_MIN 7
+#define EVID_PRIOR      1
+#define EVID_NEXT       2
+#define EVID_INCR_MAX_Y 3
+#define EVID_DECR_MAX_Y 4
 
-#define GRAPH_H            1000
-#define GRAPH_Y_TOP        600
-#define GRAPH_Y_BOTTOM     (GRAPH_Y_TOP + GRAPH_H - 1)
+#define GRAPH_Y 600
+#define GRAPH_H 1200
 
-#define DEFAULT_GRAPH_MIN_ALT  0
-#define DEFAULT_GRAPH_MAX_ALT  1000
-#define GRAPH_INCR_DECR_AMOUNT 1000
-
-// typedefs
-typedef struct {
-    int graph_min;
-    int graph_max;
-} params_t;
+#define DEFAULT_MAX_Y  1000
 
 // variables
 char *progname;
@@ -42,19 +31,14 @@ char *data_dir;
 bool  end_program;
 
 altitude_file_t *altitude_file;
-double           X;
-params_t         params;
+int              year, month, day;
+int              param_max_y;
     
 // prototypes
 void draw_display(void);
 void process_event(sdlx_event_t *event);
 
-// prototypes for utils
-char *get_month_str(int month);
-char *get_weekday_str(int y, int m, int d);
-bool is_weekend(int y, int m, int d);
-int days_in_month(int y, int m);
-void get_current_ymd(int *y, int *m, int *d);
+// xxx fix y axis label problem, where the string background is not set to black
 
 // -----------------  MAIN  ------------------------------------------
 
@@ -93,7 +77,7 @@ int main(int argc, char **argv)
         // present the display
         sdlx_display_present();
 
-        // wait for event, with timeout
+        // wait for event, with 1 sec timeout
         sdlx_get_event(ONE_SEC, &event);
         if (event.event_id == -1) {
             continue;
@@ -113,12 +97,15 @@ int main(int argc, char **argv)
 
 int initialize(void)
 {
-    //time_t       t;
-    //struct tm    tm;
-    //int          y, m, d;
+    // get the current year, month, and day
+    get_current_ymd(&year, &month, &day);
+    printf("I %s: initial year=%d month=%d day=%d\n", progname, year, month, day);
 
-    // get current date
-    //get_current_ymd(&year, &month, &day);
+    // sanity check year value
+    if (year < YEAR0 || year-YEAR0+1 > MAX_YEAR) {
+        printf("E %s: year %d is out of range\n", progname, year);
+        return -1;
+    }
 
     // map altitude.dat file
     altitude_file = util_map_file("svcs/Altitude", ALTITUDE_FILENAME, sizeof(altitude_file_t),
@@ -135,9 +122,8 @@ int initialize(void)
         return -1;
     }
 
-    // read params
-    params.graph_min  = util_get_numeric_param(data_dir, "graph_min",  DEFAULT_GRAPH_MIN_ALT);
-    params.graph_max  = util_get_numeric_param(data_dir, "graph_max",  DEFAULT_GRAPH_MAX_ALT);
+    // read max_y param value
+    param_max_y  = util_get_numeric_param(data_dir, "max_y",  DEFAULT_MAX_Y);
 
     // success
     return 0;
@@ -153,14 +139,14 @@ void cleanup(void)
 
 // -----------------  DRAW DISPLAY  ------------------------------------
 
-void display_day_graph(int x, int y, int m, int d);
 void reg_event(int x, int y, int evid, char *str);
 
 void draw_display(void)
 {
-    double altitude_ft;
-    bool   alt_is_wgs84;
-    int    x, y, m, d;
+    double       altitude_ft;
+    bool         alt_is_wgs84;
+    double       alt_ft[24];
+    sdlx_color_t colors[24], color;
 
     // display current altitude
     util_get_location(NULL, NULL, &altitude_ft, &alt_is_wgs84);
@@ -176,62 +162,35 @@ void draw_display(void)
                                alt_is_wgs84 ? "WGS84" : "MSL");
     }
 
-    // display horizontal bar to divide the current altitude display section
-    // from the graph section
-    y = ((GRAPH_Y_TOP - ROW2Y(2)) + ROW2Y(3)) / 2;
-    sdlx_render_fill_rect(sdlx_win_width/4, y, sdlx_win_width/2, 10, COLOR_BLUE);
+    // display horizontal bar to divide the current altitude display section from the graph section
+    sdlx_render_fill_rect(sdlx_win_width/4, ROW2Y(4.25), sdlx_win_width/2, 10, COLOR_BLUE);
 
-    // draw rectangle around the graph area
-    sdlx_render_rect(0,
-                     GRAPH_Y_TOP-5,
-                     sdlx_win_width,
-                     GRAPH_H+10,
-                     5, // line_width
-                     COLOR_WHITE);
+    // display graph title line (the graph date)
+    // xxx display green if current day ???
+    sdlx_render_printf_ex2(sdlx_win_width/2, GRAPH_Y-ROW2Y(1.5), 
+                           FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR,
+                           "%s", ymd_to_str(year, month, day));
 
-    // display graph
-    x = 0;
-    get_current_ymd(&y, &m, &d);
-    while (true) {
-        if (x-X < sdlx_win_width && x-X > -sdlx_win_width) {
-            display_day_graph(x-X, y, m, d);
-        }
-
-        if (x-X < -sdlx_win_width) break;
-
-        x -= sdlx_win_width;
-
-        if (--d < 0) {
-            if (--m < 0) {
-                m = 0;
-                if (--y < 0) y = 0;
-            }
-            d = days_in_month(y, m) - 1;
-        }
+    // display the bar graph of altitude for year,month,day
+    color = is_weekend(year,month,day) ? COLOR_BLUE : COLOR_GREEN;
+    for (int hour = 0; hour < 24; hour++) {
+        alt_ft[hour] = altitude_file->altitude_ft[year-YEAR0][month-1][day-1][hour];
+        colors[hour] = color;
     }
+    display_bar_graph(0, GRAPH_Y, sdlx_win_width, GRAPH_H,
+                      alt_ft, colors, 24, param_max_y,
+                      "00 02 04 06 08 10 12 14 16 18 20 22 ");
 
-    // display graph y-axis min,max; and
-    // register events to adjust the graph min/max
-    y = GRAPH_Y_BOTTOM + 3*sdlx_char_height_dflt;
+    // register events to increase or decrease y axis
+    int y = GRAPH_Y+GRAPH_H+ROW2Y(2);
     sdlx_render_printf_ex2(sdlx_win_width/2, y,
-                           FONT_NORMAL, COLOR_WHITE, FLAG_XY_CTR, 
-                           "%5d - %-5d", params.graph_min, params.graph_max);
-    reg_event(sdlx_win_width/2-COL2X(2), y-100, EVID_INCR_GRAPH_MIN, "+");
-    reg_event(sdlx_win_width/2-COL2X(2), y+100, EVID_DECR_GRAPH_MIN, "-");
-    reg_event(sdlx_win_width/2+COL2X(2), y-100, EVID_INCR_GRAPH_MAX, "+");
-    reg_event(sdlx_win_width/2+COL2X(2), y+100, EVID_DECR_GRAPH_MAX, "-");
-
-    // register motion event, for horizontal scrolling of the graph
-    sdlx_register_event(NULL, EVID_MOTION);
-
-    // register event to reset the graph to 'today'
-    sdlx_loc_t *loc;
-    loc = sdlx_render_printf_ex1(0, sdlx_win_height-2*sdlx_char_height_dflt,
-                                 FONT_NORMAL, COLOR_LIGHT_BLUE, "TODAY");
-    sdlx_register_event(loc, EVID_TODAY);
+                           FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR,
+                           "%d", param_max_y);
+    reg_event(sdlx_win_width/2-COL2X(4), y, EVID_DECR_MAX_Y, "-");
+    reg_event(sdlx_win_width/2+COL2X(4), y, EVID_INCR_MAX_Y, "+");
 
     // register control events to goto the previous or next days, and to end program
-    sdlx_register_control_events(EVID_PREV, "<",
+    sdlx_register_control_events(EVID_PRIOR, "<",
                                  EVID_NEXT, ">",
                                  EVID_QUIT, "X");
 }
@@ -240,177 +199,44 @@ void reg_event(int x, int y, int evid, char *str)
 {
     sdlx_loc_t *loc;
 
-    loc = sdlx_render_printf_ex2(x, y, FONT_NORMAL, COLOR_BLUE, FLAG_XY_CTR, "%s", str);
+    loc = sdlx_render_printf_ex2(x, y, FONT_NORMAL, COLOR_BLUE, FLAG_X_CTR, "%s", str);
     sdlx_register_event(loc, evid);
-}
-
-void display_day_graph(int x, int y, int m, int d)
-{
-    double       w, h;
-    int          hour;
-    double       alt_ft;
-    int          max = -999999;
-    int          min =  999999;
-    bool         have_min_max = false;
-
-    w = (double)(sdlx_win_width-15) / 24;
-
-    // display graph
-    for (hour = 0; hour < 24; hour++) {
-        alt_ft = altitude_file->altitude_ft[y][m][d][hour];
-        if (alt_ft == NO_ALTITUDE_DATA) {
-            continue;
-        }
-
-        if (alt_ft > max) max = alt_ft;
-        if (alt_ft < min) min = alt_ft;
-        have_min_max = true;
-
-        h = (alt_ft - params.graph_min) / (params.graph_max - params.graph_min) * GRAPH_H;
-        if (h <= 0) continue;
-        if (h > GRAPH_H) h = GRAPH_H;
-
-        sdlx_render_fill_rect(x + 15 + hour*w, GRAPH_Y_BOTTOM-h+1, w-6, h, COLOR_GREEN);
-    }
-
-    // display graph title lines, for example
-    //  "   Thu May 7   "
-    //  " 100 - 2400 ft "
-    sdlx_render_printf_ex2(x + sdlx_win_width/2, GRAPH_Y_TOP-2*sdlx_char_height_dflt, 
-                           FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR,
-                           "%s %s %d", 
-                           get_weekday_str(y, m, d),
-                           get_month_str(m),
-                           d+1);
-    if (have_min_max) {
-        sdlx_render_printf_ex2(x + sdlx_win_width/2, GRAPH_Y_TOP-sdlx_char_height_dflt, 
-                               FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR,
-                               "%d - %d ft", min, max);
-    }
-
-    // display vertical line to delimit the days
-    sdlx_render_fill_rect(x+5, GRAPH_Y_TOP, 5, GRAPH_H, COLOR_RED);
 }
 
 // -----------------  PROCESS EVENT  ---------------------------
 
 void process_event(sdlx_event_t *event)
 {
+    int y_cur,m_cur,d_cur;
+
     switch (event->event_id) {
     case EVID_QUIT:
         end_program = true;
         break;
-    case EVID_INCR_GRAPH_MAX:
-        params.graph_max += GRAPH_INCR_DECR_AMOUNT;
-        util_set_numeric_param(data_dir, "graph_max",  params.graph_max);
+    case EVID_INCR_MAX_Y:
+        bar_graph_increase_y_axis(&param_max_y);
+        util_set_numeric_param(data_dir, "max_y", param_max_y);
         break;
-    case EVID_DECR_GRAPH_MAX:
-        if (params.graph_max-GRAPH_INCR_DECR_AMOUNT > params.graph_min) {
-            params.graph_max -= GRAPH_INCR_DECR_AMOUNT;
-            util_set_numeric_param(data_dir, "graph_max",  params.graph_max);
-        }
+    case EVID_DECR_MAX_Y:
+        bar_graph_decrease_y_axis(&param_max_y);
+        util_set_numeric_param(data_dir, "max_y", param_max_y);
         break;
-    case EVID_INCR_GRAPH_MIN:
-        if (params.graph_min+GRAPH_INCR_DECR_AMOUNT < params.graph_max) {
-            params.graph_min += GRAPH_INCR_DECR_AMOUNT;
-            util_set_numeric_param(data_dir, "graph_min",  params.graph_min);
-        }
-        break;
-    case EVID_DECR_GRAPH_MIN:
-        params.graph_min -= GRAPH_INCR_DECR_AMOUNT;
-        if (params.graph_min < 0) params.graph_min = 0;
-        util_set_numeric_param(data_dir, "graph_min",  params.graph_min);
-        break;
-    case EVID_MOTION:
-        X -= event->u.motion.xrel;
-        if (X > 0) X = 0;
-        break;
-    case EVID_PREV:
-        if (X / 1000 == nearbyint(X / 1000)) {
-            X -= sdlx_win_width;
-        } else {
-            X = 1000 * floor(X / 1000);
+    case EVID_PRIOR:
+        set_ymd_to_prior(&year, &month, &day);
+        if (year < YEAR0) {
+            year = YEAR0;
+            month = 1;
+            day = 1;
         }
         break;
     case EVID_NEXT:
-        if (X / 1000 == nearbyint(X / 1000)) {
-            X += sdlx_win_width;
-        } else {
-            X = 1000 * ceil(X / 1000);
+        set_ymd_to_next(&year, &month, &day);
+        get_current_ymd(&y_cur, &m_cur, &d_cur);
+        if (year*10000 + month*100 + day > y_cur*10000 + m_cur*100 + d_cur) {
+            year = y_cur;
+            month = m_cur;
+            day = d_cur;
         }
-        if (X > 0) X = 0;
-        break;
-    case EVID_TODAY:
-        X = 0;
         break;
     }
-}
-
-// -----------------  UTILS  --------------------------------------
-
-char *month_str_tbl[12] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
-char *day_str_tbl[7] = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
-
-char *get_month_str(int m)
-{
-    return month_str_tbl[m];
-}
-
-char *get_weekday_str(int y, int m, int d)
-{
-    struct tm tm;
-    time_t t;
-
-    memset(&tm, 0, sizeof(tm));
-    tm.tm_year = y + YEAR0 - 1900;
-    tm.tm_mon  = m;
-    tm.tm_mday = d + 1;
-    tm.tm_isdst = -1;  // system will determine dst
-
-    t = mktime(&tm);
-    localtime_r(&t, &tm);
-    return day_str_tbl[tm.tm_wday];
-}
-
-bool is_weekend(int y, int m, int d)
-{
-    struct tm tm;
-    time_t t;
-
-    memset(&tm, 0, sizeof(tm));
-    tm.tm_year = y + YEAR0 - 1900;
-    tm.tm_mon  = m;
-    tm.tm_mday = d + 1;
-    tm.tm_isdst = -1;  // system will determine dst
-
-    t = mktime(&tm);
-    localtime_r(&t, &tm);
-    return tm.tm_wday == 0 || tm.tm_wday == 6;
-}
-
-int days_in_month(int y, int m)
-{
-    y += YEAR0;
-    m += 1;
-
-    if (m == 9 || m == 4 || m == 6 || m == 11) {
-        return 30;
-    } else if (m == 2) {
-        bool leap_year = (((y % 4) == 0) && !((y % 100) == 0)) || ((y % 400) == 0);
-        return leap_year ? 29 : 28;
-    } else {
-        return 31;
-    }
-}
-
-void get_current_ymd(int *y, int *m, int *d)
-{
-    time_t t;
-    struct tm tm;
-
-    t = time(NULL);
-    localtime_r(&t, &tm);
-    *y = tm.tm_year + 1900 - YEAR0;   // y : 0 is year 2026
-    *m = tm.tm_mon;                   // m : 0 - 11
-    *d = tm.tm_mday - 1;              // d : 0 - 30
 }
