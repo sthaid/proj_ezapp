@@ -16,11 +16,10 @@
 #define READ_ONLY       true
 #define INCHES_PER_MILE (5280 * 12)
 
-#define EVID_PREV         1
+#define EVID_PRIOR        1
 #define EVID_NEXT         2
 #define EVID_VIEW_SELECT  3
-#define EVID_RESET_VIEW   4
-#define EVID_SETTINGS     5
+#define EVID_SETTINGS     4
 
 #define VIEW_DAY    0
 #define VIEW_MONTH  1
@@ -34,9 +33,6 @@
 #define DFLT_MAX_MILES_PER_DAY    10    // must be a valid_max_value
 #define DFLT_MAX_MILES_PER_MONTH  50    // must be a valid_max_value
 #define DFLT_STEP_LEN_INCHES      30.0
-
-#define MAX_VALID 9   // xxx is this needed here
-int valid_max_values[MAX_VALID] = {3, 5, 10, 30, 50, 100, 300, 500, 1000};  
 
 // typedefs
 typedef struct {
@@ -53,27 +49,19 @@ bool  end_program;
 
 steps_file_t *steps_file;
 int           view;
-int           year;    // 0 = 2026
-int           month;   // 0 = Jan
-int           day;     // 0 = first day of month
+int           year;
+int           month;
+int           day;
 params_t      params;
     
 // prototypes
+int initialize(void);
+void cleanup(void);
 void draw_display(void);
 void process_event(sdlx_event_t *event);
 void settings(void);
 
-// prototypes for utils
-char *get_month_str(int m);
-char *get_weekday_str(int y, int m, int d);
-bool is_weekend(int y, int m, int d);
-int days_in_month(int y, int m);
-void get_current_ymd(int *y, int *m, int *d);
-
 // -----------------  MAIN  ------------------------------------------
-
-int initialize(void);
-void cleanup(void);
 
 int main(int argc, char **argv)
 {
@@ -128,7 +116,7 @@ int main(int argc, char **argv)
 int initialize(void)
 {
     // initialize the view to the current month
-    view = VIEW_MONTH;
+    view = VIEW_DAY;
     get_current_ymd(&year, &month, &day);
 
     // map steps.dat
@@ -179,28 +167,21 @@ void draw_display(void)
     if (view == VIEW_DAY) {
         color = (year == curr_y && month == curr_m && day == curr_d) ? COLOR_GREEN : COLOR_WHITE;
         sdlx_render_printf_ex2(sdlx_win_width/2, ROW2Y(1), FONT_NORMAL, color, FLAG_X_CTR, 
-                               "%s %s %d %d",
-                               get_weekday_str(year, month, day),
-                               get_month_str(month),
-                               day + 1,
-                               year + YEAR0);
+                               "%s", ymd_to_str(year, month, day));
     } else if (view == VIEW_MONTH) {
         color = (year == curr_y && month == curr_m) ? COLOR_GREEN : COLOR_WHITE;
         sdlx_render_printf_ex2(sdlx_win_width/2, ROW2Y(1), FONT_NORMAL, color, FLAG_X_CTR, 
-                               "%s %d",
-                               get_month_str(month),
-                               year + YEAR0);
+                               "%s %d", get_month_str(month), year);
     } else { // year
         color = (year == curr_y) ? COLOR_GREEN : COLOR_WHITE;
         sdlx_render_printf_ex2(sdlx_win_width/2, ROW2Y(1), FONT_NORMAL, color, FLAG_X_CTR, 
-                               "%d",
-                               year + YEAR0);
+                               "%d", year);
     }
 
     // display steps and miles
-    steps = (view == VIEW_DAY   ? steps_file->day[year][month][day] :
-            (view == VIEW_MONTH ? steps_file->month[year][month] :
-                                  steps_file->year[year]));
+    steps = (view == VIEW_DAY   ? steps_file->day[year-YEAR0][month-1][day-1] :
+            (view == VIEW_MONTH ? steps_file->month[year-YEAR0][month-1] :
+                                  steps_file->year[year-YEAR0]));
     miles = steps * params.step_len / INCHES_PER_MILE;
 
     sdlx_render_printf_ex2(COL2X(5), ROW2Y(3), FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, "%d", steps);
@@ -213,7 +194,7 @@ void draw_display(void)
                            FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, 
                            "step_len = %g", params.step_len);
 
-    // display graph
+    // display graph  xxx center in display
     double       values[32];
     sdlx_color_t colors[32];
     int          max_values;
@@ -225,7 +206,7 @@ void draw_display(void)
     if (view == VIEW_DAY) {
         max_values = 24;
         for (int i = 0; i < max_values; i++) {
-            values[i] = steps_file->hour[year][month][day][i] * cvt_steps_to_miles;
+            values[i] = steps_file->hour[year-YEAR0][month-1][day-1][i] * cvt_steps_to_miles;
             colors[i] = is_weekend(year, month, day) ? COLOR_BLUE : COLOR_GREEN;
         }
         max_y = params.max_miles_per_hour;
@@ -233,129 +214,75 @@ void draw_display(void)
     } else if (view == VIEW_MONTH) {
         max_values = 31;
         for (int i = 0; i < max_values; i++) {
-            values[i] = steps_file->day[year][month][i] * cvt_steps_to_miles;
-            colors[i] = is_weekend(year, month, i) ? COLOR_BLUE : COLOR_GREEN;
+            values[i] = steps_file->day[year-YEAR0][month-1][i] * cvt_steps_to_miles;
+            colors[i] = is_weekend(year, month, i+1) ? COLOR_BLUE : COLOR_GREEN;
         }
         max_y = params.max_miles_per_day;
         x_axis = "01 03 05 07 09 11 13 15 17 19 21 23 25 27 29 31";
     } else { // year
         max_values = 12;
         for (int i = 0; i < max_values; i++) {
-            values[i] = steps_file->month[year][i] * cvt_steps_to_miles;
+            values[i] = steps_file->month[year-YEAR0][i] * cvt_steps_to_miles;
             colors[i] = COLOR_GREEN;
         }
         max_y = params.max_miles_per_month;
         x_axis = "J F M A M J J A S O N D";
     }
-    display_graph(0, GRAPH_Y, sdlx_win_width, GRAPH_H,
-                  values, colors, max_values, max_y, x_axis);
+    display_bar_graph(0, GRAPH_Y, sdlx_win_width, GRAPH_H,
+                      values, colors, max_values, max_y, x_axis);
 
     // register events:
     // - EVID_VIEW_SELECT: used to choose DAY, MONTH, or YEAR view
-    // - EVID_RESET_VIEW:  used to reset to MONTH view on the current month
     // - EVID_SETTINGS:    bring up settings display
     loc = sdlx_render_printf_ex1(0, sdlx_win_height-2*sdlx_char_height_dflt, 
                                  FONT_NORMAL, COLOR_LIGHT_BLUE, "%s", VIEW_STR);
     sdlx_register_event(loc, EVID_VIEW_SELECT);
-
-    loc = sdlx_render_printf_ex1(COL2X(7), sdlx_win_height-2*sdlx_char_height_dflt, 
-                                 FONT_NORMAL, COLOR_LIGHT_BLUE, "RST_VIEW");
-    sdlx_register_event(loc, EVID_RESET_VIEW);
 
     loc = sdlx_render_printf_ex1(COL2X(17), sdlx_win_height-2*sdlx_char_height_dflt, 
                                  FONT_NORMAL, COLOR_LIGHT_BLUE, "STG");
     sdlx_register_event(loc, EVID_SETTINGS);
 
     // register control event
-    sdlx_register_control_events(EVID_PREV, "<",
+    sdlx_register_control_events(EVID_PRIOR, "<",
                                  EVID_NEXT, ">",
                                  EVID_QUIT, "X");
 }
 
 // -----------------  PROCESS EVENT  ---------------------------
 
-void previous(void);
-void next(void);
+// xxx add event for TODAY
 
 void process_event(sdlx_event_t *event)
 {
+    int y_cur,m_cur,d_cur;
+
     switch (event->event_id) {
     case EVID_QUIT:
         end_program = true;
         break;
-    case EVID_PREV:
-        previous();
+    case EVID_PRIOR:
+        set_ymd_to_prior(&year, &month, &day);
+        if (year < YEAR0) {
+            year = YEAR0;
+            month = 1;
+            day = 1;
+        }
         break;
     case EVID_NEXT:
-        next();
+        set_ymd_to_next(&year, &month, &day);
+        get_current_ymd(&y_cur, &m_cur, &d_cur);
+        if (year*10000 + month*100 + day > y_cur*10000 + m_cur*100 + d_cur) {
+            year = y_cur;
+            month = m_cur;
+            day = d_cur;
+        }
         break;
     case EVID_VIEW_SELECT:
         view = (view + 1) % 3;
         break;
-    case EVID_RESET_VIEW:
-        view = VIEW_MONTH;
-        get_current_ymd(&year, &month, &day);
-        break;
     case EVID_SETTINGS:
         settings();
         break;
-    }
-}
-
-void previous(void)
-{
-    // decrement year,month,day based on current view selected
-    if (view == VIEW_DAY) {
-        if (--day < 0) {
-            if (--month < 0) {
-                month = 0;
-                if (--year < 0) year = 0;
-            }
-            day = days_in_month(year, month) - 1;
-        }
-    } else if (view == VIEW_MONTH) {
-        if (--month < 0) {
-            month = 0;
-            if (--year < 0) year = 0;
-        }
-        day = 0;
-    } else { // year
-        if (--year < 0) year = 0;
-        month = 0;
-        day = 0;
-    }
-}
-
-void next(void)
-{
-    // increment year,month,day based on current view selected
-    if (view == VIEW_DAY) {
-        if (++day >= days_in_month(year, month)) {
-            if (++month >= 12) {
-                month = 0;
-                if (++year >= MAX_YEAR) year = MAX_YEAR-1;
-            }
-            day = 0;
-        }
-    } else if (view == VIEW_MONTH) {
-        if (++month >= 12) {
-            month = 0;
-            if (year >= MAX_YEAR) year = MAX_YEAR-1;
-        }
-        day = 0;
-    } else { // year
-        if (++year >= MAX_YEAR) year = MAX_YEAR-1;
-        month = 0;
-        day = 0;
-    }
-
-    // if incremented beyond the current day then reset year,month,day to current
-    int y,m,d;
-    get_current_ymd(&y, &m, &d);
-    if (year*10000 + month*100 + day > y*10000 + m*100 + d) {
-        year = y;
-        month = m;
-        day = d;
     }
 }
 
@@ -366,7 +293,6 @@ void next(void)
 #define EVID_YMAX_DAY   3
 #define EVID_YMAX_MONTH 4
 
-double best_valid(double value);
 void reg_setting_event(int *y, char *name, double value, int event_id);
 
 void settings(void)
@@ -416,6 +342,7 @@ void settings(void)
                 util_set_numeric_param(data_dir, "step_len", params.step_len);
             }
             break;
+#if 0  // xxx add these back
         case EVID_YMAX_HOUR: 
             str = sdlx_get_input_str("max_miles_per_hour", true, NULL);
             if (sscanf(str, "%lf", &value) == 1) {
@@ -437,21 +364,12 @@ void settings(void)
                 util_set_numeric_param(data_dir, "max_miles_per_month", params.max_miles_per_month);
             }
             break;
+#endif
         case EVID_QUIT:
             done = true;
             break;
         }
     }
-}
-
-double best_valid(double value)
-{
-    for (int i = 0; i < MAX_VALID; i++) {
-        if (value <= valid_max_values[i]) {
-            return valid_max_values[i];
-        }
-    }
-    return valid_max_values[MAX_VALID-1];
 }
 
 void reg_setting_event(int *y, char *name, double value, int event_id)
@@ -467,71 +385,3 @@ void reg_setting_event(int *y, char *name, double value, int event_id)
     *y += 2*sdlx_char_height_dflt;
 }
 
-// -----------------  UTILS  --------------------------------------
-
-char *month_str_tbl[12] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
-char *day_str_tbl[7] = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
-
-char *get_month_str(int m)
-{
-    return month_str_tbl[m];
-}
-
-char *get_weekday_str(int y, int m, int d)
-{
-    struct tm tm;
-    time_t t;
-
-    memset(&tm, 0, sizeof(tm));
-    tm.tm_year = y + YEAR0 - 1900;
-    tm.tm_mon  = m;
-    tm.tm_mday = d + 1;
-    tm.tm_isdst = -1;  // system will determine dst
-
-    t = mktime(&tm);
-    localtime_r(&t, &tm);
-    return day_str_tbl[tm.tm_wday];
-}
-
-bool is_weekend(int y, int m, int d)
-{
-    struct tm tm;
-    time_t t;
-
-    memset(&tm, 0, sizeof(tm));
-    tm.tm_year = y + YEAR0 - 1900;
-    tm.tm_mon  = m;
-    tm.tm_mday = d + 1;
-    tm.tm_isdst = -1;  // system will determine dst
-
-    t = mktime(&tm);
-    localtime_r(&t, &tm);
-    return tm.tm_wday == 0 || tm.tm_wday == 6;
-}
-
-int days_in_month(int y, int m)
-{
-    y += YEAR0;
-    m += 1;
-
-    if (m == 9 || m == 4 || m == 6 || m == 11) {
-        return 30;
-    } else if (m == 2) {
-        bool leap_year = (((y % 4) == 0) && !((y % 100) == 0)) || ((y % 400) == 0);
-        return leap_year ? 29 : 28;
-    } else {
-        return 31;
-    }
-}
-
-void get_current_ymd(int *y, int *m, int *d)
-{
-    time_t t;
-    struct tm tm;
-
-    t = time(NULL);
-    localtime_r(&t, &tm);
-    *y = tm.tm_year + 1900 - YEAR0;   // y : 0 is year 2026
-    *m = tm.tm_mon;                   // m : 0 - 11
-    *d = tm.tm_mday - 1;              // d : 0 - 30
-}
