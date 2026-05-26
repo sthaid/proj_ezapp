@@ -611,7 +611,7 @@ static sdlx_loc_t *render_text(int x, int y, int fontid, sdlx_color_t color, uns
     }
 
     // calculate hash key and idx
-    snprintf(key, sizeof(key), "%x-%d-%s", color, ptsize, str);
+    snprintf(key, sizeof(key), "%x-%d-%x-%s", color, ptsize, flags, str);
     hash_idx = calc_hash_idx(key);
 
     // search the hash_list_head[hash_idx] for entry matching hash key
