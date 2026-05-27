@@ -92,7 +92,7 @@ int main(int argc, char **argv)
     test1_proc();
 
     // test calling lib proc
-    int orient = get_device_orientation(progname);
+    int orient = get_device_orientation();
     printf("I %s: orientation is %s\n",
            progname,
            (orient == PORTRAIT ? "PORTRAIT" : "LANDSCAPE"));

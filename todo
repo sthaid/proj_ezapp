@@ -1,26 +1,21 @@
-README todo
-- svcs             xxx todo
-- Altitude         xxx todo
-- Steps            xxx todo
 NAME: Xxxxx
 DESCRIPTION:
 NOTES:
 
-Altitude
-- altitude back 1 day not working
-- use display_graph
+README todo
+- svcs xxx todo
 
-Common graphing routine
+dont use the top line in apps, such as Reversi and Test
+
+comment the lib files
 
 finish work on xxx
 
 add Docs app
 - display the README files for the apps and svcs
+- or '?' to each app
 
 Common code dir for apps and svcs
-
-Location
-- sometimes get somewhat random locatin values
 
 Weather
 - (null) (null)
@@ -41,8 +36,6 @@ Reversi
 
 Steps
 - highlight today in Steps month view
-- steps, default to Day view  , or have param for this
-
 
 developer mode password
 - force it to be init
