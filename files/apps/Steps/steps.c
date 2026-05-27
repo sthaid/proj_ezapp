@@ -16,18 +16,19 @@
 #define READ_ONLY       true
 #define INCHES_PER_MILE (5280 * 12)
 
-#define EVID_PRIOR        1
-#define EVID_NEXT         2
-#define EVID_VIEW_SELECT  3
-#define EVID_SETTINGS     4
+#define EVID_VIEW_SELECT  1
+#define EVID_PRIOR        2
+#define EVID_NEXT         3
+#define EVID_TODAY        4
+#define EVID_SETTINGS     5
 
 #define VIEW_DAY    0
 #define VIEW_MONTH  1
 #define VIEW_YEAR   2
 #define VIEW_STR (view == VIEW_DAY ? "DAY" : (view == VIEW_MONTH ? "MONTH" : "YEAR"))
 
-#define GRAPH_Y 700
-#define GRAPH_H 800 
+#define GRAPH_Y 600
+#define GRAPH_H 900 
 
 #define DFLT_MAX_MILES_PER_HOUR   3     // must be a valid_max_value
 #define DFLT_MAX_MILES_PER_DAY    10    // must be a valid_max_value
@@ -36,9 +37,9 @@
 
 // typedefs
 typedef struct {
-    double max_miles_per_hour;
-    double max_miles_per_day;
-    double max_miles_per_month;
+    int    max_miles_per_hour;
+    int    max_miles_per_day;
+    int    max_miles_per_month;
     double step_len;
 } params_t;
 
@@ -135,10 +136,10 @@ int initialize(void)
     }
 
     // read params
+    params.step_len            = util_get_numeric_param(data_dir, "step_len", DFLT_STEP_LEN_INCHES);
     params.max_miles_per_hour  = util_get_numeric_param(data_dir, "max_miles_per_hour",  DFLT_MAX_MILES_PER_HOUR);
     params.max_miles_per_day   = util_get_numeric_param(data_dir, "max_miles_per_day",   DFLT_MAX_MILES_PER_DAY);
     params.max_miles_per_month = util_get_numeric_param(data_dir, "max_miles_per_month", DFLT_MAX_MILES_PER_MONTH);
-    params.step_len   = util_get_numeric_param(data_dir, "step_len",   DFLT_STEP_LEN_INCHES);
 
     // success
     return 0;
@@ -189,18 +190,13 @@ void draw_display(void)
     sdlx_render_printf_ex2(COL2X(14), ROW2Y(3), FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, "%0.2f", miles);
     sdlx_render_printf_ex2(COL2X(14), ROW2Y(4), FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, "Miles");
 
-    // display step length
-    sdlx_render_printf_ex2(sdlx_win_width/2, sdlx_win_height-5.5*sdlx_char_height_dflt,
-                           FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, 
-                           "step_len = %g", params.step_len);
-
-    // display graph  xxx center in display
+    // display graph
     double       values[32];
     sdlx_color_t colors[32];
     int          max_values;
     int          max_y;
     char        *x_axis;
-    double       cvt_steps_to_miles = params.step_len / INCHES_PER_MILE;
+    double       cvt_steps_to_miles;
 
     cvt_steps_to_miles = params.step_len / INCHES_PER_MILE;
     if (view == VIEW_DAY) {
@@ -233,10 +229,15 @@ void draw_display(void)
 
     // register events:
     // - EVID_VIEW_SELECT: used to choose DAY, MONTH, or YEAR view
+    // - EVID_TODAY:       set year, month, day to today
     // - EVID_SETTINGS:    bring up settings display
     loc = sdlx_render_printf_ex1(0, sdlx_win_height-2*sdlx_char_height_dflt, 
                                  FONT_NORMAL, COLOR_LIGHT_BLUE, "%s", VIEW_STR);
     sdlx_register_event(loc, EVID_VIEW_SELECT);
+
+    loc = sdlx_render_printf_ex1(COL2X(8), sdlx_win_height-2*sdlx_char_height_dflt, 
+                                 FONT_NORMAL, COLOR_LIGHT_BLUE, "TODAY");
+    sdlx_register_event(loc, EVID_TODAY);
 
     loc = sdlx_render_printf_ex1(COL2X(17), sdlx_win_height-2*sdlx_char_height_dflt, 
                                  FONT_NORMAL, COLOR_LIGHT_BLUE, "STG");
@@ -250,8 +251,6 @@ void draw_display(void)
 
 // -----------------  PROCESS EVENT  ---------------------------
 
-// xxx add event for TODAY
-
 void process_event(sdlx_event_t *event)
 {
     int y_cur,m_cur,d_cur;
@@ -259,14 +258,6 @@ void process_event(sdlx_event_t *event)
     switch (event->event_id) {
     case EVID_QUIT:
         end_program = true;
-        break;
-    case EVID_PRIOR:
-        set_ymd_to_prior(&year, &month, &day);
-        if (year < YEAR0) {
-            year = YEAR0;
-            month = 1;
-            day = 1;
-        }
         break;
     case EVID_NEXT:
         set_ymd_to_next(&year, &month, &day);
@@ -276,6 +267,18 @@ void process_event(sdlx_event_t *event)
             month = m_cur;
             day = d_cur;
         }
+        break;
+    case EVID_PRIOR:
+        set_ymd_to_prior(&year, &month, &day);
+        if (year < YEAR0) {
+            year = YEAR0;
+            month = 1;
+            day = 1;
+        }
+        break;
+    case EVID_TODAY:
+        view = VIEW_DAY;
+        get_current_ymd(&year, &month, &day);
         break;
     case EVID_VIEW_SELECT:
         view = (view + 1) % 3;
@@ -288,12 +291,13 @@ void process_event(sdlx_event_t *event)
 
 // -----------------  SETTINGS  -----------------------------------
 
-#define EVID_STEP_LEN   1
-#define EVID_YMAX_HOUR  2
-#define EVID_YMAX_DAY   3
-#define EVID_YMAX_MONTH 4
-
-void reg_setting_event(int *y, char *name, double value, int event_id);
+#define EVID_STEP_LEN     1
+#define EVID_MAX_MPH_DECR 2
+#define EVID_MAX_MPH_INCR 3
+#define EVID_MAX_MPD_DECR 4
+#define EVID_MAX_MPD_INCR 5
+#define EVID_MAX_MPM_DECR 6
+#define EVID_MAX_MPM_INCR 7
 
 void settings(void)
 {
@@ -302,8 +306,7 @@ void settings(void)
     int          y;
     double       value;
     char        *str;
-
-    // xxx display valid values for mph, mpd, mpm
+    sdlx_loc_t  *loc;
 
     while (!done) {
         // init the backbuffer
@@ -314,12 +317,39 @@ void settings(void)
                                FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, 
                                "SETTINGS");
 
-        // register events to change setting value
+        // register event to change params.step_len
         y = 3*sdlx_char_height_dflt;
-        reg_setting_event(&y, "step_len", params.step_len,            EVID_STEP_LEN);
-        reg_setting_event(&y, "max_mph",  params.max_miles_per_hour,  EVID_YMAX_HOUR);
-        reg_setting_event(&y, "max_mpd",  params.max_miles_per_day,   EVID_YMAX_DAY);
-        reg_setting_event(&y, "max_mpm",  params.max_miles_per_month, EVID_YMAX_MONTH);
+        loc = sdlx_render_printf_ex1(0, y, FONT_NORMAL, COLOR_LIGHT_BLUE, "step_len = %g", params.step_len);
+        sdlx_register_event(loc, EVID_STEP_LEN);
+        y += 2*sdlx_char_height_dflt;
+
+        // register events to change graph max y values
+        sdlx_render_printf(0, y, "max_graph miles per:");
+        y += 2*sdlx_char_height_dflt;
+
+        // - params.max_miles_per_hour
+        sdlx_render_printf(0, y, "hour  = %d", params.max_miles_per_hour);
+        loc = sdlx_render_printf_ex1(COL2X(13), y, FONT_NORMAL, COLOR_LIGHT_BLUE, "-");
+        sdlx_register_event(loc, EVID_MAX_MPH_DECR);
+        loc = sdlx_render_printf_ex1(COL2X(17), y, FONT_NORMAL, COLOR_LIGHT_BLUE, "+");
+        sdlx_register_event(loc, EVID_MAX_MPH_INCR);
+        y += 2*sdlx_char_height_dflt;
+
+        // - params.max_miles_per_day
+        sdlx_render_printf(0, y, "day   = %d", params.max_miles_per_day);
+        loc = sdlx_render_printf_ex1(COL2X(13), y, FONT_NORMAL, COLOR_LIGHT_BLUE, "-");
+        sdlx_register_event(loc, EVID_MAX_MPD_DECR);
+        loc = sdlx_render_printf_ex1(COL2X(17), y, FONT_NORMAL, COLOR_LIGHT_BLUE, "+");
+        sdlx_register_event(loc, EVID_MAX_MPD_INCR);
+        y += 2*sdlx_char_height_dflt;
+
+        // - params.max_miles_per_month
+        sdlx_render_printf(0, y, "month = %d", params.max_miles_per_month);
+        loc = sdlx_render_printf_ex1(COL2X(13), y, FONT_NORMAL, COLOR_LIGHT_BLUE, "-");
+        sdlx_register_event(loc, EVID_MAX_MPM_DECR);
+        loc = sdlx_render_printf_ex1(COL2X(17), y, FONT_NORMAL, COLOR_LIGHT_BLUE, "+");
+        sdlx_register_event(loc, EVID_MAX_MPM_INCR);
+        y += 2*sdlx_char_height_dflt;
 
         // register control event to exit settings display
         sdlx_register_control_events(0, NULL, 0, NULL, EVID_QUIT, "X");
@@ -342,46 +372,37 @@ void settings(void)
                 util_set_numeric_param(data_dir, "step_len", params.step_len);
             }
             break;
-#if 0  // xxx add these back
-        case EVID_YMAX_HOUR: 
-            str = sdlx_get_input_str("max_miles_per_hour", true, NULL);
-            if (sscanf(str, "%lf", &value) == 1) {
-                params.max_miles_per_hour = best_valid(value);
-                util_set_numeric_param(data_dir, "max_miles_per_hour", params.max_miles_per_hour);
-            }
+
+        case EVID_MAX_MPH_DECR:
+            bar_graph_decrease_y_axis(&params.max_miles_per_hour);
+            util_set_numeric_param(data_dir, "max_miles_per_hour", params.max_miles_per_hour);
             break;
-        case EVID_YMAX_DAY: 
-            str = sdlx_get_input_str("max_miles_per_day", true, NULL);
-            if (sscanf(str, "%lf", &value) == 1) {
-                params.max_miles_per_day = best_valid(value);
-                util_set_numeric_param(data_dir, "max_miles_per_day", params.max_miles_per_day);
-            }
+        case EVID_MAX_MPH_INCR:
+            bar_graph_increase_y_axis(&params.max_miles_per_hour);
+            util_set_numeric_param(data_dir, "max_miles_per_hour", params.max_miles_per_hour);
             break;
-        case EVID_YMAX_MONTH: 
-            str = sdlx_get_input_str("max_miles_per_month", true, NULL);
-            if (sscanf(str, "%lf", &value) == 1) {
-                params.max_miles_per_month = best_valid(value);
-                util_set_numeric_param(data_dir, "max_miles_per_month", params.max_miles_per_month);
-            }
+
+        case EVID_MAX_MPD_DECR:
+            bar_graph_decrease_y_axis(&params.max_miles_per_day);
+            util_set_numeric_param(data_dir, "max_miles_per_day", params.max_miles_per_day);
             break;
-#endif
+        case EVID_MAX_MPD_INCR:
+            bar_graph_increase_y_axis(&params.max_miles_per_day);
+            util_set_numeric_param(data_dir, "max_miles_per_day", params.max_miles_per_day);
+            break;
+
+        case EVID_MAX_MPM_DECR:
+            bar_graph_decrease_y_axis(&params.max_miles_per_month);
+            util_set_numeric_param(data_dir, "max_miles_per_month", params.max_miles_per_month);
+            break;
+        case EVID_MAX_MPM_INCR:
+            bar_graph_increase_y_axis(&params.max_miles_per_month);
+            util_set_numeric_param(data_dir, "max_miles_per_month", params.max_miles_per_month);
+            break;
+
         case EVID_QUIT:
             done = true;
             break;
         }
     }
 }
-
-void reg_setting_event(int *y, char *name, double value, int event_id)
-{
-    sdlx_loc_t *loc;
-    char str[50];
-
-    sprintf(str, "%s = %g", name, value);
-
-    loc = sdlx_render_printf_ex1(0, *y, FONT_NORMAL, COLOR_LIGHT_BLUE, "%s", str);
-    sdlx_register_event(loc, event_id);
-
-    *y += 2*sdlx_char_height_dflt;
-}
-
