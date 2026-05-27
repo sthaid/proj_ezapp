@@ -259,8 +259,45 @@ void process_event(sdlx_event_t *event)
     case EVID_QUIT:
         end_program = true;
         break;
+
+    case EVID_VIEW_SELECT:
+        view = (view + 1) % 3;
+        break;
+
+    case EVID_TODAY:
+        view = VIEW_DAY;
+        get_current_ymd(&year, &month, &day);
+        break;
+
+    case EVID_PRIOR:
+        if (view == VIEW_DAY) {
+            set_ymd_to_prior(&year, &month, &day);
+        } else if (view == VIEW_MONTH) {
+            if (--month < 1) {
+                month = 12;
+                year--;
+            }
+        } else {  // year
+            year--;
+        }
+        if (year < YEAR0) {
+            year = YEAR0;
+            month = 1;
+            day = 1;
+        }
+        break;
+
     case EVID_NEXT:
-        set_ymd_to_next(&year, &month, &day);
+        if (view == VIEW_DAY) {
+            set_ymd_to_next(&year, &month, &day);
+        } else if (view == VIEW_MONTH) {
+            if (++month > 12) {
+                month = 1;
+                year++;
+            }
+        } else {  // year
+            year++;
+        }
         get_current_ymd(&y_cur, &m_cur, &d_cur);
         if (year*10000 + month*100 + day > y_cur*10000 + m_cur*100 + d_cur) {
             year = y_cur;
@@ -268,21 +305,7 @@ void process_event(sdlx_event_t *event)
             day = d_cur;
         }
         break;
-    case EVID_PRIOR:
-        set_ymd_to_prior(&year, &month, &day);
-        if (year < YEAR0) {
-            year = YEAR0;
-            month = 1;
-            day = 1;
-        }
-        break;
-    case EVID_TODAY:
-        view = VIEW_DAY;
-        get_current_ymd(&year, &month, &day);
-        break;
-    case EVID_VIEW_SELECT:
-        view = (view + 1) % 3;
-        break;
+
     case EVID_SETTINGS:
         settings();
         break;
