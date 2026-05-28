@@ -2,11 +2,12 @@
 
 function linux_build()
 {
-    CFLAGS="-Wall -Werror -Wno-unused-result -Wno-format-truncation -Wno-unused-but-set-variable -fcommon -g -I. "
-    CFLAGS="$CFLAGS -Dmain=MAIN"
+    CFLAGS="-Wall -Werror -Wno-unused-result -Wno-format-truncation -Wno-unused-but-set-variable"
+    CFLAGS="$CFLAGS -fcommon -g"
+    CFLAGS="$CFLAGS -Dmain=MAIN -DLINUX"
     LIB_PATH=$(pwd)/../linux/local/lib
-    gcc -DLINUX -o /tmp/$APP_NAME $CFLAGS ../bin/eztest_linux_wrapper.c $SRCS \
-        -I ../linux/local/include \
+    gcc -o /tmp/$APP_NAME $CFLAGS ../bin/eztest_linux_wrapper.c $SRCS \
+        -I . -I ../linux/local/include \
         -L ../linux/local/lib -lezapp_lib -lmp3lame -llodepng -lcJSON -lkissfft-float -lSDL3 -lSDL3_ttf -lSDL3_mixer -lm \
         -Wl,-rpath,$LIB_PATH
     if [ $? -ne 0 ]; then

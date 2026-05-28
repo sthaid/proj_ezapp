@@ -350,7 +350,7 @@ void util_turn_flashlight_off(void) { }
 void util_toggle_flashlight(void) { }
 bool util_is_flashlight_on(void) { return false; }
 
-int util_start_playbackcapture(void) { }
+int util_start_playbackcapture(void) { return -1; }
 void util_stop_playbackcapture(void) { }
 int util_get_playbackcapture_audio(float *array, int num_array_elements) { }
 

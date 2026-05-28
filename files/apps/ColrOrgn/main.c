@@ -215,8 +215,14 @@ void process_event(sdlx_event_t *ev, sdlx_audio_state_t *as)
         strcpy(playing_file, files[idx]);
     } else if (ev->event_id >= EVID_DELETE_FILE && ev->event_id < EVID_DELETE_FILE+MAX_FILES) {
         // delete the selected file
-        int idx = ev->event_id - EVID_DELETE_FILE;
-        util_delete_file(files_dir, files[idx]);
+        int idx;
+        char str[100], *input;
+        idx = ev->event_id - EVID_DELETE_FILE;
+        sprintf(str, "DEL %s (y/n)", files_noext[idx]);
+        input = sdlx_get_input_str(str, false, NULL);
+        if (strcasecmp(input, "y") == 0) {
+            util_delete_file(files_dir, files[idx]);
+        }
     } else if (ev->event_id >= EVID_RENAME_FILE && ev->event_id < EVID_RENAME_FILE+MAX_FILES) {
         // rename the selected file
         int idx = ev->event_id - EVID_RENAME_FILE;

@@ -1,46 +1,41 @@
-NAME: Xxxxx
-DESCRIPTION:
-NOTES:
+cleanup logging prints 
 
-README todo
+finish work on xxx               XXX
+
+documentation
+- menu item for README
+- toplevel README.md
+- make a doc dir, for other README files
+- document foreground 
 - svcs xxx todo
+- doc dir
+- template
+    NAME: Xxxxx
+    DESCRIPTION:
+    NOTES:
 
-dont use the top line in apps, such as Reversi and Test
-
-comment the lib files
-
-finish work on xxx
-
-add Docs app
+add Docs app or '?' option on control bar
 - display the README files for the apps and svcs
 - or '?' to each app
 
-Common code dir for apps and svcs
-
-Weather
-- (null) (null)
-
-Tilt
-- put Calibrate button at bottom
-
-Paddle
-- adjust difficulty
-
-ColrOrgn
-- confirm DEL file
-
-Reversi
-- cleanup
-- Undo
-- move display lower
-
-Steps
-- highlight today in Steps month view
+Apps
+- Tilt
+  - put Calibrate button at bottom
+- Paddle
+  - adjust difficulty
+- Reversi
+  - cleanup
+  - Undo
+  - move display lower
+- Steps
+  - highlight today in Steps month view
+- dont use the top line in apps, such as Reversi and Test
 
 developer mode password
 - force it to be init
 
 work on minimizing cpu load
+- check how much cpu is used during an 8 hour intvl
 - what continue to run when app is in background?
    - add print statemnents
    - adjust periodicity of polling when in the backgound, 
@@ -52,32 +47,17 @@ work on minimizing cpu load
        HINT 
        do not init audio
 
-----LOWER-----------
-
 audio:
 - audio code review and retest
 
-setting to enable hint at start of main.c  ????
-may need a way to clear cached params, maybe when app starts then clear params
-option for km and celsius
-
 --------------------
 
-colororgn
-- blank display issue,  maybe no repro
+MAYBE may need a way to clear cached params, maybe when app starts then clear params
 
-picoc should free all unfreed allocations
+MAYBE: picoc should free all unfreed allocations
 - calloc, malloc, realloc, strdup
 - open, fopen
 - util_map_file 
-
-document each app with a README file
-- define format of file
-
-documentation
-- toplevel README.md
-- make a doc dir, for other README files
-- document foreground 
 
 report record_gain problem, to SDL team
 - first reproduce it

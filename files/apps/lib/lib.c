@@ -9,6 +9,7 @@
 
 // -----------------  ORIENTATION  --------------------------------
 
+// returns PORTRAIT or LANDSCAPE
 int get_device_orientation(void)
 {
     double ax, ay, az;
@@ -63,9 +64,10 @@ int max_y_values[15] = {3, 5, 10,
                         30000, 50000, 100000};
 
 void display_bar_graph(
-        int graph_x, int graph_y, int graph_w, int graph_h,
-        double *values, sdlx_color_t *colors, int max_values, int max_y,
-        char *x_axis_str)
+        int graph_x, int graph_y, int graph_w, int graph_h,     // graph location
+        double *values, sdlx_color_t *colors, int max_values,   // bar values and colors
+        int max_y,                                              // max_y axis
+        char *x_axis_str)                                       // x axis label string
 {
     int idx, h;
     int graph_y_bottom;
@@ -140,6 +142,7 @@ void display_bar_graph(
     }
 }
 
+// decrease max_y to the next lower may_y_values
 void bar_graph_decrease_y_axis(int *max_y)
 {
     int n = sizeof(max_y_values) / sizeof(int);
@@ -163,6 +166,7 @@ void bar_graph_decrease_y_axis(int *max_y)
     }
 }
 
+// increase max_y to the next higher may_y_values
 void bar_graph_increase_y_axis(int *max_y)
 {
     int n = sizeof(max_y_values) / sizeof(int);

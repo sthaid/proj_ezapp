@@ -336,26 +336,41 @@ char *download_and_parse_forecast(void)
         }
     }
 
-    // verify that the daily.json and hourly.json files exist
+    // verify that the json files exist
+    if (!util_file_exists(data_dir, "info.json")) {
+        printf("E %s: info.json does not exist\n", progname);
+        return "Failed 5";
+    }
     if (!util_file_exists(data_dir, "daily.json")) {
         printf("E %s: daily.json does not exist\n", progname);
-        return "Failed 5";
+        return "Failed 6";
     }
     if (!util_file_exists(data_dir, "hourly.json")) {
         printf("E %s: hourly.json does not exist\n", progname);
-        return "Failed 6";
+        return "Failed 7";
+    }
+
+    // parse info.json;
+    // this is needed to acquire info.city and info.state when 
+    // parse_info had not been called earlier in this routine
+    if (info.city == NULL || info.state == NULL) {
+        rc = parse_info();
+        if (rc != 0) {
+            printf("E %s: parse info failed\n", progname);
+            return "Failed 8";
+        }
     }
 
     // parse the daily and hourly forecast json files
     rc = parse_forecast(PARSE_DAILY_FORECAST);
     if (rc != 0) {
         printf("E %s: parse daily forecast failed\n", progname);
-        return "Failed 7";
+        return "Failed 9";
     }
     rc = parse_forecast(PARSE_HOURLY_FORECAST);
     if (rc != 0) {
         printf("E %s: parse hourly forecast failed\n", progname);
-        return "Failed 8";
+        return "Failed 10";
     }
 
     // print completed, with duration this routine took
@@ -372,6 +387,9 @@ int parse_info(void)
     void         *json = NULL;
     json_value_t *value;
     int           ret = -1, len_ret;
+
+    // free existing allocations
+    cleanup_info();
 
     // read file info.json
     str = util_read_file(data_dir, "info.json", &len_ret);

@@ -94,9 +94,10 @@ int sdlx_video_init(void)
 
     INFO("initializing\n");
 
-    // comment this out because it is not an important feature, and
-    // enabling this may reduce battery life 
 #if 0
+    // commented out because it is not an important feature, and
+    // enabling this may reduce battery life 
+    //
     // disable block on paues;
     // this allows the ColrOrgn app to continue audio playback when ezapp is backgrounded
     bool succ = SDL_SetHint(SDL_HINT_ANDROID_BLOCK_ON_PAUSE, "0");
