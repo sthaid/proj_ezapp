@@ -113,7 +113,7 @@ int main(int argc, char **argv)
             // - RED:        recording
             // - LIGHT_BLUE: idle
             if (strcmp(active_filename, filename[idx]) == 0) {
-                color = (audio_state.state == AUDIO_STATE_PLAY_FILE       ? COLOR_GREEN :   // xxx picoc problem
+                color = (audio_state.state == AUDIO_STATE_PLAY_FILE       ? COLOR_GREEN :
                         (audio_state.state == AUDIO_STATE_RECORD_FROM_MIC ? COLOR_RED :
                                                                             COLOR_LIGHT_BLUE));
             } else {

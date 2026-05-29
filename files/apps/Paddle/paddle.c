@@ -219,8 +219,6 @@ int main(int argc, char **argv)
         start_us = util_microsec_timer();
         while (true) {
             // calculate the timeout of wait for an event
-            // xxx picoc problem:
-            //     timeout_us = (long)(UPDATE_INTERVAL_SEC * 1000000) - (util_microsec_timer() - start_us);
             timeout_us = (UPDATE_INTERVAL_SEC * 1000000) - (util_microsec_timer() - start_us);
 
             // if calculated timeout is <= 0 then break out of the loop
@@ -512,7 +510,7 @@ void settings(void)
             str = sdlx_get_input_str(prompt, true, NULL);
             sscanf(str, "%lf", &param_min_ball_speed);
             clip(&param_min_ball_speed, MIN_BALL_SPEED, MAX_BALL_SPEED);
-            ball_speed_court_per_sec = param_min_ball_speed;  //xxx is this also needed below
+            ball_speed_court_per_sec = param_min_ball_speed;
             util_set_numeric_param(data_dir, "min_ball_speed", param_min_ball_speed);
             break;
         case EVID_MAX_BALL_SPEED:

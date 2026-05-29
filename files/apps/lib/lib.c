@@ -249,6 +249,19 @@ bool is_weekend(int y, int m, int d)
     return tm.tm_wday == 0 || tm.tm_wday == 6;
 }
 
+bool is_today(int y, int m, int d)
+{
+    struct tm tm;
+    time_t t;
+
+    t = time(NULL);
+    localtime_r(&t, &tm);
+
+    return (tm.tm_year+1900 == y) &&
+           (tm.tm_mon+1 == m) &&
+           (tm.tm_mday == d);
+}
+
 int days_in_month(int y, int m)
 {
     if (m == 9 || m == 4 || m == 6 || m == 11) {

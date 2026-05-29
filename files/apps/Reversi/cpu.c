@@ -91,7 +91,6 @@ static int alphabeta(board_t *b, int depth, int alpha, int beta, bool maximizing
     bool             game_over;
     possible_moves_t pm;
 
-    // xxx new comment
     game_over = false;
     get_possible_moves(b, &pm);
     if (pm.max == 0) {
@@ -343,6 +342,7 @@ static int edge_gateway_to_corner(board_t *b)
 }
 
 char *black_gateway_to_corner_patterns[] = {
+                ".W......",
                 ".W.W....",
                 ".W.WW...",
                 ".W.WWW..",
@@ -357,15 +357,13 @@ char *black_gateway_to_corner_patterns[] = {
                 ".W..B...",
                 ".WW..B..",
                 ".W.B.B..",
-                ".W.BBBW.",  //xxx check these
+                ".W.BBBW.",
                 ".W.BBW..",
                 ".W.BBWW.",
                 ".W.BWW..",
                 ".W.BWWW.",
                 ".W.BW...",
-                ".W.BW.W.",
-                ".WBBBBB.",
-                ".WBBBB.."
+                ".W.BW.W." 
                             };
 
 #define MAX_BLACK_GATEWAY_TO_CORNER_PATTERNS (sizeof(black_gateway_to_corner_patterns)/sizeof(char*))
@@ -379,9 +377,12 @@ static void init_edge_gateway_to_corner(void)
     }
     initialized = true;
         
-    // xxx
-    printf("E %s: FIXME MAX_BLACK_GATEWAY_TO_CORNER_PATTERNS = %d\n",
-           progname, (int)MAX_BLACK_GATEWAY_TO_CORNER_PATTERNS);
+    // check for picoc issue with static init array
+    if (MAX_BLACK_GATEWAY_TO_CORNER_PATTERNS == 0) {
+        printf("E %s: FIXME MAX_BLACK_GATEWAY_TO_CORNER_PATTERNS = %d\n",
+               progname, (int)MAX_BLACK_GATEWAY_TO_CORNER_PATTERNS);
+        exit(1);
+    }
 
     int i,j;
     unsigned short edge, edge_reversed;
@@ -465,7 +466,6 @@ static int heuristic(board_t *b, bool maximizing_player, bool game_over, possibl
 
     // game is not over ...
 
-    // xxx udate
     // The following board characteristics are utilized to generate the heuristic value.
     //
     // These are listed in order of importance / numeric weight.
@@ -500,7 +500,7 @@ static int heuristic(board_t *b, bool maximizing_player, bool game_over, possibl
     value += (corner_moves(b))                * 100000;
     value += (diagonal_gateways_to_corner(b)) * 10000;
     value += (edge_gateway_to_corner(b))      * 1000;
-    value += (reasonable_moves(b, pm)             * 10);
+    value += (reasonable_moves(b, pm)         * 10);
     value += (random() % 10);
 
     // the returned heuristic value measures the favorability 

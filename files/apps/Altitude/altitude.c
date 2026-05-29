@@ -38,8 +38,6 @@ int              param_max_y;
 void draw_display(void);
 void process_event(sdlx_event_t *event);
 
-// xxx fix y axis label problem, where the string background is not set to black
-
 // -----------------  MAIN  ------------------------------------------
 
 int initialize(void);
@@ -166,9 +164,9 @@ void draw_display(void)
     sdlx_render_fill_rect(sdlx_win_width/4, ROW2Y(4.25), sdlx_win_width/2, 10, COLOR_BLUE);
 
     // display graph title line (the graph date)
-    // xxx display green if current day ???
+    color = (is_today(year, month, day) ? COLOR_GREEN : COLOR_WHITE);
     sdlx_render_printf_ex2(sdlx_win_width/2, GRAPH_Y-ROW2Y(1.5), 
-                           FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR,
+                           FONT_NORMAL, color, FLAG_X_CTR,
                            "%s", ymd_to_str(year, month, day));
 
     // display the bar graph of altitude for year,month,day

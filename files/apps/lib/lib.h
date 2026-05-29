@@ -20,6 +20,7 @@ char *ymd_to_str(int y, int m, int d);
 char *get_month_str(int m);
 char *get_weekday_str(int y, int m, int d);
 bool is_weekend(int y, int m, int d);
+bool is_today(int y, int m, int d);
 int days_in_month(int y, int m);
 void get_current_ymd(int *y, int *m, int *d);
 void set_ymd_to_prior(int *y, int *m, int *d);

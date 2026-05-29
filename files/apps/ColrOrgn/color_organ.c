@@ -213,7 +213,6 @@ void color_organ_display_bars(float *fft)
         if (raw_new_vol > 1) raw_new_vol = 1;
 
         // apply filter
-        // xxx dont exceed 1
         filter(&filtered_vol[band], raw_new_vol);
 
         // display the band volume
@@ -265,7 +264,7 @@ void color_organ_display_circles(float *fft)
 
         // apply scale factor
         raw_new_vol *= band_scale[band];
-        if (raw_new_vol > 1) raw_new_vol = 1;  // xxx apply limit later?
+        if (raw_new_vol > 1) raw_new_vol = 1;
 
         // apply filter
         filter(&filtered_vol[band], raw_new_vol);
@@ -298,6 +297,9 @@ void color_organ_display_circles(float *fft)
         }
 
         band_volume = k * filtered_vol[band];
+        if (band_volume > 1) {
+            band_volume = 1;
+        }
         sdlx_color_mod_texture(t, band_volume, band_volume, band_volume);
         sdlx_render_texture_ex1(t, x_ctr-radius, y_ctr-radius, 2*radius, 2*radius);
 
@@ -391,6 +393,9 @@ void filter(float *val, float new_val)
     } else {
         *val = 0;
     }
+
+    if (*vol < 0) *vol = 0;
+    if (*vol > 1) *vol = 1;
 }
 
 void init_loc(sdlx_loc_t *loc, int x, int y, int w, int h)
@@ -607,7 +612,7 @@ void color_organ_settings(void)
             sdlx_create_test_file(files_dir, "test_span.mp3", 100, 6000, 10);
             break;
         case EVID_SETTINGS_EXP_FLTR_K:
-            str = sdlx_get_input_str("exp_fltr_k", true, NULL); // xxx display default, 3 places
+            str = sdlx_get_input_str("exp_fltr_k", true, NULL);
             if (sscanf(str, "%f", &exp_fltr_k) != 1) break;
             util_set_numeric_param(data_dir, "exp_fltr_k", exp_fltr_k);
             break;

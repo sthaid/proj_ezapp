@@ -1,9 +1,6 @@
 #ifndef __COMMON_H__
 #define __COMMON_H__
 
-// xxx use fixed window w/h  using modern  ratio 19.5:9  or  20:9
-//                                               21.666      22.2222
-
 // defines
 #define COW_P 1000   // color organ w/h in portrait orientation
 #define COH_P  800  

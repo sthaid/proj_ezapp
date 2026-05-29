@@ -1209,6 +1209,10 @@ void sdlx_color_mod_texture(sdlx_texture_t *t, float r, float g, float b)
 {
     bool succ;
 
+    if (r > 1) r = 1;
+    if (g > 1) g = 1;
+    if (b > 1) b = 1;
+
     succ = SDL_SetTextureColorModFloat((SDL_Texture*)t, r, g, b);
     if (!succ) {
         ERROR("failed color mod, %s\n", SDL_GetError());

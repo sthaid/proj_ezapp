@@ -164,7 +164,6 @@ static void page_hndlr()
 
     while (true) {
         // init the backbuffer, and print font/color
-        // xxx better way to select landscape
         sdlx_display_init(COLOR_BLACK, pagenum == 12 ? LANDSCAPE : PORTRAIT);
         sdlx_print_set_default(FONT_NORMAL, COLOR_WHITE);
 
@@ -556,13 +555,12 @@ static void page_5_draw(void)
     int w, h;
 
     // note: creating texture1 here is not efficient, the texture would 
-    // normally be initialized just once; it is done this way for testing
+    // normally be initialized just once; it is done this way here for testing
 
     // create texture1
     texture1 = sdlx_create_texture(1000, 1000);
     // - query texture1, and validate
     sdlx_query_texture(texture1, &w, &h);
-    // xxx validate
     // - set render target to texture1
     sdlx_set_render_target(texture1);
     // - draw to texture1
@@ -1237,7 +1235,6 @@ static void page_11_process_event(sdlx_event_t *event)
 int page_12_x, page_12_y;
 double page_12_xrel, page_12_yrel;
 
-// xxx better test
 // xxx test SetRenderTarget when in landscape
 static void page_12_draw(void)
 {

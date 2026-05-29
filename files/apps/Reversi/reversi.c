@@ -70,7 +70,7 @@ int main(int argc, char **argv)
     // comment this out if deterministic computer moves are desired
     srandom(util_microsec_timer());
 
-    // xxx
+    // init display variables and textures
     update_display_init();
 
     // loop until end program
@@ -118,7 +118,6 @@ int main(int argc, char **argv)
         }
 
         // process the event
-        // xxx need a way to interrupt a long running cpu_get_move
         if (event.event_id == EVID_QUIT) {
             break;
         } else if (event.event_id == EVID_GAME_RESET) {
@@ -127,11 +126,11 @@ int main(int argc, char **argv)
             eval_str[0] = '\0';
         } else if (event.event_id == EVID_PLAYER_BLACK_SELECT) {
             board.player_black++;
-            if (board.player_black > CPU(MAX_CPU_LEVEL)) board.player_black = HUMAN;  // xxx 3 on Android
+            if (board.player_black > MAX_CPU_LEVEL) board.player_black = HUMAN;
             util_set_numeric_param(data_dir, "player_black", board.player_black);
         } else if (event.event_id == EVID_PLAYER_WHITE_SELECT) {
             board.player_white++;
-            if (board.player_white > CPU(MAX_CPU_LEVEL)) board.player_white = HUMAN;  // xxx 3 on Android
+            if (board.player_white > MAX_CPU_LEVEL) board.player_white = HUMAN;
             util_set_numeric_param(data_dir, "player_white", board.player_white);
         } else if (event.event_id == EVID_GAME_START) {
             game_state = GAME_STATE_ACTIVE;
@@ -147,7 +146,7 @@ int main(int argc, char **argv)
         }
     }
 
-    // xxx
+    // cleanup
     update_display_unload();
 
     // return success
@@ -167,7 +166,7 @@ static void game_init(board_t *b)
     b->white_cnt      = 2;
     b->whose_turn     = BLACK;
     b->player_black   = util_get_numeric_param(data_dir, "player_black", HUMAN);
-    b->player_white   = util_get_numeric_param(data_dir, "player_white", CPU(DEFAULT_CPU_LEVEL));
+    b->player_white   = util_get_numeric_param(data_dir, "player_white", DEFAULT_CPU_LEVEL);
 }
 
 static bool is_game_over(board_t *b)
@@ -256,9 +255,9 @@ static void update_display_init(void)
         }
     }
 
-    int sq_wh = 123;  // xxx is this correct
+    int sq_wh = 123;  // width/height of a board square
 
-    piece_circle_radius  = nearbyint(0.4*sq_wh);   // xxx need rint,  use nearybint
+    piece_circle_radius  = nearbyint(0.4*sq_wh);
     piece_black_circle   = create_filled_circle_texture(piece_circle_radius, COLOR_BLACK);
     piece_white_circle   = create_filled_circle_texture(piece_circle_radius, COLOR_WHITE);
 
@@ -297,7 +296,7 @@ static void update_display_and_register_events(board_t *b, int game_state, char 
                            FONT_NORMAL, COLOR_WHITE, FLAG_XY_CTR, 
                            "%s", str);
 
-    // xxx
+    // when game is over, display the winner
     if (game_state == GAME_STATE_OVER) {
         if (b->black_cnt > b->white_cnt) {
             sdlx_render_printf_ex2(sdlx_win_width/2, Y_TOP+1000+1.5*sdlx_char_height_dflt,
@@ -314,11 +313,11 @@ static void update_display_and_register_events(board_t *b, int game_state, char 
         }
     }       
 
-    // xxx
+    // display the position evaluation
     if (game_state == GAME_STATE_ACTIVE || game_state == GAME_STATE_OVER) {
         sdlx_render_printf_ex1(0, Y_TOP + sdlx_win_height - 3 * sdlx_char_height_dflt, 
                                FONT_NORMAL, COLOR_LIGHT_BLUE,
-                              "%s", eval_str);  //xxx need char height of font 10
+                              "%s", eval_str);
     }
 
     // display player info, and register for events to change the players
@@ -367,7 +366,7 @@ static void update_display_and_register_events(board_t *b, int game_state, char 
     if (game_state == GAME_STATE_ACTIVE && humans_turn(b)) {
         get_possible_moves(b, &pm);
         if (pm.max == 0) {
-            ploc = sdlx_render_printf_ex1(0, Y_TOP+1750, FONT_NORMAL, COLOR_LIGHT_BLUE, "%s", "PASS");  // xxx move this
+            ploc = sdlx_render_printf_ex1(0, Y_TOP+1750, FONT_NORMAL, COLOR_LIGHT_BLUE, "%s", "PASS");
             sdlx_register_event(ploc, EVID_MOVE_PASS);
         } else {
             for (int i = 0; i < pm.max; i++) {

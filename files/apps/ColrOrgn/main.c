@@ -10,11 +10,6 @@
 #include "apps/ColrOrgn/common.h"
 #include "apps/lib/lib.h"
 
-// xxx
-// - MON/REC core dump
-// - comments and complete review
-// - search xxx
-
 //
 // defines
 //
@@ -412,22 +407,25 @@ void register_events(void)
             y_files_list_bottom = sdlx_win_height;
         }
 
-        // xxx comments needed
+        // if the display orientation has changed set list of mp3 files back to top
         if (orientation != last_orientation) {
             y_files_list = y_files_list_top;
             last_orientation = orientation;
         }
 
+        // limit file list scrolling
         if (y_files_list >= y_files_list_top) {
             y_files_list = y_files_list_top;
         }
 
+        // disable file list scrolling if too few files
         if ((orientation == PORTRAIT && max_files <= 6) ||
             (orientation == LANDSCAPE && max_files <= 5))
         {
             y_files_list = y_files_list_top;
         }
 
+        // loop over the list of files
         for (int i = 0; i < max_files; i++) {
             sdlx_color_t color;
             int          y;
@@ -437,7 +435,8 @@ void register_events(void)
             if (y < y_files_list_top) continue;
             if (y+sdlx_char_height_dflt > y_files_list_bottom) break;
 
-            // register event to play the file
+            // register event to play the file;
+            // the file name is displayed green if it is currently being played
             if ((state == STATE_PLAYING_FILE || state == STATE_PLAYING_FILE_PAUSED) && 
                 (strcmp(playing_file, files[i]) == 0)) 
             {
@@ -567,6 +566,7 @@ char *get_state_str(void)
     }
 }
 
+// xxx make a util, also util for sanitize
 void remove_trailing_newline(char *s)
 {
     int len = strlen(s);

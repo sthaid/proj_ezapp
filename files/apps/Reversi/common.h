@@ -20,8 +20,11 @@
 
 #define HUMAN 0
 #define DEFAULT_CPU_LEVEL 1
-#define MAX_CPU_LEVEL 2
-#define CPU(level)  (level)
+#ifdef ANDROID  // xxx make this conditional on PICOC
+#define MAX_CPU_LEVEL     2
+#else
+#define MAX_CPU_LEVEL     7
+#endif
 
 typedef struct {
     unsigned char pos[10][10];
