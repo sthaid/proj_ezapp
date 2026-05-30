@@ -500,9 +500,8 @@ int parse_forecast(int which)
         char          period_str[200];
 
         // get json period object
-        // note - picoc requires &period_str, instead of just period_str - xxx try to fix this
         sprintf(period_str, "%d", i);
-        value = util_json_get_value(json, "properties", "periods", &period_str, NULL);
+        value = util_json_get_value(json, "properties", "periods", period_str, NULL);
         if (value->type != JSON_TYPE_OBJECT) {
             break;
         }

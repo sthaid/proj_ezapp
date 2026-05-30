@@ -1255,23 +1255,47 @@ void Util_json_free(struct ParseState *Parser, struct Value *ReturnValue,
 void Util_json_get_value(struct ParseState *Parser, struct Value *ReturnValue,
         struct Value **Param, int NumArgs)
 {
+    #define MAX_ARGS 10
     void         *json_item = Param[0]->Val->Pointer;
     struct        Value *ThisArg = Param[0];
     int           i;
-    char         *va[10];
+    char         *args[MAX_ARGS];
     json_value_t *value;
+    bool          last_arg_is_expected_null = false;
 
-    memset(va, 0, sizeof(va)); // xxx check for too many args  and/or add a few more
+    if (NumArgs-1 > MAX_ARGS) {
+        ProgramFail(Parser, "util_json_get_value: too many args");
+    }
+
+    memset(args, 0, sizeof(args));
 
     for (i = 0; i < NumArgs-1; i++) {
         ThisArg = (struct Value*)((char*)ThisArg +
                             MEM_ALIGN(sizeof(struct Value)+TypeStackSizeValue(ThisArg)));
-        va[i] = (char*)ThisArg->Val->Pointer;
+        if (ThisArg->Typ->Base == TypePointer) {
+            args[i] = (char*)ThisArg->Val->Pointer;
+        } else if (ThisArg->Typ->Base == TypeArray &&
+                   ThisArg->Typ->FromType->Base == TypeChar)
+        {
+            args[i] = &ThisArg->Val->ArrayMem[0];
+        } else if (ThisArg->Typ->Base == TypeInt && 
+                   ThisArg->Val->Integer == 0 &&
+                   i == NumArgs-2)
+        {
+            last_arg_is_expected_null = true;
+        } else {
+            ProgramFail(Parser, "util_json_get_value: invalid arg");
+        }
+    }
+
+    if (!last_arg_is_expected_null) {
+        ProgramFail(Parser, "util_json_get_value: last arg must be NULL");
     }
 
     value = util_json_get_value(
                 json_item,
-                va[0], va[1], va[2], va[3], va[4], va[5], va[6], va[7], va[8], va[9]);
+                args[0], args[1], args[2], args[3], args[4], 
+                args[5], args[6], args[7], args[8], args[9]);
 
     ReturnValue->Val->Pointer = value;
 }
