@@ -7,6 +7,8 @@
 #include <sdlx.h>
 #include <utils.h>
 
+#include "apps/lib/lib.h"
+
 //
 // defines
 //
@@ -44,7 +46,6 @@ int   max_filename;
 
 void get_list_of_files(void);
 void cleanup_filename_allocations(void);
-void remove_trailing_newline(char *s);
 void substring(char *s, int start, int len, char *substring);
 
 // -----------------  MAIN  ------------------------------------------
@@ -246,7 +247,7 @@ void get_list_of_files(void)
     sprintf(cmd, "cd %s; /bin/ls -1r *.mp3", data_dir);
     fp = popen(cmd, "r");
     while (fgets(s, sizeof(s), fp)) {
-        remove_trailing_newline(s);
+        str_remove_trailing_newline(s);
         filename[max_filename++] = strdup(s);
     }
     pclose(fp);
@@ -287,15 +288,6 @@ void cleanup_filename_allocations(void)
         friendlyname[i] = NULL;
     }
     max_filename = 0;
-}
-
-void remove_trailing_newline(char *s)
-{
-    int len = strlen(s);   
-
-    if (len > 0 && s[len-1] == '\n') {
-        s[len-1] = '\0';   
-    }
 }
 
 void substring(char *s, int start, int len, char *substring)

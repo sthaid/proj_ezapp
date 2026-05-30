@@ -383,7 +383,7 @@ char *download_and_parse_forecast(void)
 
 int parse_info(void)
 {
-    char         *str = NULL, *end_ptr;
+    char         *str = NULL;
     void         *json = NULL;
     json_value_t *value;
     int           ret = -1, len_ret;
@@ -399,7 +399,7 @@ int parse_info(void)
     }
 
     // init json parser
-    json = util_json_parse(str, &end_ptr);
+    json = util_json_parse(str, NULL);
     if (json == NULL) {
         printf("E %s: parse_info, parse json\n", progname);
         goto cleanup_and_return;
@@ -457,7 +457,6 @@ int parse_forecast(int which)
     char *str = NULL;
     void *json = NULL;
     int   len_ret;
-    char *end_ptr;
     char *json_filename;
     forecast_t *forecast;
     long start_us;
@@ -484,7 +483,7 @@ int parse_forecast(int which)
     }
 
     // init json parser
-    json = util_json_parse(str, &end_ptr);
+    json = util_json_parse(str, NULL);
     if (json == NULL) {
         printf("E %s: parse_forecast, parse json\n", progname);
         free(str);

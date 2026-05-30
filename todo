@@ -1,3 +1,5 @@
+pioco print error if sizeof is 0
+
 cleanup logging prints 
 
 finish work on xxx               XXX

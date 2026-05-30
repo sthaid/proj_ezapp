@@ -5,6 +5,10 @@
 extern "C" {
 #endif
 
+// ======================================================
+// ================= AVAIL IN PICOC =====================
+// ======================================================
+
 // --------------------
 // VIDEO    
 // --------------------
@@ -318,10 +322,9 @@ void sdlx_show_toast(char *message);
 // get string, uses virtual keyboard on Android
 char *sdlx_get_input_str(char *prompt, bool numeric_keybd, char *dflt_input_str);
 
-// --------------------
-// THE FOLLOWING ARE PRIVATE,
-// NOT MADE AVAILABLE IN PICOC
-// --------------------
+// ======================================================
+// ================= NOT AVAIL IN PICOC =================
+// ======================================================
 
 #define ATTRIBUTE_UNUSED __attribute__((unused))
 
@@ -338,7 +341,6 @@ void sdlx_video_quit(void);
 void sdlx_minimize_window(void);
 
 // sdlx_audio.c
-// xxx just pick one value for the gain
 #ifdef ANDROID
     #define DEFAULT_RECORD_GAIN 5
 #else

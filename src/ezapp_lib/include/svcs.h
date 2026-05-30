@@ -1,18 +1,9 @@
 #ifndef __SVCS_H__
 #define __SVCS_H__
 
-// xxx comments needed
-
-extern int svc_eztest_mode;
-
-void svcs_init(int (*run_proc)(char *name, bool is_svc));
-void svcs_stop_all(void);
-void svcs_acquire_mutex(void);
-void svcs_release_mutex(void);
-void svcs_start_all_autostart_services(void);
-void svcs_display(int bg_color);
-
-// ----------------------------
+// ====================================================
+// ================= AVAIL IN PICOC ===================
+// ====================================================
 
 // common values for req_id
 #define SVC_REQ_ID_STOP 1
@@ -48,5 +39,18 @@ int svc_make_req(char *svc_name, int req_id, char *req_data, int req_data_len, i
 // routines called by svcs
 int svc_wait_for_req(char *svc_name, svc_req_t **req, long timeout_abstime_secs);
 void svc_req_completed(svc_req_t *req, int comp_status);
+
+// ========================================================
+// ================= NOT AVAIL IN PICOC ===================
+// ========================================================
+
+extern int svc_eztest_mode;
+
+void svcs_init(int (*run_proc)(char *name, bool is_svc));
+void svcs_stop_all(void);
+void svcs_acquire_mutex(void);
+void svcs_release_mutex(void);
+void svcs_start_all_autostart_services(void);
+void svcs_display(int bg_color);
 
 #endif

@@ -51,7 +51,7 @@ public class ezapp_loc_fgsvc extends Service {
         Notification notification = builder
                 .setContentTitle("foreground enabled")
                  //.setContentText("more text here if needed")
-                .setSmallIcon(R.drawable.ic_notifcation_icon)
+                .setSmallIcon(R.mipmap.ic_launcher)
                 .setOngoing(true)
                 .setPriority(Notification.PRIORITY_DEFAULT)
                 .setAutoCancel(true)

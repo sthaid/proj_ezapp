@@ -9,8 +9,11 @@
 #include <sdlx.h>
 #include <utils.h>
 
+#include "apps/lib/lib.h"
+
 // xxx 
 // - timing of the key highlight vs the tone
+// - tempo for frere jacques
 
 // defines
 #define EVID_HLOCK         1
@@ -349,8 +352,6 @@ void process_event(sdlx_event_t *event)
 
 // -----------------  READ TONE SEQ FILE  ----------------------------
 
-void sanitize_input(char *s);
-
 void read_tone_seq_file(char *filename)
 {
     FILE *fp;
@@ -371,12 +372,9 @@ void read_tone_seq_file(char *filename)
     }
 
     while (fgets(s, sizeof(s), fp) != NULL) {
-        // sanitize input string
-        // - remove trailing newline
-        // - remove comments
-        // - remove leading spaces
-        // - remove trailing spaces
-        sanitize_input(s);
+        // sanitize input string,
+        // removes: trailing newline, comments, leading and trailing spaces
+        str_sanitize(s);
 
         // if blank line then continue
         if (s[0] == '\0') {

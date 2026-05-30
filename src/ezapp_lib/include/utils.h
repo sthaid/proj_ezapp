@@ -5,6 +5,10 @@
 extern "C" {
 #endif
 
+// ====================================================
+// ================= AVAIL IN PICOC ===================
+// ====================================================
+
 // --------------------
 // TIME UTILS
 // --------------------
@@ -108,9 +112,9 @@ void util_fft_test(void);
 double util_rms_float(float *x, int n);
 double util_rms_complex(complex_t *x, int n);
 
-// ----------------------------------------------
-// CALL ANDROID JAVA CODE, NOT AVAILABLE IN PICOC
-// ----------------------------------------------
+// ----------------------
+// CALL ANDROID JAVA CODE
+// ----------------------
 
 void util_get_location(double *latitude, double *longitude, double *altitude_ft, bool *alt_is_wgs84);
 
@@ -126,9 +130,9 @@ int util_start_playbackcapture(void);
 void util_stop_playbackcapture(void);
 int util_get_playbackcapture_audio(float *array, int num_array_elements);
 
-// --------------------
-// NOT AVAILABLE IN PICOC
-// --------------------
+// ========================================================
+// ================= NOT AVAIL IN PICOC ===================
+// ========================================================
 
 void util_android_utils_init(void);
 void util_android_utils_destroy(void);

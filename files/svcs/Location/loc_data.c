@@ -104,7 +104,10 @@ void find_closest_loc_data(double latitude, double longitude, char *name, double
             continue;
         }
 
-        delta_long = fabs(longitude - x->longitude);  // xxx deal with longitude near +/-180
+        delta_long = fabs(longitude - x->longitude);
+        if (delta_long > 350) {
+            delta_long = 360 - delta_long;
+        }
         if (delta_long > point5_div_cos_lat) {
             continue;
         }

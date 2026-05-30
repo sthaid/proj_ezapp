@@ -1,5 +1,3 @@
-// xxx should also call sdlx_quit
-
 #include <stdio.h>
 #include <string.h>
 #include <sdlx.h>
@@ -42,6 +40,11 @@ int main(int argc, char **argv)
 
     // call the mini app main routine
     rc = MAIN(argc, argv);
+
+    // if running an app then call sdlx_quit
+    if (strncmp(data_dir, "apps/", 5) == 0) {
+        sdlx_quit(SUBSYS_VIDEO|SUBSYS_AUDIO|SUBSYS_SENSOR);
+    }
 
     // if running an app then call sdlx_quit
     if (strncmp(data_dir, "apps/", 5) == 0) {

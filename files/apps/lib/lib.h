@@ -26,4 +26,8 @@ void get_current_ymd(int *y, int *m, int *d);
 void set_ymd_to_prior(int *y, int *m, int *d);
 void set_ymd_to_next(int *y, int *m, int *d);
 
+// string utils
+void str_remove_trailing_newline(char *s);
+void str_sanitize(char *s);
+
 #endif

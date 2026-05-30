@@ -8,7 +8,7 @@ android {
     namespace = "org.sthaid.ezApp"
     compileSdkVersion 35
     defaultConfig {
-        minSdkVersion 29  // EZAPP - API 29 needed for getifaddrs  xxx OR audio
+        minSdkVersion 29  // EZAPP - API 29 needed for getifaddrs
         targetSdkVersion 35
         versionCode 1
         versionName "1.0"

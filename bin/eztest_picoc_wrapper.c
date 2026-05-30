@@ -1,5 +1,3 @@
-// xxx should also call sdlx_quit
-
 #include <string.h>
 #include <svcs.h>
 

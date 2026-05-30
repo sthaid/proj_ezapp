@@ -83,7 +83,7 @@ public class ezapp_media_fgsvc extends Service {
         Notification notification = builder
                 .setContentTitle("foreground enabled")
                  //.setContentText("more text here if needed")
-                .setSmallIcon(R.drawable.ic_notifcation_icon)
+                .setSmallIcon(R.mipmap.ic_launcher)
                 .setOngoing(true)
                 .setPriority(Notification.PRIORITY_DEFAULT)
                 .setAutoCancel(true)
@@ -138,7 +138,7 @@ public class ezapp_media_fgsvc extends Service {
         return START_NOT_STICKY;
     }
 
-    // xxx why does this have to be static
+    // question: why does this have to be static
     public static short[] get_playbackcapture_audio() {
         int shorts_read = 0;
         int millisecs = 0;

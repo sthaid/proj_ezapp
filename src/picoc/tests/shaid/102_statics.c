@@ -1,12 +1,12 @@
 #include <stdio.h>
 
-// xxx array sizes must be provided if declared 'static'
+// PICOC_ISSUE: array sizes must be provided if declared 'static'
 
 static char *x1[2]  = {"hello", "world"};
 static char *x2[10] = {"hello", "world"};
 
 char *x3[2] = {"hello", "world"};
-char *x3b[] = {"hello", "world", "more_world"};  // xxx array size not needed here since not declared 'static'
+char *x3b[] = {"hello", "world", "more_world"};  // array size not needed here since not declared 'static'
 int z1 = 10;
 static int z2 = 11;
 

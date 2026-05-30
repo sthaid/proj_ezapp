@@ -20,8 +20,9 @@
 
 #define HUMAN 0
 #define DEFAULT_CPU_LEVEL 1
-#ifdef ANDROID  // xxx make this conditional on PICOC
-#define MAX_CPU_LEVEL     2
+
+#ifdef PICOC_VERSION
+#define MAX_CPU_LEVEL     3
 #else
 #define MAX_CPU_LEVEL     7
 #endif

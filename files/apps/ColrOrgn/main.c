@@ -64,7 +64,6 @@ void register_events(void);
 // utils
 void get_list_of_files(void);
 char *get_new_mp3_filename_noext(void);
-void remove_trailing_newline(char *s);
 char *get_state_str(void);
 char *secs_to_mmss_str(int secs, char *str);
 char *remove_ext(char *filename);
@@ -517,7 +516,7 @@ void get_list_of_files(void)
         sprintf(cmd, "/bin/ls -1 %s/*.mp3", files_dir);
         fp = popen(cmd, "r");
         while (fgets(s, sizeof(s), fp) != NULL) {
-            remove_trailing_newline(s);
+            str_remove_trailing_newline(s);
 
             bn = basename(s);
             files[max_files] = strdup(bn);
@@ -563,16 +562,6 @@ char *get_state_str(void)
         return "RecDev ";
     default:
         return "????   ";
-    }
-}
-
-// xxx make a util, also util for sanitize
-void remove_trailing_newline(char *s)
-{
-    int len = strlen(s);
-
-    if (len > 0 && s[len-1] == '\n') {
-        s[len-1] = '\0';
     }
 }
 

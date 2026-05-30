@@ -104,15 +104,20 @@ int util_write_file(char *dir, char *fn, void *buf, int len)
     return 0;
 }
 
-// note: an extra '\0' byte is added to the end of the data buffer;
-//       this extra char is not included in len_ret
-// xxx make len_ret optional
+// notes: 
+// - an extra '\0' byte is added to the end of the data buffer;
+//   this extra char is not included in len_ret
+// - len_ret arg is optional
 void *util_read_file(char *dir, char *fn, int *len_ret)
 {
-    int fd, ret;
     struct stat statbuf;
-    char *buf;
-    char path[200];
+    int         fd, ret, len_ret_dummy;
+    char        *buf;
+    char         path[200];
+
+    if (len_ret == NULL) {
+        len_ret = &len_ret_dummy;
+    }
 
     concat(dir, fn, path);
     INFO("reading file %s\n", path);
@@ -670,9 +675,15 @@ next:
 
 // ----------------- JSON --------------------
 
-// xxx make end_ptr optional
+// note: arg end_ptr is optional
 void *util_json_parse(char *str, char **end_ptr)
 {
+    char *end_ptr_dummy;
+
+    if (end_ptr == NULL) {
+        end_ptr = &end_ptr_dummy;
+    }
+
     if (str == NULL || end_ptr == NULL) {
         return NULL;
     }

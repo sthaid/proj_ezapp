@@ -324,3 +324,44 @@ void set_ymd_to_next(int *y_arg, int *m_arg, int *d_arg)
     *d_arg = d;
 }
 
+// -----------------  STRING UTILS  -------------------------------
+
+void str_remove_trailing_newline(char *s)
+{
+    int len = strlen(s);
+
+    if (len > 0 && s[len-1] == '\n') {
+        s[len-1] = '\0';
+    }
+}
+
+void str_sanitize(char *s)
+{
+    int i;
+    char *p;
+
+    // remove trailing newline
+    str_remove_trailing_newline(s);
+
+    // remove comments
+    p = strchr(s, '#');
+    if (p) *p = '\0';
+
+    // remove leading spaces
+    i = 0;
+    while (s[i] == ' ' && s[i] != '\0') {
+        i++;
+    }
+    memmove(s, &s[i], strlen(&s[i]));
+
+    // remove trailing spaces
+    i = strlen(s) - 1;
+    while (i >= 0) {
+        if (s[i] == ' ')
+            s[i] = '\0';
+        else
+            break;
+        i--;
+    }
+}
+

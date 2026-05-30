@@ -89,7 +89,6 @@ public class ezapp_utils {
 
                 for (Location location : locationResult.getLocations()) {
                     // get current latitude and longitude
-                    // xxx is check needed here?
                     latitude = location.getLatitude();
                     longitude = location.getLongitude();
 
@@ -150,14 +149,19 @@ public class ezapp_utils {
     //
 
     public void destroy() {
-        Log.i(TAG, "utils destroy");
+        Log.i(TAG, "utils destroy tts");
         if (mTts != null) {
             mTts.stop();
             mTts.shutdown();
             mTts = null;
         }
 
-        // xxx other stuff to do here?
+        Log.i(TAG, "utils destroy location");
+        if (fusedLocationClient != null && locationCallback != null) {
+            fusedLocationClient.removeLocationUpdates(locationCallback);
+        }
+
+        Log.i(TAG, "utils destroy done");
     }
 
     //
@@ -171,7 +175,10 @@ public class ezapp_utils {
         if (isTtsInitialized && mTts != null) {
             if (message.length() > 0) {
                 Log.i(TAG, "tts speaking: " + message);
-                status = mTts.speak(message, TextToSpeech.QUEUE_FLUSH, null, "utteranceId1"); // xxx what are the args
+                status = mTts.speak(message, 
+                                    TextToSpeech.QUEUE_FLUSH,  // flush in progress tts
+                                    null,            // engine params, can be null
+                                    "utteranceId1"); //  an unique identifier for this request
             } else {
                 Log.i(TAG, "tts stopping");
                 status = mTts.stop();

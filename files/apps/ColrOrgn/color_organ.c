@@ -377,25 +377,25 @@ void color_organ_display_fft(float *fft)
     }
 }
 
-void filter(float *val, float new_val)
+void filter(float *val, float raw_new_val)
 {
     if (which_filter == FILTER_NONE) {
-        *val = new_val;
+        *val = raw_new_val;
     } else if (which_filter == FILTER_EXP_SMOOTH) {
-        *val = *val + exp_fltr_k * (new_val - *val);
+        *val = *val + exp_fltr_k * (raw_new_val - *val);
     } else if (which_filter == FILTER_SNAP) {
-        if (new_val > *val) {
-            *val = new_val;
+        if (raw_new_val > *val) {
+            *val = raw_new_val;
         } else {
             *val -= snap_fltr_decay;
-            if (*val < new_val) *val = new_val;
+            if (*val < raw_new_val) *val = raw_new_val;
         }
     } else {
         *val = 0;
     }
 
-    if (*vol < 0) *vol = 0;
-    if (*vol > 1) *vol = 1;
+    if (*val < 0) *val = 0;
+    if (*val > 1) *val = 1;
 }
 
 void init_loc(sdlx_loc_t *loc, int x, int y, int w, int h)
