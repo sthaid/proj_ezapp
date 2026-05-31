@@ -422,7 +422,7 @@ static void read_params_file(char *dir)
     sprintf(params_path, "%s/params", dir);
     fp = fopen(params_path, "r");
     if (fp == NULL) {
-        ERROR("params file does not exist\n");
+        //INFO("params file does not exist\n");
         return;
     }
 

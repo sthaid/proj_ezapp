@@ -326,6 +326,8 @@ char *sdlx_get_input_str(char *prompt, bool numeric_keybd, char *dflt_input_str)
 // ================= NOT AVAIL IN PICOC =================
 // ======================================================
 
+// xxx move all non picoc to private file
+
 #define ATTRIBUTE_UNUSED __attribute__((unused))
 
 // sdlx_video.c

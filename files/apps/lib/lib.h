@@ -30,4 +30,7 @@ void set_ymd_to_next(int *y, int *m, int *d);
 void str_remove_trailing_newline(char *s);
 void str_sanitize(char *s);
 
+// show file
+void show_file(char *dir, char *filename);
+
 #endif

@@ -1,9 +1,12 @@
 #include <stdio.h>
 #include <stdbool.h>
+#include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <math.h>
 
 #include <sdlx.h>
+#include <utils.h>
 
 #include "apps/lib/lib.h"
 
@@ -365,3 +368,96 @@ void str_sanitize(char *s)
     }
 }
 
+// -----------------  SHOW FILE  ----------------------------------
+
+// xxx use this in Log too ?
+
+#define README_FONT_SMALLEST  40
+#define README_FONT_LARGEST   30
+
+#define EVID_README_FONT_SELECT 1
+
+void show_file(char *data_dir, char *filename)
+{
+    double      x, y;
+    int         y_top, y_bottom;
+    int         len;
+    sdlx_event_t event;
+    bool        done = false;
+    char       *lines[1];
+    sdlx_color_t colors[1];
+    int         orient, new_orient;
+    int         fontid;
+
+    // get fontid from params file
+    fontid = util_get_numeric_param(data_dir, "readme_fontid", README_FONT_SMALLEST);
+
+    // read the file
+    lines[0] = util_read_file(data_dir, filename, &len);
+    if (lines[0] == NULL) {
+        printf("E lib: failed to read %s\n", filename);
+        return;
+    }
+
+    // select font
+    //sdlx_print_set_default(fontid, COLOR_BLACK);
+    // xxx also not needed in log.c ?
+
+    colors[0] = COLOR_BLACK;  // xxx move to init section
+
+    // init vars
+    x        = 0;
+    y_top    = 25;
+    y_bottom = sdlx_win_height;
+    y        = y_top;
+    orient   = get_device_orientation();
+
+    // display filename lines
+    while (true) {
+        // handle change of display orientation
+        new_orient = get_device_orientation();
+        if (new_orient != orient) {
+            x = 0;
+            y = y_top;
+            orient = new_orient;
+        }
+
+        // display file lines and register for motion (scrolling) & exit events
+        sdlx_display_init(COLOR_WHITE, orient);
+        sdlx_render_multiline_text(x, y, y_top, y_bottom, fontid, lines, colors, 1);
+        sdlx_register_control_events(EVID_README_FONT_SELECT, "FONT", 0, NULL, EVID_QUIT, "X");
+        sdlx_register_event(NULL, EVID_MOTION);
+        sdlx_display_present();
+
+        sdlx_get_event(100000, &event);
+        switch (event.event_id) {
+        case EVID_README_FONT_SELECT:
+            fontid = (fontid > README_FONT_LARGEST ? fontid-5 : README_FONT_SMALLEST);
+            util_set_numeric_param(data_dir, "readme_fontid", fontid);
+            printf("I lib: fontid = %d\n", fontid);
+            x = 0;
+            y = y_top;
+            break;
+        case EVID_MOTION: {
+            double xrel = event.u.motion.xrel;
+            double yrel = event.u.motion.yrel;
+
+            if (fabs(xrel) > fabs(yrel)*1.5) x += xrel;
+            if (fabs(yrel) > fabs(xrel)*1.5) y += yrel;
+
+            if (y >= y_top) y = y_top;
+            if (x > 0) x = 0;
+            break; }
+        case EVID_QUIT:
+            done = true;
+            break;
+        }
+
+        if (done) {
+            break;
+        }
+    }
+
+    // free allocation
+    free(lines[0]);
+}
