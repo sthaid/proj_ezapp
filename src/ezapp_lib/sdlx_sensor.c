@@ -132,6 +132,7 @@ int sdlx_sensor_find(int type)
         }
     }
     if (i == max_sensor_info_tbl) {
+#if 0
         char *type_str = (type == ASENSOR_TYPE_STEP_COUNTER        ? "STEP_COUNTER"        :
                           type == ASENSOR_TYPE_ACCELEROMETER       ? "ACCELEROMETER"       :
                           type == ASENSOR_TYPE_MAGNETIC_FIELD      ? "MAGNETIC_FIELD"      :
@@ -139,7 +140,8 @@ int sdlx_sensor_find(int type)
                           type == ASENSOR_TYPE_AMBIENT_TEMPERATURE ? "AMBIENT_TEMPERATURE" :
                           type == ASENSOR_TYPE_RELATIVE_HUMIDITY   ? "RELATIVE_HUMIDITY"   :
                                                                      "????");
-        ERROR("no sensor found with type %2d %s\n", type, type_str);
+        INFO("no sensor found with type %2d %s\n", type, type_str);
+#endif
         return -1;
     }
 
@@ -193,14 +195,6 @@ int sdlx_sensor_read_raw(int id, float *data, int num_values)
 
 int sdlx_sensor_read_step_counter(unsigned long *step_count_arg)
 {
-#if 0
-#ifndef ANDROID
-    // for test when running on LINUX, simulates one step per second
-    *step_count_arg = time(NULL);
-    return 0;
-#endif
-#endif
-
     unsigned long step_count;
     int           rc;
 

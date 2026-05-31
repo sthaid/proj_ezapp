@@ -179,7 +179,7 @@ void periodic_processing(void)
     // read step counter sensor
     rc = sdlx_sensor_read_step_counter(&step_count_sensor);
     if (rc != 0) {
-        printf("E %s: failed to read step counter sensor\n", progname);
+        //printf("E %s: failed to read step counter sensor\n", progname);
         return;
     }
 

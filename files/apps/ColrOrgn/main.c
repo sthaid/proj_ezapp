@@ -213,7 +213,7 @@ void process_event(sdlx_event_t *ev, sdlx_audio_state_t *as)
         char str[100], *input;
         idx = ev->event_id - EVID_DELETE_FILE;
         sprintf(str, "DEL %s (y/n)", files_noext[idx]);
-        input = sdlx_get_input_str(str, false, NULL);
+        input = sdlx_get_input_str(str, false, "y");
         if (strcasecmp(input, "y") == 0) {
             util_delete_file(files_dir, files[idx]);
         }

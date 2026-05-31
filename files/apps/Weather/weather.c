@@ -662,20 +662,20 @@ int parse_forecast(int which)
         // set forecast item valid
         x->valid = true;
 
+#if 0
         // debug print forecast info
-        if (false) {
-            printf("I %s: %s periods[%s] ...\n", progname, json_filename, period_str);
-            printf("I %s:   is_daytime        %d\n", progname, x->is_daytime);
-            printf("I %s:   day_name          %s\n", progname, x->day_name);
-            printf("I %s:   day_name_unabbrev %s\n", progname, x->day_name_unabbreviated);
-            printf("I %s:   icon_url          %s\n", progname, x->icon_url);
-            printf("I %s:   icon_filename     %s\n", progname, x->icon_filename);
-            printf("I %s:   short_forecast    %s\n", progname, x->short_forecast);
-            printf("I %s:   detailed_forecast %s\n", progname, x->detailed_forecast);
-            printf("I %s:   temperature       %s\n", progname, x->temperature);
-            printf("I %s:   wind              %s\n", progname, x->wind);
-            printf("I %s:   precip            %s\n", progname, x->precip);
-        }
+        printf("I %s: %s periods[%s] ...\n", progname, json_filename, period_str);
+        printf("I %s:   is_daytime        %d\n", progname, x->is_daytime);
+        printf("I %s:   day_name          %s\n", progname, x->day_name);
+        printf("I %s:   day_name_unabbrev %s\n", progname, x->day_name_unabbreviated);
+        printf("I %s:   icon_url          %s\n", progname, x->icon_url);
+        printf("I %s:   icon_filename     %s\n", progname, x->icon_filename);
+        printf("I %s:   short_forecast    %s\n", progname, x->short_forecast);
+        printf("I %s:   detailed_forecast %s\n", progname, x->detailed_forecast);
+        printf("I %s:   temperature       %s\n", progname, x->temperature);
+        printf("I %s:   wind              %s\n", progname, x->wind);
+        printf("I %s:   precip            %s\n", progname, x->precip);
+#endif
     }
 
     // download icons that have not already been dowloaded
@@ -729,7 +729,7 @@ void create_icon_texture_if_needed(forecast_t *x)
     }
 
     // create the texture
-    printf("I %s: creating texture for %s\n", progname, x->icon_filename);
+    //printf("I %s: creating texture for %s\n", progname, x->icon_filename);
     t = sdlx_create_texture(w, h);
     if (t == NULL) {
         printf("E %s failed to create icon_texture\n", progname);

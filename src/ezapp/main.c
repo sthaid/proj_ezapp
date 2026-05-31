@@ -664,6 +664,7 @@ static void get_list_of_apps(void)
     }
     fclose(fp);
 
+#if 0
     // debug print the list of apps names
     INFO("max_apps = %d\n", max_apps);
     for (i = 0; i < max_apps; i++) {
@@ -671,6 +672,7 @@ static void get_list_of_apps(void)
             INFO("apps[%d] = %s\n", i, apps[i]);
         }
     }
+#endif
 }
 
 static void sanitize_input(char *s)

@@ -1,8 +1,17 @@
-pioco print error if sizeof is 0
+logging
+- util set params                  okay
+- avail video drivers                  okay
+- unsupported SDL events                okay
+- no sensor found                okay
+- get list of apps               okay I think
+- button released xy = 624 1096, delta xy = 100 -750     okay
 
-cleanup logging prints 
 
-finish work on xxx               XXX
+cleanup logging prints                            <============
+
+finish work on xxx               XXX                           <============
+
+camera app
 
 documentation
 - menu item for README
@@ -16,24 +25,28 @@ documentation
     DESCRIPTION:
     NOTES:
 
+picoc
+- pioco print error if sizeof is 0
+- src/picoc/tests/shaid/101_ternary_op.output
+
 add Docs app or '?' option on control bar
 - display the README files for the apps and svcs
 - or '?' to each app
 
 Apps
 - Tilt
-  - put Calibrate button at bottom
+  - put Calibrate button at bottom             <==============
 - Paddle
   - adjust difficulty
 - Reversi
-  - cleanup
-  - move Undo
+  - cleanup                                  <==========
+  - move Undo                                <==============
 - Steps
   - highlight today in Steps month view
-- dont use the top line in apps, such as Reversi and Test
+- dont use the top line in apps, such as Reversi and Test      <=======
 
 developer mode password
-- force it to be init
+- force it to be init      <=======
 
 work on minimizing cpu load
 - check how much cpu is used during an 8 hour intvl

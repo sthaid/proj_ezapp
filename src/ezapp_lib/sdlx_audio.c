@@ -1345,54 +1345,58 @@ int sdlx_audio_play_file(char *dir, char *filename)
         return -1;
     }
 
-    // if audio is still allocated then destroy it
+    // if mixer_audio,track, or dev still allocated then destroy them
     if (mixer_audio) {
         MIX_DestroyAudio(mixer_audio); 
         mixer_audio = NULL; 
     }
+    if (mixer_track) {
+        MIX_DestroyTrack(mixer_track);
+        mixer_track = NULL; 
+    }
+    if (mixer_dev) {
+        MIX_DestroyMixer(mixer_dev);
+        mixer_dev = NULL;
+    }
 
     // create mixer device,
-    // create track
-    // set track callbacks
+    mixer_dev = MIX_CreateMixerDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &playback_request_spec);
     if (mixer_dev == NULL) {
-        mixer_dev = MIX_CreateMixerDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &playback_request_spec);
-        if (mixer_dev == NULL) {
-            ERROR("MIX_CreateMixerDevice failed, %s\n", SDL_GetError());
-            return -1;
-        }
-
-        // get the actual playback spec, and 
-        // verify the actual playback spec values match the playback_request_spec
-        MIX_GetMixerFormat(mixer_dev, &playback_actual_spec);
-        INFO("actual_spec: format=%s channels=%d freq=%d\n", 
-             audio_fmt_str(playback_actual_spec.format), 
-             playback_actual_spec.channels, 
-             playback_actual_spec.freq);
-        if (playback_actual_spec.format != playback_request_spec.format) {
-            ERROR("actual/request format: %s %s\n",
-                audio_fmt_str(playback_actual_spec.format), audio_fmt_str(playback_request_spec.format));
-        }
-        if (playback_actual_spec.channels != playback_request_spec.channels) {
-            ERROR("actual/request channels: %d %d\n",
-                playback_actual_spec.channels, playback_request_spec.channels);
-        }
-        if (playback_actual_spec.freq != playback_request_spec.freq) {
-            ERROR("actual/request freq: %d %d\n",
-                playback_actual_spec.freq, playback_request_spec.freq);
-        }
-
-        // create mixer track
-        mixer_track = MIX_CreateTrack(mixer_dev);
-        if (mixer_track == NULL) {
-            ERROR("MIX_CreateTrack failed, %s\n", SDL_GetError());
-            MIX_DestroyMixer(mixer_dev); mixer_dev = NULL;
-            return -1;
-        }
-
-        // set track callbacks
-        MIX_SetTrackRawCallback(mixer_track, mixer_track_raw_callback, NULL);
-        MIX_SetTrackStoppedCallback(mixer_track, mixer_track_stopped_callback, NULL);
+        ERROR("MIX_CreateMixerDevice failed, %s\n", SDL_GetError());
+        return -1;
     }
+
+    // get the actual playback spec, and 
+    // verify the actual playback spec values match the playback_request_spec
+    MIX_GetMixerFormat(mixer_dev, &playback_actual_spec);
+    INFO("actual_spec: format=%s channels=%d freq=%d\n", 
+         audio_fmt_str(playback_actual_spec.format), 
+         playback_actual_spec.channels, 
+         playback_actual_spec.freq);
+    if (playback_actual_spec.format != playback_request_spec.format) {
+        ERROR("actual/request format: %s %s\n",
+            audio_fmt_str(playback_actual_spec.format), audio_fmt_str(playback_request_spec.format));
+    }
+    if (playback_actual_spec.channels != playback_request_spec.channels) {
+        ERROR("actual/request channels: %d %d\n",
+            playback_actual_spec.channels, playback_request_spec.channels);
+    }
+    if (playback_actual_spec.freq != playback_request_spec.freq) {
+        ERROR("actual/request freq: %d %d\n",
+            playback_actual_spec.freq, playback_request_spec.freq);
+    }
+
+    // create mixer track
+    mixer_track = MIX_CreateTrack(mixer_dev);
+    if (mixer_track == NULL) {
+        ERROR("MIX_CreateTrack failed, %s\n", SDL_GetError());
+        MIX_DestroyMixer(mixer_dev); mixer_dev = NULL;
+        return -1;
+    }
+
+    // set track callbacks
+    MIX_SetTrackRawCallback(mixer_track, mixer_track_raw_callback, NULL);
+    MIX_SetTrackStoppedCallback(mixer_track, mixer_track_stopped_callback, NULL);
 
     // load the file, set predecode arg to false
     mixer_audio = MIX_LoadAudio(mixer_dev, path, false);

@@ -89,7 +89,6 @@ static bool event_watcher(void* userdata, SDL_Event* event);
 
 int sdlx_video_init(void)
 {
-    int num, i;
     int w, h;
 
     INFO("initializing\n");
@@ -112,12 +111,15 @@ int sdlx_video_init(void)
         return -1;
     }
 
+#if 0
     // display available and current video drivers
+    int num, i;
     num = SDL_GetNumVideoDrivers();
     INFO("Available Video Drivers: ");
     for (i = 0; i < num; i++) {
         INFO("   %s\n",  SDL_GetVideoDriver(i));
     }
+#endif
 
     // create SDL Window and Renderer
 #ifdef ANDROID

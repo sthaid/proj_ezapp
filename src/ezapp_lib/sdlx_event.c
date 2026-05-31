@@ -40,7 +40,7 @@ static bool    event_box_enable;
 //
 
 static void process_sdlx_event(SDL_Event *ev, sdlx_event_t *event);
-static char *event_type_to_str(enum SDL_EventType evtype);
+static char *event_type_to_str(enum SDL_EventType evtype) ATTRIBUTE_UNUSED;
 
 // -----------------  REGISTER EVENTS  --------------------
 
@@ -259,15 +259,14 @@ static void process_sdlx_event(SDL_Event *ev, sdlx_event_t *event)
         static int last_pressed_x = -1;
         static int last_pressed_y = -1;
         int x, y;
-#if 0
-       INFO("MOUSE_BUTTON button=%s state=%s x=%d y=%d\n",
-               (ev->button.button == SDL_BUTTON_LEFT   ? "LEFT" :
-                ev->button.button == SDL_BUTTON_MIDDLE ? "MIDDLE" :
-                ev->button.button == SDL_BUTTON_RIGHT  ? "RIGHT" : "???"),
-               (ev->button.down ? "DOWN" : "UP"),
-               ev->button.x,
-               ev->button.y);
-#endif
+
+       //INFO("MOUSE_BUTTON button=%s state=%s x=%d y=%d\n",
+       //        (ev->button.button == SDL_BUTTON_LEFT   ? "LEFT" :
+       //         ev->button.button == SDL_BUTTON_MIDDLE ? "MIDDLE" :
+       //         ev->button.button == SDL_BUTTON_RIGHT  ? "RIGHT" : "???"),
+       //        (ev->button.down ? "DOWN" : "UP"),
+       //        ev->button.x,
+       //        ev->button.y);
         x = ev->button.x / scale_events_x;
         y = ev->button.y / scale_events_y;
 
@@ -275,10 +274,9 @@ static void process_sdlx_event(SDL_Event *ev, sdlx_event_t *event)
             last_pressed_x = x;
             last_pressed_y = y;
         } else {
-            int delta_x = x - last_pressed_x;
-            int delta_y = y - last_pressed_y;
-
-            INFO("button released xy = %d %d, delta xy = %d %d\n", x, y, delta_x, delta_y);
+            //int delta_x = x - last_pressed_x;
+            //int delta_y = y - last_pressed_y;
+            //INFO("button released xy = %d %d, delta xy = %d %d\n", x, y, delta_x, delta_y);
 
             for (i = max_event-1; i >= 0; i--) {
                 if (AT_LOC(x, y, event_tbl[i].loc)) {
@@ -319,7 +317,6 @@ static void process_sdlx_event(SDL_Event *ev, sdlx_event_t *event)
     case SDL_EVENT_KEY_DOWN:
     case SDL_EVENT_KEY_UP: {
         SDL_KeyboardEvent *x = &ev->key;
-        bool shift = (x->mod & SDL_KMOD_SHIFT) != 0;
         SDL_Keycode keycode;
 
         if (!evid_keybd_registered || x->down) {
@@ -327,7 +324,8 @@ static void process_sdlx_event(SDL_Event *ev, sdlx_event_t *event)
         }
 
         keycode = SDL_GetKeyFromScancode(x->scancode, x->mod, false);
-        INFO("GOT keycode 0x%x  shift=%d\n", keycode, shift);
+        //bool shift = (x->mod & SDL_KMOD_SHIFT) != 0;
+        //INFO("GOT keycode 0x%x  shift=%d\n", keycode, shift);
         event->event_id = EVID_KEYBD;
         event->u.keybd.ch = keycode;
         break; }
@@ -350,7 +348,7 @@ static void process_sdlx_event(SDL_Event *ev, sdlx_event_t *event)
 
     default: {
         // debug print the events that are not supported
-        INFO("unsupported sdl event %s\n", event_type_to_str(ev->type));
+        //INFO("unsupported sdl event %s\n", event_type_to_str(ev->type));
         break; }
     }
 }

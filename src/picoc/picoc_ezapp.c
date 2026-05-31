@@ -40,10 +40,10 @@ int picoc_ezapp(char *args)
         }
 
         if (!processing_argv_args) {
-            printf("I picoc: scanning %s\n", s);
+            //printf("I picoc: scanning %s\n", s);
             PicocPlatformScanFile(&pc, s);
         } else {
-            printf("I picoc: adding argv[%d] = %s\n", argc, s);
+            //printf("I picoc: adding argv[%d] = %s\n", argc, s);
             argv[argc++] = s;
         }
     }

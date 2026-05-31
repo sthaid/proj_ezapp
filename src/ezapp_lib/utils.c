@@ -275,7 +275,7 @@ void *util_map_file(char *dir, char *file, int len_arg, bool create_if_needed,
     rc = stat(path, &statbuf);
     file_exists = (rc == 0) && S_ISREG(statbuf.st_mode);
     file_len    = file_exists ? statbuf.st_size : 0;
-    INFO("file exists=%d file_len=0x%x\n", file_exists, file_len);
+    //INFO("file exists=%d file_len=0x%x\n", file_exists, file_len);
 
     // if the file doesnt exist, or has the wrong length then
     //   if create flag is set
@@ -288,7 +288,7 @@ void *util_map_file(char *dir, char *file, int len_arg, bool create_if_needed,
     // endif
     if (!file_exists || file_len != len) {
         if (create_if_needed) {
-            INFO("creating %s adj_len=0x%x\n", path, len);
+            //INFO("creating %s adj_len=0x%x\n", path, len);
             unlink(path);
             fd = open(path, O_CREAT|O_EXCL|O_RDWR, 0666);
             if (fd < 0) {
@@ -315,7 +315,7 @@ void *util_map_file(char *dir, char *file, int len_arg, bool create_if_needed,
     }
 
     // map the file
-    INFO("mapping %s adj_len=0x%x\n", path, len);
+    //INFO("mapping %s adj_len=0x%x\n", path, len);
     fd = open(path, read_only ? O_RDONLY : O_RDWR);
     if (fd < 0) {
         ERROR("failed to open %s, %s\n", path, strerror(errno));
@@ -329,7 +329,7 @@ void *util_map_file(char *dir, char *file, int len_arg, bool create_if_needed,
         close(fd);
         goto done;  
     }
-    INFO("mmap returned addr %p\n", addr);
+    //INFO("mmap returned addr %p\n", addr);
     close(fd);
 
 done:
@@ -368,7 +368,7 @@ void util_sync_file(void *addr, int len)
     void         *adjusted_addr = (void*)first_page;
     int           adjusted_len  = last_page - first_page + PAGE_SIZE2;
 
-    INFO("addr=%p len=0x%x - adj_addr=%p adj_len=0x%x\n", addr, len, adjusted_addr, adjusted_len);
+    //INFO("addr=%p len=0x%x - adj_addr=%p adj_len=0x%x\n", addr, len, adjusted_addr, adjusted_len);
 
     rc = msync(adjusted_addr, adjusted_len, MS_SYNC);
     if (rc != 0) {
@@ -410,7 +410,7 @@ static void read_params_file(char *dir)
     }
     strcpy(params_dir, dir);
 
-    INFO("reading params file in dir '%s'\n", dir);
+    //INFO("reading params file in dir '%s'\n", dir);
 
     for (int i = 0; i < max_params; i++) {
         free(params[i].name);
@@ -422,7 +422,7 @@ static void read_params_file(char *dir)
     sprintf(params_path, "%s/params", dir);
     fp = fopen(params_path, "r");
     if (fp == NULL) {
-        INFO("params file does not exist\n");
+        ERROR("params file does not exist\n");
         return;
     }
 
@@ -443,10 +443,10 @@ static void read_params_file(char *dir)
 
     fclose(fp);
 
-    INFO("max_params=%d\n", max_params);
-    for (int i = 0; i < max_params; i++) {
-        INFO("  %s = %s\n", params[i].name, params[i].value);
-    }
+    //INFO("max_params=%d\n", max_params);
+    //for (int i = 0; i < max_params; i++) {
+    //    INFO("  %s = %s\n", params[i].name, params[i].value);
+    //}
 }
 
 static void write_params_file(char *dir)
@@ -459,11 +459,11 @@ static void write_params_file(char *dir)
         return;
     }
 
-    INFO("writing params file in dir '%s'\n", dir);
-    INFO("max_params=%d\n", max_params);
-    for (int i = 0; i < max_params; i++) {
-        INFO("  %s = %s\n", params[i].name, params[i].value);
-    }
+    //INFO("writing params file in dir '%s'\n", dir);
+    //INFO("max_params=%d\n", max_params);
+    //for (int i = 0; i < max_params; i++) {
+    //    INFO("  %s = %s\n", params[i].name, params[i].value);
+    //}
 
     sprintf(params_path, "%s/params", dir);
     fp = fopen(params_path, "w");

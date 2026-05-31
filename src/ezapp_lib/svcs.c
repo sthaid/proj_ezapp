@@ -135,12 +135,14 @@ void svcs_init(int (*run_proc)(char *name, bool is_svc))
     }
     fclose(fp);
 
+#if 0
     // print the list of services and autostart indicator that was
     // just obtained by the preceeding code
     INFO("Services ...\n");
     for (int id = 0; id < max_svcs; id++) {
         INFO("%20s  %c\n", svcs[id].name, svcs[id].autostart);
     }
+#endif
 
     // start all autostart svcs
     for (int id = 0; id < max_svcs; id++) {
