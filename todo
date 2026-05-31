@@ -1,37 +1,34 @@
-logging
-- util set params                  okay
-- avail video drivers                  okay
-- unsupported SDL events                okay
-- no sensor found                okay
-- get list of apps               okay I think
-- button released xy = 624 1096, delta xy = 100 -750     okay
+------------ RECHECK ------------------
+
+cleanup logging prints
+
+audio: - audio code review and retest
 
 
-cleanup logging prints                            <============
+---------- TODO -----------------
 
-finish work on xxx               XXX                           <============
+add Docs app or '?' option on control bar        <===========
+- display the README files for the apps and svcs
+- or '?' to each app
 
-camera app
+developer mode password
+- force it to be init      <=======
+
+finish work on xxx 
 
 documentation
-- menu item for README
 - toplevel README.md
 - make a doc dir, for other README files
-- document foreground 
-- svcs xxx todo
-- doc dir
-- template
+  - document foreground , and Settings
+- README template
     NAME: Xxxxx
     DESCRIPTION:
     NOTES:
 
 picoc
 - pioco print error if sizeof is 0
-- src/picoc/tests/shaid/101_ternary_op.output
-
-add Docs app or '?' option on control bar
-- display the README files for the apps and svcs
-- or '?' to each app
+- document restrictions
+   - src/picoc/tests/shaid/101_ternary_op.output
 
 Apps
 - Tilt
@@ -45,8 +42,7 @@ Apps
   - highlight today in Steps month view
 - dont use the top line in apps, such as Reversi and Test      <=======
 
-developer mode password
-- force it to be init      <=======
+new camera app
 
 work on minimizing cpu load
 - check how much cpu is used during an 8 hour intvl
@@ -60,9 +56,6 @@ work on minimizing cpu load
        20 ms
        HINT 
        do not init audio
-
-audio:
-- audio code review and retest
 
 --------------------
 

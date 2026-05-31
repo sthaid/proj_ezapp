@@ -286,11 +286,20 @@ void display_tilt_horizontal(double ax, double ay, double az, double roll_raw, d
     sdlx_render_printf_ex2(xctr, y,
                            FONT_LARGE, COLOR_WHITE, FLAG_X_CTR, 
                            "%0.1f", tilt_amount);
+
+    // if not calibrated then display 'uncalibrated' in RED
     if (cal_horiz_roll == INVALID_NUMBER || cal_horiz_pitch == INVALID_NUMBER) {
-        sdlx_render_printf_ex2(sdlx_win_width / 2, y + 1.25 * sdlx_char_height(FONT_LARGE),
+        sdlx_render_printf_ex2(sdlx_win_width / 2, y + 2.0 * sdlx_char_height(FONT_LARGE),
                                FONT_NORMAL, COLOR_RED,
                                FLAG_XY_CTR, "uncalibrated");
     }
+
+    // register EVID_CALIBRATE
+    loc = sdlx_render_printf_ex2(
+                sdlx_win_width/2, y + 3.0 * sdlx_char_height(FONT_LARGE),
+                FONT_NORMAL, COLOR_LIGHT_BLUE, FLAG_X_CTR, 
+                "%s", "CALIBRATE");
+    sdlx_register_event(loc, EVID_HORIZ_CALIBRATE);
 
     // limit tilt amount to the max that can be displayed on the bulls-eye
     if (tilt_amount > max_bulls_eye) {
@@ -310,13 +319,6 @@ void display_tilt_horizontal(double ax, double ay, double az, double roll_raw, d
 
     // display dot at center of bulls_eye
     sdlx_render_point(xctr, yctr, COLOR_BLACK, 9);
-
-    // register EVID_CALIBRATE
-    loc = sdlx_render_printf_ex2(
-                sdlx_win_width/2, sdlx_win_height - 2 * sdlx_char_height_dflt,
-                FONT_NORMAL, COLOR_LIGHT_BLUE, FLAG_X_CTR, 
-                "%s", "CALIBRATE");
-    sdlx_register_event(loc, EVID_HORIZ_CALIBRATE);
 
     // register control event to
     // - end program
@@ -381,7 +383,7 @@ void display_tilt_vertical(double ax, double ay, double az, double roll, double 
     int             tick_deg, tick_delta_deg;
     sdlx_texture_t *vert_circle_texture;
     char            cal_param_name[50];
-    sdlx_loc_t     *loc;
+    sdlx_loc_t     *loc, tmp_loc;
 
     // statics
     static double       arc_span_deg, arc_span_rad, arc_radius, arc_radius_squared;
@@ -499,14 +501,26 @@ void display_tilt_vertical(double ax, double ay, double az, double roll, double 
     }
 
     // print the tilt angle at the center of the rendering texture
-    sdlx_render_printf_ex2(VERT_TEXTURE_WH/2, VERT_TEXTURE_WH/2, 
+    y = VERT_TEXTURE_WH/4;
+    sdlx_render_printf_ex2(VERT_TEXTURE_WH/2, y,
                            FONT_LARGE, COLOR_WHITE,
                            FLAG_X_CTR, "%0.1f", angle_deg);
+
+    // if not calibrated then display 'uncalibrated' in RED
+    y += 2 * sdlx_char_height(FONT_LARGE);
     if (cal[rotate_deg/90] == INVALID_NUMBER) {
-        sdlx_render_printf_ex2(VERT_TEXTURE_WH/2, VERT_TEXTURE_WH/2+1.5*sdlx_char_height(FONT_LARGE),
+        sdlx_render_printf_ex2(VERT_TEXTURE_WH/2, y,
                                FONT_NORMAL, COLOR_RED,
                                FLAG_XY_CTR, "uncalibrated");
     }
+
+    // print the CALIBRATE event; 
+    // this event will be registered below, after the render target is set to the display
+    y += 2 * sdlx_char_height(FONT_LARGE);
+    loc = sdlx_render_printf_ex2(
+                VERT_TEXTURE_WH/2, VERT_TEXTURE_WH/2+1.5*sdlx_char_height(FONT_LARGE),
+                FONT_NORMAL, COLOR_LIGHT_BLUE, FLAG_X_CTR, 
+                "%s", "CALIBRATE");
 
     // set render target back to the display
     sdlx_set_render_target(NULL);
@@ -516,11 +530,27 @@ void display_tilt_vertical(double ax, double ay, double az, double roll, double 
     y = (sdlx_win_height - VERT_TEXTURE_WH) / 2;
     sdlx_render_texture_ex2(vert, x, y, VERT_TEXTURE_WH, VERT_TEXTURE_WH, rotate_deg);
 
-    // register EVID_CALIBRATE
-    loc = sdlx_render_printf_ex2(
-                sdlx_win_width/2, sdlx_win_height - 2 * sdlx_char_height_dflt,
-                FONT_NORMAL, COLOR_LIGHT_BLUE, FLAG_X_CTR, 
-                "%s", "CALIBRATE");
+    // Register the CALIBRATE event.
+    // This event was printed to the vert texture.
+    // Since the vert texture is rendered rotated by angle rotate_deg,
+    // the loc of the event needs to be adjusted to account for that rotation.
+    if (rotate_deg == 0) {
+        loc->y = y + loc->y;
+    } else if (rotate_deg == 180) {
+        loc->y = y + (VERT_TEXTURE_WH - (loc->y + loc->h));
+    } else if (rotate_deg == 90) {
+        tmp_loc = *loc;
+        loc->x = VERT_TEXTURE_WH - (tmp_loc.y + tmp_loc.h);
+        loc->y = y + tmp_loc.x;
+        loc->w = tmp_loc.h;
+        loc->h = tmp_loc.w;
+    } else {  // rotate_deg == 270
+        tmp_loc = *loc;
+        loc->x = tmp_loc.y;
+        loc->y = y + tmp_loc.x;
+        loc->w = tmp_loc.h;
+        loc->h = tmp_loc.w;
+    }
     sdlx_register_event(loc, EVID_VERT_CALIBRATE);
 
     // register control event to adjust the arc span and end-program
