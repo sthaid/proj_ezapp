@@ -8,6 +8,7 @@
 #include <utils.h>
 
 #include "apps/Clock/common.h"
+#include "apps/lib/lib.h"
 
 // defines
 #define XCTR_CLOCK 500
@@ -103,6 +104,9 @@ int main(int argc, char **argv)
                                FLAG_X_CTR, 
                                "DayTime %s", daytime_calc);
     
+        // register EVID_SHOW_README_FILE event
+        reg_event_show_readme_file();
+
         // register control event to end program
         sdlx_register_control_events(0, NULL, 
                                      0, NULL, 
@@ -124,6 +128,9 @@ int main(int argc, char **argv)
             quit = true;
             break;
         }
+        case EVID_SHOW_README_FILE:
+            show_file(data_dir, "README");
+            break;
     }
 
     // cleanup and end program

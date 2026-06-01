@@ -26,7 +26,4 @@ void color_organ_display(void);
 void color_organ_process_event(sdlx_event_t *ev);
 void color_organ_settings(void);
 
-// prototypes of routines defined in main.c
-void reg_event(int x, int y, sdlx_color_t color, char *name, int event_id);
-
 #endif

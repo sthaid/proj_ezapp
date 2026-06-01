@@ -511,6 +511,7 @@ void apply_move(board_t *b, int move)
     b->whose_turn = OTHER_COLOR(b->whose_turn);
 }
 
+// xxx check sizeof
 int possible_move_tbl[] = {
     11, 18, 81, 88, 
     33, 34, 35, 36, 

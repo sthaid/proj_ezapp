@@ -46,7 +46,6 @@ int main(int argc, char **argv)
     int          rc, x, y;
     sdlx_event_t event;
     double       mag_heading, true_heading, compass_heading;
-    sdlx_loc_t  *loc;
     bool         end_program = false;
 
     // save args
@@ -151,10 +150,8 @@ int main(int argc, char **argv)
                 "%s", "NO DATA");
         }
 
-        // xxx
-        loc = sdlx_render_printf_ex1(sdlx_win_width-2*sdlx_char_width_dflt, 0, 
-                                     FONT_NORMAL, COLOR_LIGHT_BLUE, "?");
-        sdlx_register_event(loc, EVID_README);
+        // register EVID_SHOW_README_FILE event
+        reg_event_show_readme_file();
 
         // register control event to end program
         sdlx_register_control_events(EVID_SLCT, "Slct",
@@ -176,7 +173,7 @@ int main(int argc, char **argv)
         case EVID_QUIT:
             end_program = true;
             break;
-        case EVID_README:
+        case EVID_SHOW_README_FILE:
             show_file(data_dir, "README");
             break;
         case EVID_SLCT:

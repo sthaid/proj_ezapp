@@ -1,3 +1,36 @@
+#include "apps/lib/lib.h"
+
+        // register EVID_SHOW_README_FILE event
+        reg_event_show_readme_file();
+
+        case EVID_SHOW_README_FILE:
+            show_file(data_dir, "README");
+            break;
+
+
+drwxrwxr-x 2 haid haid 4.0K May 30 08:32 Altitude            k
+drwxrwxr-x 2 haid haid 4.0K May 21 07:38 Calc                k
+drwxrwxr-x 2 haid haid 4.0K May 23 10:17 Clock                k
+drwxrwxr-x 3 haid haid 4.0K May 30 19:58 ColrOrgn              k
+drwxrwxr-x 2 haid haid 4.0K Jun  1 06:58 Compass               k
+drwxrwxr-x 2 haid haid 4.0K May 21 07:43 FlshLite
+drwxrwxr-x 2 haid haid 4.0K Jun  1 07:08 Light
+drwxrwxr-x 2 haid haid 4.0K May 25 09:01 Location
+drwxrwxr-x 2 haid haid 4.0K May 31 09:11 Log
+drwxrwxr-x 2 haid haid 4.0K May 30 08:36 Memo
+drwxrwxr-x 2 haid haid 4.0K May 21 07:58 Morse
+drwxrwxr-x 2 haid haid 4.0K May 29 07:37 Paddle
+drwxrwxr-x 2 haid haid 4.0K Jun  1 07:47 Piano               k
+drwxrwxr-x 2 haid haid 4.0K May 31 19:27 Reversi
+drwxrwxr-x 2 haid haid 4.0K May 30 15:27 Steps
+drwxrwxr-x 2 haid haid 4.0K Jun  1 07:26 Template               k
+drwxrwxr-x 2 haid haid 4.0K Jun  1 07:53 Test                   k
+drwxrwxr-x 2 haid haid 4.0K May 31 08:17 Tilt
+drwxrwxr-x 3 haid haid 4.0K May 30 17:12 Weather
+drwxrwxr-x 2 haid haid 4.0K Jun  1 06:40 lib
+
+
+
 ------------ RECHECK ------------------
 
 cleanup logging prints
@@ -7,6 +40,8 @@ audio: - audio code review and retest
 
 ---------- TODO -----------------
 
+can show_file be used by Log?
+
 add Docs app or '?' option on control bar        <===========
 - display the README files for the apps and svcs
 - or '?' to each app
@@ -14,7 +49,7 @@ add Docs app or '?' option on control bar        <===========
 developer mode password
 - force it to be init      <=======
 
-finish work on xxx 
+finish work on xxx           <============
 
 documentation
 - toplevel README.md
@@ -31,8 +66,6 @@ picoc
    - src/picoc/tests/shaid/101_ternary_op.output
 
 Apps
-- Tilt
-  - put Calibrate button at bottom             <==============
 - Paddle
   - adjust difficulty
 - Reversi

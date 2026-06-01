@@ -1,15 +1,13 @@
---------------
---- OCTAVE ---
---------------
+OCTAVE
+------
 
 An octave spans 12 semitones, where the top note is exactly double the frequency 
 of the bottom note. Using equal temperament (A4 = 440 Hz), each note is 12th root 
 of 2 (approx. 1.05946) times higher than the previous. 
 For example, in the 4th octave, C4 is 261.63 Hz and C5 is 523.25 Hz.
 
--------------
---- PIANO ---
--------------
+PIANO
+-----
 
 https://en.wikipedia.org/wiki/Piano_key_frequencies
 
@@ -20,9 +18,8 @@ standard modern piano has 88 keys,
 A0 = 27.5 Hz
 A4 = 440  Hz
 
------------
---- SPN ---
------------
+SCIENTIFIC PITCH NOTATION
+-------------------------
 
 https://en.wikipedia.org/wiki/Scientific_pitch_notation
 
@@ -50,17 +47,16 @@ Musical Notes:
 
 Octave 1: White Keys Only
   Note    Freq    Piano Key Num
-  C1     261.63 Hz      4
-  D1     293.66 Hz      6
-  E1     329.63 Hz      8
-  F1     349.23 Hz      9
-  G1     392.00 Hz      11   
-  A1     440.00 Hz      13
-  B1     493.88 Hz      15
+  C1     32.7 Hz      4
+  D1     36.7 Hz      6
+  E1     41.2 Hz      8
+  F1     43.6 Hz      9
+  G1     49.0 Hz      11   
+  A1     55.0 Hz      13
+  B1     61.7 Hz      15
 
----------------
---- SOLFEGE ---
----------------
+SOLFEGE
+-------
 
 Key Aspects of Solfege
 - The Syllables: 
@@ -70,12 +66,10 @@ Key Aspects of Solfege
       helping with relative pitch. 
     In "fixed do," Do is always the note C, regardless of the key.
 
+MIDI
+----
 
------------------
---- MIDI INFO ---
------------------
-
-NOTE - this program does not support MIDI
+This program does not support MIDI
 
 Reference:
 https://en.wikipedia.org/wiki/File:MIDI_sample.mid?qsrc=3044
@@ -90,9 +84,8 @@ are extremely small and easily editable
 Playing a midi file on Linux
   fluidsynth -a pulseaudio -m alsa_seq /usr/share/sounds/sf2/FluidR3_GM.sf2 <filename.mid>
 
-----------------------------------------------------------------
---- PUBLIC DOMAIN BEGINNER PIECES WITH LETTER / SPN NOTATION ---
-----------------------------------------------------------------
+PUBLIC DOMAIN BEGINNER PIECES WITH LETTER / SPN NOTATION
+--------------------------------------------------------
 
 Public Domain Beginner Pieces with Letter/SPN Notation
 The following popular, free tunes are in the public domain 

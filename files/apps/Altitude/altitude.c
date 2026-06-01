@@ -137,8 +137,6 @@ void cleanup(void)
 
 // -----------------  DRAW DISPLAY  ------------------------------------
 
-void reg_event(int x, int y, int evid, char *str);
-
 void draw_display(void)
 {
     double       altitude_ft;
@@ -184,21 +182,16 @@ void draw_display(void)
     sdlx_render_printf_ex2(sdlx_win_width/2, y,
                            FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR,
                            "%d", param_max_y);
-    reg_event(sdlx_win_width/2-COL2X(4), y, EVID_DECR_MAX_Y, "-");
-    reg_event(sdlx_win_width/2+COL2X(4), y, EVID_INCR_MAX_Y, "+");
+    reg_event(sdlx_win_width/2-COL2X(4.5), y, COLOR_LIGHT_BLUE, "-", EVID_DECR_MAX_Y);
+    reg_event(sdlx_win_width/2+COL2X(3.5), y, COLOR_LIGHT_BLUE, "+", EVID_INCR_MAX_Y);
+
+    // register EVID_SHOW_README_FILE event
+    reg_event_show_readme_file();
 
     // register control events to goto the previous or next days, and to end program
     sdlx_register_control_events(EVID_PRIOR, "<",
                                  EVID_NEXT, ">",
                                  EVID_QUIT, "X");
-}
-
-void reg_event(int x, int y, int evid, char *str)
-{
-    sdlx_loc_t *loc;
-
-    loc = sdlx_render_printf_ex2(x, y, FONT_NORMAL, COLOR_BLUE, FLAG_X_CTR, "%s", str);
-    sdlx_register_event(loc, evid);
 }
 
 // -----------------  PROCESS EVENT  ---------------------------
@@ -210,6 +203,9 @@ void process_event(sdlx_event_t *event)
     switch (event->event_id) {
     case EVID_QUIT:
         end_program = true;
+        break;
+    case EVID_SHOW_README_FILE:
+        show_file(data_dir, "README");
         break;
     case EVID_INCR_MAX_Y:
         bar_graph_increase_y_axis(&param_max_y);

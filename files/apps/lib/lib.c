@@ -370,8 +370,6 @@ void str_sanitize(char *s)
 
 // -----------------  SHOW FILE  ----------------------------------
 
-// xxx use this in Log too ?
-
 #define README_FONT_SMALLEST  40
 #define README_FONT_LARGEST   30
 
@@ -379,15 +377,15 @@ void str_sanitize(char *s)
 
 void show_file(char *data_dir, char *filename)
 {
-    double      x, y;
-    int         y_top, y_bottom;
-    int         len;
+    double       x, y;
+    int          y_top, y_bottom;
+    int          len;
     sdlx_event_t event;
-    bool        done = false;
-    char       *lines[1];
+    bool         done = false;
+    char        *lines[1];
     sdlx_color_t colors[1];
-    int         orient, new_orient;
-    int         fontid;
+    int          orient, new_orient;
+    int          fontid;
 
     // get fontid from params file
     fontid = util_get_numeric_param(data_dir, "readme_fontid", README_FONT_SMALLEST);
@@ -399,18 +397,13 @@ void show_file(char *data_dir, char *filename)
         return;
     }
 
-    // select font
-    //sdlx_print_set_default(fontid, COLOR_BLACK);
-    // xxx also not needed in log.c ?
-
-    colors[0] = COLOR_BLACK;  // xxx move to init section
-
     // init vars
-    x        = 0;
-    y_top    = 25;
-    y_bottom = sdlx_win_height;
-    y        = y_top;
-    orient   = get_device_orientation();
+    x         = 0;
+    y_top     = 25;
+    y_bottom  = sdlx_win_height;
+    y         = y_top;
+    orient    = get_device_orientation();
+    colors[0] = COLOR_BLACK;
 
     // display filename lines
     while (true) {
@@ -429,7 +422,14 @@ void show_file(char *data_dir, char *filename)
         sdlx_register_event(NULL, EVID_MOTION);
         sdlx_display_present();
 
+        // wait for event with 100ms timeout;
+        // if timedout then continue
         sdlx_get_event(100000, &event);
+        if (event.event_id == -1) {
+            continue;
+        }
+    
+        // process the event
         switch (event.event_id) {
         case EVID_README_FONT_SELECT:
             fontid = (fontid > README_FONT_LARGEST ? fontid-5 : README_FONT_SMALLEST);
@@ -461,3 +461,20 @@ void show_file(char *data_dir, char *filename)
     // free allocation
     free(lines[0]);
 }
+
+// -----------------  EVENT REGISTRATION  -------------------------
+
+void reg_event(int x, int y, sdlx_color_t color, char *name, int event_id)
+{
+    sdlx_loc_t *loc;
+
+    loc = sdlx_render_printf_ex1(x, y, FONT_NORMAL, color, "%s", name);
+    sdlx_register_event(loc, event_id);
+}
+
+void reg_event_show_readme_file(void)
+{
+    reg_event(sdlx_win_width-2*sdlx_char_width(FONT_NORMAL), 0, 
+              COLOR_LIGHT_BLUE, "?", EVID_SHOW_README_FILE);
+}
+

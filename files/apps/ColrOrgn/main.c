@@ -301,6 +301,11 @@ void process_event(sdlx_event_t *ev, sdlx_audio_state_t *as)
             end_program = true;
             break;
 
+        // show readme file
+        case EVID_SHOW_README_FILE:
+            show_file(data_dir, "README");
+            break;
+
         // scroll file list
         case EVID_MOTION:
             y_files_list += ev->u.motion.yrel;
@@ -467,23 +472,18 @@ void register_events(void)
 
 #ifndef ANDROID
         // if not running on android then provide control to simulate landscape orientation;
-        // this feature is provided for development testing
-        reg_event(sdlx_win_width-sdlx_char_width_dflt, 0, COLOR_LIGHT_BLUE, "H", EVID_TEST_FORCE_LANDSCAPE);
+        // this is provided for development test
+        reg_event(COL2X(1), 0, COLOR_LIGHT_BLUE, "H", EVID_TEST_FORCE_LANDSCAPE);
 #endif
     }
+
+    // register EVID_SHOW_README_FILE event
+    reg_event_show_readme_file();
 
     // register control events
     sdlx_register_control_events(EVID_SETTINGS, "STG",
                                  EVID_SHOW_CONTROLS, (!show_controls ? "SHOW" : "HIDE"),
                                  EVID_QUIT, "X");
-}
-
-void reg_event(int x, int y, sdlx_color_t color, char *name, int event_id)
-{
-    sdlx_loc_t *loc;
-
-    loc = sdlx_render_printf_ex1(x, y, FONT_NORMAL, color, "%s", name);
-    sdlx_register_event(loc, event_id);
 }
 
 // -----------------  UTILS  -----------------------------------------

@@ -39,9 +39,20 @@ E G C D E
 F F F F F E E
 G G F D C
 
+TITLE ag 5  # Amazing Grace
+C E G E G E D C      # A-ma-zing grace! How sweet the sound
+C E G E G A C        # That saved a wretch like me!
+C C A G E G E D C    # I once was lost, but now am found
+C E G E G A C        # Was blind, but now I see.
+
+TITLE doremi3 3  # Natural notes in octave 3
+C D E F G A B
+
 TITLE doremi4 4  # Natural notes in octave 4
 C D E F G A B
 
 TITLE doremi5 5  # Natural notes in octave 5
 do re mi fa sol la ti
 
+TITLE doremi6 6  # Natural notes in octave 6
+C D E F G A B

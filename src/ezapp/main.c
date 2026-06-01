@@ -311,7 +311,7 @@ static void print_type_sizes(void)
 
 // -----------------  PROCESSING  ------------------------------------
 
-#define MAX_APPS 100
+#define MAX_APPS (20 * 18)  // max of 20 pages
 
 static char *apps[MAX_APPS];
 static int   max_apps;
@@ -655,6 +655,7 @@ static void get_list_of_apps(void)
 
         // store the app names, just read, to the apps[] array;
         // ignoring app names that are "-"
+        // xxx check for overflow
         for (i = 0; i < 3; i++) {
             if (strcmp(s[i], "-") != 0) {
                 apps[max_apps] = strdup(s[i]);

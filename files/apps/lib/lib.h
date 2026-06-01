@@ -33,4 +33,9 @@ void str_sanitize(char *s);
 // show file
 void show_file(char *dir, char *filename);
 
+// event registration
+#define EVID_SHOW_README_FILE 9900
+void reg_event(int x, int y, sdlx_color_t color, char *name, int event_id);
+void reg_event_show_readme_file(void);
+
 #endif

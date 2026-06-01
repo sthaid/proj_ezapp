@@ -168,7 +168,7 @@ static void page_hndlr()
         sdlx_print_set_default(FONT_NORMAL, COLOR_WHITE);
 
         // draw title line
-        sdlx_render_printf_ex2(sdlx_win_width/2, 0, FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, "%s", page_title[pagenum]);
+        sdlx_render_printf_ex2(sdlx_win_width/2, 50, FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, "%s", page_title[pagenum]);
 
         // draw display
         switch (pagenum) {
@@ -190,6 +190,9 @@ static void page_hndlr()
             end_program = true;
             return;
         }
+
+        // register EVID_SHOW_README_FILE event
+        reg_event_show_readme_file();
 
         // register control events
         // "<" - previous page
@@ -226,6 +229,9 @@ static void page_hndlr()
                 new_pagenum = 0;
             }
             break;      
+        case EVID_SHOW_README_FILE:
+            show_file(data_dir, "README");
+            break;
         }
 
         // if the page has been changed or the program is terminating
@@ -314,7 +320,7 @@ static void page_0_draw(void)
 
     // register event to crash this app
     sdlx_loc_t *loc = sdlx_render_printf_ex1(0, sdlx_win_height-2*sdlx_char_height_dflt, 
-                                             FONT_NORMAL, COLOR_LIGHT_BLUE, "CRASH");
+                                             FONT_NORMAL, COLOR_LIGHT_BLUE, "CRASHME");
     sdlx_register_event(loc, EVID_CRASH);
 }
 
@@ -333,7 +339,7 @@ static void page_0_process_event(sdlx_event_t *ev)
         bool do_crash = (strcasecmp(yn, "y") == 0);
         sdlx_show_toast(do_crash ? "CRASHING EZAPP" : "ABORTED");
         if (do_crash) {
-            printf("I %s: dereference null ptr\n", progname);
+            printf("I %s: dereference invalid ptr\n", progname);
             printf("I %s: %d\n", progname, *null_ptr);
         }
         break; }
@@ -570,15 +576,15 @@ static void page_5_draw(void)
     // - set render target back to the display
     sdlx_set_render_target(NULL);
 
-    // render textur1 to the display coords 0,100, without scaling
-    sdlx_render_texture(texture1, 0, 100);
+    // render textur1 to the display coords 0,200, without scaling
+    sdlx_render_texture(texture1, 0, 200);
 
-    // render texture1 to the display coords 0, 1200, scaling to half size
-    sdlx_render_texture_ex1(texture1, 0, 1200, 500, 500);
+    // render texture1 to the display coords 0, 1300, scaling to half size
+    sdlx_render_texture_ex1(texture1, 0, 1300, 500, 500);
 
     // render texture 2, a blue square, just to the right of the 
     // previous rendering of textur1
-    sdlx_render_texture(texture2, 500, 1200);
+    sdlx_render_texture(texture2, 500, 1300);
 
     // destroy texture1
     sdlx_destroy_texture(texture1);
@@ -749,7 +755,7 @@ static void page_7_draw(void)
     char              *state_str;
     bool               is_recording;
     sdlx_loc_t        *loc;
-    double             row=1;
+    double             row=2;
 
     // get audio state
     sdlx_audio_get_state(&state);
@@ -1087,7 +1093,7 @@ static void page_9_init(void)
 static void page_9_draw(void)
 {
     float         data[3];
-    int           row = 2;
+    int           row = 3;
     int           rc;
     unsigned long step_count;
     double        mag_heading, roll, pitch, millibars;
@@ -1149,7 +1155,7 @@ static void page_10_draw(void)
 {
     double lat, lng, alt;
     bool   alt_is_wgs84;
-    int    row=2;
+    int    row=3;
     char   s[50];
 
     util_get_location(&lat, &lng, &alt, &alt_is_wgs84);

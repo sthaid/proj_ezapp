@@ -1,15 +1,17 @@
+# Max 20 pages
+
 # -------- Page 0 --------
 Compass     Clock       Steps
 Location    Altitude    Weather
 Calc        Tilt        Memo
 ColrOrgn    Piano       Morse
-Reversi     Paddle      -
+FlshLite    -           -
 -           Log         Settings
 
 # -------- Page 1 --------
-FlshLite    Light       Test
+Reversi     Paddle      -
 -           -           -
--           -           -
+Test        Light       Template
 -           -           -
 -           -           -
 -           Log         Settings

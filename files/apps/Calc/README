@@ -2,11 +2,12 @@ NAME: Calc
 
 DESCRIPTION:
 
-Calculator supports Hex / Decimal, in either 32 or 64 bits.
+Calculator supports Hex and Decimal, 
+32 or 64 bits.
 
-Binary bitwise operators:     & | ^ << >>
-Unary bitwise operators:      ~
-Binary Arithmetic operators:  + - * /
+Binary bitwise ops:     & | ^ << >>
+Unary bitwise ops:      ~
+Binary Arithmetic ops:  + - * /
 
 Floating point is not supported
 

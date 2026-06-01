@@ -84,6 +84,9 @@ int main(int argc, char **argv)
         // render display and register for events
         display_update();
 
+        // register EVID_SHOW_README_FILE event
+        reg_event_show_readme_file();
+
         // register control event to end program
         sdlx_register_control_events(EVID_HLOCK, Xlock ? "UNLOCK" : "LOCK",
                                      0, NULL,
@@ -341,6 +344,9 @@ void process_event(sdlx_event_t *event)
             }
             if (fabs(yrel) > fabs(xrel)*1.5) Y += yrel;
             if (Y > 0) Y = 0;
+            break;
+        case EVID_SHOW_README_FILE:
+            show_file(data_dir, "README");
             break;
         case EVID_QUIT:
             // end program

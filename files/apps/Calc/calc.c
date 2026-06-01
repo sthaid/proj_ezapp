@@ -5,8 +5,10 @@
 #include <sdlx.h>
 #include <utils.h>
 
+#include "apps/lib/lib.h"
+
 // display locations
-#define DISPLAY_Y_TOP       100
+#define DISPLAY_Y_TOP       150
 #define BUTTONS_X_LEFT      100
 #define BUTTONS_Y_TOP       (DISPLAY_Y_TOP + 350)
 #define BUTTONS_SPACING     200
@@ -126,6 +128,9 @@ int main(int argc, char **argv)
         // update number display
         update_number_display(display_value, error);
 
+        // register EVID_SHOW_README_FILE event
+        reg_event_show_readme_file();
+
         // register control event to end program
         sdlx_register_control_events(0, NULL,
                                      0, NULL,
@@ -150,9 +155,13 @@ int main(int argc, char **argv)
             continue;
         }
 
-        // if quit event then end program
+        // handle events that are not calculator button presses
         if (event.event_id == EVID_QUIT) {
             break;
+        }
+        if (event.event_id == EVID_SHOW_README_FILE) {
+            show_file(data_dir, "README");
+            continue;
         }
 
         // calculator button has been pressed ...
