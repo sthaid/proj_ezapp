@@ -9,6 +9,8 @@
 #include <sdlx.h>
 #include <utils.h>
 
+#include "apps/lib/lib.h"
+
 // NOTES:
 // - word list is from here:
 //     https://gist.github.com/shmookey/b28e342e1b1756c4700f42f17102c2ff
@@ -77,6 +79,9 @@ int main(int argc, char **argv)
 
         // get current audio state, used in code that follows
         sdlx_audio_get_state(&state);
+
+        // register EVID_SHOW_README_FILE event
+        reg_event_show_readme_file();
 
         // register control events:
         // - 'X' end program
@@ -157,6 +162,9 @@ int main(int argc, char **argv)
                 wpm--;
                 util_set_numeric_param(data_dir, "wpm", wpm);
             }
+            break;
+        case EVID_SHOW_README_FILE:
+            show_file(data_dir, "README");
             break;
         case EVID_QUIT:
             done = true;

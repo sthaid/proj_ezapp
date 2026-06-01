@@ -8,6 +8,8 @@
 #include <sdlx.h>
 #include <utils.h>
 
+#include "apps/lib/lib.h"
+
 //
 // defines
 //
@@ -179,6 +181,7 @@ int main(int argc, char **argv)
             run();
         }
 
+// xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         // display scores
         sdlx_render_printf_ex1(0, 0, FONT_LARGE, COLOR_WHITE, "%d", computer_score);
         sdlx_render_printf_ex1(sdlx_win_width-2*sdlx_char_width(FONT_LARGE), 0,
@@ -193,6 +196,9 @@ int main(int argc, char **argv)
         sdlx_render_texture(ball, x-BALL_RADIUS, y-BALL_RADIUS);
         sdlx_render_fill_rect(human_paddle_x-PADDLE_W/2, human_paddle_y-PADDLE_H/2, PADDLE_W, PADDLE_H, COLOR_WHITE);
         sdlx_render_fill_rect(computer_paddle_x-PADDLE_W/2, computer_paddle_y-PADDLE_H/2, PADDLE_W, PADDLE_H, COLOR_WHITE);
+
+        // register EVID_SHOW_README_FILE event
+        reg_event_show_readme_file();
 
         // register game control events
         sdlx_register_event(NULL, EVID_MOTION);
@@ -259,6 +265,9 @@ int main(int argc, char **argv)
                 break;
             case EVID_MOTION:
                 human_paddle_x += event.u.motion.xrel;
+                break;
+            case EVID_SHOW_README_FILE:
+                show_file(data_dir, "README");
                 break;
             }
         }

@@ -10,6 +10,8 @@
 
 #include "svcs/Location/location.h"
 
+#include "apps/lib/lib.h"
+
 //
 // defines
 //
@@ -131,6 +133,9 @@ int main(int argc, char **argv)
         sdlx_render_multiline_text(0, y_history_top, y_history_display_begin, y_history_display_end, 
                                    FONT_NORMAL, loc_hist_lines, NULL, loc_hist->count);
 
+        // register EVID_SHOW_README_FILE event
+        reg_event_show_readme_file();
+
         // register for events
         sdlx_register_event(NULL, EVID_MOTION);
         sdlx_register_control_events(EVID_SETTINGS, "stg",
@@ -147,6 +152,9 @@ int main(int argc, char **argv)
         switch (event.event_id) {
         case EVID_QUIT:
             done = true;
+            break;
+        case EVID_SHOW_README_FILE:
+            show_file(data_dir, "README");
             break;
         case EVID_SETTINGS:
             settings();

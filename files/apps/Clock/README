@@ -23,4 +23,4 @@ the calculated and web obtained times.
 Obtaining the sunrise/sunset times from
   https://api.sunrise-sunset.org
 was done during development, that code 
-code is now commented out.
+is now commented out.

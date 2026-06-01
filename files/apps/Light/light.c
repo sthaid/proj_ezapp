@@ -4,6 +4,8 @@
 #include <sdlx.h>
 #include <utils.h>
 
+#include "apps/lib/lib.h"
+
 // defines
 #define EVID_SET_COLOR_WHITE 1
 #define EVID_SET_COLOR_RED   2
@@ -37,6 +39,9 @@ int main(int argc, char **argv)
         // init the backbuffer
         sdlx_display_init(color, PORTRAIT);
 
+        // register EVID_SHOW_README_FILE event
+        reg_event_show_readme_file();
+
         // register control events to
         // - set color either to white or red, or
         // - end program
@@ -59,6 +64,9 @@ int main(int argc, char **argv)
         case EVID_SET_COLOR_RED:
             color = COLOR_RED;
             util_set_numeric_param(data_dir, "color", color);
+            break;
+        case EVID_SHOW_README_FILE:
+            show_file(data_dir, "README");
             break;
         case EVID_QUIT:
             done = true;

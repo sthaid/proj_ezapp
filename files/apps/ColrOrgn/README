@@ -9,7 +9,7 @@ The Color Organ display is selectable:
 
 Filter options:
 - SNAP: intensity snaps to higher level,
-         then gradually reduces
+        then gradually reduces
 - EXP:  exponential smoothing
 - NONE: no filtering
 

@@ -75,7 +75,7 @@ int main(int argc, char **argv)
 
     // init variables which define the vertical region of the display
     // being used for the filename list
-    y_top    = 100;
+    y_top    = 150;
     y_bottom = sdlx_win_height - BAR_AREA_HEIGHT;
     y        = y_top;
 
@@ -161,6 +161,9 @@ int main(int argc, char **argv)
             sdlx_render_rect(0, y2, sdlx_win_width, BAR_HEIGHT, 2, COLOR_WHITE);
         }
 
+        // register EVID_SHOW_README_FILE event
+        reg_event_show_readme_file();
+
         // register motion and control events
         sdlx_register_event(NULL, EVID_MOTION);
         sdlx_register_control_events(EVID_NEW, "+",
@@ -208,6 +211,8 @@ int main(int argc, char **argv)
         } else if (event.event_id >= EVID_DELETE && event.event_id < EVID_DELETE + max_filename) {
             int idx = event.event_id - EVID_DELETE;
             util_delete_file(data_dir, filename[idx]);
+        } else if (event.event_id == EVID_SHOW_README_FILE) {
+            show_file(data_dir, "README");
         } else if (event.event_id == EVID_QUIT) {
             end_program = true;
         }
