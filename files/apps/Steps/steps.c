@@ -243,6 +243,9 @@ void draw_display(void)
                                  FONT_NORMAL, COLOR_LIGHT_BLUE, "STG");
     sdlx_register_event(loc, EVID_SETTINGS);
 
+    // register EVID_SHOW_README_FILE event
+    reg_event_show_readme_file();
+
     // register control event
     sdlx_register_control_events(EVID_PRIOR, "<",
                                  EVID_NEXT, ">",
@@ -258,6 +261,10 @@ void process_event(sdlx_event_t *event)
     switch (event->event_id) {
     case EVID_QUIT:
         end_program = true;
+        break;
+
+    case EVID_SHOW_README_FILE:
+        show_file(data_dir, "README");
         break;
 
     case EVID_VIEW_SELECT:

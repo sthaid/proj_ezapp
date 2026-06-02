@@ -120,6 +120,8 @@ int main(int argc, char **argv)
         // process the event
         if (event.event_id == EVID_QUIT) {
             break;
+        } else if (event.event_id == EVID_SHOW_README_FILE) {
+            show_file(data_dir, "README");
         } else if (event.event_id == EVID_GAME_RESET) {
             game_state = GAME_STATE_READY;
             game_init(&board);
@@ -346,6 +348,9 @@ static void update_display_and_register_events(board_t *b, int game_state, char 
             sdlx_render_printf(x_origin+2*info_circle_radius+10, Y_TOP+1200, "%c %d", is_turn ? '*' : ' ', piece_cnt);
         }
     }
+
+    // register EVID_SHOW_README_FILE event
+    reg_event_show_readme_file();
 
     // register control event to end program
     sdlx_register_control_events(0, NULL,

@@ -6,6 +6,8 @@
 #include <sdlx.h>
 #include <utils.h>
 
+#include "apps/lib/lib.h"
+
 //
 // defines
 //
@@ -162,6 +164,7 @@ void no_accelerometer(void)
     sdlx_event_t event;
 
     sdlx_display_init(COLOR_BLACK, PORTRAIT);
+    reg_event_show_readme_file();
     sdlx_register_control_events(0, NULL,
                                  0, NULL,
                                  EVID_QUIT, "X");
@@ -174,6 +177,9 @@ void no_accelerometer(void)
     switch (event.event_id) {
     case EVID_QUIT:
         end_program = true;
+        break;
+    case EVID_SHOW_README_FILE:
+        show_file(data_dir, "README");
         break;
     }
 }
@@ -320,6 +326,9 @@ void display_tilt_horizontal(double ax, double ay, double az, double roll_raw, d
     // display dot at center of bulls_eye
     sdlx_render_point(xctr, yctr, COLOR_BLACK, 9);
 
+    // register EVID_SHOW_README_FILE event
+    reg_event_show_readme_file();
+
     // register control event to
     // - end program
     // - adjust max_bulls_eye
@@ -359,6 +368,9 @@ void display_tilt_horizontal(double ax, double ay, double az, double roll_raw, d
             max_bulls_eye--;
             util_set_numeric_param(data_dir, "max_bulls_eye", max_bulls_eye);
         }
+        break;
+    case EVID_SHOW_README_FILE:
+        show_file(data_dir, "README");
         break;
     case EVID_QUIT:
         end_program = true;
@@ -553,6 +565,11 @@ void display_tilt_vertical(double ax, double ay, double az, double roll, double 
     }
     sdlx_register_event(loc, EVID_VERT_CALIBRATE);
 
+    // register EVID_SHOW_README_FILE event
+    if (rotate_deg == 0) {
+        reg_event_show_readme_file();
+    }
+
     // register control event to adjust the arc span and end-program
     sdlx_register_control_events(EVID_VERT_MINUS, "-",
                                  EVID_VERT_PLUS, "+",
@@ -584,6 +601,9 @@ void display_tilt_vertical(double ax, double ay, double az, double roll, double 
         if (arc_span_deg > 90) arc_span_deg = 90;
         arc_span_rad = arc_span_deg * DEG_TO_RAD;
         util_set_numeric_param(data_dir, "arc_span_deg", arc_span_deg);
+        break;
+    case EVID_SHOW_README_FILE:
+        show_file(data_dir, "README");
         break;
     case EVID_QUIT:
         end_program = true;

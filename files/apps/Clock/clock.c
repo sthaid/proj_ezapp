@@ -127,10 +127,10 @@ int main(int argc, char **argv)
         case EVID_QUIT:
             quit = true;
             break;
-        }
         case EVID_SHOW_README_FILE:
             show_file(data_dir, "README");
             break;
+        }
     }
 
     // cleanup and end program

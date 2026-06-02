@@ -8,6 +8,8 @@
 #include <sdlx.h>
 #include <utils.h>
 
+#include "apps/lib/lib.h"
+
 //
 // defines
 //
@@ -135,6 +137,9 @@ int main(int argc, char **argv)
                                    "%s", state);
         }
 
+        // register EVID_SHOW_README_FILE event
+        reg_event_show_readme_file();
+
         // register events
         mode_str = (mode == DAILY         ? "Day" :
                    (mode == DAY_AND_NIGHT ? "D+N" 
@@ -160,6 +165,9 @@ int main(int argc, char **argv)
         switch (event.event_id) {
         case EVID_QUIT:
             end_program = true;
+            break;
+        case EVID_SHOW_README_FILE:
+            show_file(data_dir, "README");
             break;
         case EVID_RELOAD_FORECAST:
             state = "Loading";
@@ -863,6 +871,9 @@ void display_detailed_forecast(int idx)
             util_text_to_speech(x->detailed_forecast);
         }
 
+        // register EVID_SHOW_README_FILE event
+        reg_event_show_readme_file();
+
         // register events
         sdlx_register_control_events(EVID_PREVIOUS, "^",
                                      EVID_NEXT, "v",
@@ -879,6 +890,9 @@ void display_detailed_forecast(int idx)
         case EVID_QUIT:
             util_text_to_speech_stop();
             done = true;
+            break;
+        case EVID_SHOW_README_FILE:
+            show_file(data_dir, "README");
             break;
         case EVID_PREVIOUS: {
             forecast_t *fc = (mode == HOURLY ? &hourly[0] : &daily[0]);
