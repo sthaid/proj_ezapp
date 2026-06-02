@@ -385,6 +385,7 @@ void show_file(char *data_dir, char *filename)
     char        *lines[1];
     sdlx_color_t colors[1];
     int          orient, new_orient;
+    bool         orient_changed;
     int          fontid;
 
     // get fontid from params file
@@ -409,14 +410,16 @@ void show_file(char *data_dir, char *filename)
     while (true) {
         // handle change of display orientation
         new_orient = get_device_orientation();
-        if (new_orient != orient) {
-            x = 0;
-            y = y_top;
-            orient = new_orient;
-        }
+        orient_changed = (new_orient != orient);
+        orient = new_orient;
 
         // display file lines and register for motion (scrolling) & exit events
         sdlx_display_init(COLOR_WHITE, orient);
+        if (orient_changed) {
+            x = 0;
+            y = y_top;
+            y_bottom  = sdlx_win_height;
+        }
         sdlx_render_multiline_text(x, y, y_top, y_bottom, fontid, lines, colors, 1);
         sdlx_register_control_events(EVID_README_FONT_SELECT, "FONT", 0, NULL, EVID_QUIT, "X");
         sdlx_register_event(NULL, EVID_MOTION);

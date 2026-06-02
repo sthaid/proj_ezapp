@@ -2,15 +2,20 @@
 
 # Usage:
 # - this must be invoked from an app or svc directory
-# - the git tracked files in this directory are transferred to the Android device
-# - if additional files need to be sent the additinal files are specified on the cmdline
-# - examples, (note - the current dir must be an app or svc director):
-#   - when making updates to an existing app or svc
-#       ezput
-#   - when making updates to an existing app and apps/lib files have also been updated
-#       ezput apps/lib/*.[ch]
-#   - when adding or updating a new app, that is not yet tracked by git
-#       ezput apps/MyNewApp/* apps/layout
+# - with no args, the git tracked files in this directory are transferred to the Android device
+# - with args, the files specified in the args are transferred to the Android device
+#
+# - examples:
+#   - ezput                    # sends git tracked files from this dir to android
+#   - ezput apps/layout        # sends just the apps/layout file to android
+#   - ezput apps/lib/lib.[ch]  # sends apps/lib/lib.[ch] to android
+
+# verify current dir is in a git repo
+top=$(git rev-parse --show-toplevel)
+if [ $? -ne 0 ]; then
+    echo "ERROR: not in git repo"
+    exit 1
+fi
 
 # verify parent directory is 'apps' or 'svcs'
 parent_dir=$(basename $(dirname $PWD))
@@ -27,26 +32,29 @@ else
   code_dir="svcs/$this_dir"
 fi
 
-# if more_files are specified in the caller args then 
+# if files are specified in the caller args then 
 # - check that the file does not begin with '..' or '/'
-# - add the additional files to more_files variable
 # endif
 for i in $*; do
   if [[ "$i" == ".."* || "$i" == "/"* ]]; then
     echo "ERROR: $i invalid filename"
     exit 1
   fi
-  more_files="$more_files $i"
+  specified_files="$specified_files $i"
 done
 
 # copy to Android:
 # - git tracked files that are in the app/svc dir
 # - more files which the caller has requested on the cmdline
 cd ../..
-files="$(git ls-files $code_dir) $more_files"
-if [ "$files" = " " ]; then
-  echo "ERROR: no files"
-  exit 1
+if [ "$specified_files" != "" ]; then
+  files="$specified_files"
+else
+  files="$(git ls-files $code_dir)"
+  if [ "$files" = "" ]; then
+    echo "ERROR: no files"
+    exit 1
+  fi
 fi
 tar -cf /tmp/ezput.tar  $files
 if [ $? -ne 0 ]; then

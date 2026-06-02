@@ -1,36 +1,3 @@
-#include "apps/lib/lib.h"
-
-        // register EVID_SHOW_README_FILE event
-        reg_event_show_readme_file();
-
-        case EVID_SHOW_README_FILE:
-            show_file(data_dir, "README");
-            break;
-
-
-drwxrwxr-x 2 haid haid 4.0K May 30 08:32 Altitude            k
-drwxrwxr-x 2 haid haid 4.0K May 21 07:38 Calc                k
-drwxrwxr-x 2 haid haid 4.0K May 23 10:17 Clock                k
-drwxrwxr-x 3 haid haid 4.0K May 30 19:58 ColrOrgn            k
-drwxrwxr-x 2 haid haid 4.0K Jun  1 06:58 Compass               k            CHECK
-drwxrwxr-x 2 haid haid 4.0K May 21 07:43 FlshLite            k
-drwxrwxr-x 2 haid haid 4.0K Jun  1 07:08 Light              k
-drwxrwxr-x 2 haid haid 4.0K May 25 09:01 Location           k
-drwxrwxr-x 2 haid haid 4.0K May 31 09:11 Log               X
-drwxrwxr-x 2 haid haid 4.0K May 30 08:36 Memo                k
-drwxrwxr-x 2 haid haid 4.0K May 21 07:58 Morse             k
-drwxrwxr-x 2 haid haid 4.0K May 29 07:37 Paddle             in progress
-drwxrwxr-x 2 haid haid 4.0K Jun  1 07:47 Piano               k
-drwxrwxr-x 2 haid haid 4.0K May 31 19:27 Reversi             k
-drwxrwxr-x 2 haid haid 4.0K May 30 15:27 Steps           k
-drwxrwxr-x 2 haid haid 4.0K Jun  1 07:26 Template               k
-drwxrwxr-x 2 haid haid 4.0K Jun  1 07:53 Test                   k
-drwxrwxr-x 2 haid haid 4.0K May 31 08:17 Tilt          k
-drwxrwxr-x 3 haid haid 4.0K May 30 17:12 Weather
-drwxrwxr-x 2 haid haid 4.0K Jun  1 06:40 lib
-
-
-dont require lib symlink
 
 ------------ RECHECK ------------------
 
@@ -41,7 +8,13 @@ audio: - audio code review and retest
 
 ---------- TODO -----------------
 
-can show_file be used by Log?
+ezput, 
+- when files are listed, just send those
+ezgetall
+- uploads all, including dat files
+
+
+y_top or bottom issue when rotating README, in piano
 
 add Docs app or '?' option on control bar        <===========
 - display the README files for the apps and svcs
