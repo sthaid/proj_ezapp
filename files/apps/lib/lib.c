@@ -403,7 +403,7 @@ void show_file(char *data_dir, char *filename)
     y_top     = 25;
     y_bottom  = sdlx_win_height;
     y         = y_top;
-    orient    = get_device_orientation();
+    orient    = -1;
     colors[0] = COLOR_BLACK;
 
     // display filename lines
