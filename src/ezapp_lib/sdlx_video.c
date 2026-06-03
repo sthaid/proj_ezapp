@@ -2,8 +2,8 @@
 #include <sys/queue.h>
 
 #include <sdlx.h>
-#include <logging.h>
 #include <utils.h>
+#include <private.h>
 
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>

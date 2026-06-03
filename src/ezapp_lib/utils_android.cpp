@@ -4,7 +4,7 @@
 
 #include <sdlx.h>
 #include <utils.h>
-#include <logging.h>
+#include <private.h>
 
 #include <SDL3/SDL.h>
 #include <jni.h>
@@ -313,6 +313,7 @@ double call_java3(const char *method_name, float *caller_array, int num_array_el
 // -----------------  NOT ANDROID - TEST CODE  ---------------------------
 
 #include <utils.h>
+#include <private.h>
 
 void util_android_utils_init(void) { }
 

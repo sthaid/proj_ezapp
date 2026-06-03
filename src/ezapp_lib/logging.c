@@ -1,6 +1,6 @@
 #include <std_hdrs.h>
-#include <logging.h>
 #include <sdlx.h>
+#include <private.h>
 
 // ----------------- LOG_MSG -------------------------
 
@@ -31,6 +31,7 @@ void log_msg(const char *lvl, const char *func, const char *fmt, ...)
 
 #include <SDL3/SDL.h>
 #include <android/log.h>
+#include <private.h>
 
 #define ANDROID_LOG_FIFO "log_fifo"
 
@@ -134,7 +135,9 @@ done:
     
 #else
 
-// ------------- NOT ANDROID LOGGING SUPPORT ---------
+// ------------- LINUX LOGGING -----------------
+
+#include <private.h>
 
 // When this code is running on Linux, there is no logging thread.
 // The log_msg routine print to stderr is not redirected to a fifo

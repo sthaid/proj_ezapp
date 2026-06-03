@@ -5,9 +5,7 @@
 extern "C" {
 #endif
 
-// ======================================================
-// ================= AVAIL IN PICOC =====================
-// ======================================================
+#define INVALID_NUMBER 999999999
 
 // --------------------
 // VIDEO    
@@ -314,76 +312,11 @@ void sdlx_get_event(long timeout_us, sdlx_event_t *event);
 // MISC
 // --------------------
 
-#define INVALID_NUMBER 999999999
-
 // android show toast
 void sdlx_show_toast(char *message);
 
 // get string, uses virtual keyboard on Android
 char *sdlx_get_input_str(char *prompt, bool numeric_keybd, char *dflt_input_str);
-
-// ======================================================
-// ================= NOT AVAIL IN PICOC =================
-// ======================================================
-
-// xxx move all non picoc to private file
-
-#define ATTRIBUTE_UNUSED __attribute__((unused))
-
-// sdlx_video.c
-extern double      scale_events_x;
-extern double      scale_events_y;
-extern int         orientation;
-extern int         logical_win_width, logical_win_height;
-extern int         logical_win_width_portrait, logical_win_height_portrait;
-extern int         logical_win_width_landscape, logical_win_height_landscape;
-
-int sdlx_video_init(void);
-void sdlx_video_quit(void);
-void sdlx_minimize_window(void);
-
-// sdlx_audio.c
-#ifdef ANDROID
-    #define DEFAULT_RECORD_GAIN 5
-#else
-    #define DEFAULT_RECORD_GAIN 1
-#endif
-#define DEFAULT_RECORD_SILENCE 0.1
-
-typedef struct {
-    double record_gain;
-    double record_silence;
-} sdlx_audio_params_t;
-
-int sdlx_audio_init(void);
-void sdlx_audio_quit(void);
-void sdlx_audio_main_thread_periodic(void);
-void sdlx_audio_set_params(sdlx_audio_params_t *ap);
-void sdlx_audio_get_params(sdlx_audio_params_t *ap);
-
-// sdlx_sensor.c
-int sdlx_sensor_init(void);
-void sdlx_sensor_quit(void);
-
-// sdlx_event.c
-#define CONTROL_AREA_SIZE 150
-
-void sdlx_reset_events(void);
-void sdlx_event_box_ctrl(bool event_box_enable);
-
-// sdlx_misc.c
-#define SUBSYS_VIDEO  1
-#define SUBSYS_AUDIO  2
-#define SUBSYS_SENSOR 4
-
-int sdlx_init(int subsys);
-void sdlx_quit(int subsys);
-char *sdlx_get_storage_path(void);
-void sdlx_copy_asset_file(char *asset_filename, char *dest_dir);
-int sdlx_get_permission(char *name);
-int sdlx_create_detached_thread_private(int (*thread_fn)(void*), char *thread_name, void *cx);
-#define sdlx_create_detached_thread(thread_fn, cx) \
-    do { sdlx_create_detached_thread_private(thread_fn, #thread_fn, cx); } while (0)
 
 #ifdef __cplusplus
 }

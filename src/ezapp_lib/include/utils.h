@@ -5,10 +5,6 @@
 extern "C" {
 #endif
 
-// ====================================================
-// ================= AVAIL IN PICOC ===================
-// ====================================================
-
 // --------------------
 // TIME UTILS
 // --------------------
@@ -129,17 +125,6 @@ void util_toggle_flashlight(void);
 int util_start_playbackcapture(void);
 void util_stop_playbackcapture(void);
 int util_get_playbackcapture_audio(float *array, int num_array_elements);
-
-// ========================================================
-// ================= NOT AVAIL IN PICOC ===================
-// ========================================================
-
-void util_android_utils_init(void);
-void util_android_utils_destroy(void);
-
-void util_start_foreground(void);
-void util_stop_foreground(void);
-bool util_is_foreground_enabled(void);
 
 #ifdef __cplusplus
 }

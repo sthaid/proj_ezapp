@@ -8,17 +8,12 @@ audio: - audio code review and retest
 
 ---------- TODO -----------------
 
-ezput, 
-- when files are listed, just send those
+marking of altered SDL source
+
 ezgetall
 - uploads all, including dat files
 
-
-y_top or bottom issue when rotating README, in piano
-
-add Docs app or '?' option on control bar        <===========
-- display the README files for the apps and svcs
-- or '?' to each app
+separate include files to differentiate picoc vs non-picoc <===========
 
 developer mode password
 - force it to be init      <=======
@@ -43,11 +38,9 @@ Apps
 - Paddle
   - adjust difficulty
 - Reversi
-  - cleanup                                  <==========
-  - move Undo                                <==============
+  - move Undo   <==============
 - Steps
   - highlight today in Steps month view
-- dont use the top line in apps, such as Reversi and Test      <=======
 
 new camera app
 

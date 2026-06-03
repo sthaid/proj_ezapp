@@ -1,7 +1,9 @@
 #include "../interpreter.h"
+
 #include <sdlx.h>
 #include <utils.h>
 #include <svcs.h>
+#include <private.h>
 
 struct StdVararg
 {

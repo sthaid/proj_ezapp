@@ -1,7 +1,7 @@
 #include <std_hdrs.h>
 
 #include <utils.h>
-#include <logging.h>
+#include <private.h>
 
 #include <cJSON.h>
 #include <lodepng.h>

@@ -3,7 +3,7 @@
 #include <sdlx.h>
 #include <utils.h>
 #include <svcs.h>
-#include <logging.h>
+#include <private.h>
 #include <picoc_ezapp.h>
 
 #ifdef ANDROID

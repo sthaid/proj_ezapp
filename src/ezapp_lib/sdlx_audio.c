@@ -2,10 +2,11 @@
 
 #include <sdlx.h>
 #include <utils.h>
-#include <logging.h>
-#include <lame.h>
+#include <private.h>
+
 #include <SDL3/SDL.h>
 #include <SDL3_mixer/SDL_mixer.h>
+#include <lame.h>
 
 // Capabilities:
 // - record from microphone

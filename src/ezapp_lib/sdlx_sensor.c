@@ -2,7 +2,7 @@
 
 #include <sdlx.h>
 #include <utils.h>
-#include <logging.h>
+#include <private.h>
 
 #include <SDL3/SDL.h>
 

@@ -1,7 +1,7 @@
 #include <std_hdrs.h>
 
 #include <svcs.h>
-#include <logging.h>
+#include <private.h>
 
 //
 // routines called by apps
