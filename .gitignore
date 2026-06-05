@@ -5,6 +5,8 @@ src/ezapp/version.h
 src/picoc/devel/libgen_out1.h
 src/picoc/devel/libgen_out2.h
 src/picoc/devel/libgen
+src/openssl/libs
+src/openssl/include
 
 linux/build
 linux/local
