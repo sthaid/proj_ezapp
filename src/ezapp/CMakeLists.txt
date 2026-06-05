@@ -26,5 +26,5 @@ target_link_libraries(ezapp PRIVATE
     ${LIB_PATH}/libkissfft-float.a
     ${LIB_PATH}/libcJSON.a
     ${LIB_PATH}/liblodepng.a
-    m)
+    m crypto)
 

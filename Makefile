@@ -1,5 +1,5 @@
 
-SUBDIRS := bin/src linux android 
+SUBDIRS := bin/src src/openssl linux android 
 APPS    := $(sort $(dir $(wildcard files/apps/*/.)))
 APPS    := $(filter-out files/apps/lib/, $(APPS))
 SVCS    := $(sort $(dir $(wildcard files/svcs/*/.)))

@@ -12,6 +12,7 @@ set(LIB_SRCS
     sdlx_video.c
     svcs.c
     utils.c
+    utils_openssl.c
     utils_android.cpp
     logging.c
 )

@@ -67,6 +67,7 @@ ln -s $REPO_TOP/src/picoc .
 ln -s $REPO_TOP/src/SDL_mixer .
 ln -s $REPO_TOP/src/SDL_ttf .
 ln -s $REPO_TOP/src/ezapp_lib .
+ln -s $REPO_TOP/src/openssl .
 cd $BUILD_DIR/app/jni/src
 ln -s $REPO_TOP/src/ezapp/main.c .
 ln -s $REPO_TOP/src/ezapp/std_hdrs.h .

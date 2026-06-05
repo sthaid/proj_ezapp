@@ -126,6 +126,13 @@ int util_start_playbackcapture(void);
 void util_stop_playbackcapture(void);
 int util_get_playbackcapture_audio(float *array, int num_array_elements);
 
+// ----------------------
+// OPENSSL
+// ----------------------
+
+unsigned char *openssl_keygen(char *password);
+//xxx more needed
+
 #ifdef __cplusplus
 }
 #endif

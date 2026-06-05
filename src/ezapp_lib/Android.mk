@@ -12,7 +12,8 @@ LOCAL_C_INCLUDES += $(LOCAL_PATH)/include \
                     $(LOCAL_PATH)/../cJSON/include \
                     $(LOCAL_PATH)/../kissfft/include \
                     $(LOCAL_PATH)/../lodepng/include \
-                    $(LOCAL_PATH)/../picoc/include
+                    $(LOCAL_PATH)/../picoc/include \
+                    $(LOCAL_PATH)/../openssl/include
 
 LOCAL_SRC_FILES := \
     logging.c \
@@ -23,6 +24,7 @@ LOCAL_SRC_FILES := \
     sdlx_video.c \
     svcs.c \
     utils.c \
+    utils_openssl.c \
     utils_android.cpp 
 
 LOCAL_CFLAGS := -O2

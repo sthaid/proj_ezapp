@@ -1,3 +1,106 @@
+add more utils_openssl routines
+
+run prebuild from top level, and clobber it too
+
+test
+- prebuild
+- android keygen
+- linux build and run
+
+
+xxxxxxxxxxxxxxxxxxx
+
+https://github.com/google/boringssl
+
+- - -
+
+However, if you are writing native C/C++ code via the Android NDK and must bundle your own cryptographic library, you should use OpenSSL
+
+"provide C language example of Symmetric Encryption/Decryption using openSSL"
+
+https://github.com/openssl/openssl
+
+"how to build openssl for android NDK"
+
+"provide C language example of Symmetric Encryption/Decryption using openSSL with nonce"
+
+C example openssl encryption and decryption with nonce
+
+12 byte nonce is best
+
+key len
+AES-256-GCM: Requires 32 bytes (256 bits) — Recommended for maximum security.
+AES-192-GCM: Requires 24 bytes (192 bits)
+AES-128-GCM: Requires 16 bytes (128 bits)
+
+when using openssl to send password over network should the password be the key or the m
+
+
+When using OpenSSL for encryption, the password should be used to derive the key, 
+and your actual password should never be sent unencrypted as the message.
+
+Here is the breakdown of how to use OpenSSL properly:
+- The Message: This is your actual payload (the data or password you need to send). 
+  It goes into the encryption tool (e.g., AES) as the plaintext.
+- The Key: This is a cryptographically random string generated using your password 
+  (usually via a Key Derivation Function like PBKDF2) to lock and unlock the message.
+- The Process: You use your password to derive a symmetric key, encrypt your message 
+  with that key, and then send the resulting ciphertext over the network.
+
+Run the following command in your terminal to derive a secure 256-bit AES key using modern PBKDF2 key derivation:
+
+openssl enc -aes-256-cbc -pbkdf2 -iter 100000 -k "your_password_here" -P
+
+
+- - - - 
+"how to build openssl for Android SDL3 using Android.mk"
+
+To build OpenSSL for an SDL3 Android project using Android.mk, you should pre-compile OpenSSL using its official shell scripts and then import the compiled binaries as prebuilt libraries into your project's Android.mk.
+Compiling OpenSSL's raw source code directly inside an Android.mk file is highly discouraged; its complex build configurations and assembly optimizations are native to its own
+
+
+# Min runtime API level
+APP_PLATFORM=android-29  // EZAPP
+
+./build/org.sthaid.ezApp/app/build/intermediates/cxx/Debug/5f55p2k5/logs/arm64-v8a/build_model.json:      "ndkVersion": "27.0.12077973",
+./android-project/app/build.gradle:    ndkVersion = "28.2.13676358"
+
+drwxrwxr-x 11 haid haid 4.0K Dec 29 07:32 25.1.8937393
+drwxrwxr-x 11 haid haid 4.0K Dec 31 15:50 27.0.12077973
+drwxrwxr-x 11 haid haid 4.0K Dec 24 13:11 28.2.13676358
+
+[HOME2 | ndk]$ adb shell getprop ro.product.cpu.abilist
+arm64-v8a,armeabi-v7a,armeabi
+
+--- STEPS ---
+
+export ANDROID_NDK_ROOT=/home/haid/android/sdk/ndk/27.0.12077973 
+export PATH=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH
+### ./Configure no-shared android-arm64 -D__ANDROID_API__=29
+./Configure no-shared android-arm64
+./Configure no-shared android-arm64 enable-pic
+./Configure android-arm64
+make
+#### This will produce your binary outputs, notably libcrypto and libssl
+
+xxxxxxxxx
+export ANDROID_NDK_ROOT=/path/to/your/android-ndk
+export PATH=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH
+./Configure android-arm64
+
+
+
+ ./Configure android-arm64 -fPIC shared
+make
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ ./Configure android-arm64 no-shared
+make
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ ./Configure android-arm64 shared
+make
 
 ------------ RECHECK ------------------
 
@@ -5,15 +108,12 @@ cleanup logging prints
 
 audio: - audio code review and retest
 
-
 ---------- TODO -----------------
 
-marking of altered SDL source
+marking of altered SDL source   <==========
 
 ezgetall
 - uploads all, including dat files
-
-separate include files to differentiate picoc vs non-picoc <===========
 
 developer mode password
 - force it to be init      <=======
@@ -45,6 +145,7 @@ Apps
 new camera app
 
 work on minimizing cpu load
+- check that sudio threads are disposed of
 - check how much cpu is used during an 8 hour intvl
 - what continue to run when app is in background?
    - add print statemnents
