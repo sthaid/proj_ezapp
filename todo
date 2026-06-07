@@ -1,3 +1,72 @@
+import android.content.Context;
+import android.location.Location;
+import android.location.altitude.AltitudeConverter;
+import android.os.Build;
+import androidx.annotation.WorkerThread;
+
+public class LocationUtils {
+
+    @WorkerThread
+    public static void tryConvertAndGetAltitude(Context context, Location location) {
+        // 1. Check if the device is running Android 14 (API 34) or higher
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            
+            if (location != null && location.hasAltitude()) {
+                try {
+                    // 2. Add MSL data to the existing Location instance
+                    AltitudeConverter converter = new AltitudeConverter();
+                    converter.addMslAltitudeToLocation(context, location);
+                    
+                    // 3. Verify the location now contains the MSL payload
+                    if (location.hasMslAltitude()) {
+                        double mslAltitudeMeters = location.getMslAltitudeMeters();
+                        System.out.println("MSL Altitude: " + mslAltitudeMeters + " meters");
+                    }
+                    
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        } else {
+            // Handle fallback for older Android devices
+            System.out.println("Native AltitudeConverter is not supported on this device.");
+        }
+    }
+}
+
+xxxxxxxxxxxxxx
+
+import android.content.Context;
+import android.location.Location;
+import android.location.altitude.AltitudeConverter;
+import android.os.Build;
+import androidx.annotation.WorkerThread;
+
+public class LocationUtils {
+
+    @WorkerThread
+    public static void tryConvertAltitude(Context context, Location location) {
+        // 1. Check if the device is running Android 14 (UPSIDE_DOWN_CAKE) or higher
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            
+            // 2. Ensure the location has a valid baseline ellipsoidal altitude
+            if (location != null && location.hasAltitude()) {
+                try {
+                    AltitudeConverter converter = new AltitudeConverter();
+                    converter.addMslAltitudeToLocation(context, location);
+                } catch (Exception e) {
+                    // Handle potential I/O or geoid database reading errors
+                    e.printStackTrace();
+                }
+            }
+        } else {
+            // Handle fallback for older Android devices
+        }
+    }
+}
+
+xxxxxxxxxxxxxxxxxxxxxxx
+
 on Motorola, the notification icon for FG enabled is a white square
 
 Altitude / AltitudeConverter
