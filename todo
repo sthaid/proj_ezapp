@@ -1,121 +1,16 @@
-import android.content.Context;
-import android.location.Location;
-import android.location.altitude.AltitudeConverter;
-import android.os.Build;
-import androidx.annotation.WorkerThread;
-
-public class LocationUtils {
-
-    @WorkerThread
-    public static void tryConvertAndGetAltitude(Context context, Location location) {
-        // 1. Check if the device is running Android 14 (API 34) or higher
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            
-            if (location != null && location.hasAltitude()) {
-                try {
-                    // 2. Add MSL data to the existing Location instance
-                    AltitudeConverter converter = new AltitudeConverter();
-                    converter.addMslAltitudeToLocation(context, location);
-                    
-                    // 3. Verify the location now contains the MSL payload
-                    if (location.hasMslAltitude()) {
-                        double mslAltitudeMeters = location.getMslAltitudeMeters();
-                        System.out.println("MSL Altitude: " + mslAltitudeMeters + " meters");
-                    }
-                    
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        } else {
-            // Handle fallback for older Android devices
-            System.out.println("Native AltitudeConverter is not supported on this device.");
-        }
-    }
-}
-
-xxxxxxxxxxxxxx
-
-import android.content.Context;
-import android.location.Location;
-import android.location.altitude.AltitudeConverter;
-import android.os.Build;
-import androidx.annotation.WorkerThread;
-
-public class LocationUtils {
-
-    @WorkerThread
-    public static void tryConvertAltitude(Context context, Location location) {
-        // 1. Check if the device is running Android 14 (UPSIDE_DOWN_CAKE) or higher
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            
-            // 2. Ensure the location has a valid baseline ellipsoidal altitude
-            if (location != null && location.hasAltitude()) {
-                try {
-                    AltitudeConverter converter = new AltitudeConverter();
-                    converter.addMslAltitudeToLocation(context, location);
-                } catch (Exception e) {
-                    // Handle potential I/O or geoid database reading errors
-                    e.printStackTrace();
-                }
-            }
-        } else {
-            // Handle fallback for older Android devices
-        }
-    }
-}
-
-xxxxxxxxxxxxxxxxxxxxxxx
+review altitude code;  and verify the altitude MSL vs WGS84 at a known location
+- Altitude / AltitudeConverter
 
 on Motorola, the notification icon for FG enabled is a white square
-
-Altitude / AltitudeConverter
 
 <!-- Required for Android 13 (API 33) and above. Ignored by Android 11. -->
 <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
 tests ...
 - test full build
-- 
-xxxxxxxxxxxxxxxxxxxxxx
+- and run it
 
-
-
-xxxxxxxxxxxxxxxxxx
-
-
-
-xxxxxxxxxxxxxxxxxxx
-
-https://github.com/google/boringssl
-
-- - -
-
-However, if you are writing native C/C++ code via the Android NDK and must bundle your own cryptographic library, you should use OpenSSL
-
-"provide C language example of Symmetric Encryption/Decryption using openSSL"
-
-https://github.com/openssl/openssl
-
-"how to build openssl for android NDK"
-
-"provide C language example of Symmetric Encryption/Decryption using openSSL with nonce"
-
-C example openssl encryption and decryption with nonce
-
-12 byte nonce is best
-
-key len
-AES-256-GCM: Requires 32 bytes (256 bits) — Recommended for maximum security.
-AES-192-GCM: Requires 24 bytes (192 bits)
-AES-128-GCM: Requires 16 bytes (128 bits)
-
-when using openssl to send password over network should the password be the key or the m
-
-
-When using OpenSSL for encryption, the password should be used to derive the key, 
-and your actual password should never be sent unencrypted as the message.
-
+xxxx add this comment to the code ...
 Here is the breakdown of how to use OpenSSL properly:
 - The Message: This is your actual payload (the data or password you need to send). 
   It goes into the encryption tool (e.g., AES) as the plaintext.
@@ -123,61 +18,6 @@ Here is the breakdown of how to use OpenSSL properly:
   (usually via a Key Derivation Function like PBKDF2) to lock and unlock the message.
 - The Process: You use your password to derive a symmetric key, encrypt your message 
   with that key, and then send the resulting ciphertext over the network.
-
-Run the following command in your terminal to derive a secure 256-bit AES key using modern PBKDF2 key derivation:
-
-openssl enc -aes-256-cbc -pbkdf2 -iter 100000 -k "your_password_here" -P
-
-
-- - - - 
-"how to build openssl for Android SDL3 using Android.mk"
-
-To build OpenSSL for an SDL3 Android project using Android.mk, you should pre-compile OpenSSL using its official shell scripts and then import the compiled binaries as prebuilt libraries into your project's Android.mk.
-Compiling OpenSSL's raw source code directly inside an Android.mk file is highly discouraged; its complex build configurations and assembly optimizations are native to its own
-
-
-# Min runtime API level
-APP_PLATFORM=android-29  // EZAPP
-
-./build/org.sthaid.ezApp/app/build/intermediates/cxx/Debug/5f55p2k5/logs/arm64-v8a/build_model.json:      "ndkVersion": "27.0.12077973",
-./android-project/app/build.gradle:    ndkVersion = "28.2.13676358"
-
-drwxrwxr-x 11 haid haid 4.0K Dec 29 07:32 25.1.8937393
-drwxrwxr-x 11 haid haid 4.0K Dec 31 15:50 27.0.12077973
-drwxrwxr-x 11 haid haid 4.0K Dec 24 13:11 28.2.13676358
-
-[HOME2 | ndk]$ adb shell getprop ro.product.cpu.abilist
-arm64-v8a,armeabi-v7a,armeabi
-
---- STEPS ---
-
-export ANDROID_NDK_ROOT=/home/haid/android/sdk/ndk/27.0.12077973 
-export PATH=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH
-### ./Configure no-shared android-arm64 -D__ANDROID_API__=29
-./Configure no-shared android-arm64
-./Configure no-shared android-arm64 enable-pic
-./Configure android-arm64
-make
-#### This will produce your binary outputs, notably libcrypto and libssl
-
-xxxxxxxxx
-export ANDROID_NDK_ROOT=/path/to/your/android-ndk
-export PATH=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH
-./Configure android-arm64
-
-
-
- ./Configure android-arm64 -fPIC shared
-make
-
-
-xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
- ./Configure android-arm64 no-shared
-make
-
-xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
- ./Configure android-arm64 shared
-make
 
 ------------ RECHECK ------------------
 
@@ -191,9 +31,6 @@ marking of altered SDL source   <==========
 
 ezgetall
 - uploads all, including dat files
-
-developer mode password
-- force it to be init      <=======
 
 finish work on xxx           <============
 
@@ -237,8 +74,6 @@ work on minimizing cpu load
 
 --------------------
 
-MAYBE may need a way to clear cached params, maybe when app starts then clear params
-
 MAYBE: picoc should free all unfreed allocations
 - calloc, malloc, realloc, strdup
 - open, fopen
@@ -248,7 +83,6 @@ report record_gain problem, to SDL team
 - first reproduce it
 
 final prep 
-- icon
 - set version OR eliminate version and just use build date
 
 - - - 
@@ -262,11 +96,6 @@ make new repo
     functionality. Common uses include quick services like food delivery, payments, and navigation
   - icon
     - maybe change name to miniApps or MiniC
-
-more apps work:
-- reversi
-  - add undo  ?
-  - edge heuristic
 
 --------------------------
 ---- TESTING NEEDED  -----

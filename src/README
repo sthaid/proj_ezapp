@@ -66,3 +66,14 @@ Date:   Wed Jan 17 08:33:58 2018 -0600
     Merge pull request #21 from jpoirier/develop
     Develop
 
+================
+openssl
+================
+
+https://github.com/openssl/openssl
+
+commit d099e33e5733bb9d3975fc4f3ac4a85b6ed1a4cb
+Author: 007bsd <22483432+007bsd@users.noreply.github.com>
+Date:   Tue May 26 00:10:43 2026 +0300
+    aes_wrap: prevent crash on update without a key
+
