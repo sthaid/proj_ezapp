@@ -88,9 +88,10 @@ int main(int argc, char **argv)
     // usage:
     // - ezsh <hostname>[:<port] <password> [<cmd> ...]
     // examples:
-    // - ezsh my_android secret_password
-    // - ezsh my_android:9000 secret_password
-    // - ezsh my_android secret_password ls -l
+    // - ezsh my_dev my_secret_password
+    // - ezsh my_dev:9000 my_secret_password
+    // - ezsh my_dev my_secret_password ls -l
+    // - ezsh 192.168.1.243 my_secret_password echo "hello world"
     if (argc < 3) {
         help();
         return 0;
@@ -158,7 +159,7 @@ void help(void)
     char help_text[] = "\
 Ezsh runs on the Linux host, simulating a shell running on the Android device.\n\
 \n\
-To use ezsh, the following ezapp settings must be made:\n\
+To use ezsh, the following ezapp settings must first be made:\n\
 - Devel_Mode = ON\n\
 - Devel_Port = nnnn\n\
 - Devel_Password\n\
@@ -166,7 +167,7 @@ To use ezsh, the following ezapp settings must be made:\n\
 For security, it is recommended to enable ezapp Devel_Mode when on a trusted network.\n\
 \n\
 Commands entered to ezsh are first checked if they require special processing;\n\
-if not then the command is passed to ezapp, which will run the command on the \n\
+if not then the command is passed to ezapp, which runs the command on the \n\
 Android device.\n\
 \n\
 Commands that require special processing are:\n\
@@ -182,6 +183,12 @@ Commands that require special processing are:\n\
           edited there, and finally copied back to the Android.\n\
           Example: vi apps/Clock/clock.c\n\
 - local : Execute a command on the host.\n\
+\n\
+Examples:\n\
+- ezsh my_dev my_secret_password\n\
+- ezsh my_dev:9000 my_secret_password\n\
+- ezsh my_dev my_secret_password ls -l\n\
+- ezsh 192.168.1.243 my_secret_password echo \"hello world\"\n\
 ";
 
     printf("%s", help_text);

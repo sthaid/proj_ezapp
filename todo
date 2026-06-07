@@ -10,17 +10,6 @@ tests ...
 - 
 xxxxxxxxxxxxxxxxxxxxxx
 
-	modified:   android/setup_files/app_src_main_java_org_libsdl_app_ezapp_utils.java
-	modified:   bin/adb_connect
-	modified:   bin/ezput
-	modified:   bin/src/Makefile
-	modified:   bin/src/ezsh.c            xxx for examples
-	modified:   src/ezapp/main.c          0 len params
-	modified:   src/ezapp_lib/include/utils.h   SSL_TEXTLEN
-	modified:   src/ezapp_lib/sdlx_misc.c
-	modified:   src/ezapp_lib/sdlx_video.c
-	modified:   src/ezapp_lib/utils_openssl.c   error prints
-
 
 
 xxxxxxxxxxxxxxxxxx

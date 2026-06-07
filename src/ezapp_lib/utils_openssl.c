@@ -7,7 +7,7 @@
 #include <openssl/err.h>
 #include <openssl/rand.h>
     
-// ----------------- XXXX --------------------
+// ----------------- KEYGEN ------------------
 
 unsigned char *ssl_keygen(char *password)
 {
@@ -34,20 +34,15 @@ unsigned char *ssl_keygen(char *password)
         key_len,
         derived_key);
     if (status != 1) {
-        //ERROR("PKCS5_PBKDF2_HMAC failed\n"); //xxx review error prints
+        printf("ERROR: PKCS5_PBKDF2_HMAC failed\n");
         return NULL;
     }
-
-    // debug print the derived key
-    char str[100], *p=str;
-    for (int i = 0; i < key_len; i++) {
-        p += sprintf(p, "%02x", derived_key[i]);
-    }
-    //printf("got derived_key '%s'\n", str);  // xxx check these prints
 
     // return derived_key
     return derived_key;
 }
+
+// ----------------- ENCRYPT -----------------
 
 int ssl_encrypt(unsigned char *key, char *plaintext_arg, ssl_payload_t *payload)
 {
@@ -55,12 +50,17 @@ int ssl_encrypt(unsigned char *key, char *plaintext_arg, ssl_payload_t *payload)
     int             len, ciphertext_len;
     bool            succ;
     char           *errstr = NULL;
-    char            plaintext[OPENSSL_TEXTLEN];
+    char            plaintext[SSL_TEXTLEN];
 
-    // xxx copy plaintext
-    // xxx check len
-    strncpy(plaintext, plaintext_arg, OPENSSL_TEXTLEN);
-    plaintext[OPENSSL_TEXTLEN-1] = '\0';
+    // check lenght of plaintext_arg, return error if it is too long
+    if (strlen(plaintext_arg) > SSL_TEXTLEN-1) {
+        errstr = "plaintext_arg too long";
+        goto error;
+    }
+        
+    // make copy of caller plaintext_arg, padded with null bytes to SSL_TEXTLEN
+    strncpy(plaintext, plaintext_arg, SSL_TEXTLEN);
+    plaintext[SSL_TEXTLEN-1] = '\0';
 
     // zero payload
     memset(payload, 0, sizeof(ssl_payload_t));
@@ -97,7 +97,7 @@ int ssl_encrypt(unsigned char *key, char *plaintext_arg, ssl_payload_t *payload)
     }
 
     // encrypt plaintext
-    succ = EVP_EncryptUpdate(ctx, payload->ciphertext, &len, (unsigned char *)plaintext, OPENSSL_TEXTLEN);
+    succ = EVP_EncryptUpdate(ctx, payload->ciphertext, &len, (unsigned char *)plaintext, SSL_TEXTLEN);
     if (!succ) {
         errstr = "EVP_EncryptUpdate";
         goto error;
@@ -113,7 +113,7 @@ int ssl_encrypt(unsigned char *key, char *plaintext_arg, ssl_payload_t *payload)
     ciphertext_len += len;
 
     // validate ciphertext_len
-    if (ciphertext_len != OPENSSL_TEXTLEN) {
+    if (ciphertext_len != SSL_TEXTLEN) {
         errstr = "invalid ciphertext_len";
         goto error;
     }
@@ -138,15 +138,17 @@ error:
     return -1;
 }
 
+// ----------------- DECRYPT -----------------
+
 int ssl_decrypt(unsigned char *key, ssl_payload_t *payload, char **plaintext_arg)
 {
     bool            succ;
     EVP_CIPHER_CTX *ctx = NULL;
     int             len;
     char           *errstr = NULL;
-    static char     plaintext[OPENSSL_TEXTLEN];
+    static char     plaintext[SSL_TEXTLEN];
 
-    // xxx
+    // preset return string ptr to NULL
     *plaintext_arg = NULL;
 
     // alloc ctx
@@ -178,7 +180,7 @@ int ssl_decrypt(unsigned char *key, ssl_payload_t *payload, char **plaintext_arg
     }
 
     // decrypt
-    succ = EVP_DecryptUpdate(ctx, (unsigned char*)plaintext, &len, payload->ciphertext, OPENSSL_TEXTLEN);
+    succ = EVP_DecryptUpdate(ctx, (unsigned char*)plaintext, &len, payload->ciphertext, SSL_TEXTLEN);
     if (!succ) {
         errstr = "EVP_DecryptUpdate";
         goto error;
@@ -201,7 +203,6 @@ int ssl_decrypt(unsigned char *key, ssl_payload_t *payload, char **plaintext_arg
     // free ctx, and return success
     EVP_CIPHER_CTX_free(ctx);
     *plaintext_arg = plaintext;
-    //printf("decrypt success '%s'\n", plaintext);
     return 0;
 
     // error return path
