@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <string.h>
-#include <sdlx.h>
-#include <svcs.h>
+#include <private.h>
 
 #undef main
 

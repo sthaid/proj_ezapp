@@ -1,5 +1,4 @@
 #include <string.h>
-#include <svcs.h>
 
 setlinebuf(stdout);
 
