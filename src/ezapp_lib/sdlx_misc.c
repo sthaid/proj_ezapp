@@ -298,6 +298,14 @@ int sdlx_get_permission(char *name)
     bool succ;
     int perm_result;
 
+    // API < 33 does not support or require POST_NOTIFICATION permission
+    if ((strcmp(name, "android.permission.POST_NOTIFICATIONS") == 0) &&
+        (SDL_GetAndroidSDKVersion() < 33))
+    {
+        INFO("ignoring %s at API %d\n", name, SDL_GetAndroidSDKVersion());
+        return 0;
+    }
+
     INFO("get_permission %s\n", name);
 
     // request permission

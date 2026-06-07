@@ -14,37 +14,33 @@
 #include <netinet/in.h> 
 #include <arpa/inet.h>
 #include <dirent.h>
+#include <netdb.h>
 
 #include <readline/readline.h>
 #include <readline/history.h>
+
+#include <utils.h>
 
 //
 // defines
 //
 
-#define NOT_A_SPECIAL_CMD -9999
+#define DEFAULT_PORT 9000
 
-#define MAX_ALIAS 100
+#define NOT_A_SPECIAL_CMD -9999
 
 //
 // typedefs
 //
 
-typedef struct {
-    char *cmd;
-    char *alias;
-} alias_t;
-
 //
 // variables
 //
 
-// these are obtained from the ezsh.cfg file
-char    ipaddr[200];
-int     port;
-char    password[200];
-alias_t alias_tbl[MAX_ALIAS];
-int     max_alias;
+// these are obtained from the cmdline
+char    hostname[200];
+int     port = DEFAULT_PORT;
+char   *password;
 
 // current working directory
 char    cwd[200];
@@ -59,9 +55,7 @@ FILE   *sockfp;
 
 // main
 void help(void);
-void read_ezsh_cfg(void);
 void connect_to_android(void);
-void substitue_alias(char *cmdline);
 int run_cmd(char *cmdline);
 
 // run special cmd
@@ -70,7 +64,6 @@ int special_cmd_put(char *src, char *dest);
 int special_cmd_get(char *src, char *dest);
 int special_cmd_cd(char *path);
 int special_cmd_pwd(void);
-int special_cmd_alias(void);
 int special_cmd_vi(char *android_path);
 int special_cmd_local(char *cmdline);
 
@@ -90,29 +83,36 @@ int write_file(char *fn, void *buf, int len);
 
 int main(int argc, char **argv)
 {
-    char *cmdline;
-    int   status;
+    char *cmdline, *p;
 
-    // if '-h' option then display help and exit
-    if (argc == 2 && strcmp(argv[1], "-h") == 0) {
+    // usage:
+    // - ezsh <hostname>[:<port] <password> [<cmd> ...]
+    // examples:
+    // - ezsh my_android secret_password
+    // - ezsh my_android:9000 secret_password
+    // - ezsh my_android secret_password ls -l
+    if (argc < 3) {
         help();
         return 0;
     }
 
-    // read ezsh.cfg file, to get ipaddr, port, password, and cmd aliases
-    read_ezsh_cfg();
+    // parse argv[1] and argv[2], this sets: hostname, port, and password variables
+    p = strchr(argv[1], ':');
+    if (p) *p = ' ';
+    sscanf(argv[1], "%s %d", hostname, &port);
+    password = argv[2];
 
     // connect to android: also validates password and gets curr-working-dir (cwd)
     connect_to_android();
 
-    // if args provided then use them for cmdline, and end program
-    if (argc >= 2) {
+    // if cmd args provided then use them for cmdline, and end program
+    if (argc > 3) {
         char cmd[1000];
         char *p = cmd;
-        for (int i = 1; i < argc; i++) {
+        int status;
+        for (int i = 3; i < argc; i++) {
             p += sprintf(p, "%s ", argv[i]);
         }
-        substitue_alias(cmd);
         status = run_cmd(cmd);
         return status != 0 ? 1 : 0;
     }
@@ -144,9 +144,6 @@ int main(int argc, char **argv)
         }
         add_history(cmdline);
 
-        // substitue alias
-        substitue_alias(cmdline);
-
         // process the cmdline
         run_cmd(cmdline);
 
@@ -157,17 +154,16 @@ int main(int argc, char **argv)
 
 void help(void)
 {
+// xxx cmdline examples
     char help_text[] = "\
 Ezsh runs on the Linux host, simulating a shell running on the Android device.\n\
 \n\
-The ezsh.cfg file, found in the same directory as the ezsh executable, provides the\n\
-Android device IP address, ezapp developer mode TCP/IP port, and password.\n\
-The ezsh.cfg may also contain optional cmd aliases.\n\
+To use ezsh, the following ezapp settings must be made:\n\
+- Devel_Mode = ON\n\
+- Devel_Port = nnnn\n\
+- Devel_Password\n\
 \n\
-To use ezsh, the ezapp must have Settings Devel_Mode = ON. Also the Devel_Port and\n\
-Devel_Password must be set in ezapp, matching the values supplied in ezsh.cfg.\n\
-The password provides minimal security. It is recommended to enable ezapp Devel_Mode\n\
-on a trusted network.\n\
+For security, it is recommended to enable ezapp Devel_Mode when on a trusted network.\n\
 \n\
 Commands entered to ezsh are first checked if they require special processing;\n\
 if not then the command is passed to ezapp, which will run the command on the \n\
@@ -177,8 +173,7 @@ Commands that require special processing are:\n\
 - cd    : Ezsh maintains the Android current working directory (cwd) path.\n\
           When a command is executed on Android, the Android directory is\n\
           first set to the cwd.\n\
-          Example: cd apps/Clock\n\
-- pwd   : Prints the cwd\n\
+- pwd   : Prints the current working dir\n\
 - get   : Copy file from Android.\n\
           Example: get apps/Clock/clock.c\n\
 - put   : Copy file to Android.\n\
@@ -186,101 +181,20 @@ Commands that require special processing are:\n\
 - vi    : Edit a file on Android. The file is fist copied to the host tmp dir,\n\
           edited there, and finally copied back to the Android.\n\
           Example: vi apps/Clock/clock.c\n\
-- alias : Print the command aliases which are provided in the ezsh.cfg file.\n\
 - local : Execute a command on the host.\n\
 ";
 
     printf("%s", help_text);
 }
 
-void read_ezsh_cfg(void)
-{
-    char  self_path[200], ezsh_cfg_path[200], *self_dir, s[200];
-    FILE *fp;
-    int   line_num=0;
-
-    // get path to ezsh.cfg file
-    memset(self_path, 0, sizeof(self_path));
-    readlink("/proc/self/exe", self_path, sizeof(self_path));
-    self_dir = dirname(self_path);
-    sprintf(ezsh_cfg_path, "%s/ezsh.cfg", self_dir);
-
-    // open ezsh.cfg file
-    fp = fopen(ezsh_cfg_path, "r");
-    if (fp == NULL) {
-        printf("ERROR: failed to open %s\n", ezsh_cfg_path);
-        exit(1);
-    }
-
-    // read and process lines from ezsh.cfg file
-    while (fgets(s, sizeof(s), fp) != NULL) {
-        line_num++;
-
-        // remove leading and trailing spaces and trailing newline
-        sanitize(s);
-
-        // skip blank lines and lines begining with '#'
-        if (s[0] == '\0' || s[0] == '#') {
-            continue;
-        }
-
-        // tokenize line
-        char *id = strtok(s, " ");
-        char *val = strtok(NULL, " ");
-        char *rest = strtok(NULL, "");
-
-        // must have at least id and val
-        if (id == NULL || val == NULL) {
-            continue;
-        }
-
-        // parse the line
-        if (strcmp(id, "ipaddr") == 0) {
-            strcpy(ipaddr, val);
-        } else if (strcmp(id, "port") == 0) {
-            sscanf(val, "%d", &port);
-        } else if (strcmp(id, "password") == 0) {
-            strcpy(password, val);
-        } else if (strcmp(id, "alias") == 0) {
-            if (max_alias == MAX_ALIAS) {
-                printf("ERROR: alias tbl is full, ezsh.cfg line %d\n", line_num);
-                continue;
-            }
-            if (rest == NULL) {
-                printf("ERROR: invalid alias, ezsh.cfg line %d\n", line_num);
-                continue;
-            }
-            sanitize(rest);
-            alias_tbl[max_alias].cmd = strdup(val);
-            alias_tbl[max_alias].alias = strdup(rest);
-            max_alias++;
-        } 
-    }
-
-    // close fp
-    fclose(fp);
-
-    // verify ipaddr, port and password are set
-    if (ipaddr[0] == '\0') {
-        printf("ERROR: ippadr needed in ezsh.cfg\n");
-        exit(1);
-    }
-    if (port == 0) {
-        printf("ERROR: port needed in ezsh.cfg\n");
-        exit(1);
-    }
-    if (password[0] == '\0') {
-        printf("ERROR: password needed in ezsh.cfg\n");
-        exit(1);
-    }
-}
-
 void connect_to_android(void)
 {
-    int                ret, len, sockfd;
-    struct sockaddr_in addr;
-    socklen_t          addrlen;
-    char               response[200];
+    int             ret, len, sockfd;
+    char            response[200];
+    char            port_str[30];
+    struct addrinfo hints, *result;
+    unsigned char  *ssl_key;
+    ssl_payload_t   ssl_payload;
 
     // create socket
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -289,25 +203,54 @@ void connect_to_android(void)
         exit(1);
     }
 
-    // connect
-    addr.sin_family      = AF_INET;
-    addr.sin_port        = htons(port);
-    addr.sin_addr.s_addr = inet_addr(ipaddr);
-    addrlen = sizeof(addr);
-    ret = connect(sockfd, (struct sockaddr*)&addr, addrlen);
+    // get the inet_addr of hostname
+    memset(&hints, 0, sizeof hints);
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_STREAM;
+    sprintf(port_str, "%d", port);
+    ret = getaddrinfo(hostname, port_str, &hints, &result);
     if (ret != 0) {
-        printf("ERROR: connect %s:%d, %s\n", ipaddr, port, strerror(errno));
+        printf("ERROR: getaddrinfo %s:%s, %s\n", hostname, port_str, strerror(errno));
         exit(1);
     }
+
+    // connect to hostname
+    struct sockaddr_in *ipv4 = (struct sockaddr_in *)result[0].ai_addr;
+    printf("connecting to %s, %s:%s\n", 
+                hostname, 
+                inet_ntoa(ipv4->sin_addr),
+                port_str);
+    ret = connect(sockfd, result[0].ai_addr, result[0].ai_addrlen);
+    if (ret != 0) {
+        printf("ERROR: connect %s:%s, %s\n", hostname, port_str, strerror(errno));
+        exit(1);
+    }
+    free(result);
 
     // create fp for socket fd
     sockfp = fdopen(sockfd, "w+");
 
-    // send password, and get response
-    put_fmt(sockfp, "%s\n", password);
+    // encrypt password to ssl_payload, and send ssl_payload
+    ssl_key = ssl_keygen(password);
+    if (ssl_key == NULL) {
+        printf("ERROR: ssl_keygen failed\n");
+        exit(1);
+    }
+    ret = ssl_encrypt(ssl_key, password, &ssl_payload);
+    if (ret != 0) {
+        printf("ERROR: ssl_encrypt failed\n");
+        exit(1);
+    }
+    ret = fwrite(&ssl_payload, 1, sizeof(ssl_payload), sockfp);
+    if (ret != sizeof(ssl_payload)) {
+        printf("ERROR: failed to send encrypted password\n");
+        exit(1);
+    }
+
+    // read response, verify password was accepted
     get_str(sockfp, response, sizeof(response));
     if (strcmp(response, "password okay") != 0) {
-        printf("ERROR: invalid password\n");
+        printf("ERROR: %s\n", response);
         exit(1);   
     }
 
@@ -324,27 +267,6 @@ void connect_to_android(void)
 
     // save initial cwd
     strcpy(cwd_initial, cwd);
-}
-
-void substitue_alias(char *cmdline)
-{
-    char *p, temp[1000];
-    int   i;
-
-    p = strchr(cmdline, ' ');
-    if (p) *p = '\0';
-
-    for (i = 0; i < max_alias; i++) {
-        if (strcmp(cmdline, alias_tbl[i].cmd) == 0) {
-            if (p) *p = ' ';
-            strcpy(temp, cmdline+strlen(alias_tbl[i].cmd));
-            strcpy(cmdline, alias_tbl[i].alias);
-            strcat(cmdline, temp);
-            return;
-        }
-    }
-
-    if (p) *p = ' ';
 }
 
 int run_cmd(char *cmdline)
@@ -381,8 +303,6 @@ int run_special_cmd(char *cmdline)
         return special_cmd_cd(arg1);
     } else if (strcmp(cmd, "pwd") == 0) {
         return special_cmd_pwd();
-    } else if (strcmp(cmd, "alias") == 0) {
-        return special_cmd_alias();
     } else if (strcmp(cmd, "put") == 0) {
         return special_cmd_put(arg1, arg2);
     } else if (strcmp(cmd, "get") == 0) {
@@ -591,16 +511,6 @@ int special_cmd_cd(char *path)
 int special_cmd_pwd(void)
 {
     printf("%s\n", cwd);
-    return 0;
-}
-
-int special_cmd_alias(void)
-{
-    int i;
-
-    for (i = 0; i < max_alias; i++) {
-        printf("%-16s %s\n", alias_tbl[i].cmd, alias_tbl[i].alias);
-    }
     return 0;
 }
 

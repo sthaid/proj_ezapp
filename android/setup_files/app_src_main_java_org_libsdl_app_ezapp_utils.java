@@ -15,7 +15,7 @@ import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationResult;
 import android.location.Location;
-import android.location.altitude.AltitudeConverter;
+//xxx import android.location.altitude.AltitudeConverter;
 import android.os.Looper;
 
 import android.hardware.camera2.CameraAccessException;
@@ -75,7 +75,7 @@ public class ezapp_utils {
         //
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(cx);
-        AltitudeConverter altitudeConverter = new AltitudeConverter();
+        //xxx AltitudeConverter altitudeConverter = new AltitudeConverter();
 
         locationCallback = new LocationCallback() {
             @Override
@@ -95,20 +95,21 @@ public class ezapp_utils {
                     // attach altitude Mean-Sea-Lvel (MSL) converter;
                     // when attached, getMslAltitudeMeters can be called, which provides
                     // more accurate altitude than getAltitude
-                    try {
-                        if (location.hasAltitude()) {
-                            altitudeConverter.addMslAltitudeToLocation(cx, location);
-                        }
-                    } catch (IOException e) {
-                        Log.e(TAG, "addMsAltitudeToLocation failed");
-                    }
+//  xxx             try {
+//                      if (location.hasAltitude()) {
+//                          altitudeConverter.addMslAltitudeToLocation(cx, location);
+//                      }
+//                  } catch (IOException e) {
+//                      Log.e(TAG, "addMsAltitudeToLocation failed");
+//                  }
 
                     // get altitude, first try to get MSL altitude, 
                     // if MSL not available then try to get WGS84 altitude;
-                    if (location.hasMslAltitude()) {
-                        altitude_ft = location.getMslAltitudeMeters() * METERS_TO_FEET;
-                        alt_type = MSL;
-                    } else if (location.hasAltitude()) {
+//   xxx            if (location.hasMslAltitude()) {
+//                      altitude_ft = location.getMslAltitudeMeters() * METERS_TO_FEET;
+//                      alt_type = MSL;
+//                  } else 
+                    if (location.hasAltitude()) {
                         altitude_ft = location.getAltitude() * METERS_TO_FEET;
                         alt_type = WGS84;
                     } else {

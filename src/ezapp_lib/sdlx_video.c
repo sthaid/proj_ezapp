@@ -121,15 +121,47 @@ int sdlx_video_init(void)
     }
 #endif
 
-    // create SDL Window and Renderer
 #ifdef ANDROID
-    // - use full screen
-    if (!SDL_CreateWindowAndRenderer("ezApp", 0, 0, SDL_WINDOW_FULLSCREEN, &window, &renderer)) {
+    // Android code to create SDL Window and Renderer
+
+    // AI query:
+    //   in SDL3 when SDL_CreateWindowAndRenderer is called with flags=0 on recent 
+    //   android device, the bottom area of the display is obstructed
+    // AI answer:
+    //   The problem you are experiencing occurs because Android 15 (API 35+) enforces 
+    //   "Edge-to-Edge" rendering by default for all apps targeting the modern SDK.
+    //   When you pass flags = 0 to SDL_CreateWindowAndRenderer, SDL3 creates a standard 
+    //   window that spans the device's entire hardware dimensions. Because of the modern 
+    //   Android operating system behavior, your game or application content will render 
+    //   directly underneath the translucent OS navigation gesture bar or 3-button layout 
+    //   at the bottom of the screen.
+
+    // My devices
+    //   DEVNAME    API     ANDROID     USE_FLAGS
+    //   -------    ---     -------     ---------
+    //   samsung    36        16        SDL_WINDOW_FULLSCREEN
+    //   motorola   30        11        0
+
+    int sdk_version = SDL_GetAndroidSDKVersion();
+    int flags;
+
+    INFO("sdk_version = %d\n", sdk_version);
+    if (sdk_version >= 35) {
+        INFO("flags = SDL_WINDOW_FULLSCREEN\n");
+        flags = SDL_WINDOW_FULLSCREEN;
+    } else {
+        INFO("flags = 0\n");
+        flags = 0;
+    }
+
+    if (!SDL_CreateWindowAndRenderer("ezApp", 0, 0, flags, &window, &renderer)) {
         ERROR("SDL_CreateWindowAndRenderer failed\n");
         return -1;
     }
 #else
-    // - use Window with aspect ratio 2.1666  (19.5:9)
+    // Linux code to create SDL Window and Renderer
+
+    // use Window with aspect ratio 2.1666  (19.5:9)
     if (!SDL_CreateWindowAndRenderer("ezApp", 450, 975, 0, &window, &renderer)) {
         ERROR("SDL_CreateWindowAndRenderer failed\n");
         return -1;

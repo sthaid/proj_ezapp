@@ -1,11 +1,30 @@
-add more utils_openssl routines
+on Motorola, the notification icon for FG enabled is a white square
 
-run prebuild from top level, and clobber it too
+Altitude / AltitudeConverter
 
-test
-- prebuild
-- android keygen
-- linux build and run
+<!-- Required for Android 13 (API 33) and above. Ignored by Android 11. -->
+<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+tests ...
+- test full build
+- 
+xxxxxxxxxxxxxxxxxxxxxx
+
+	modified:   android/setup_files/app_src_main_java_org_libsdl_app_ezapp_utils.java
+	modified:   bin/adb_connect
+	modified:   bin/ezput
+	modified:   bin/src/Makefile
+	modified:   bin/src/ezsh.c            xxx for examples
+	modified:   src/ezapp/main.c          0 len params
+	modified:   src/ezapp_lib/include/utils.h   SSL_TEXTLEN
+	modified:   src/ezapp_lib/sdlx_misc.c
+	modified:   src/ezapp_lib/sdlx_video.c
+	modified:   src/ezapp_lib/utils_openssl.c   error prints
+
+
+
+xxxxxxxxxxxxxxxxxx
+
 
 
 xxxxxxxxxxxxxxxxxxx

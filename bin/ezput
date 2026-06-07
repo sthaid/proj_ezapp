@@ -6,16 +6,26 @@
 # - with args, the files specified in the args are transferred to the Android device
 #
 # - examples:
-#   - ezput                    # sends git tracked files from this dir to android
-#   - ezput apps/layout        # sends just the apps/layout file to android
-#   - ezput apps/lib/lib.[ch]  # sends apps/lib/lib.[ch] to android
+#   - ezput dev password                    # sends git tracked files from this dir to android dev
+#   - ezput dev password apps/layout        # sends just the apps/layout file to android dev
+#   - ezput dev password apps/lib/lib.[ch]  # sends apps/lib/lib.[ch] to android dev
 
 # verify current dir is in a git repo
 top=$(git rev-parse --show-toplevel)
 if [ $? -ne 0 ]; then
-    echo "ERROR: not in git repo"
-    exit 1
+  echo "ERROR: not in git repo"
+  exit 1
 fi
+
+# verify dev and password args are provided
+if [ $# -lt 2 ]; then
+  echo "ERROR: dev and password required"
+  exit 1
+fi
+dev=$1
+shift
+password=$1
+shift
 
 # verify parent directory is 'apps' or 'svcs'
 parent_dir=$(basename $(dirname $PWD))
@@ -43,9 +53,7 @@ for i in $*; do
   specified_files="$specified_files $i"
 done
 
-# copy to Android:
-# - git tracked files that are in the app/svc dir
-# - more files which the caller has requested on the cmdline
+# copy files to Android dev
 cd ../..
 if [ "$specified_files" != "" ]; then
   files="$specified_files"
@@ -56,14 +64,29 @@ else
     exit 1
   fi
 fi
+
 tar -cf /tmp/ezput.tar  $files
 if [ $? -ne 0 ]; then
+  rm -f /tmp/ezput.tar
   exit 1
 fi
-echo "Creating files on Android device ..."
-ezsh put /tmp/ezput.tar 
-ezsh tar -xvf ezput.tar
-ezsh rm -f ezput.tar
-rm -f /tmp/ezput.tar
 
+echo "Creating files on Android device ..."
+ezsh $dev $password put /tmp/ezput.tar 
+if [ $? -ne 0 ]; then 
+  rm -f /tmp/ezput.tar
+  exit 1
+fi
+ezsh $dev $password tar -xvf ezput.tar
+if [ $? -ne 0 ]; then 
+  rm -f /tmp/ezput.tar
+  exit 1
+fi
+ezsh $dev $password rm -f ezput.tar
+if [ $? -ne 0 ]; then 
+  rm -f /tmp/ezput.tar
+  exit 1
+fi
+
+rm -f /tmp/ezput.tar
 exit 0

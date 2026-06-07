@@ -1,8 +1,8 @@
 
 all: ../ezsh ../ezlogfilter 
 
-../ezsh: ezsh.c
-	gcc -Wall -o ../ezsh ezsh.c -lreadline
+../ezsh: ezsh.c ../../src/ezapp_lib/utils_openssl.c
+	gcc -I ../../src/ezapp_lib/include -Wall -o ../ezsh $^ -lreadline -lcrypto
 
 ../ezlogfilter: ezlogfilter.c
 	gcc -Wall -o ../ezlogfilter ezlogfilter.c -lreadline

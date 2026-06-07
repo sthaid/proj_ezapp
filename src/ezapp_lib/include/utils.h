@@ -130,8 +130,18 @@ int util_get_playbackcapture_audio(float *array, int num_array_elements);
 // OPENSSL
 // ----------------------
 
-unsigned char *openssl_keygen(char *password);
-//xxx more needed
+#define SSL_TEXTLEN 128
+
+typedef struct {
+    unsigned char nonce[12];
+    unsigned char tag[16];
+    unsigned char ciphertext[SSL_TEXTLEN];
+} ssl_payload_t;
+
+unsigned char *ssl_keygen(char *password);
+
+int ssl_encrypt(unsigned char *key, char *plaintext, ssl_payload_t *payload);
+int ssl_decrypt(unsigned char *key, ssl_payload_t *payload, char **plaintext);
 
 #ifdef __cplusplus
 }

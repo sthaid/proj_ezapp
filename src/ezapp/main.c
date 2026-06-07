@@ -12,6 +12,8 @@
 
 #include "version.h"
 
+// xxx do 0 len params work
+
 //
 // defines
 //
@@ -23,7 +25,8 @@
 #endif
 
 #define DEFAULT_DEVEL_PORT     9000   // IANA registered port range 1024 - 49151
-#define DEFAULT_DEVEL_PASSWORD "secret"
+#define DEFAULT_DEVEL_PASSWORD "none"
+#define MIN_DEVEL_PASSWORD_LEN 4
 
 #define LAST_PAGE ((max_apps - 1) / 18)
 
@@ -124,6 +127,9 @@ static int init(void)
     // print startup message
     INFO("========== STARTING: %s %s  ==========\n", VERSION, BUILD_DATE);
     INFO("storage_path = %s\n", storage_path);
+#ifdef ANDROID
+    INFO("sdk_version  = %d\n", SDL_GetAndroidSDKVersion());
+#endif
 
 #ifdef PRINT_TYPE_SIZES
     // print type sizes
@@ -927,7 +933,7 @@ static void settings(void)
         case EVID_DEVEL_PASSWORD: {
             char *str; 
             str = sdlx_get_input_str("Password\nMin Length 4", false, NULL);
-            if (strlen(str) >= 4) {
+            if (strlen(str) >= MIN_DEVEL_PASSWORD_LEN) {
                 strcpy(params.devel_password, str);
                 util_set_str_param(".", "devel_password", str);
                 sdlx_show_toast("CHANGED");
@@ -1221,22 +1227,48 @@ char *get_str(FILE *fp, char *s, int s_len)
 
 static int process_req_thread(void *cx)
 {
-    int   sockfd = (int)(long)cx;
-    FILE *sockfp;
-    char  password[200];
+    int           sockfd = (int)(long)cx;
+    FILE         *sockfp;
+    ssl_payload_t payload;
+    int           rc;
 
     // get fp for socket
     sockfp = fdopen(sockfd, "w+");
     
-    // read password from socket
-    password[0] = '\0';
-    get_str(sockfp, password, sizeof(password));
+    // read the ssl payload, which contains the encrypted password
+    rc = fread(&payload, 1, sizeof(payload), sockfp);
+    if (rc != sizeof(payload)) {
+        ERROR("fread payload failed, %s\n", strerror(errno));
+        goto disconnect;
+    }
+
+    // if the ezapp devel_password has not been initialized then 
+    // respond to ezsh with error message
+    if (strcmp(params.devel_password, DEFAULT_DEVEL_PASSWORD) == 0 ||
+        strlen(params.devel_password) < MIN_DEVEL_PASSWORD_LEN) 
+    {
+        ERROR("ezapp password needs to be set\n");
+        put_fmt(sockfp, "%s\n", "ezapp password needs to be set");
+        goto disconnect;
+    }
+
+    // decrypt the password from the ssl payload
+    unsigned char *key;
+    char          *plaintext;
+    key = ssl_keygen(params.devel_password);
+    rc = ssl_decrypt(key, &payload, &plaintext);
+    if (rc != 0) {
+        ERROR("invalid password\n");
+        put_fmt(sockfp, "%s\n", "invalid password");
+        goto disconnect;
+    }
 
     // validate password
-    if (strcmp(password, params.devel_password) == 0) {
+    if (strcmp(plaintext, params.devel_password) == 0) {
         put_fmt(sockfp, "%s\n", "password okay");
     } else {
-        put_fmt(sockfp, "%s\n", "password invalid");
+        ERROR("invalid password 2");
+        put_fmt(sockfp, "%s\n", "invalid password 2");
         goto disconnect;
     }
 
