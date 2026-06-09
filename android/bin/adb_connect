@@ -17,14 +17,15 @@
 # 
 # Disconnect USB cable.
 # 
-# Issue the adb connect cmd:
+# Issue the adb connect cmd (for example):
 # - adb connect 192.168.1.243:5555
-# - verify using 'adb shell'
+#
+# Verify connected, using 'adb shell'
 # 
 # Plug phone in with power cable, to disable sleeping while charging.
 
 if [ "$1" = "" ]; then
-  echo "ERROR: name or ipaddr required"
+  echo "ERROR: device name or ipaddr required"
   exit 1
 fi
 

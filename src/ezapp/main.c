@@ -125,7 +125,9 @@ static int init(void)
     }
 
     // print startup message
+    INFO("======================================================\n");
     INFO("========== STARTING: %s %s  ==========\n", VERSION, BUILD_DATE);
+    INFO("======================================================\n");
     INFO("storage_path = %s\n", storage_path);
 #ifdef ANDROID
     INFO("sdk_version  = %d\n", SDL_GetAndroidSDKVersion());

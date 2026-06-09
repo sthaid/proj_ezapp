@@ -1,10 +1,9 @@
-alias
-ezput now needs optional password args
+ezsh.c help on alias
 
 
 ---------
 
-check Android README,  move to doc dir
+check Android README,  move to doc dir  ??
 
 make ezsh alias file
 ls -l

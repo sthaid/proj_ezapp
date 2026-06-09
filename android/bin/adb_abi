@@ -1,0 +1,9 @@
+#!/bin/bash
+
+echo "primary architecture ..."
+adb shell getprop ro.product.cpu.abi
+echo
+
+echo "all supported architectures ..."
+adb shell getprop ro.product.cpu.abilist
+echo

@@ -29,9 +29,16 @@
 
 #define NOT_A_SPECIAL_CMD -9999
 
+#define MAX_ALIAS 500
+
 //
 // typedefs
 //
+
+typedef struct {
+    char *cmd;
+    char *alias;
+} alias_t;
 
 //
 // variables
@@ -50,6 +57,10 @@ char    cwd_initial[200];
 // fp used to communicate to server process running on android
 FILE   *sockfp;
 
+// obtained from the ezsh.alias file
+alias_t alias_tbl[MAX_ALIAS];
+int     max_alias;
+
 //
 // prototypes
 //
@@ -58,6 +69,8 @@ FILE   *sockfp;
 void help(void);
 void connect_to_android(void);
 int run_cmd(char *cmdline);
+void read_ezsh_alias(void);
+void substitue_alias(char *cmdline);
 
 // run special cmd
 int run_special_cmd(char *cmdline);
@@ -65,6 +78,7 @@ int special_cmd_put(char *src, char *dest);
 int special_cmd_get(char *src, char *dest);
 int special_cmd_cd(char *path);
 int special_cmd_pwd(void);
+int special_cmd_alias(void);
 int special_cmd_vi(char *android_path);
 int special_cmd_local(char *cmdline);
 
@@ -136,6 +150,9 @@ int main(int argc, char **argv)
     // connect to android: also validates password and gets curr-working-dir (cwd)
     connect_to_android();
 
+    // read alias file
+    read_ezsh_alias();
+
     // if cmd args provided then use them for cmdline, and end program
     if (argc > optind) {
         char cmd[1000];
@@ -144,6 +161,7 @@ int main(int argc, char **argv)
         for (int i = optind; i < argc; i++) {
             p += sprintf(p, "%s ", argv[i]);
         }
+        substitue_alias(cmd);
         status = run_cmd(cmd);
         return status != 0 ? 1 : 0;
     }
@@ -174,6 +192,9 @@ int main(int argc, char **argv)
             break;
         }
         add_history(cmdline);
+
+        // substitue alias
+        substitue_alias(cmdline);
 
         // process the cmdline
         run_cmd(cmdline);
@@ -211,6 +232,7 @@ Commands that require special processing are:\n\
 - vi    : Edit a file on Android. The file is fist copied to the host tmp dir,\n\
           edited there, and finally copied back to the Android.\n\
           Example: vi apps/Clock/clock.c\n\
+- alias : Print the command aliases which are provided in the ezsh.alias file.\n\
 - local : Execute a command on the host.\n\
 \n\
 The device and password can be provided using environment variables EZAPP_DEVICE and\n\
@@ -328,6 +350,86 @@ int run_cmd(char *cmdline)
     return status;
 }
 
+void read_ezsh_alias(void)
+{
+    char  self_path[200], ezsh_alias_path[200], *self_dir, s[2000];
+    FILE *fp;
+    int   line_num=0;
+
+    // get path to ezsh.alias file
+    memset(self_path, 0, sizeof(self_path));
+    readlink("/proc/self/exe", self_path, sizeof(self_path));
+    self_dir = dirname(self_path);
+    sprintf(ezsh_alias_path, "%s/ezsh.alias", self_dir);
+
+    // open ezsh.alias file
+    fp = fopen(ezsh_alias_path, "r");
+    if (fp == NULL) {
+        printf("ERROR: failed to open %s\n", ezsh_alias_path);
+        exit(1);
+    }
+
+    // read and process lines from ezsh.alias file
+    while (fgets(s, sizeof(s), fp) != NULL) {
+        line_num++;
+
+        // remove leading and trailing spaces and trailing newline
+        sanitize(s);
+
+        // skip blank lines and lines begining with '#'
+        if (s[0] == '\0' || s[0] == '#') {
+            continue;
+        }
+
+        // tokenize
+        char *cmd = strtok(s, " ");
+        char *alias = strtok(NULL, "");
+
+        // if cmd or alias are null then skip this line
+        if (cmd == NULL || alias == NULL) {
+            printf("ERROR: ezsh.alias, error on line %d\n", line_num);
+            continue;
+        }
+
+        // if alias table is full then goto done
+        if (max_alias == MAX_ALIAS) {
+            printf("ERROR: alias tbl is full, ezsh.alias line %d\n", line_num);
+            goto done;
+        }
+
+        // add entry to alias_tbl
+        sanitize(alias);
+        alias_tbl[max_alias].cmd = strdup(cmd);
+        alias_tbl[max_alias].alias = strdup(alias);
+        max_alias++;
+    }
+
+done:
+    // close fp
+    fclose(fp);
+}
+
+void substitue_alias(char *cmdline)
+{
+    char *p, temp[1000];
+    int   i;
+
+    p = strchr(cmdline, ' ');
+    if (p) *p = '\0';
+
+    for (i = 0; i < max_alias; i++) {
+        if (strcmp(cmdline, alias_tbl[i].cmd) == 0) {
+            if (p) *p = ' ';
+            strcpy(temp, cmdline+strlen(alias_tbl[i].cmd));
+            strcpy(cmdline, alias_tbl[i].alias);
+            strcat(cmdline, temp);
+            return;
+        }
+    }
+
+    if (p) *p = ' ';
+}
+
 // -----------------  RUN SPECIAL CMD  ----------------------------------
 
 int run_special_cmd(char *cmdline)
@@ -347,6 +449,8 @@ int run_special_cmd(char *cmdline)
         return special_cmd_cd(arg1);
     } else if (strcmp(cmd, "pwd") == 0) {
         return special_cmd_pwd();
+    } else if (strcmp(cmd, "alias") == 0) {
+        return special_cmd_alias();
     } else if (strcmp(cmd, "put") == 0) {
         return special_cmd_put(arg1, arg2);
     } else if (strcmp(cmd, "get") == 0) {
@@ -556,6 +660,16 @@ int special_cmd_pwd(void)
 {
     printf("%s\n", cwd);
     return 0;
+}
+
+int special_cmd_alias(void)
+{
+    int i;
+    
+    for (i = 0; i < max_alias; i++) {
+        printf("%-16s %s\n", alias_tbl[i].cmd, alias_tbl[i].alias);
+    }
+    return 0; 
 }
 
 int special_cmd_vi(char *android_path)

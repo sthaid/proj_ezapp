@@ -1,0 +1,6 @@
+
+ls      ls -l
+l       local
+
+logclr  logcat -c -b all
+log     logcat -s --format=time,color EZAPP:I SDL:I SDL/APP:I AndroidRuntime:I '*:F'
