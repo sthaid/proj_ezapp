@@ -12,7 +12,7 @@ fi
 cd $top/files
 
 # copy all git tracked files, in the files dir, to Android
-files="$(git ls-files $code_dir)"
+files="$(git ls-files)"
 if [ "$files" = "" ]; then
   echo "ERROR: no files"
   exit 1

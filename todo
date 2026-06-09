@@ -1,5 +1,9 @@
 move bin files
 env vars EZAPP_DEVECE, EZAPP_PASSWD
+alias
+include openssl license
+gen_copyright, rename to license
+get rid of gen_copyright
 
 ---------
 

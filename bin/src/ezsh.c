@@ -39,7 +39,7 @@
 
 // these are obtained from the cmdline
 char    hostname[200];
-int     port = DEFAULT_PORT;
+int     port;
 char   *password;
 
 // current working directory
@@ -83,35 +83,62 @@ int write_file(char *fn, void *buf, int len);
 
 int main(int argc, char **argv)
 {
-    char *cmdline, *p;
+    int opt;
+    char *device;
 
-    // usage:
-    // - ezsh <hostname>[:<port] <password> [<cmd> ...]
-    // examples:
-    // - ezsh my_dev my_secret_password
-    // - ezsh my_dev:9000 my_secret_password
-    // - ezsh my_dev my_secret_password ls -l
-    // - ezsh 192.168.1.243 my_secret_password echo "hello world"
-    if (argc < 3) {
-        help();
-        return 0;
+    // get device and password from env variables;
+    // - format of device is <hostname> OR <hostname>:<port>
+    // - these env variables are optional, if not provided then the
+    //   ezsh -d and -p options must be supplied
+    device = getenv("EZAPP_DEVICE");
+    password = getenv("EZAPP_PASSWD");
+
+    // parse options:
+    //  -d <device>   : sets device string
+    //  -p <password> : sets password string
+    //  -h            : display help and exit
+    while ((opt = getopt(argc, argv, "d:p:h")) != -1) {
+        switch (opt) {
+        case 'd': {
+            device = optarg;
+            break; }
+        case 'p':
+            password = optarg;
+            break;
+        case 'h':
+        default:
+            help();
+            return 0;
+        }
     }
 
-    // parse argv[1] and argv[2], this sets: hostname, port, and password variables
-    p = strchr(argv[1], ':');
+    // device and password must have been provided,
+    // either from the env variables or from getopt
+    if (device == NULL || device[0] == '\0' || password == NULL || password[0] == '\0') {
+        printf("ERROR: device and password are required\n");
+        return 1;
+    }
+
+    // extract hostname and port from device string:
+    // device string contains hostname and optional port, examples:
+    //   192.168.1.2
+    //   samsung
+    //   samsung:9000
+    char *p = strchr(device, ':');
     if (p) *p = ' ';
-    sscanf(argv[1], "%s %d", hostname, &port);
-    password = argv[2];
+    port = DEFAULT_PORT;
+    sscanf(device, "%s %d", hostname, &port);
+    printf("%s:%d %s\n", hostname, port, password);
 
     // connect to android: also validates password and gets curr-working-dir (cwd)
     connect_to_android();
 
     // if cmd args provided then use them for cmdline, and end program
-    if (argc > 3) {
+    if (argc > optind) {
         char cmd[1000];
         char *p = cmd;
         int status;
-        for (int i = 3; i < argc; i++) {
+        for (int i = optind; i < argc; i++) {
             p += sprintf(p, "%s ", argv[i]);
         }
         status = run_cmd(cmd);
@@ -132,7 +159,7 @@ int main(int argc, char **argv)
         // - if blank line then continue
         // - if 'q' or 'exit' then end program
         // - add cmdline to history
-        cmdline = readline(prompt);
+        char *cmdline = readline(prompt);
         if (cmdline == NULL) {
             break;
         }
@@ -155,11 +182,10 @@ int main(int argc, char **argv)
 
 void help(void)
 {
-// xxx cmdline examples
     char help_text[] = "\
 Ezsh runs on the Linux host, simulating a shell running on the Android device.\n\
 \n\
-To use ezsh, the following ezapp settings must first be made:\n\
+To use ezsh, the following ezapp settings must first be made on the Android device:\n\
 - Devel_Mode = ON\n\
 - Devel_Port = nnnn\n\
 - Devel_Password\n\
@@ -184,13 +210,19 @@ Commands that require special processing are:\n\
           Example: vi apps/Clock/clock.c\n\
 - local : Execute a command on the host.\n\
 \n\
+The device and password can be provided using environment variables EZAPP_DEVICE and\n\
+EZAPP_PASSWORD, or via the ezsh -d and -p options. See the following examples:\n\
+\n\
 Examples:\n\
-- ezsh my_dev my_secret_password\n\
-- ezsh my_dev:9000 my_secret_password\n\
-- ezsh my_dev my_secret_password ls -l\n\
-- ezsh 192.168.1.243 my_secret_password echo \"hello world\"\n\
+- ezsh\n\
+- ezsh -d samsung -p secret\n\
+- ezsh -d 192.168.1.2:9000 -p secret\n\
+- ezsh ls\n\
+- ezsh \"ls -l\"\n\
+- ezsh -- ls -l\n\
+- ezsh echo hello world\n\
+\n\
 ";
-
     printf("%s", help_text);
 }
 
@@ -223,7 +255,7 @@ void connect_to_android(void)
 
     // connect to hostname
     struct sockaddr_in *ipv4 = (struct sockaddr_in *)result[0].ai_addr;
-    printf("connecting to %s, %s:%s\n", 
+    printf("connecting to %s: %s:%s\n", 
                 hostname, 
                 inet_ntoa(ipv4->sin_addr),
                 port_str);
