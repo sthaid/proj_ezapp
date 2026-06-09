@@ -1,3 +1,58 @@
+move bin files
+env vars EZAPP_DEVECE, EZAPP_PASSWD
+
+---------
+
+check Android README,  move to doc dir
+
+make ezsh alias file
+ls -l
+local
+"logcat -c -b all; logcat -s --format=time,color EZAPP:I SDL:I SDL/APP:I AndroidRuntime:I '*:F'"
+
+
+ezsh_samsung
+ezsh_motorola
+
+adb_connect samsung
+adb_connect motorola
+
+
+redo
+---------------------------
+--- install android/sdk ---
+---------------------------
+
+Essential Directories to AddAssuming your Android SDK is installed in the default Linux location (~/Android/Sdk), you should add the following four directories to your PATH:~/Android/Sdk/platform-toolsContains vital debug and testing binaries, most notably adb (Android Debug Bridge) and fastboot.~/Android/Sdk/cmdline-tools/latest/binHouses modern core CLI tools, primarily sdkmanager (for managing SDK packages) and avdmanager (for managing virtual devices).
+
+if Android/Sdk not present fail build
+
+ezsh, 
+- log viewer
+- control c
+
+separate tools for developing microapps and ezapp
+
+more adb commands
+- cpu usage
+- abi
+
+ezsh log viewer
+
+ezputall, ezgetall
+
+move ezlogfilter 
+
+top level make for developint microapps
+
+if android sdk is not found, the build should otherwise work
+
+-------
+
+ezapp -> ezApp
+
+documentation
+
 review altitude code;  and verify the altitude MSL vs WGS84 at a known location
 - Altitude / AltitudeConverter
 
@@ -5,10 +60,6 @@ on Motorola, the notification icon for FG enabled is a white square
 
 <!-- Required for Android 13 (API 33) and above. Ignored by Android 11. -->
 <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-
-tests ...
-- test full build
-- and run it
 
 xxxx add this comment to the code ...
 Here is the breakdown of how to use OpenSSL properly:

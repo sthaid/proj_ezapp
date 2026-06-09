@@ -1,46 +1,34 @@
-
-SUBDIRS := bin/src src/openssl linux android 
-APPS    := $(sort $(dir $(wildcard files/apps/*/.)))
-APPS    := $(filter-out files/apps/lib/, $(APPS))
-SVCS    := $(sort $(dir $(wildcard files/svcs/*/.)))
-
 # --- build ---
 
-build: clone_sdl subdirs apps svcs
+APPS := $(sort $(dir $(wildcard files/apps/*/.)))
+APPS := $(filter-out files/apps/lib/, $(APPS))
+SVCS := $(sort $(dir $(wildcard files/svcs/*/.)))
+
+build: clone_sdl bin/src linux test_build_apps_and_svcs
 
 clone_sdl:
 	if [ ! -d src/SDL -o ! -d src/SDL_ttf -o ! -d src/SDL_mixer ]; then bin/build_tools/clone_sdl; fi
 
-subdirs:
-	for d in $(SUBDIRS) ; do echo "\n======== BUILD $$d ========\n"; make -C $$d || exit 1; done
+bin/src linux:
+	make -C $@
 
-apps:
+test_build_apps_and_svcs:
 	for d in $(APPS) ; do echo "\n======== BUILD APP $$d ========\n"; cd $$d; eztest build || exit 1; cd ../../..; done
-
-svcs:
 	for d in $(SVCS) ; do echo "\n======== BUILD SVC $$d ========\n"; cd $$d; eztest build || exit 1; cd ../../..; done
 
-# --- clean & clobber ---
+.PHONY: build clone_sdl bin/src linux test_build_apps_and_svcs 
 
-clean_subdirs:
-	for d in $(SUBDIRS) ; do echo "\n======== CLEAN $$d ========\n"; make -C $$d clean || exit 1; done
+# --- android build & install ---
 
-clean_cscope_and_tage:
-	find . -name ".git" -prune -o \( -name cscope.\* -o -name tags \) -exec rm {} \;
+build_android: 
+	make -C src/openssl
+	make -C android
 
-clobber: clean_subdirs clean_cscope_and_tage
-	@echo "\n======== REMOVING OTHERS  ========\n"
-	rm -f src/ezapp/version.h
-	git ls-files --other files | xargs rm -f
-	rm -rf src/SDL src/SDL_mixer src/SDL_ttf
-	make -C src/picoc clean
-	@echo "\n======== REMAINING  ========\n"
-	@git ls-files --other
-	@echo
+.PHONY: build_android
 
-# --- install on android ---
+# --- clobber ---
 
-install_on_android:
-	make -C android install
+clobber:
+	use git clean -fdx
 
-.PHONY: build clone_sdl subdirs apps svcs clean_subdirs clean_cscope_and_tags clobber
+.PHONY: clobber
