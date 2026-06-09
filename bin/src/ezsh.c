@@ -37,10 +37,11 @@
 // variables
 //
 
-// these are obtained from the cmdline
+// these are obtained from env vars or the cmdline args
 char    hostname[200];
 int     port;
 char   *password;
+bool    quiet;
 
 // current working directory
 char    cwd[200];
@@ -97,13 +98,16 @@ int main(int argc, char **argv)
     //  -d <device>   : sets device string
     //  -p <password> : sets password string
     //  -h            : display help and exit
-    while ((opt = getopt(argc, argv, "d:p:h")) != -1) {
+    while ((opt = getopt(argc, argv, "d:p:qh")) != -1) {
         switch (opt) {
         case 'd': {
             device = optarg;
             break; }
         case 'p':
             password = optarg;
+            break;
+        case 'q':
+            quiet = true;
             break;
         case 'h':
         default:
@@ -128,7 +132,6 @@ int main(int argc, char **argv)
     if (p) *p = ' ';
     port = DEFAULT_PORT;
     sscanf(device, "%s %d", hostname, &port);
-    printf("%s:%d %s\n", hostname, port, password);
 
     // connect to android: also validates password and gets curr-working-dir (cwd)
     connect_to_android();
@@ -255,10 +258,12 @@ void connect_to_android(void)
 
     // connect to hostname
     struct sockaddr_in *ipv4 = (struct sockaddr_in *)result[0].ai_addr;
-    printf("connecting to %s: %s:%s\n", 
+    if (!quiet) {
+        printf("connecting to %s: %s:%s\n", 
                 hostname, 
                 inet_ntoa(ipv4->sin_addr),
                 port_str);
+    }
     ret = connect(sockfd, result[0].ai_addr, result[0].ai_addrlen);
     if (ret != 0) {
         printf("ERROR: connect %s:%s, %s\n", hostname, port_str, strerror(errno));

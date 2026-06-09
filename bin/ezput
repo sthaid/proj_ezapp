@@ -17,15 +17,28 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
+# get device and password from env
+dev=$EZAPP_DEVICE
+password=$EZAPP_PASSWD
+
+# set dev and password if the -d or -p options are supplied
+while true; do
+  if [ "$1" = "-d" ]; then
+    dev=$2
+    shift 2
+  elif [ "$1" = "-p" ]; then
+    password=$2
+    shift 2
+  else
+    break
+  fi
+done
+
 # verify dev and password args are provided
-if [ $# -lt 2 ]; then
-  echo "ERROR: dev and password required"
+if [ "$dev" = "" -o "$password" = "" ]; then
+  echo "ERROR: device and password are required"
   exit 1
 fi
-dev=$1
-shift
-password=$1
-shift
 
 # verify parent directory is 'apps' or 'svcs'
 parent_dir=$(basename $(dirname $PWD))
@@ -72,17 +85,17 @@ if [ $? -ne 0 ]; then
 fi
 
 echo "Creating files on Android device ..."
-ezsh $dev $password put /tmp/ezput.tar 
+ezsh -d $dev -p $password -q "put /tmp/ezput.tar"
 if [ $? -ne 0 ]; then 
   rm -f /tmp/ezput.tar
   exit 1
 fi
-ezsh $dev $password tar -xvf ezput.tar
+ezsh -d $dev -p $password -q "tar -xvf ezput.tar"
 if [ $? -ne 0 ]; then 
   rm -f /tmp/ezput.tar
   exit 1
 fi
-ezsh $dev $password rm -f ezput.tar
+ezsh -d $dev -p $password -q "rm -f ezput.tar"
 if [ $? -ne 0 ]; then 
   rm -f /tmp/ezput.tar
   exit 1
