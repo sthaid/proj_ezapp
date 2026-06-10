@@ -1,21 +1,15 @@
-build: SDL gen_version gen_assets
+build: SDL gen_version gen_assets openssl
 	cd SDL/build/org.sthaid.ezApp; \
         ./gradlew assembleDebug
 
 install: build
+	echo
+	adb devices
 	cd SDL/build/org.sthaid.ezApp; \
         adb install -r ./app/build/outputs/apk/debug/app-debug.apk
 
 uninstall:
 	adb uninstall org.sthaid.ezApp
-
-clean:
-	rm -rf SDL 
-	rm -rf assets 
-	rm -rf setup_files/orig
-	rm -f  ../src/ezapp/version.h
-
-# -----------------------------
 
 SDL:
 	./setup
@@ -32,8 +26,18 @@ gen_assets:
 	# create files.tar.sig
 	date > assets/files.tar.sig
 
-# -----------------------------
+openssl:
+	make -C ../src/openssl
 
-.PHONY: build install uninstall clean clobber
-.PHONY: gen_version gen_assets
+.PHONY: build install uninstall gen_version gen_assets openssl
 
+# --------------------
+
+clean:
+	rm -rf SDL 
+	rm -rf assets 
+	rm -rf setup_files/orig
+	rm -f  ../src/ezapp/version.h
+	make -C ../src/openssl clean
+
+.PHONY: clean

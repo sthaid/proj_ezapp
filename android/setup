@@ -114,3 +114,4 @@ cd $ANDROID_TOP
 echo
 
 echo "==== SETUP COMPLETE ===="
+echo

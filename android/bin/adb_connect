@@ -1,29 +1,5 @@
 #!/bin/bash
 
-# NOTES:
-#
-# Enable developer mode by tapping build number 8 times.
-# 
-# Go to Developer Options , and enable
-# - Stay Awake
-# - USB Debugging
-# 
-# Connect USB data cable. And select 'allow access' on the device.
-# - verify connection: 'adb shell'
-# 
-# With USB cable plugged in, run cmd 
-# - adb tcpip 5555
-# - should see message "restarting in TCP mode port: 5555"
-# 
-# Disconnect USB cable.
-# 
-# Issue the adb connect cmd (for example):
-# - adb connect 192.168.1.243:5555
-#
-# Verify connected, using 'adb shell'
-# 
-# Plug phone in with power cable, to disable sleeping while charging.
-
 if [ "$1" = "" ]; then
   echo "ERROR: device name or ipaddr required"
   exit 1

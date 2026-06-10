@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# clear all log buffer
 set -x
 adb logcat -c -b all
 

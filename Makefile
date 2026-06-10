@@ -25,8 +25,11 @@ clone_sdl:
             cd $$SRC/SDL_mixer/external; ./download.sh; \
         fi
 
-bin/src linux:
-	make -C $@
+bin/src:
+	make -C bin/src
+
+linux:
+	make -C linux
 
 test_build_apps_and_svcs:
 	for d in $(APPS) ; do echo "\n======== BUILD APP $$d ========\n"; cd $$d; eztest build || exit 1; cd ../../..; done
@@ -37,14 +40,18 @@ test_build_apps_and_svcs:
 # --- android build & install ---
 
 build_android: 
-	make -C src/openssl
 	make -C android
 
-.PHONY: build_android
+install_android: 
+	make -C android install
+
+.PHONY: android_build android_install
 
 # --- clobber ---
 
 clobber:
-	use git clean -fdx
+	git clean -fdx
+	rm -rf src/SDL src/SDL_mixer src/SDL_ttf android/SDL
+	@echo "Remaing files:"; git ls-files --other
 
 .PHONY: clobber
