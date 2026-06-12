@@ -1,10 +1,9 @@
 # ezApp
 
-EzApp runs miniApps that are written in the C Language.
-Various miniApps are included with ezApp.
+EzApp runs miniApps and miniSvcs that are written in the C Language.
 
-Users can also develop your own miniApps, or modify the included miniApps.
-To modify or develop miniApps a Linux PC is required
+Users can develop their own miniApps and miniSvcs.
+To develop miniApps and miniSvcs a Linux PC is required.
 
 When ezApp is first run on your Android device, the following 
 permissions will be requested:
@@ -16,6 +15,8 @@ permissions will be requested:
 If some of these permissions are not granted then some ezApp capabilities
 will not function. For example, if 'Activity Recognition' is not granted
 the Step counter will not function.
+
+xxx arm64 arch only;  or maybe don't mention this
 
 # Included miniApps
 
@@ -43,47 +44,71 @@ viewed by selecting '?'.
 - Tilt:     Level, supports horizontal and vertical orientations, and calibration.
 - Weather   Displays and speaks the weather forecast, from weather.gov.
 
-apps
+xxx notes on services
 
-services
+# ezApp Design 
 
-# Developing miniApps
+Ezapp code is available in github.
+> git clone https://github.com/sthaid/proj_ezapp.git
 
-Summary of how ezApp works:
-- The Simple DirectMedia Layer (SDL) provides the framework from which the
-  Android ezApp is built. SDL provides a Java Shim, which calls the C language
-  ezApp entry point, called SDL_main, and found in src/ezapp/main.c.
-- SDL provides functions for: Graphics & Rendering, Input Handling, Audio, Events, and more.
-- The PicoC C language interpreter is used to execute the miniApps. PicoC includes support
-  for many standard C language header files, such as stdio.h, string.h, etc.
-- Additional header files are added to PicoC to support ezApp. Support for these 
-  additional header files is added to picoc/platform/library_unix.c. These header files are:
-  - sdlx.h:  provides a subset of SDL.h, including support for core SDL functions that
-    are required by miniApps.
-  - utils.h: miscellaneous utilities, includes support for json, png, fft, and access
-    to Android java code for location, text-to-speach, and playback capture.
-  - svcs.h:  miniApps sometimes rely on miniSvcs; for example the Location miniApp
-    relies on Location info provided by the Location miniSvc. A miniApp can call 
-    svc_make_req() to make a request to a miniSvc. MiniSvcs also can share data
-    with miniApps using a shared data file.
-- In addition to being embedded in picoc/platform/library_unix, the sdlx.h, utils.h, and svcs.h
-  files are also available in src/ez_lib/include. These files should be viewed there
-  for documentation of their capabilities.
+The Simple DirectMedia Layer (SDL) provides the framework from which the
+Android ezApp APK is built. SDL provides a Java Shim, which calls the C language
+ezApp entry point, SDL_main, found in src/ezapp/main.c.
 
-git clone
-dir struct
+SDL provides functions for: Graphics & Rendering, Input Handling, Audio, Events, and more.
 
-Steps to add a new miniApp:
-- 
+The PicoC C language interpreter is used to execute the miniApps. PicoC includes support
+for some standard C language header files, such as stdio.h, string.h, etc.
+
+Additional header files are added to PicoC to support the miniApps. The following
+header files are provided in picoc by code included in picoc/platform/library_unix.c.
+- sdlx.h:  provides core SDL functions that are required by miniApps.
+- utils.h: miscellaneous utilities, including json, png, fft, and access
+  to some Android java functions: location, text-to-speach, and playback capture.
+- svcs.h:  some miniApps sometimes rely on miniSvcs; for example the Location miniApp
+  relies on Location info provided by the Location miniSvc. A miniApp can call 
+  svc_make_req() to make a request to a miniSvc.
+
+The sdlx.h, utils.h, and svcs.h files are also available in src/ez_lib/include.
+These files should be viewed there for documentation of their capabilities.
+
+Directory structure:
+- files/apps: miniApps 
+- files/svcs: miniSvcs
+- linux:      build & run version of ezApp that runs on Linux
+- src:        
+  - ezapp: provides C language main entry point, called from the SDL Java shim
+  - ezapp_lib: provides code for the routines defined in sdlx.h, utils.h and svcs.h
+  - SDL, SDL_mixer, SDL_ttf: populated with SDL code by top level Makefile
+  - openssl: populated and built when android Makefile is run
+  - cJSON, kissfft, libmp3lame, lodepng, picoc: copies of code from git repos
+- bin: contains tools used to test and load miniApps on your device
+- android: the Android APK is built here; refer to android/README
+
+Licenses: Refer to files/licenses. All of the source code used is licensed under
+a permissive license, except libmp3lame which is LGPL license. Libmp3lame license 
+requirements are met by linking it as a separate library, and there are no changes
+made to the libmp3lame source code.
+
+# Creating a miniApp
 
 
 
-
-
-# developing ezApp
+# Creating a miniSvc
 
 
 
+# PicoC Limitiations
+
+
+
+# Creating ezApp Android APK
+
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
 
