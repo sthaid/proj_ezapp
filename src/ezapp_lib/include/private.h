@@ -1,6 +1,8 @@
 #ifndef __PRIVATE_H__
 #define __PRIVATE_H__
 
+// xxx comment about being private
+
 #ifdef __cplusplus 
 extern "C" {
 #endif

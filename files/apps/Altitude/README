@@ -4,8 +4,11 @@ DESCRIPTION:
 
 Displays and graphs altitude.
 
-Altitude values are in feet above Mean 
-Sea Level.
+Newer devices provide altitude in feet
+above Mean Sea Level (MSL).
+
+Older devices provide altitude in feet
+above the the WGS84 ellipsoid (WGS84).
 
 NOTES:
 

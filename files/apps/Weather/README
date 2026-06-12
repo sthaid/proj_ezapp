@@ -5,6 +5,9 @@ DESCRIPTION:
 Weather forecast is obtained from 
 https://api.weather.gov.
 
+Text-to-speech system reads the
+detailed weather report aloud.
+
 If the weather forecast has been 
 downloaded within the past 4 hours the 
 forecast is not downloaded again. Select

@@ -1,7 +1,10 @@
 This README was prepared while using Ubuntu 25.10.
 
-The steps to build and install the ezApp app on an 
-Android deivce are desribed.
+The steps to build and install a developer created version
+of ezApp, on your Android device, are described.
+
+xxx more packages?
+xxx move some of this to top level readme
 
 ===============================
 INSTALL LINUX PACKAGES
@@ -71,16 +74,16 @@ On Android Device
   - USB Debugging
   - Stay Awake
 
-Connect using USB data cable:
-- Connect USB data cable between Computer and Device
+Connect using USB Data cable:
+- Connect USB Data cable between Computer and Device
   - select 'allow access' on the device.
 - Test connection: adb shell
 
 Or, Connect using Wifi:
-- Connect USB data cable between Computer and Device
+- Connect USB Data cable between Computer and Device
   - select 'allow access' on the device.
 - On computer: adb tcpip 5555
-- Disconnect USB data cable
+- Disconnect USB Data cable
 - On computer: adb connect <ipaddr|hostname>
 - Test connection: adb shell
 
@@ -183,22 +186,22 @@ MISC
 ===============================
 
 sdkmanager --help  (summary)
-    Usage:
-      sdkmanager [--uninstall] [<common args>] [--package_file=<file>] [<packages>...]
-      sdkmanager --update [<common args>]
-      sdkmanager --list [<common args>]
-      sdkmanager --list_installed [<common args>]
-      sdkmanager --licenses [<common args>]
-      sdkmanager --version
-    With --install (optional), installs or updates packages.
-        By default, the listed packages are installed or (if already installed)
-        updated to the latest version.
+  Usage:
+    sdkmanager [--uninstall] [<common args>] [--package_file=<file>] [<packages>...]
+    sdkmanager --update [<common args>]
+    sdkmanager --list [<common args>]
+    sdkmanager --list_installed [<common args>]
+    sdkmanager --licenses [<common args>]
+    sdkmanager --version
+  With --install (optional), installs or updates packages.
+      By default, the listed packages are installed or (if already installed)
+      updated to the latest version.
 
-What is contained in APK:
+To list what files are contained in the APK:
   ln -s ./SDL3-3.2.28/build/org.sthaid.ezApp/app/build/outputs/apk/debug/app-debug.apk app-debug.zip
   unzip -l app-debug.zip | grep lib
 
-To specify which ABIS to build for
+To specify which ABIS to build:
   ./gradlew assembleDebug -PANDROID_ABIS=arm64-v8a
 
 gradle requires a Java Development Kit (JDK) or Java Runtime Environment 
