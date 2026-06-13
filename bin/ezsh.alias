@@ -1,7 +1,8 @@
 # xxx add comments
 
-ls      ls -l
-l       local
+ls          ls -l
+l           local
 
-logclr  logcat -c -b all
-log     logcat -s --format=time,color EZAPP:I SDL:I SDL/APP:I AndroidRuntime:I '*:F'
+logclr      logcat -c -b all
+logwatch    logcat -s --format=time,color EZAPP:I SDL:I SDL/APP:I AndroidRuntime:I '*:F'
+logcat      logcat -d -s --format=time,color EZAPP:I SDL:I SDL/APP:I AndroidRuntime:I '*:F'

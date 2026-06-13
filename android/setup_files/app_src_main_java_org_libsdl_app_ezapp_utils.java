@@ -36,10 +36,10 @@ public class ezapp_utils {
 
     private static FusedLocationProviderClient fusedLocationClient;
     private static LocationCallback            locationCallback;
-    private static double                      latitude    = INVALID_NUMBER;
-    private static double                      longitude   = INVALID_NUMBER;
-    private static double                      altitude_ft = INVALID_NUMBER;
-    private static int                         alt_type;
+    private static double                      latitude          = INVALID_NUMBER;
+    private static double                      longitude         = INVALID_NUMBER;
+    private static double                      altitude_ft_msl   = INVALID_NUMBER;
+    private static double                      altitude_ft_wgs84 = INVALID_NUMBER;
 
     private static CameraManager               cameraManager;
     private static String                      cameraId;
@@ -80,58 +80,58 @@ public class ezapp_utils {
             @Override
             public void onLocationResult(LocationResult locationResult) {
                 if (locationResult == null) {
-                    latitude    = INVALID_NUMBER;
-                    longitude   = INVALID_NUMBER;
-                    altitude_ft = INVALID_NUMBER;
+                    latitude          = INVALID_NUMBER;
+                    longitude         = INVALID_NUMBER;
+                    altitude_ft_msl   = INVALID_NUMBER;
+                    altitude_ft_wgs84 = INVALID_NUMBER;
                     return;
                 }
 
                 for (Location location : locationResult.getLocations()) {
                     // get current latitude and longitude
-                    latitude = location.getLatitude();
+                    latitude  = location.getLatitude();
                     longitude = location.getLongitude();
 
-                    // if altitude is not available then set altitude to INVALID_NUMBER
+                    // if altitude is not available then set altitude values to INVALID_NUMBER
                     if (!location.hasAltitude()) {
-                        altitude_ft = INVALID_NUMBER;
-                        alt_type = MSL;
+                        altitude_ft_msl   = INVALID_NUMBER;
+                        altitude_ft_wgs84 = INVALID_NUMBER;
 
                     // else if running on API 34 or higher then the altitude converter
                     // should be available; altitude converter provides Mean Sea Level altitude
                     } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                        // attach altitude Mean-Sea-Lvel (MSL) converter;
+                        // attach altitude Mean-Sea-Lvel (MSL) converter; and get altitude_ft_msl
                         try {
                             AltitudeConverter altitudeConverter = new AltitudeConverter();
                             altitudeConverter.addMslAltitudeToLocation(cx, location);
                             if (location.hasMslAltitude()) {
-                                altitude_ft = location.getMslAltitudeMeters() * METERS_TO_FEET;
-                                alt_type = MSL;
+                                altitude_ft_msl = location.getMslAltitudeMeters() * METERS_TO_FEET;
                             } else {
-                                altitude_ft = location.getAltitude() * METERS_TO_FEET;
-                                alt_type = WGS84;
+                                altitude_ft_msl = INVALID_NUMBER;
                             }
                         } catch (IOException e) {
                             Log.e(TAG, "addMslAltitudeToLocation failed");
-                            altitude_ft = location.getAltitude() * METERS_TO_FEET;
-                            alt_type = WGS84;
+                            altitude_ft_msl = INVALID_NUMBER;
                         }
+
+                        // get the altitude referenced to the WGS84 ellipsoid
+                        altitude_ft_wgs84 = location.getAltitude() * METERS_TO_FEET;
 
                     // else mean-sea-level altitude not available, provide WGS84 altitude
                     } else {
-                        altitude_ft = location.getAltitude() * METERS_TO_FEET;
-                        alt_type = WGS84;
+                        altitude_ft_msl   = INVALID_NUMBER;
+                        altitude_ft_wgs84 = location.getAltitude() * METERS_TO_FEET;
                     }
                         
                     // debug print location/altitude result
-                    Log.i(TAG, "lat/long/alt = " + 
-                          latitude + " " + longitude + " " + 
-                          altitude_ft + " ft " + (alt_type == MSL ? "MSL" : "WGS84"));
+                    Log.i(TAG, String.format("lat/long/alt = %.4f %.4f %.0f msl %.0f wgs84",
+                                  latitude, longitude, altitude_ft_msl, altitude_ft_wgs84));
                 }
             }
         };
 
         LocationRequest locationRequest = LocationRequest.create();
-        locationRequest.setInterval(180*1000);  // 3 minute update interval
+        locationRequest.setInterval(30*1000);  // 30 second update interval
         locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
         fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper());
 
@@ -208,12 +208,11 @@ public class ezapp_utils {
     }
 
     public double get_altitude() {
-        if (alt_type == MSL) {
-            return altitude_ft;
-        } else {  // alt_type == WGS84
-            // caller must check for the added 1000000,
-            // which indicates altitude type is WGS84
-            return altitude_ft + 1000000;
+        if (altitude_ft_msl != INVALID_NUMBER) {
+            return altitude_ft_msl;
+        } else {
+            // add 1000000 which indicates to caller the alt is wgs84
+            return altitude_ft_wgs84 + 1000000;
         }
     }
 

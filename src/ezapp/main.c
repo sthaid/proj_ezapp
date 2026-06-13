@@ -190,7 +190,7 @@ static int init(void)
     sigaction(SIGUSR2, &action, NULL);
 
     // create devel mode server thread
-    sdlx_create_detached_thread(devel_mode_server_thread, NULL);
+    sdlx_create_detached_thread(devel_mode_server_thread, "devel_server", NULL);
 
     // init sdl
     sdlx_init(SUBSYS_VIDEO | SUBSYS_AUDIO | SUBSYS_SENSOR);
@@ -1171,7 +1171,7 @@ again:
         }
 
         // create thread to process the client request
-        sdlx_create_detached_thread(process_req_thread, (void*)(long)sockfd);
+        sdlx_create_detached_thread(process_req_thread, "proc_req", (void*)(long)sockfd);
     }
 
     // close listen socket

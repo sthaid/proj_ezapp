@@ -95,6 +95,8 @@ void find_closest_loc_data(double latitude, double longitude, char *name, double
         miles = &dummy_miles;
     }
 
+    // xxx optimize
+
     // loop over all locations, and find the closest
     for (int i = 0; i < max_loc_data; i++) {
         loc_data_t *x = &loc_data[i];

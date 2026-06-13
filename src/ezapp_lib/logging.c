@@ -50,7 +50,7 @@ int log_init(void)
     mkfifo(ANDROID_LOG_FIFO, 0666);
 
     // create thread that will read log_msg prints from the fifo
-    sdlx_create_detached_thread(android_logging_thread, NULL);
+    sdlx_create_detached_thread(android_logging_thread, "logging", NULL);
 
     // reopen stdout using the fifo
     fp = freopen(ANDROID_LOG_FIFO, "w", stdout);

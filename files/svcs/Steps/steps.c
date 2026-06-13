@@ -56,7 +56,7 @@ int main(int argc, char **argv)
 
     // service runtime loop
     while (!end_program) {
-        // wait for req or timeout
+        // wait for req or 5 sec timeout
         rc = svc_wait_for_req(progname, &req, time(NULL)+5);
 
         // if an unexpected error is returned, then delay and try again

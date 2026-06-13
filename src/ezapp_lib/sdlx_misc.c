@@ -344,7 +344,7 @@ int sdlx_get_permission(char *name)
 // your thread automatically anyway (when you make an SDL call), but it'll never
 // detach it.
 
-int sdlx_create_detached_thread_private(int (*thread_fn)(void*), char *thread_name, void *cx)
+int sdlx_create_detached_thread(int (*thread_fn)(void*), char *thread_name, void *cx)
 {
     SDL_Thread *x;
 

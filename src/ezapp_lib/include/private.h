@@ -91,9 +91,7 @@ void sdlx_quit(int subsys);
 char *sdlx_get_storage_path(void);
 void sdlx_copy_asset_file(char *asset_filename, char *dest_dir);
 int sdlx_get_permission(char *name);
-int sdlx_create_detached_thread_private(int (*thread_fn)(void*), char *thread_name, void *cx);
-#define sdlx_create_detached_thread(thread_fn, cx) \
-    do { sdlx_create_detached_thread_private(thread_fn, #thread_fn, cx); } while (0)
+int sdlx_create_detached_thread(int (*thread_fn)(void*), char *thread_name, void *cx);
 
 // --------------------
 // svc.c

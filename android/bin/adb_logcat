@@ -1,0 +1,4 @@
+#!/bin/bash
+
+set -x
+adb logcat -d -s --format=time,color EZAPP:I SDL:I SDL/APP:I AndroidRuntime:I *:F

@@ -36,7 +36,6 @@ int main(int argc, char **argv)
 {
     svc_req_t *req;
     int        rc;
-    time_t     timeout=0;
 
     // save args
     progname = argv[0];
@@ -57,9 +56,8 @@ int main(int argc, char **argv)
 
     // service runtime loop
     while (!end_program) {
-        // wait for req or timeout
-        timeout = (timeout == 0 ? time(NULL)+5 : time(NULL)+300);
-        rc = svc_wait_for_req(progname, &req, timeout);
+        // wait for req or 30 sec timeout
+        rc = svc_wait_for_req(progname, &req, time(NULL)+30);
 
         // if an unexpected error is returned, then delay and try again
         if (rc != 0 && rc != SVC_REQ_WAIT_ERROR_TIMEDOUT) {

@@ -495,7 +495,10 @@ static int svc_thread(void *cx);
 
 static void run_svc(int id)
 {
-    sdlx_create_detached_thread(svc_thread, (void*)(long)id);
+    char name[2000];
+
+    sprintf(name, "svc_%s", svcs[id].name);
+    sdlx_create_detached_thread(svc_thread, name, (void*)(long)id);
 }
 
 static int svc_thread(void *cx)

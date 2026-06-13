@@ -681,7 +681,7 @@ int sdlx_audio_record_from_mic(char *dir, char *filename, int auto_stop_secs, bo
         cx->append = append;
     }
     cx->auto_stop_secs = auto_stop_secs;
-    sdlx_create_detached_thread(record_mic_thread, cx);
+    sdlx_create_detached_thread(record_mic_thread, "record_mic", cx);
 
     // success
     return 0;
@@ -862,7 +862,7 @@ int sdlx_audio_record_from_device(char *dir, char *filename, bool append, bool s
         strcpy(cx->filename, filename);
         cx->append = append;
     }
-    sdlx_create_detached_thread(record_dev_thread, cx);
+    sdlx_create_detached_thread(record_dev_thread, "record_dev", cx);
 
     // return success
     return 0;
@@ -1002,7 +1002,7 @@ int sdlx_audio_play_tones(sdlx_tone_t *tones)
     cx = malloc(sizeof(play_tones_cx_t) + num_tones * sizeof(sdlx_tone_t));
     cx->num_tones = num_tones;
     memcpy(cx->tones, tones, num_tones * sizeof(sdlx_tone_t));
-    sdlx_create_detached_thread(tones_thread, cx);
+    sdlx_create_detached_thread(tones_thread, "play_tones", cx);
 
     // success
     return 0;
@@ -1276,7 +1276,7 @@ int sdlx_audio_play_buff(float *samples, int num_samples, int num_channels, int 
     cx->num_channels           = num_channels;
     cx->loops                  = loops;
     cx->free_samples_when_done = free_samples_when_done;
-    sdlx_create_detached_thread(play_buff_thread, cx);
+    sdlx_create_detached_thread(play_buff_thread, "play_buff", cx);
 
     // success
     return 0;

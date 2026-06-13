@@ -44,7 +44,6 @@ int main(int argc, char **argv)
     svc_req_t    *req;
     int           rc;
     int           created;
-    time_t        timeout = 0;
 
     // save args
     progname = argv[0];
@@ -88,9 +87,8 @@ int main(int argc, char **argv)
 
     // service runtime loop
     while (!end_program) {
-        // wait for req or timeout
-        timeout = (timeout == 0 ? time(NULL)+5 : time(NULL)+300);
-        rc = svc_wait_for_req(progname, &req, timeout);
+        // wait for req or 30 sec timeout
+        rc = svc_wait_for_req(progname, &req, time(NULL)+30);
 
         // if an unexpected error is returned, then delay and try again
         if (rc != 0 && rc != SVC_REQ_WAIT_ERROR_TIMEDOUT) {
@@ -130,6 +128,7 @@ void periodic_processing(void)
     static time_t t_last_call;
     time_t t_now = time(NULL);
     if (t_last_call != 0) {
+        printf("I %s: xxxx XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n", progname);
         printf("I %s: periodic interval = %ld secs\n", progname, t_now-t_last_call);
     }
     t_last_call = t_now;
@@ -260,12 +259,12 @@ void add_entry_to_loc_hist(time_t t, double latitude, double longitude, char *na
     // if buffer is full then discard the first half (oldest data)
     if (loc_hist->count == MAX_LOC_HIST) {
         memmove(&loc_hist->loc[0], 
-                &loc_hist->loc[MAX_LOC_HIST-MAX_LOC_HIST/2], 
+                &loc_hist->loc[MAX_LOC_HIST/2], 
                 (MAX_LOC_HIST/2)*sizeof(loc_hist->loc[0]));
 
         memset(&loc_hist->loc[MAX_LOC_HIST/2],
                0,
-               (MAX_LOC_HIST-MAX_LOC_HIST/2)*sizeof(loc_hist->loc[0]));
+               (MAX_LOC_HIST/2)*sizeof(loc_hist->loc[0]));
 
         loc_hist->count = MAX_LOC_HIST/2;
     }
