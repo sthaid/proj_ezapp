@@ -14,7 +14,7 @@ import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 
-import org.sthaid.ezApp.R;  // needed to access R.drawable.ic_notifcation_icon
+import org.sthaid.ezApp.R;  // needed to access R.drawable.ic_notification
 
 import android.media.AudioAttributes;
 import android.media.AudioFormat;
@@ -82,8 +82,8 @@ public class ezapp_media_fgsvc extends Service {
         builder = new Notification.Builder(this, CHANNEL_ID);
         Notification notification = builder
                 .setContentTitle("foreground enabled")
-                 //.setContentText("more text here if needed")
-                .setSmallIcon(R.mipmap.ic_launcher)
+                //.setContentText("more text here if needed")
+                .setSmallIcon(R.drawable.ic_notification)
                 .setOngoing(true)
                 .setPriority(Notification.PRIORITY_DEFAULT)
                 .setAutoCancel(true)

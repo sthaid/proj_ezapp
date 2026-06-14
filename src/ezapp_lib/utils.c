@@ -787,19 +787,48 @@ int util_read_png_file(char *dir, char *filename, unsigned char **pixels, int *w
 
 int util_write_png_file(char *dir, char *filename, unsigned char *pixels, int w, int h)
 {
-    char path[200];
-    int rc;
+    char           pathname[200];
+    LodePNGState   state;
+    int            rc = -1;
+    unsigned char *png_buffer;
+    size_t         png_size;
 
-    concat(dir, filename, path);
-    //INFO("writing png file %s\n", path);
-
-    rc = lodepng_encode32_file(path, pixels, w, h);
+    // create pathname
+    concat(dir, filename, pathname);
+    
+    // init lodepng state
+    lodepng_state_init(&state);
+    // - tell LodePNG your raw input buffer is 8-bit RGBA
+    state.info_raw.colortype = LCT_RGBA;
+    state.info_raw.bitdepth = 8;
+    // - tell LodePNG your desired output file must be 8-bit RGBA
+    state.info_png.color.colortype = LCT_RGBA;
+    state.info_png.color.bitdepth = 8;
+    // - stop LodePNG from automatically changing the output color format
+    state.encoder.auto_convert = 0; 
+    
+    // encode pixels to png_buffer
+    rc = lodepng_encode(&png_buffer, &png_size, pixels, w, h, &state);
     if (rc != 0) {
-        ERROR("lodepng_encode32_file %s w=%d h=%d failed, rc=%d\n", path, w, h, rc);
-        return -1;
+        ERROR("lodepng_encode failed, rc=%d, %s\n", rc, lodepng_error_text(rc));
+        goto done;
     }
 
-    return 0;
+    // write png_buffer to pathname
+    rc = lodepng_save_file(png_buffer, png_size, pathname);
+    if (rc != 0) {
+        ERROR("lodepng_save_file failed, rc=%d, %s\n", rc, lodepng_error_text(rc));
+        goto done;
+    }
+    
+    // set success return value
+    rc = 0;
+
+done:
+    // cleanup and return status
+    free(png_buffer);
+    lodepng_state_cleanup(&state);
+    return rc;
 }
 
 // ----------------- FFT ---------------------

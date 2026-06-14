@@ -1,4 +1,3 @@
-svcs should be logged SvcLocation in logfile
 
 document the sdlx.h, utils.h, and svcs.h files
 
@@ -28,11 +27,10 @@ ezapp -> ezApp
 
 documentation
 
-review altitude code;  and verify the altitude MSL vs WGS84 at a known location
-- Altitude / AltitudeConverter
-
 on Motorola, the notification icon for FG enabled is a white square
+- may need drawables
 
+update comment ...
 <!-- Required for Android 13 (API 33) and above. Ignored by Android 11. -->
 <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 

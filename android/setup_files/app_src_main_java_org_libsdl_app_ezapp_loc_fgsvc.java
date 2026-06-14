@@ -12,7 +12,7 @@ import android.app.NotificationManager;
 
 import android.content.pm.ServiceInfo;
 
-import org.sthaid.ezApp.R;  // needed to access R.drawable.ic_notifcation_icon
+import org.sthaid.ezApp.R;  // needed to access R.drawable
 
 public class ezapp_loc_fgsvc extends Service {
 
@@ -51,7 +51,7 @@ public class ezapp_loc_fgsvc extends Service {
         Notification notification = builder
                 .setContentTitle("foreground enabled")
                  //.setContentText("more text here if needed")
-                .setSmallIcon(R.mipmap.ic_launcher)
+                .setSmallIcon(R.drawable.ic_notification)
                 .setOngoing(true)
                 .setPriority(Notification.PRIORITY_DEFAULT)
                 .setAutoCancel(true)
