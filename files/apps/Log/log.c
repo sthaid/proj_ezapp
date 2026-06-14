@@ -216,7 +216,7 @@ int log_load(void)
 
     // start logcat to capture last lines for EZAPP, SDL, SDL/APP and AndroidRuntime
 #ifdef ANDROID
-    sprintf(cmd, "logcat -s -d --format=tag EZAPP:I SDL:I SDL/APP:I AndroidRuntime:I | tail -%d", MAX_LINES);
+    sprintf(cmd, "logcat -s -d --format=time EZAPP:I SDL:I SDL/APP:I AndroidRuntime:I | tail -%d", MAX_LINES);
 #else
     sprintf(cmd, "cat apps/Log/test.log | tail -%d", MAX_LINES);
 #endif
@@ -229,12 +229,9 @@ int log_load(void)
     // read log lines, initialize array of lines and parallel array of colors
     while (fgets(s, sizeof(s), fp) != NULL) {
         colors[num_lines] = COLOR_WHITE;
-        if (s[0] == 'I' && (s[1] == ' ' || s[1] == '/')) {
+        if (s[19] == 'I' && s[20] == '/') {
             colors[num_lines] = COLOR_GREEN;
-        } else if ((s[0] == 'E' && (s[1] == ' ' || s[1] == '/')) ||
-                   (strcasestr(s, "error") != NULL) || 
-                   (strcasestr(s, "fail") != NULL)) 
-        {
+        } else {
             colors[num_lines] = COLOR_RED;
         }
 

@@ -11,6 +11,8 @@
 #include "svcs/Location/location.h"
 #include "svcs/Location/common.h"
 
+#define DEG2RAD (M_PI / 180)
+
 typedef struct {
     double latitude;
     double longitude;
@@ -84,15 +86,35 @@ void find_closest_loc_data(double latitude, double longitude, char *name, double
     char   closest_name[MAX_NAME];
     double dummy_miles;
 
+    static double save_latitude;
+    static double save_longitude;
+    static char   save_name[MAX_NAME];
+    static double save_miles;
+
     // init
     min_distance_squared = 1e99;
-    cos_lat = cos(latitude * (M_PI / 180));
+    cos_lat = cos(latitude * DEG2RAD);
     point5_div_cos_lat = 0.5 / cos_lat;
     closest_name[0] = '\0';
 
-    // supply dummy miles arg, if needed
+    // provide dummy miles arg, if needed
     if (miles == NULL) {
         miles = &dummy_miles;
+    }
+
+    // if requested latitude/longitude is within 0.25 miles of saved result then
+    // return the saved result
+    if (save_name[0] != '\0') {
+        // ns, ew are in miles
+        ns = (latitude - save_latitude) * 69.0;
+        ew = ((longitude - save_longitude) * cos_lat) * 69.0;
+        distance_squared = (ns * ns) + (ew * ew);
+        if (distance_squared < 0.0625) {
+            strcpy(name, save_name);
+            *miles = save_miles;
+            printf("I %s: returning saved location %s\n", progname, save_name);
+            return;
+        }
     }
 
     // xxx optimize
@@ -138,6 +160,13 @@ void find_closest_loc_data(double latitude, double longitude, char *name, double
     *miles = 364000 * sqrt(min_distance_squared) / 5280;
     printf("I %s: found closest to %0.3f %0.3f - name=%s miles=%0.1f\n",
            progname, latitude, longitude, name, *miles);
+
+    // save result, so a subsequent call can use the result if the
+    // subsequent call lat/long is close to the saved lat/long
+    save_latitude = latitude;
+    save_longitude = longitude;
+    strcpy(save_name, name);
+    save_miles = *miles;
 }
 
 // -----------------  COUNTRY LOC DATA DOWNLOAD  --------------------

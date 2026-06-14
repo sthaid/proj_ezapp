@@ -314,8 +314,15 @@ double call_java3(const char *method_name, float *caller_array, int num_array_el
 
 #include <utils.h>
 #include <private.h>
+#include <stddef.h>
+#include <time.h>
 
-void util_android_utils_init(void) { }
+time_t tstart;
+
+void util_android_utils_init(void)
+{
+    tstart = time(NULL);
+}
 
 void util_android_utils_destroy(void) { }
 
@@ -329,7 +336,12 @@ void util_get_location(double *latitude, double *longitude, double *altitude, bo
         *latitude = BOLTON_MASS_LATITUDE;
     }
     if (longitude) {
-        *longitude = BOLTON_MASS_LONGITUDE;
+        // simulate velocity in west direction, for testing
+        #define RATE 600.0  // mph
+        #define COS_LAT 0.738
+        *longitude = BOLTON_MASS_LONGITUDE - 
+                     (RATE * (time(NULL) - tstart) / 3600.) / 
+                     (COS_LAT * 69.) ;
     }
     if (altitude) {
         *altitude = BOLTON_MASS_ALTITUDE_FT;

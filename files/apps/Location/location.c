@@ -52,12 +52,12 @@ int main(int argc, char **argv)
 
     time_t       time_now;
     time_t       time_last_get_loc_info = 0;
+    bool         settings_changed = false;
+    int          last_loc_hist_count = -1;
 
     char         loc_curr[MAX_SVC_REQ_DATA] = "Not Initialized";
     char        *lines_loc_curr[1];
     char        *loc_hist_lines[MAX_LOC_HIST];
-
-    bool         settings_changed = false;
 
     // save args
     progname = argv[0];
@@ -83,9 +83,15 @@ int main(int argc, char **argv)
         // init the backbuffer
         sdlx_display_init(COLOR_BLACK, PORTRAIT);
 
-        // get current location
+        // get current location, this is done when:
+        // - its been 10 seconds since last get
+        // - settings have changed, which could have loaded a new city/town database
+        // - a new loc_hist entry added
         time_now = time(NULL);
-        if (time_now - time_last_get_loc_info > 60 || settings_changed) {
+        if (time_now - time_last_get_loc_info > 10 || 
+            settings_changed ||
+            loc_hist->count != last_loc_hist_count)
+        {
             char req_data[MAX_SVC_REQ_DATA];
 
             memset(req_data, 0, sizeof(req_data));
@@ -98,6 +104,7 @@ int main(int argc, char **argv)
             }
             time_last_get_loc_info = time_now;
             settings_changed = false;
+            last_loc_hist_count = loc_hist->count;
         }
 
         // display current location
@@ -145,8 +152,11 @@ int main(int argc, char **argv)
         // present the display
         sdlx_display_present();
 
-        // wait for event, with 10 second timeout
-        sdlx_get_event(10*SEC, &event);
+        // wait for event, with 1 second timeout
+        sdlx_get_event(1*SEC, &event);
+        if (event.event_id == -1) {
+            continue;
+        }
 
         // process events
         switch (event.event_id) {

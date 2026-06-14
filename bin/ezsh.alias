@@ -1,8 +1,15 @@
-# xxx add comments
-
+# abbreviations
 ls          ls -l
 l           local
 
+# adb logcat cmds
 logclr      logcat -c -b all
 logwatch    logcat -s --format=time,color EZAPP:I SDL:I SDL/APP:I AndroidRuntime:I '*:F'
 logcat      logcat -d -s --format=time,color EZAPP:I SDL:I SDL/APP:I AndroidRuntime:I '*:F'
+
+# adb abi
+abi         getprop ro.product.cpu.abi; getprop ro.product.cpu.abilist
+
+# adb cpu usage
+run_top     top -b -H -m 20 | egrep "^  TID|org.sthaid.ezApp" 
+

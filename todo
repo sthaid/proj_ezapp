@@ -1,19 +1,11 @@
+svcs should be logged SvcLocation in logfile
+
 document the sdlx.h, utils.h, and svcs.h files
 
-eztest requires Linux build,  automatically trigger Linux build for all components, if any are 
-missing
-
-eliminate build_tools/gen_version
-
-use of clean vs clobber - consolidate on 'clean'
-
 what packages  are needed, how is libssl-dev already installed
-
-more adb_xxx cmds
+  udo apt install libssl-dev
 
 ezsh.c 
-- help on alias
-- add more alias like the abi, meminfo, top
 - interrupt using ctrl-c ???
 
 ---------

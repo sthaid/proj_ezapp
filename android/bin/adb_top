@@ -1,8 +1,7 @@
 #!/bin/bash
 
-# -b     batch mode
-# -H     show threads
-# -m     max tasks to show
-# -d 5:  delay 5 secs
+# -b batch mode
+# -H show threads
+# -m max tasks to show
 
-adb shell top -b -H -m 30 -d 5  | egrep "^  TID|org.sthaid.ezApp" 
+adb shell top -b -H -m 20 | egrep "^  TID|org.sthaid.ezApp" 

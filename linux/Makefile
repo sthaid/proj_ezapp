@@ -5,7 +5,7 @@ build_all: SDL SDL_ttf SDL_mixer lodepng kissfft cJSON libmp3lame ezapp_lib pico
 build_quick: ezapp_lib picoc ezapp
 
 ezapp:
-	../bin/build_tools/gen_version
+	../src/ezapp/gen_version
 	mkdir -p build/$@
 	cd build/$@; cmake ../../../src/$@ -DCMAKE_PREFIX_PATH=$(CMAKE_PREFIX_PATH)
 	cd build/$@; cmake --build . # --verbose

@@ -47,11 +47,11 @@ install_android:
 
 .PHONY: android_build android_install
 
-# --- clobber ---
+# --- clean ---
 
-clobber:
+clean:
 	git clean -fdx
 	rm -rf src/SDL src/SDL_mixer src/SDL_ttf android/SDL
 	@echo "Remaing files:"; git ls-files --other
 
-.PHONY: clobber
+.PHONY: clean

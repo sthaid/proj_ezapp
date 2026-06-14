@@ -210,9 +210,11 @@ public class ezapp_utils {
     public double get_altitude() {
         if (altitude_ft_msl != INVALID_NUMBER) {
             return altitude_ft_msl;
-        } else {
-            // add 1000000 which indicates to caller the alt is wgs84
+        } else if (altitude_ft_wgs84 != INVALID_NUMBER) {
+            // add 1000000 to indicate to caller the alt is wgs84
             return altitude_ft_wgs84 + 1000000;
+        } else {
+            return INVALID_NUMBER;
         }
     }
 

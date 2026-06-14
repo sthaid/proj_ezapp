@@ -15,7 +15,7 @@ SDL:
 	./setup
 
 gen_version:
-	../bin/build_tools/gen_version
+	../src/ezapp/gen_version
 
 gen_assets:
 	# create files.tar

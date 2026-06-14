@@ -56,8 +56,8 @@ int main(int argc, char **argv)
 
     // service runtime loop
     while (!end_program) {
-        // wait for req or 30 sec timeout
-        rc = svc_wait_for_req(progname, &req, time(NULL)+30);
+        // wait for req or 10 sec timeout
+        rc = svc_wait_for_req(progname, &req, time(NULL)+10);
 
         // if an unexpected error is returned, then delay and try again
         if (rc != 0 && rc != SVC_REQ_WAIT_ERROR_TIMEDOUT) {
@@ -66,11 +66,8 @@ int main(int argc, char **argv)
             continue;
         }
 
-        // if scv_wait_for_req timedout then do periodic svc processing
-        if (rc == SVC_REQ_WAIT_ERROR_TIMEDOUT) {
-            periodic_processing();
-            continue;
-        }
+        // do periodic svc processing
+        periodic_processing();
 
         // if req was recvd then process the req
         if (req != NULL) {
