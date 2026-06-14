@@ -235,6 +235,9 @@ int main(int argc, char **argv)
 
             // wait for an event, or timeout
             sdlx_get_event(timeout_us, &event);
+            if (event.event_id == -1) {
+                continue;
+            }
 
             // process event, if received
             switch (event.event_id) {

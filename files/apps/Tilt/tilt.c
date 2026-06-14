@@ -174,6 +174,10 @@ void no_accelerometer(void)
     sdlx_display_present();
 
     sdlx_get_event(-1, &event);  // infinite timeout
+    if (event.event_id == -1) {
+        continue;
+    }
+
     switch (event.event_id) {
     case EVID_QUIT:
         end_program = true;
@@ -216,13 +220,17 @@ int cal_query(void)
     sdlx_display_present();
 
     sdlx_get_event(-1, &event);
+    if (event.event_id == -1) {
+        continue;
+    }
+
     if (event.event_id == EVID_CAL_SAVE || 
         event.event_id == EVID_CAL_UNCALIBRATE || 
         event.event_id == EVID_CAL_CANCEL) 
     {
         return event.event_id;
     } else {
-        printf("E %s: cal_query geceived unexpected event_id %d\n", progname, event.event_id);
+        printf("E %s: cal_query received unexpected event_id %d\n", progname, event.event_id);
         return EVID_CAL_CANCEL;
     }
 }
@@ -341,6 +349,9 @@ void display_tilt_horizontal(double ax, double ay, double az, double roll_raw, d
 
     // wait for event, with 10 ms timeout
     sdlx_get_event(10000, &event);
+    if (event.event_id == -1) {
+        continue;
+    }
 
     // process events
     switch (event.event_id) {
@@ -580,6 +591,9 @@ void display_tilt_vertical(double ax, double ay, double az, double roll, double 
 
     // wait for event, with 10 ms timeout
     sdlx_get_event(10000, &event);
+    if (event.event_id == -1) {
+        continue;
+    }
 
     // process events
     switch (event.event_id) {

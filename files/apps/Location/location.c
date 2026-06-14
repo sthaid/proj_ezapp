@@ -275,6 +275,9 @@ void settings(void)
 
         // wait for event, 100 ms timeout
         sdlx_get_event(100000, &event);
+        if (event.event_id == -1) {
+            continue;
+        }
 
         // process events
         switch (event.event_id) {

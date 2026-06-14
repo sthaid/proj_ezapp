@@ -160,6 +160,9 @@ int main(int argc, char **argv)
 
         // wait for event, with infinite timeout
         sdlx_get_event(-1, &event);
+        if (event.event_id == -1) {
+            continue;
+        }
 
         // process events
         switch (event.event_id) {
@@ -884,6 +887,9 @@ void display_detailed_forecast(int idx)
 
         // wait for event, with infinit timeout
         sdlx_get_event(-1, &event);
+        if (event.event_id == -1) {
+            continue;
+        }
 
         // process events
         switch (event.event_id) {

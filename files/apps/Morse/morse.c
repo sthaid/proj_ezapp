@@ -128,6 +128,9 @@ int main(int argc, char **argv)
 
         // wait for event, with 100 ms timeout
         sdlx_get_event(100000, &event);
+        if (event.event_id == -1) {
+            continue;
+        }
 
         // process events
         switch (event.event_id) {

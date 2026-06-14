@@ -1074,6 +1074,10 @@ static void show_file(char *filename, int orientation, int fontid)
         sdlx_display_present();
 
         sdlx_get_event(-1, &event);
+        if (event.event_id == -1) {
+            continue;
+        }
+
         switch (event.event_id) {
         case EVID_MOTION:
             y += event.u.motion.yrel;

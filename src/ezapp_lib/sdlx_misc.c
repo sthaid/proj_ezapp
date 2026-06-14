@@ -172,6 +172,9 @@ char *sdlx_get_input_str(char *prompt, bool numeric_keybd, char *dflt_input_str)
 
         // wait for event
         sdlx_get_event(100000, &event);
+        if (event.event_id == -1) {
+            continue;
+        }
 
         // process sdlx events EVID_KEYBD and EVID_QUIT
         if (event.event_id == EVID_KEYBD) {
