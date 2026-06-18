@@ -24,7 +24,7 @@ import android.media.MediaRecorder;
 import android.media.projection.MediaProjection;
 import android.media.projection.MediaProjectionManager;
 
-public class ezapp_media_fgsvc extends Service {
+public class ezApp_media_fgsvc extends Service {
 
     private static final String    TAG = "EZAPP";
     private static final int       STATE_INITIALIZING = 1;
@@ -40,15 +40,15 @@ public class ezapp_media_fgsvc extends Service {
     private IBinder                mBinder = new InnerBinder();
 
     public class InnerBinder extends Binder {
-        ezapp_media_fgsvc getService() {
-            return ezapp_media_fgsvc.this;
+        ezApp_media_fgsvc getService() {
+            return ezApp_media_fgsvc.this;
         }
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int start_id) {
-        String CHANNEL_ID          = "ezapp_channel";
-        String CHANNEL_NAME        = "ezapp";
+        String CHANNEL_ID          = "ezApp_channel";
+        String CHANNEL_NAME        = "ezApp";
         String CHANNEL_DESCRIPTION = "description";
         int    NOTIFICATION_ID     = 101;
 

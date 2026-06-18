@@ -17,7 +17,7 @@ set(LIB_SRCS
     include.c 
     lex.c 
     parse.c 
-    picoc_ezapp.c 
+    picoc_ezApp.c 
     platform.c 
     table.c 
     type.c 
@@ -37,14 +37,14 @@ set(LIB_SRCS
 )
 
 set(LIB_HEADERS
-    include/picoc_ezapp.h
+    include/picoc_ezApp.h
 )
 
 add_library(picoc STATIC ${LIB_SRCS} ${LIB_HEADERS})
 
 target_include_directories(picoc PUBLIC include)
 
-install(FILES include/picoc_ezapp.h DESTINATION include)
+install(FILES include/picoc_ezApp.h DESTINATION include)
 
 install(TARGETS picoc ARCHIVE DESTINATION lib)
 

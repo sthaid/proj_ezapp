@@ -51,12 +51,12 @@ CLONE & BUILD PROJ_EZAPP
 ===============================
 
 # set environment varialbles
-export EZAPP=/your/path/to/proj_ezapp
+export EZAPP=/your/path/to/proj_ezApp
 export PATH=$PATH:$EZAPP/bin:$EXAPP/android/bin
 
 # git clone
 cd $(dirname $EZAPP)
-git clone https://github.com/sthaid/proj_ezapp.git
+git clone https://github.com/sthaid/proj_ezApp.git
 
 # build
 cd $EZAPP

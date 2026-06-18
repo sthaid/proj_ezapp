@@ -24,7 +24,7 @@ import android.view.Gravity;
 
 import java.io.IOException;
 
-public class ezapp_utils {
+public class ezApp_utils {
     private static final String                TAG = "EZAPP";
     private static final int                   INVALID_NUMBER = 999999999;
     private static final double                METERS_TO_FEET = 3.28084;
@@ -49,7 +49,7 @@ public class ezapp_utils {
     // constructor
     //
 
-    public ezapp_utils(Context cx) {
+    public ezApp_utils(Context cx) {
         Log.i(TAG, "utils init");
 
         //

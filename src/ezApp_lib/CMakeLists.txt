@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(ezapp_lib)
+project(ezApp_lib)
 
 set(CMAKE_C_FLAGS "-O2 -Wall -Werror -Wno-unused-result -g")
 
@@ -29,10 +29,10 @@ cmake_path(APPEND INCLUDE_PATH "${CMAKE_INSTALL_PREFIX}" include)
 
 include_directories(. ./include ${INCLUDE_PATH})
 
-add_library(ezapp_lib STATIC ${LIB_SRCS} ${LIB_HEADERS})
+add_library(ezApp_lib STATIC ${LIB_SRCS} ${LIB_HEADERS})
 
 install(FILES include/sdlx.h include/svcs.h include/utils.h include/private.h
         DESTINATION include)
 
-install(TARGETS ezapp_lib ARCHIVE DESTINATION lib)
+install(TARGETS ezApp_lib ARCHIVE DESTINATION lib)
 

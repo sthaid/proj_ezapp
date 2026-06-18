@@ -61,7 +61,7 @@ android {
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
     // EZAPP
-    // - used by ezapp_utils.java
+    // - used by ezApp_utils.java
     // - https://play.google.com/sdks/details/com-google-android-gms-play-services-location?hl=en-US
     implementation 'com.google.android.gms:play-services-location:21.0.1' // Or the latest version
 }

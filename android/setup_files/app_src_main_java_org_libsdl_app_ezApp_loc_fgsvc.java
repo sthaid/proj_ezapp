@@ -14,21 +14,21 @@ import android.content.pm.ServiceInfo;
 
 import org.sthaid.ezApp.R;  // needed to access R.drawable
 
-public class ezapp_loc_fgsvc extends Service {
+public class ezApp_loc_fgsvc extends Service {
 
     private static final String TAG = "EZAPP";
     private IBinder             mBinder = new InnerBinder();
 
     public class InnerBinder extends Binder {
-        ezapp_loc_fgsvc getService() {
-            return ezapp_loc_fgsvc.this;
+        ezApp_loc_fgsvc getService() {
+            return ezApp_loc_fgsvc.this;
         }
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int start_id) {
-        String CHANNEL_ID          = "ezapp_channel";
-        String CHANNEL_NAME        = "ezapp";
+        String CHANNEL_ID          = "ezApp_channel";
+        String CHANNEL_NAME        = "ezApp";
         String CHANNEL_DESCRIPTION = "description";
         int    NOTIFICATION_ID     = 100;
 

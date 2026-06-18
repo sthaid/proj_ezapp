@@ -1,4 +1,4 @@
-ezapp -> ezApp
+ezApp -> ezApp
 
 doc:
 - document the sdlx.h, utils.h, and svcs.h files
@@ -161,11 +161,11 @@ Cleanups:
      cleanup media projection  - https://developer.android.com/media/grow/media-projection#java 
 - reveiw utils.cpp - is more work needed here to cleanup
 
-running ezapp while phone is sleeping
+running ezApp while phone is sleeping
 - how to implent this
 - Location - check how often does the service run when the phone is snoozing
 - auto dismiss the foreground notification?
-- run ezapp as a service when installed or device boots
+- run ezApp as a service when installed or device boots
 
 review tools
 - ezgetall - print error if files dir exits locally
@@ -182,7 +182,7 @@ PREPARE FOR RELEASE
 
 Android -
 - why is android build only building arm64-v8a
-- make the ezapp icon
+- make the ezApp icon
 
 ===================
 SDL ISSUES

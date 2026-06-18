@@ -205,15 +205,15 @@ void help(void)
     char help_text[] = "\
 Ezsh runs on the Linux host, simulating a shell running on the Android device.\n\
 \n\
-To use ezsh, the following ezapp settings must first be made on the Android device:\n\
+To use ezsh, the following ezApp settings must first be made on the Android device:\n\
 - Devel_Mode = ON\n\
 - Devel_Port = nnnn\n\
 - Devel_Password\n\
 \n\
-For security, it is recommended to enable ezapp Devel_Mode when on a trusted network.\n\
+For security, it is recommended to enable ezApp Devel_Mode when on a trusted network.\n\
 \n\
 Commands entered to ezsh are first checked if they require special processing;\n\
-if not then the command is passed to ezapp, which runs the command on the \n\
+if not then the command is passed to ezApp, which runs the command on the \n\
 Android device.\n\
 \n\
 Commands that require special processing are:\n\

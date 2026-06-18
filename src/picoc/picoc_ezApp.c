@@ -1,10 +1,10 @@
-// EXAPP this is picoc entrypoint, called by src/ezapp/main.c
+// EXAPP this is picoc entrypoint, called by src/ezApp/main.c
 
 #include "picoc.h"
 
 #define PICOC_STACK_SIZE (128000*4)  // 512,000 bytes
 
-int picoc_ezapp(char *args)
+int picoc_ezApp(char *args)
 {
     Picoc pc;
     char  args_copy[1000];

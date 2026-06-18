@@ -128,14 +128,14 @@
         </activity>
 
         <!-- EZAPP Service -->
-        <!-- <service android:name=".ezapp_fgsvc" /> -->
+        <!-- <service android:name=".ezApp_fgsvc" /> -->
         <service
-            android:name="org.libsdl.app.ezapp_loc_fgsvc"
+            android:name="org.libsdl.app.ezApp_loc_fgsvc"
             android:enabled="true"
             android:exported="false" 
             android:foregroundServiceType="location" />
         <service
-            android:name="org.libsdl.app.ezapp_media_fgsvc"
+            android:name="org.libsdl.app.ezApp_media_fgsvc"
             android:enabled="true"
             android:exported="false" 
             android:foregroundServiceType="mediaProjection" />

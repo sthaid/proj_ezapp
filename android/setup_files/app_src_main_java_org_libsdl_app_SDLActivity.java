@@ -59,9 +59,9 @@ import android.os.Binder;
 import android.os.IBinder;
 import android.content.ComponentName;
 import android.media.projection.MediaProjectionManager;
-import org.libsdl.app.ezapp_loc_fgsvc;
-import org.libsdl.app.ezapp_media_fgsvc;
-import org.libsdl.app.ezapp_utils;
+import org.libsdl.app.ezApp_loc_fgsvc;
+import org.libsdl.app.ezApp_media_fgsvc;
+import org.libsdl.app.ezApp_utils;
 import android.os.SystemClock;
 
 /**
@@ -242,12 +242,12 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
     protected static boolean mDispatchingKeyEvent = false;
 
     // EZAPP variables
-    private static ezapp_utils       mezapp_utils;
-    private static ezapp_loc_fgsvc   mezapp_loc_fgsvc;
-    private static boolean           mezapp_loc_fgsvc_isbound = false;
-    private static ezapp_media_fgsvc mezapp_media_fgsvc;
-    private static boolean           mezapp_media_fgsvc_isbound = false;
-    private static int               mezapp_media_start_result;
+    private static ezApp_utils       mezApp_utils;
+    private static ezApp_loc_fgsvc   mezApp_loc_fgsvc;
+    private static boolean           mezApp_loc_fgsvc_isbound = false;
+    private static ezApp_media_fgsvc mezApp_media_fgsvc;
+    private static boolean           mezApp_media_fgsvc_isbound = false;
+    private static int               mezApp_media_start_result;
     private static final int         MEDIA_RECORD_REQUEST_CODE = 1234;
     private static final int         RESULT_NOT_SET = Activity.RESULT_FIRST_USER;
 
@@ -526,171 +526,171 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
     public double start_playbackcapture() {
         Log.i(EZAPP_TAG, "start_playbackcapture called");
 
-        mezapp_media_start_result = RESULT_NOT_SET;
+        mezApp_media_start_result = RESULT_NOT_SET;
         MediaProjectionManager manager = 
             (MediaProjectionManager) getSystemService(MEDIA_PROJECTION_SERVICE);
         startActivityForResult(manager.createScreenCaptureIntent(), MEDIA_RECORD_REQUEST_CODE);
 
-        while (mezapp_media_start_result == RESULT_NOT_SET) {
+        while (mezApp_media_start_result == RESULT_NOT_SET) {
             SystemClock.sleep(100);
         }
-        return (mezapp_media_start_result == RESULT_OK ? 0 : -1);
+        return (mezApp_media_start_result == RESULT_OK ? 0 : -1);
     }
 
     public double stop_playbackcapture() {
-        Log.i(EZAPP_TAG, "stop_playbackcapture called, isbound = " + mezapp_media_fgsvc_isbound);
-        if (mezapp_media_fgsvc_isbound) {
-            Intent serviceIntent = new Intent(this, ezapp_media_fgsvc.class);
+        Log.i(EZAPP_TAG, "stop_playbackcapture called, isbound = " + mezApp_media_fgsvc_isbound);
+        if (mezApp_media_fgsvc_isbound) {
+            Intent serviceIntent = new Intent(this, ezApp_media_fgsvc.class);
             stopService(serviceIntent);
-            unbindService(ezapp_media_fgsvc_connection);
-            mezapp_media_fgsvc_isbound = false;
+            unbindService(ezApp_media_fgsvc_connection);
+            mezApp_media_fgsvc_isbound = false;
         }
         return 0;
     }
 
     public short[] get_playbackcapture_audio(int arg_unused) {
         //Log.i(EZAPP_TAG, "get_playbackcapture_audio, num = " + num_array_elements);
-        return ezapp_media_fgsvc.get_playbackcapture_audio();
+        return ezApp_media_fgsvc.get_playbackcapture_audio();
     }
 
-    private ServiceConnection ezapp_media_fgsvc_connection = new ServiceConnection() {
+    private ServiceConnection ezApp_media_fgsvc_connection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
-            ezapp_media_fgsvc.InnerBinder binder = (ezapp_media_fgsvc.InnerBinder) service;
-            mezapp_media_fgsvc = binder.getService();
-            mezapp_media_fgsvc_isbound = true;
+            ezApp_media_fgsvc.InnerBinder binder = (ezApp_media_fgsvc.InnerBinder) service;
+            mezApp_media_fgsvc = binder.getService();
+            mezApp_media_fgsvc_isbound = true;
         }
 
         @Override
         public void onServiceDisconnected(ComponentName name) {
-            mezapp_media_fgsvc_isbound = false;
+            mezApp_media_fgsvc_isbound = false;
         }
     };
 
     // EZAPP start/stop location foreground service
     public double start_foreground() {
         Log.i(EZAPP_TAG, "start_foreground called");
-        if (mezapp_loc_fgsvc_isbound) {
+        if (mezApp_loc_fgsvc_isbound) {
             Log.e(EZAPP_TAG, "foreground already enabled");
             return 0;
         }
 
         showToast("enabling foreground", 0, Gravity.CENTER, 0, 0);
             
-        Intent x = new Intent(this, ezapp_loc_fgsvc.class);
+        Intent x = new Intent(this, ezApp_loc_fgsvc.class);
         startForegroundService(x);
-        bindService(x, ezapp_loc_fgsvc_connection, Context.BIND_AUTO_CREATE);
+        bindService(x, ezApp_loc_fgsvc_connection, Context.BIND_AUTO_CREATE);
         return 0;
     }
 
     public double stop_foreground() {
         Log.i(EZAPP_TAG, "stop_foreground called");
-        if (!mezapp_loc_fgsvc_isbound) {
+        if (!mezApp_loc_fgsvc_isbound) {
             Log.i(EZAPP_TAG, "foreground already disabled");
             return 0;
         }
 
         showToast("disabling foreground", 0, Gravity.CENTER, 0, 0);
 
-        Intent x = new Intent(this, ezapp_loc_fgsvc.class);
+        Intent x = new Intent(this, ezApp_loc_fgsvc.class);
         stopService(x);
-        unbindService(ezapp_loc_fgsvc_connection);
-        mezapp_loc_fgsvc_isbound = false;
+        unbindService(ezApp_loc_fgsvc_connection);
+        mezApp_loc_fgsvc_isbound = false;
         return 0;
     }
 
     public double is_foreground_enabled() {
-        Log.i(EZAPP_TAG, "is_foreground_enabled called, " + mezapp_loc_fgsvc_isbound);
-        return mezapp_loc_fgsvc_isbound ? 1 : 0;
+        Log.i(EZAPP_TAG, "is_foreground_enabled called, " + mezApp_loc_fgsvc_isbound);
+        return mezApp_loc_fgsvc_isbound ? 1 : 0;
     }
 
-    private ServiceConnection ezapp_loc_fgsvc_connection = new ServiceConnection() {
+    private ServiceConnection ezApp_loc_fgsvc_connection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
-            ezapp_loc_fgsvc.InnerBinder binder = (ezapp_loc_fgsvc.InnerBinder) service;
-            mezapp_loc_fgsvc = binder.getService();
-            mezapp_loc_fgsvc_isbound = true;
+            ezApp_loc_fgsvc.InnerBinder binder = (ezApp_loc_fgsvc.InnerBinder) service;
+            mezApp_loc_fgsvc = binder.getService();
+            mezApp_loc_fgsvc_isbound = true;
         }
 
         @Override
         public void onServiceDisconnected(ComponentName name) {
-            mezapp_loc_fgsvc_isbound = false;
+            mezApp_loc_fgsvc_isbound = false;
         }
     };
 
     // EZAPP utils init and destroy
     public double android_utils_init() {
-        mezapp_utils = new ezapp_utils(getContext());
+        mezApp_utils = new ezApp_utils(getContext());
         return 0;
     }
 
     public double android_utils_destroy() {
-        if (mezapp_utils != null) {
-            mezapp_utils.destroy();
-            mezapp_utils = null;
+        if (mezApp_utils != null) {
+            mezApp_utils.destroy();
+            mezApp_utils = null;
         }
         return 0;
     }
 
     // EZAPP utils get location
     public double get_latitude() {
-        if (mezapp_utils == null) {
+        if (mezApp_utils == null) {
             return INVALID_NUMBER;
         }
-        return mezapp_utils.get_latitude();
+        return mezApp_utils.get_latitude();
     }
 
     public double get_longitude() {
-        if (mezapp_utils == null) {
+        if (mezApp_utils == null) {
             return INVALID_NUMBER;
         }
-        return mezapp_utils.get_longitude();
+        return mezApp_utils.get_longitude();
     }
 
     public double get_altitude() {
-        if (mezapp_utils == null) {
+        if (mezApp_utils == null) {
             return INVALID_NUMBER;
         }
-        return mezapp_utils.get_altitude();
+        return mezApp_utils.get_altitude();
     }
 
     // EZAPP utils text to speech
     public double text_to_speech(String message) {
-        if (mezapp_utils == null) {
+        if (mezApp_utils == null) {
             return INVALID_NUMBER;
         }
-        return mezapp_utils.text_to_speech(message);
+        return mezApp_utils.text_to_speech(message);
     }
 
     // EZAPP utils flashlight
     public double turn_flashlight_on() {
-        if (mezapp_utils == null) {
+        if (mezApp_utils == null) {
             return INVALID_NUMBER;
         }
-        mezapp_utils.turn_flashlight_on();
+        mezApp_utils.turn_flashlight_on();
         return 0;
     }
 
     public double turn_flashlight_off() {
-        if (mezapp_utils == null) {
+        if (mezApp_utils == null) {
             return INVALID_NUMBER;
         }
-        mezapp_utils.turn_flashlight_off();
+        mezApp_utils.turn_flashlight_off();
         return 0;
     }
 
     public double is_flashlight_on() { 
-        if (mezapp_utils == null) {
+        if (mezApp_utils == null) {
             return INVALID_NUMBER;
         }
-        return mezapp_utils.is_flashlight_on() ? 1 : 0;
+        return mezApp_utils.is_flashlight_on() ? 1 : 0;
     }       
                 
     public double toggle_flashlight() {
-        if (mezapp_utils == null) {
+        if (mezApp_utils == null) {
             return INVALID_NUMBER;
         }
-        mezapp_utils.toggle_flashlight();
+        mezApp_utils.toggle_flashlight();
         return 0;
     }
 
@@ -874,25 +874,25 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
         Log.v(TAG, "onDestroy()");
 
         // EZAPP onDestroy: stop loc_fgsvc
-        if (mezapp_loc_fgsvc_isbound) {
-            Intent x = new Intent(this, ezapp_loc_fgsvc.class);
+        if (mezApp_loc_fgsvc_isbound) {
+            Intent x = new Intent(this, ezApp_loc_fgsvc.class);
             stopService(x);
-            unbindService(ezapp_loc_fgsvc_connection);
-            mezapp_loc_fgsvc_isbound = false;
+            unbindService(ezApp_loc_fgsvc_connection);
+            mezApp_loc_fgsvc_isbound = false;
         }
 
         // EZAPP onDestroy: stop media_fgsvc
-        if (mezapp_media_fgsvc_isbound) {
-            Intent x = new Intent(this, ezapp_media_fgsvc.class);
+        if (mezApp_media_fgsvc_isbound) {
+            Intent x = new Intent(this, ezApp_media_fgsvc.class);
             stopService(x);
-            unbindService(ezapp_media_fgsvc_connection);
-            mezapp_media_fgsvc_isbound = false;
+            unbindService(ezApp_media_fgsvc_connection);
+            mezApp_media_fgsvc_isbound = false;
         }
 
         // EZAPP onDestroy: utils cleanup
-        if (mezapp_utils != null) {
-            mezapp_utils.destroy();
-            mezapp_utils = null;
+        if (mezApp_utils != null) {
+            mezApp_utils.destroy();
+            mezApp_utils = null;
         }
 
         if (mHIDDeviceManager != null) {
@@ -952,19 +952,19 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
-        // EZAPP if request is for device recording then start the ezapp_media_fgsvc
+        // EZAPP if request is for device recording then start the ezApp_media_fgsvc
         if (requestCode == MEDIA_RECORD_REQUEST_CODE) {
             if (resultCode == Activity.RESULT_OK) {
-                Log.i(EZAPP_TAG, "start media record permission granted, starting ezapp_media_fgsvc");
-                Intent x = new Intent(this, ezapp_media_fgsvc.class);
+                Log.i(EZAPP_TAG, "start media record permission granted, starting ezApp_media_fgsvc");
+                Intent x = new Intent(this, ezApp_media_fgsvc.class);
                 x.putExtra("resultCode", resultCode);
                 x.putExtra("data", data);
                 startForegroundService(x);
-                bindService(x, ezapp_media_fgsvc_connection, Context.BIND_AUTO_CREATE);
-                mezapp_media_start_result = RESULT_OK;
+                bindService(x, ezApp_media_fgsvc_connection, Context.BIND_AUTO_CREATE);
+                mezApp_media_start_result = RESULT_OK;
             } else {
                 Log.e(EZAPP_TAG, "start media record permission failed, resultCode = " + resultCode);
-                mezapp_media_start_result = RESULT_CANCELED;
+                mezApp_media_start_result = RESULT_CANCELED;
             }
         }
 

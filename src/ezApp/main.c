@@ -4,7 +4,7 @@
 #include <utils.h>
 #include <svcs.h>
 #include <private.h>
-#include <picoc_ezapp.h>
+#include <picoc_ezApp.h>
 
 #ifdef ANDROID
 #include <SDL3/SDL.h>
@@ -247,7 +247,7 @@ static void create_files(int action)
     // If apps or svcs dirs don't exist or if there is a new files.tar
     // then extract files.tar.
     // Existing files, such as params or mp3, are not removed.
-    // This is done when ezapp initializes.
+    // This is done when ezApp initializes.
     if (action == CREATE_FILES_INIT) {
         bool extract_needed = false;
         int  rc;
@@ -449,7 +449,7 @@ static int run(char *name, bool is_svc)
 
     // run the app using the picoc c language interpreter
     INFO("%s: starting, args = %s\n", name, picoc_args);
-    rc = picoc_ezapp(picoc_args);
+    rc = picoc_ezApp(picoc_args);
     INFO("%s: completed, rc = %d\n", name, rc);
 
     // return completion status
@@ -1242,13 +1242,13 @@ static int process_req_thread(void *cx)
         goto disconnect;
     }
 
-    // if the ezapp devel_password has not been initialized then 
+    // if the ezApp devel_password has not been initialized then 
     // respond to ezsh with error message
     if (strcmp(params.devel_password, DEFAULT_DEVEL_PASSWORD) == 0 ||
         strlen(params.devel_password) < MIN_DEVEL_PASSWORD_LEN) 
     {
-        ERROR("ezapp password needs to be set\n");
-        put_fmt(sockfp, "%s\n", "ezapp password needs to be set");
+        ERROR("ezApp password needs to be set\n");
+        put_fmt(sockfp, "%s\n", "ezApp password needs to be set");
         goto disconnect;
     }
 

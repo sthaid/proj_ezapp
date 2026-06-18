@@ -12,7 +12,7 @@ LOCAL_SRC_FILES := \
     include.c \
     lex.c \
     parse.c \
-    picoc_ezapp.c \
+    picoc_ezApp.c \
     platform.c \
     table.c \
     type.c \
@@ -33,7 +33,7 @@ LOCAL_SRC_FILES := \
 LOCAL_CFLAGS := -DUNIX_HOST -O2
 
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/include \
-                    $(LOCAL_PATH)/../ezapp_lib/include
+                    $(LOCAL_PATH)/../ezApp_lib/include
 
 LOCAL_EXPORT_C_INCLUDES += $(LOCAL_PATH)/include
 

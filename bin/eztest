@@ -8,7 +8,7 @@ function linux_build()
     LIB_PATH=$(pwd)/../linux/local/lib
     gcc -o /tmp/$APP_NAME $CFLAGS ../bin/src/eztest_linux_wrapper.c $SRCS \
         -I . -I ../linux/local/include \
-        -L ../linux/local/lib -lezapp_lib -lmp3lame -llodepng -lcJSON -lkissfft-float -lSDL3 -lSDL3_ttf -lSDL3_mixer -lm \
+        -L ../linux/local/lib -lezApp_lib -lmp3lame -llodepng -lcJSON -lkissfft-float -lSDL3 -lSDL3_ttf -lSDL3_mixer -lm \
         -Wl,-rpath,$LIB_PATH
     if [ $? -ne 0 ]; then
         echo ABORT
@@ -77,7 +77,7 @@ fi
 # note that this does not build all libraries,
 # libraries which would need to be manually built (if changed) are:
 # cJSON kissfft lodepng libmp3lame SDL SDL_mixer SDL_ttf
-make -C ../linux ezapp_lib picoc
+make -C ../linux ezApp_lib picoc
 if [ $? -ne 0 ]; then
     echo ABORT
     exit 1
@@ -97,7 +97,7 @@ fi
 if [ "$CMD" = run_on_picoc ]; then
     LIB_PATH=$(pwd)/../linux/local/lib
     gcc -o /tmp/picoc -D UNIX_HOST -O2 -g -Wall -Werror ../src/picoc/picoc.c \
-        -L $LIB_PATH -lpicoc -lezapp_lib -lmp3lame -lcJSON -llodepng -lkissfft-float -lSDL3 -lSDL3_mixer -lSDL3_ttf -lm \
+        -L $LIB_PATH -lpicoc -lezApp_lib -lmp3lame -lcJSON -llodepng -lkissfft-float -lSDL3 -lSDL3_mixer -lSDL3_ttf -lm \
         -Wl,-rpath,$LIB_PATH
     cp ../bin/src/eztest_picoc_wrapper.c /tmp
     sed -i -e "s=PROGNAME=$APP_NAME=" -e "s=DATA_DIR=$PARENT_DIR/$APP_NAME=" /tmp/eztest_picoc_wrapper.c

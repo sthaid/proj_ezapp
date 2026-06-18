@@ -32,7 +32,7 @@ SDL:
 	./setup
 
 gen_version:
-	../src/ezapp/gen_version
+	../src/ezApp/gen_version
 
 gen_assets:
 	# create files.tar
@@ -54,7 +54,7 @@ clean:
 	rm -rf SDL 
 	rm -rf assets 
 	rm -rf setup_files/orig
-	rm -f  ../src/ezapp/version.h
+	rm -f  ../src/ezApp/version.h
 	make -C ../src/openssl clean
 
 .PHONY: clean

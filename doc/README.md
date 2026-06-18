@@ -49,11 +49,11 @@ xxx notes on services
 # ezApp Design 
 
 Ezapp code is available in github.
-> git clone https://github.com/sthaid/proj_ezapp.git
+> git clone https://github.com/sthaid/proj_ezApp.git
 
 The Simple DirectMedia Layer (SDL) provides the framework from which the
 Android ezApp APK is built. SDL provides a Java Shim, which calls the C language
-ezApp entry point, SDL_main, found in src/ezapp/main.c.
+ezApp entry point, SDL_main, found in src/ezApp/main.c.
 
 SDL provides functions for: Graphics & Rendering, Input Handling, Audio, Events, and more.
 
@@ -77,8 +77,8 @@ Directory structure:
 - files/svcs: miniSvcs
 - linux:      build & run version of ezApp that runs on Linux
 - src:        
-  - ezapp: provides C language main entry point, called from the SDL Java shim
-  - ezapp_lib: provides code for the routines defined in sdlx.h, utils.h and svcs.h
+  - ezApp: provides C language main entry point, called from the SDL Java shim
+  - ezApp_lib: provides code for the routines defined in sdlx.h, utils.h and svcs.h
   - SDL, SDL_mixer, SDL_ttf: populated with SDL code by top level Makefile
   - openssl: populated and built when android Makefile is run
   - cJSON, kissfft, libmp3lame, lodepng, picoc: copies of code from git repos

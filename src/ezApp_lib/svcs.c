@@ -80,9 +80,9 @@ void svcs_init(int (*run_proc)(char *name, bool is_svc))
     int cnt, line=0;
 
     // The purpose of this is to  avoid circular library dependence, where
-    // the ezapp_lib svcs.c file calls picoc lib to run a service; and
-    // where picoc lib calls this ezapp_lib library, to make the platform calls.
-    // Instead the 'run' routine is provided by ezapp/main.c; this svcs.c file
+    // the ezApp_lib svcs.c file calls picoc lib to run a service; and
+    // where picoc lib calls this ezApp_lib library, to make the platform calls.
+    // Instead the 'run' routine is provided by ezApp/main.c; this svcs.c file
     // will call the run() routine provided here to run a service; which 
     // avoids the circular library dependency.
     run = run_proc;

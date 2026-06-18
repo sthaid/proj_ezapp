@@ -173,10 +173,7 @@ void no_accelerometer(void)
                            "%s", "No Accelerometer");
     sdlx_display_present();
 
-    sdlx_get_event(-1, &event);  // infinite timeout
-    if (event.event_id == -1) {
-        continue;
-    }
+    sdlx_get_event(-1, &event);
 
     switch (event.event_id) {
     case EVID_QUIT:
@@ -220,9 +217,6 @@ int cal_query(void)
     sdlx_display_present();
 
     sdlx_get_event(-1, &event);
-    if (event.event_id == -1) {
-        continue;
-    }
 
     if (event.event_id == EVID_CAL_SAVE || 
         event.event_id == EVID_CAL_UNCALIBRATE || 
@@ -349,9 +343,6 @@ void display_tilt_horizontal(double ax, double ay, double az, double roll_raw, d
 
     // wait for event, with 10 ms timeout
     sdlx_get_event(10000, &event);
-    if (event.event_id == -1) {
-        continue;
-    }
 
     // process events
     switch (event.event_id) {
@@ -591,9 +582,6 @@ void display_tilt_vertical(double ax, double ay, double az, double roll, double 
 
     // wait for event, with 10 ms timeout
     sdlx_get_event(10000, &event);
-    if (event.event_id == -1) {
-        continue;
-    }
 
     // process events
     switch (event.event_id) {
