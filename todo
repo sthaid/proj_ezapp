@@ -1,3 +1,13 @@
+ps -Ao pid,pgid,ppid,user,comm
+
+kill -- -2038
+
+when using c language popen, how to get the pid of the created process
+
+setpgid
+
+xxxxxxxxxxxxxxxxxxx
+
 on motorola
 06-14 14:05:03.826 F/DEBUG   (18912): Abort message: 'JNI DETECTED ERROR IN APPLICATION: JNI CallStaticObjectMethod called with pending exception java.lang.NullPointerException: Attempt to invoke virtual method 'double org.libsdl.app.ezapp_utils.get_latitude()' on a null object reference
 06-14 14:05:03.826 F/DEBUG   (18912):   at double org.libsdl.app.SDLActivity.get_latitude() (SDLActivity.java:636)

@@ -70,6 +70,7 @@ import android.os.SystemClock;
 public class SDLActivity extends Activity implements View.OnSystemUiVisibilityChangeListener {
     private static final String TAG = "SDL";
     private static final String EZAPP_TAG = "EZAPP";
+    private static final int INVALID_NUMBER = 999999999;
     private static final int SDL_MAJOR_VERSION = 3;
     private static final int SDL_MINOR_VERSION = 4;
     private static final int SDL_MICRO_VERSION = 0;
@@ -633,38 +634,62 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
 
     // EZAPP utils get location
     public double get_latitude() {
+        if (mezapp_utils == null) {
+            return INVALID_NUMBER;
+        }
         return mezapp_utils.get_latitude();
     }
 
     public double get_longitude() {
+        if (mezapp_utils == null) {
+            return INVALID_NUMBER;
+        }
         return mezapp_utils.get_longitude();
     }
 
     public double get_altitude() {
+        if (mezapp_utils == null) {
+            return INVALID_NUMBER;
+        }
         return mezapp_utils.get_altitude();
     }
 
     // EZAPP utils text to speech
     public double text_to_speech(String message) {
+        if (mezapp_utils == null) {
+            return INVALID_NUMBER;
+        }
         return mezapp_utils.text_to_speech(message);
     }
 
     // EZAPP utils flashlight
     public double turn_flashlight_on() {
+        if (mezapp_utils == null) {
+            return INVALID_NUMBER;
+        }
         mezapp_utils.turn_flashlight_on();
         return 0;
     }
 
     public double turn_flashlight_off() {
+        if (mezapp_utils == null) {
+            return INVALID_NUMBER;
+        }
         mezapp_utils.turn_flashlight_off();
         return 0;
     }
 
     public double is_flashlight_on() { 
+        if (mezapp_utils == null) {
+            return INVALID_NUMBER;
+        }
         return mezapp_utils.is_flashlight_on() ? 1 : 0;
     }       
                 
     public double toggle_flashlight() {
+        if (mezapp_utils == null) {
+            return INVALID_NUMBER;
+        }
         mezapp_utils.toggle_flashlight();
         return 0;
     }

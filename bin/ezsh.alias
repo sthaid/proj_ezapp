@@ -10,6 +10,7 @@ logcat      logcat -d -s --format=time,color EZAPP:I SDL:I SDL/APP:I AndroidRunt
 # adb abi
 abi         getprop ro.product.cpu.abi; getprop ro.product.cpu.abilist
 
-# adb cpu usage
-run_top     top -b -H -m 20 | egrep "^  TID|org.sthaid.ezApp" 
+# misc
+topx        top -b -H -m 20 | egrep "^  TID|org.sthaid.ezApp" 
+psx         ps -Ao pid,pgid,ppid,user,comm,name
 

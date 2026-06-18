@@ -1183,9 +1183,6 @@ again:
 
     // goto top to reinit devel_mode_server_thread
     goto again;
-
-    // not reached
-    INFO("DEVEL_MODE_SERVER_THREAD TERMINATING\n");
     return 0;
 }
 
@@ -1195,18 +1192,13 @@ int put_fmt(FILE *fp, char *fmt, ...)
     int rc;
 
     va_start(ap, fmt);
-
     rc = vfprintf(fp, fmt, ap);
-    if (rc < 0) {
-        return -1;
-    }
-
-    rc = fflush(fp);
-    if (rc == EOF) {
-        return -1;
-    }
-
     va_end(ap);
+
+    if (rc < 0) {
+        ERROR("vfprintf faield, %s\n", strerror(errno));
+        return -1;
+    }
 
     return 0;
 }
@@ -1220,6 +1212,7 @@ char *get_str(FILE *fp, char *s, int s_len)
 
     p = fgets(s, s_len, fp);
     if (p == NULL) {
+        ERROR("fget failed, %s\n", strerror(errno));
         return NULL;
     }
 
@@ -1238,8 +1231,9 @@ static int process_req_thread(void *cx)
     ssl_payload_t payload;
     int           rc;
 
-    // get fp for socket
+    // get fp for socket, and set unbuffered
     sockfp = fdopen(sockfd, "w+");
+    setvbuf(sockfp, NULL, _IONBF, 0);
     
     // read the ssl payload, which contains the encrypted password
     rc = fread(&payload, 1, sizeof(payload), sockfp);
@@ -1271,7 +1265,8 @@ static int process_req_thread(void *cx)
 
     // validate password
     if (strcmp(plaintext, params.devel_password) == 0) {
-        put_fmt(sockfp, "%s\n", "password okay");
+        rc = put_fmt(sockfp, "%s\n", "password okay");
+        if (rc != 0) goto disconnect;
     } else {
         ERROR("invalid password 2");
         put_fmt(sockfp, "%s\n", "invalid password 2");
@@ -1279,7 +1274,8 @@ static int process_req_thread(void *cx)
     }
 
     // put storage_path to socket
-    put_fmt(sockfp, "%s\n", storage_path);
+    rc = put_fmt(sockfp, "%s\n", storage_path);
+    if (rc != 0) goto disconnect;
 
     // process cmds
     while (true) {
@@ -1298,7 +1294,9 @@ static int process_req_thread(void *cx)
         }
 
         // read cmdline from socket
-        get_str(sockfp, str, sizeof(str));
+        if (get_str(sockfp, str, sizeof(str)) == NULL) {
+            goto disconnect;
+        }
 
         // the following cmdline are handled by this code;
         // - put        : create/update file on android device, arg=file_path
@@ -1366,10 +1364,12 @@ static int process_req_thread(void *cx)
             if (data == NULL) {
                 // failed to read file
                 status = (errno != 0 ? -errno : -EINVAL);
-                put_fmt(sockfp, "data_len %d\n", 0);
+                rc = put_fmt(sockfp, "data_len %d\n", 0);
+                if (rc != 0) goto disconnect;
             } else {
                 // write data_len to socket
-                put_fmt(sockfp, "data_len %d\n", data_len);
+                rc = put_fmt(sockfp, "data_len %d\n", data_len);
+                if (rc != 0) goto disconnect;
 
                 // write data to socket
                 rc = fwrite(data, 1, data_len, sockfp);  // size=1, nmemb=data_len
@@ -1393,16 +1393,20 @@ static int process_req_thread(void *cx)
                 ERROR("popen '%s' failed, %s\n", str, strerror(errno));
             } else {
                 while (get_str(fp, str, sizeof(str)) != NULL) {
-                    put_fmt(sockfp, "%s\n", str);
+                    rc = put_fmt(sockfp, "%s\n", str);
+                    if (rc != 0) {
+                        pclose(fp);
+                        goto disconnect;
+                    }
                 }
                 rc = pclose(fp);
                 status = WEXITSTATUS(rc);
-                INFO("pclose_rc=%d, WEXITSTATUS=%d\n", rc, status);
             }
         }
 
         // all cmds termintate with CMD_COMPLETE <status>
-        put_fmt(sockfp, "CMD_COMPLETE %d\n", status);
+        rc = put_fmt(sockfp, "CMD_COMPLETE %d\n", status);
+        if (rc != 0) goto disconnect;
     }
 
 disconnect:
