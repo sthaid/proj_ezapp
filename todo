@@ -1,5 +1,18 @@
+on motorola
+06-14 14:05:03.826 F/DEBUG   (18912): Abort message: 'JNI DETECTED ERROR IN APPLICATION: JNI CallStaticObjectMethod called with pending exception java.lang.NullPointerException: Attempt to invoke virtual method 'double org.libsdl.app.ezapp_utils.get_latitude()' on a null object reference
+06-14 14:05:03.826 F/DEBUG   (18912):   at double org.libsdl.app.SDLActivity.get_latitude() (SDLActivity.java:636)
 
-document the sdlx.h, utils.h, and svcs.h files
+---------------------
+
+ezapp -> ezApp
+
+ezsh, accept ctrl-c
+
+doc:
+- document the sdlx.h, utils.h, and svcs.h files
+- check Android README
+- picoc restrictions
+   - src/picoc/tests/shaid/101_ternary_op.output
 
 what packages  are needed, how is libssl-dev already installed
   udo apt install libssl-dev
@@ -7,34 +20,18 @@ what packages  are needed, how is libssl-dev already installed
 ezsh.c 
 - interrupt using ctrl-c ???
 
----------
+more scripts?
+- ezputall, ezgetall
+- ezget, opposite of ezpush
+- maybe 'ezput all', 'ezget all'
 
-check Android README,  move to doc dir  ??
-
-redo
----------------------------
---- install android/sdk ---
----------------------------
-Essential Directories to AddAssuming your Android SDK is installed in the default Linux location (~/Android/Sdk), you should add the following four directories to your PATH:~/Android/Sdk/platform-toolsContains vital debug and testing binaries, most notably adb (Android Debug Bridge) and fastboot.~/Android/Sdk/cmdline-tools/latest/binHouses modern core CLI tools, primarily sdkmanager (for managing SDK packages) and avdmanager (for managing virtual devices).
-
-if Android/Sdk not present fail build
-
-ezputall, ezgetall
-
--------
-
-ezapp -> ezApp
-
-documentation
-
-on Motorola, the notification icon for FG enabled is a white square
-- may need drawables
+if Android/Sdk not present fail build of openssl and of Android
 
 update comment ...
 <!-- Required for Android 13 (API 33) and above. Ignored by Android 11. -->
 <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
-xxxx add this comment to the code ...
+add this comment to the code ...
 Here is the breakdown of how to use OpenSSL properly:
 - The Message: This is your actual payload (the data or password you need to send). 
   It goes into the encryption tool (e.g., AES) as the plaintext.
@@ -43,99 +40,25 @@ Here is the breakdown of how to use OpenSSL properly:
 - The Process: You use your password to derive a symmetric key, encrypt your message 
   with that key, and then send the resulting ciphertext over the network.
 
------------- RECHECK ------------------
+xxx search
 
-cleanup logging prints
-
-audio: - audio code review and retest
-
----------- TODO -----------------
-
-marking of altered SDL source   <==========
-
-ezgetall
-- uploads all, including dat files
-
-finish work on xxx           <============
-
-documentation
-- toplevel README.md
-- make a doc dir, for other README files
-  - document foreground , and Settings
-- README template
-    NAME: Xxxxx
-    DESCRIPTION:
-    NOTES:
+marking of altered SDL source
 
 picoc
 - pioco print error if sizeof is 0
-- document restrictions
-   - src/picoc/tests/shaid/101_ternary_op.output
 
-Apps
-- Paddle
-  - adjust difficulty
-- Reversi
-  - move Undo   <==============
-- Steps
-  - highlight today in Steps month view
-
-new camera app
-
-work on minimizing cpu load
-- check that sudio threads are disposed of
-- check how much cpu is used during an 8 hour intvl
-- what continue to run when app is in background?
-   - add print statemnents
-   - adjust periodicity of polling when in the backgound, 
-      - PollEvent
-      - Services
-   - dont init audio when not needed?
-   - experiments
-       20 ms
-       HINT 
-       do not init audio
-
---------------------
-
-MAYBE: picoc should free all unfreed allocations
-- calloc, malloc, realloc, strdup
-- open, fopen
-- util_map_file 
-
-report record_gain problem, to SDL team
-- first reproduce it
-
-final prep 
-- set version OR eliminate version and just use build date
-
-- - - 
+recheck:
+- cleanup logging prints
+- audio: - audio code review and retest
 
 make new repo
 - new name
-  - MiniC ?
-  - Android mini apps are lightweight, web-based applications (often 2–4 MB) 
-    that run inside "super apps" (like Telegram or WeChat) via WebView, requiring 
-    no installation or complex download. They use HTML, CSS, and JavaScript for cross-platform 
-    functionality. Common uses include quick services like food delivery, payments, and navigation
-  - icon
-    - maybe change name to miniApps or MiniC
+- Android mini apps are lightweight, web-based applications (often 2–4 MB) 
+  that run inside "super apps" (like Telegram or WeChat) via WebView, requiring 
+  no installation or complex download. They use HTML, CSS, and JavaScript for cross-platform 
+  functionality. Common uses include quick services like food delivery, payments, and navigation
 
---------------------------
----- TESTING NEEDED  -----
---------------------------
-
--------------------
----- LATER --------
--------------------
-
-documentation
-- make doc dir, with all README files
-   . android
-   . apps
-   . credits
-   . copyright
-- copyright and credits
+test all apps
 
 document or fix picoc issues  
 - low_band = util_rms_float(&fft[first_bin], last_bin-first_bin+1);// yyy picoc isue requires &fft[first_bin]
@@ -151,32 +74,83 @@ document or fix picoc issues
 - ptr operations ?
 - short circuit eval
 
-build & install
-- icon
-- should a fresh install wipe existing files; including top level params
-- help / doc
-
-BUGS
-- when an ezapp, running an ap, is brought back to foreground, the display is not updated
+code review
 - sdl return codes are now boolean
-
-CODE REVIEWS
 - mmap / munmap - code reveiw,  make sure fd is closed
+- everything
 
--------------------------
----- MAYBE LATER --------
--------------------------
-
-battery usage
-- leave the phone sleeping, with ezapp fg running, check usage
-
-eztest, build for linux too
-
-New capabilities
+new apps:
 - speech to text
-     https://developer.android.com/reference/android/speech/SpeechRecognizer
+  https://developer.android.com/reference/android/speech/SpeechRecognizer
 
-=================================================
+cleanup
+- finally remove find_xxx
+- remove devel dir
+
+==========
+doc notes
+==========
+
+Essential Directories to AddAssuming your Android SDK is installed in the default Linux location (~/Android/Sdk), you should add the following four directories to your PATH:~/Android/Sdk/platform-toolsContains vital debug and testing binaries, most notably adb (Android Debug Bridge) and fastboot.~/Android/Sdk/cmdline-tools/latest/binHouses modern core CLI tools, primarily sdkmanager (for managing SDK packages) and avdmanager (for managing virtual devices).
+
+========
+later
+========
+
+new camera app
+
+picoc should free all unfreed allocations  (maybe)
+- calloc, malloc, realloc, strdup
+- open, fopen
+- util_map_file 
+
+--------------------------------
+---------- TODO -----------------
+--------------------------------
+
+documentation
+- toplevel README.md
+- make a doc dir, for other README files
+  - document foreground , and Settings
+
+Apps
+- Paddle
+  - adjust difficulty,  High is too hard, 
+- Steps
+  - highlight today in Steps month view
+
+minimizing cpu load, battery usage
+- check that sudio threads are disposed of
+- check how much cpu is used during an 8 hour intvl
+- what continue to run when app is in background?
+   - add print statemnents
+   - adjust periodicity of polling when in the backgound, 
+      - PollEvent
+      - Services
+   - dont init audio when not needed?
+   - experiments
+       20 ms
+       HINT 
+       do not init audio
+
+report record_gain problem, to SDL team
+- first reproduce it
+
+final prep 
+- set version OR eliminate version and just use build date
+
+-------------------
+---- LATER --------
+-------------------
+
+documentation
+- make doc dir, with all README files
+   . android
+   . apps
+   . credits
+   . copyright
+- copyright and credits
+
 =================================================
 =================================================
 =================================================
