@@ -25,8 +25,6 @@
 
 #include <utils.h>
 
-// xxx kill remaining processes on android somehow
-
 //
 // defines
 //
@@ -51,7 +49,7 @@ typedef struct {
 //
 
 // these are obtained from env vars or the cmdline args
-char    hostname[200]; //xxx name
+char    hostname[200];
 int     port;
 char   *password;
 bool    quiet;
@@ -71,7 +69,7 @@ bool    socket_is_shutdown;
 
 // used when ctrl-c a running cmd
 sigset_t sigset;
-jmp_buf  env;
+jmp_buf  err_jmp_buf;
 
 // -----------------  MAIN  -------------------------------------------------
 
@@ -503,11 +501,10 @@ void *sig_hndlr_thread(void *cx)
 
 // -----------------  RUN CMD  ---------------------------
 
-// xxx error print
 #define ANDROID_ERROR \
     do { \
-        printf("ERROR on line %d\n", __LINE__); \
-        longjmp(env, 1); \
+        printf("\nERROR %s line %d\n\n", __func__, __LINE__); \
+        longjmp(err_jmp_buf, 1); \
     } while (0)
 
 int run_special_cmd(char *cmdline);
@@ -527,8 +524,6 @@ void put_fmt(FILE *fp, char *fmt, ...);
 char *get_str(FILE *fp, char *s, int s_len);
 int read_file(char *fn, void **buf, int *buf_len);
 int write_file(char *fn, void *buf, int len);
-
-// xxx comment each of these routines
 
 // retcode values:
 // . = 0  : success
@@ -550,7 +545,7 @@ int run_cmd(char *cmdline)
     connect_to_android();
 
     // set target for error longjmp
-    if (setjmp(env) == 1) {  // xxx env -> err_jmp_buf
+    if (setjmp(err_jmp_buf) == 1) {
         return -ENOTCONN;
     }
 
@@ -605,8 +600,16 @@ int run_cmd_on_android(char *cmdline, char *short_cmdline,
 
     // if data_in is provided then recv data buffer from adnroid
     } else if (data_in != NULL) {
-        char *buf;
-        int   buf_len;
+        static char *buf;
+        int          buf_len;
+
+        // Prior execution of this code may have leaked buf.
+        // This can happen if 2nd call to get_str had an eror, and longjmps.
+        // If buf is non NULL then get_str error had previously occurred, so free buf.
+        if (buf != NULL) {
+            free(buf);
+            buf = NULL;
+        }
 
         // get buf_len from android
         get_str(sockfp, s, sizeof(s));
@@ -618,24 +621,25 @@ int run_cmd_on_android(char *cmdline, char *short_cmdline,
         buf = malloc(buf_len);
 
         // read data from android
-        // xxx memleak if fread longjmps
         rc = fread(buf, 1, buf_len, sockfp);
         if (rc != buf_len) {
             free(buf);
+            buf = NULL;
             ANDROID_ERROR;
         }
 
         // read cmd completion string from android
-        // xxx memleak if get_str longjmps
-        get_str(sockfp, s, sizeof(s));  // xxx free buf if this longjmps
+        get_str(sockfp, s, sizeof(s));
         if (strncmp(s, "CMD_COMPLETE ", 13) != 0) {
             free(buf);
-            ANDROID_ERROR;  // xxx add string to these OR print the func name and line number
+            buf = NULL;
+            ANDROID_ERROR;
         }
 
         // return data to caller; caller must free data
         *data_in = buf;
         *data_in_len = buf_len;
+        buf = NULL;
 
         // parse the status returned from android
         sscanf(s+13, "%d", &status);
@@ -832,7 +836,7 @@ int special_cmd_get(char *src, char *dest)
     return status;
 }
 
-// This routine updates cwd; and will always terminate cwd with '/'.
+// this routine updates cwd; and will always terminate cwd with '/'.
 int special_cmd_cd(char *path)
 {
     int   len;
@@ -888,7 +892,6 @@ int special_cmd_cd(char *path)
 
     // run_cmd_on_android to verify new_cwd is an android directory;
     // if so then the new_cwd will be used
-    // xxx test this
     char cmd[300];
     int  status;
     sprintf(cmd, "if [ ! -d %s ]; then exit 1; else exit 0; fi", new_cwd);
@@ -917,6 +920,9 @@ int special_cmd_alias(void)
     return 0; 
 }
 
+// copies file fron Android to devel PC,
+// runs vi on devel PC,
+// copies editted file back to Android
 int special_cmd_vi(char *android_path)
 {
     char temp[200], tmp_path[200], vi_cmd[1000];
@@ -956,13 +962,18 @@ int special_cmd_vi(char *android_path)
     return 0;
 }
 
-// xxx comments
+// run a cmd on the devel PC
 int special_cmd_local(char *cmdline)
 {
     char *p, *local_cmd, *home;
     int   status = 0;
     char  dir[200];
 
+    // cmdline contains:
+    // - "local"
+    // - "local <cmd_to_execute_on_devel_pc>"
+
+    // if cmd_to_execute_on_devel_pc is not provided then execute bash
     p = strchr(cmdline, ' ');
     if (p == NULL) {
         printf("ezsh: executing bash ...\n");
@@ -971,6 +982,7 @@ int special_cmd_local(char *cmdline)
     } 
     local_cmd = p+1;
 
+    // process local cmd "cd"
     if (strcmp(local_cmd, "cd") == 0) {
         home = getenv("HOME");
         if (home == NULL) {
@@ -980,17 +992,22 @@ int special_cmd_local(char *cmdline)
         if (status != 0) {
             status = -errno;
         }
+
+    // process local cmd "cd <dir>"
     } else if (sscanf(local_cmd, "cd %s", dir) == 1) {
         status = chdir(dir);
         if (status != 0) {
             status = -errno;
-            printf("ERROR: cd %s, %s\n", dir, strerror(-status)); // xxx check all error prints
+            printf("ERROR: cd %s, %s\n", dir, strerror(-status));
         }
+
+    // use system() to execute local_cmd
     } else {
         status = system(local_cmd);
         status = WEXITSTATUS(status);
     }
 
+    // return status
     return status;
 }
 

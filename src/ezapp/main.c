@@ -1196,7 +1196,7 @@ int put_fmt(FILE *fp, char *fmt, ...)
     va_end(ap);
 
     if (rc < 0) {
-        ERROR("vfprintf faield, %s\n", strerror(errno));
+        //ERROR("vfprintf faield, %s\n", strerror(errno));
         return -1;
     }
 
@@ -1212,7 +1212,7 @@ char *get_str(FILE *fp, char *s, int s_len)
 
     p = fgets(s, s_len, fp);
     if (p == NULL) {
-        ERROR("fget failed, %s\n", strerror(errno));
+        //ERROR("fget failed, %s\n", strerror(errno));
         return NULL;
     }
 
