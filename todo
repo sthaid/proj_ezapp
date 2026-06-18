@@ -1,22 +1,4 @@
-ps -Ao pid,pgid,ppid,user,comm
-
-kill -- -2038
-
-when using c language popen, how to get the pid of the created process
-
-setpgid
-
-xxxxxxxxxxxxxxxxxxx
-
-on motorola
-06-14 14:05:03.826 F/DEBUG   (18912): Abort message: 'JNI DETECTED ERROR IN APPLICATION: JNI CallStaticObjectMethod called with pending exception java.lang.NullPointerException: Attempt to invoke virtual method 'double org.libsdl.app.ezapp_utils.get_latitude()' on a null object reference
-06-14 14:05:03.826 F/DEBUG   (18912):   at double org.libsdl.app.SDLActivity.get_latitude() (SDLActivity.java:636)
-
----------------------
-
 ezapp -> ezApp
-
-ezsh, accept ctrl-c
 
 doc:
 - document the sdlx.h, utils.h, and svcs.h files
@@ -27,28 +9,10 @@ doc:
 what packages  are needed, how is libssl-dev already installed
   udo apt install libssl-dev
 
-ezsh.c 
-- interrupt using ctrl-c ???
-
 more scripts?
 - ezputall, ezgetall
 - ezget, opposite of ezpush
 - maybe 'ezput all', 'ezget all'
-
-if Android/Sdk not present fail build of openssl and of Android
-
-update comment ...
-<!-- Required for Android 13 (API 33) and above. Ignored by Android 11. -->
-<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-
-add this comment to the code ...
-Here is the breakdown of how to use OpenSSL properly:
-- The Message: This is your actual payload (the data or password you need to send). 
-  It goes into the encryption tool (e.g., AES) as the plaintext.
-- The Key: This is a cryptographically random string generated using your password 
-  (usually via a Key Derivation Function like PBKDF2) to lock and unlock the message.
-- The Process: You use your password to derive a symmetric key, encrypt your message 
-  with that key, and then send the resulting ciphertext over the network.
 
 xxx search
 

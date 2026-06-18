@@ -1,3 +1,20 @@
+ifeq ($(strip $(ANDROID_HOME)),)
+    $(error ANDROID_HOME environment variable is not defined or is empty)
+endif
+ifeq ($(wildcard $(ANDROID_HOME)/.),)
+    $(error Required directory '$(ANDROID_HOME)' does not exist)
+endif
+ifeq ($(findstring $(ANDROID_HOME),$(PATH)),)
+    $(error ANDROID_HOME is not present in PATH environment variable)
+endif
+
+ifeq ($(strip $(ANDROID_NDK_ROOT)),)
+    $(error ANDROID_NDK_ROOT environment variable is not defined or is empty)
+endif
+ifeq ($(wildcard $(ANDROID_NDK_ROOT)/.),)
+    $(error Required directory '$(ANDROID_NDK_ROOT)' does not exist)
+endif
+
 build: SDL gen_version gen_assets openssl
 	cd SDL/build/org.sthaid.ezApp; \
         ./gradlew assembleDebug
