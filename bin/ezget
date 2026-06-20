@@ -57,7 +57,7 @@ if [ "$dev" = "" -o "$password" = "" ]; then
 fi
 
 # print message
-echo "INFO: transferring files from Android $android_dir to devel PC"
+echo "INFO: transferring files from Android device to devel PC"
 
 # create ezget.tar on Android device
 if [ "$android_dir" = "." ]; then

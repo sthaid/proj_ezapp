@@ -85,7 +85,7 @@ if [ $# -eq 0 ]; then
 fi
 
 # print message
-echo "INFO: transferring files from $PWD to Android device"
+echo "INFO: transferring files from devel PC to Android device"
 
 # find candidtate files to xfer
 find_output=$(find $* ! -type d 2>/dev/null)
