@@ -152,14 +152,14 @@ int main(int argc, char **argv)
 
     // if cmd args provided then use them for cmdline, and end program
     if (argc > optind) {
-        char cmd[1000];
-        char *p = cmd;
+        char cmdline[5000];
+        char *p = cmdline;
         int status;
         for (int i = optind; i < argc; i++) {
             p += sprintf(p, "%s ", argv[i]);
         }
-        substitue_alias(cmd);
-        status = run_cmd(cmd);
+        substitue_alias(cmdline);
+        status = run_cmd(cmdline);
         return status != 0 ? 1 : 0;
     }
 

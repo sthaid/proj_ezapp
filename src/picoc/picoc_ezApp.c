@@ -20,7 +20,7 @@ int picoc_ezApp(char *args)
 
     // setjmp for error condition
     if (PicocPlatformSetExitPoint(&pc)) {
-        printf("E picoc: xxx MyHello xxx longjmp error exit, exit_code=%d\n", pc.PicocExitValue);
+        printf("E picoc: '%s' longjmp error exit %d\n", args, pc.PicocExitValue);
         PicocCleanup(&pc);
         return pc.PicocExitValue;
     }

@@ -1,7 +1,6 @@
 #!/bin/bash
 
 # xxx comments
-# xxx examples
 # ezput
 # ezput .
 # ezput . ../lib ../layout
@@ -82,10 +81,11 @@ fi
 
 # if no args then default to xfering the current directory
 if [ $# -eq 0 ]; then
-  echo "INFO: transferring files from $PWD to Android device"
-  echo
   set -- "."
 fi
+
+# print message
+echo "INFO: transferring files from $PWD to Android device"
 
 # find candidtate files to xfer
 find_output=$(find $* ! -type d 2>/dev/null)
@@ -129,34 +129,33 @@ if [ -z "$files" ]; then
   exit 1
 fi
 
-# create tar file, containing the files to xfer to Android device;
-# the tar file is created relative to files_dir
+# create tar file, containing the files to xfer to Android device
 cd $files_dir
 tar -cf /tmp/ezput.tar  $files
 if [ $? -ne 0 ]; then
+  echo "ERROR: failed to create /tmp/ezput.tar"
   rm -f /tmp/ezput.tar
   exit 1
 fi
 
-# copy the tar file to Android device, and extract it
-echo "Creating files on Android device ..."
+# copy the tar file to Android device
 ezsh -d $dev -p $password -q "put /tmp/ezput.tar"
 if [ $? -ne 0 ]; then 
+  echo "ERROR: failed to copy /tmp/ezput.tar to Android device"
   rm -f /tmp/ezput.tar
   exit 1
 fi
+
+# extract ezput.tar on the Android device
 ezsh -d $dev -p $password -q "tar -xvf ezput.tar"
 if [ $? -ne 0 ]; then 
-  rm -f /tmp/ezput.tar
-  exit 1
-fi
-ezsh -d $dev -p $password -q "rm -f ezput.tar"
-if [ $? -ne 0 ]; then 
+  echo "ERROR: failed to extract ezput.tar on Android device"
   rm -f /tmp/ezput.tar
   exit 1
 fi
 
 # cleanup
+ezsh -d $dev -p $password -q "rm -f ezput.tar"
 rm -f /tmp/ezput.tar
 exit 0
 

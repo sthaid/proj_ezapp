@@ -1,23 +1,13 @@
-DIFF: src/picoc/picoc_ezApp.c  xxx
-
------------
-
-test operation with files with spaces
-
-xxxxxxxx
-
-.png
-.json
-.dat
-.mp3
-params
-
-
-xxxxxxxxxxxxx
+xxxxxxxxxxxxx  NEXT xxxxxxxxxxxxxx
 
 run_linus: Log showing all lines as an error
 
 shouldnt have a svcs file, instead use another mechanism, that preservices svs state
+
+doc:
+- document the sdlx.h, utils.h, and svcs.h files
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 continue to run services even when ezApp is no longer running
 
