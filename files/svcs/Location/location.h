@@ -10,7 +10,7 @@
 #define SVC_LOCATION_REQ_SET_ENABLED        16
 #define SVC_LOCATION_REQ_GET_LOC_NAME_FROM_LAT_LONG  17
 
-#define LOC_HIST_FILENAME   "loc_hist"
+#define LOC_HIST_FILENAME   "loc_hist.dat"
 #define MAX_LOC_HIST        1000
 
 #define MAX_NAME 32

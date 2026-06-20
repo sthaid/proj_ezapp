@@ -1,3 +1,8 @@
+# NOTES 
+
+xxx search ezapp,  miniApps, miniSvcs
+xxx Linux PC setup  build-essential, ssl-dev
+
 # ezApp
 
 EzApp runs miniApps and miniSvcs that are written in the C Language.
@@ -22,7 +27,7 @@ xxx arm64 arch only;  or maybe don't mention this
 
 The following miniApps are included. The C language source code for these 
 miniApps is included in ezApp. Each miniApp contains a README which can be
-viewed by selecting '?'.
+viewed by selecting '?', usually in the upper right corner.
 
 - Altitude: Displays current altitude, graphs history..
 - Calc:     Hex / Decimal calculator, 32 or 64 bit selectable.
@@ -34,7 +39,7 @@ viewed by selecting '?'.
 - Location: Displays current location and location history.
 - Log:      Displays developer message log.
 - Memo:     Record an audio memo.
-- Morse:    Practice morse code, rate selectable between 5 and 20 WPM.
+- Morse:    Practice morse code, rate selectable from 5 to 20 WPM.
 - Paddle:   Ball and paddle game.
 - Piano:    Beginner Piano simulator. Includes several public domain melodies.
 - Reversi:  Play Reversi against the computer.
@@ -44,7 +49,17 @@ viewed by selecting '?'.
 - Tilt:     Level, supports horizontal and vertical orientations, and calibration.
 - Weather   Displays and speaks the weather forecast, from weather.gov.
 
-xxx notes on services
+MiniSvcs run in the background while ezApp is running. The MiniSvcs continue to run when
+ezApp is backgrounded, or the Android is in Doze Mode. The following MiniSvcs are 
+provided. They provide support for miniApps. The miniSvcs provide support by saving data
+in files, or responding to svc_make_req call issued by a miniApp.
+
+- Altitude: Saves history of altitude.
+- Location: Saves history of city/town location.
+- Steps:    Saves history of step counts.
+- Template: A miniSvc sample.
+
+MiniSvcs can be stopped or started by selecting "Settings" and "Services".
 
 # ezApp Design 
 
@@ -61,36 +76,72 @@ The PicoC C language interpreter is used to execute the miniApps. PicoC includes
 for some standard C language header files, such as stdio.h, string.h, etc.
 
 Additional header files are added to PicoC to support the miniApps. The following
-header files are provided in picoc by code included in picoc/platform/library_unix.c.
+header files are provided in picoc by code in picoc/platform/library_unix.c.
 - sdlx.h:  provides core SDL functions that are required by miniApps.
-- utils.h: miscellaneous utilities, including json, png, fft, and access
-  to some Android java functions: location, text-to-speach, and playback capture.
-- svcs.h:  some miniApps sometimes rely on miniSvcs; for example the Location miniApp
-  relies on Location info provided by the Location miniSvc. A miniApp can call 
-  svc_make_req() to make a request to a miniSvc.
+- utils.h: miscellaneous utilities, including: file access, json, png, fft, location, 
+  text to speech, and playback capture.
+- svcs.h:  provides ability for a miniApp to make a request to a miniSvc.
 
-The sdlx.h, utils.h, and svcs.h files are also available in src/ez_lib/include.
+The sdlx.h, utils.h, and svcs.h files are also available in src/ezApp_lib/include.
 These files should be viewed there for documentation of their capabilities.
 
 Directory structure:
-- files/apps: miniApps 
-- files/svcs: miniSvcs
+- files/apps: miniApps Altitude, Calc, Clock, ...
+- files/apps/lib: common code for miniApps
+- files/svcs: miniSvcs Altitude, Location, Steps, ...
 - linux:      build & run version of ezApp that runs on Linux
 - src:        
-  - ezApp: provides C language main entry point, called from the SDL Java shim
-  - ezApp_lib: provides code for the routines defined in sdlx.h, utils.h and svcs.h
+  - ezApp: C language main entry point, called from the SDL Java shim
+  - ezApp_lib: code for the routines defined in sdlx.h, utils.h and svcs.h
   - SDL, SDL_mixer, SDL_ttf: populated with SDL code by top level Makefile
   - openssl: populated and built when android Makefile is run
   - cJSON, kissfft, libmp3lame, lodepng, picoc: copies of code from git repos
-- bin: contains tools used to test and load miniApps on your device
-- android: the Android APK is built here; refer to android/README
+- bin: contains tools used to develop miniApps for your device
+- android: the Android Package Kit (APK) is built here; refer to android/README
 
 Licenses: Refer to files/licenses. All of the source code used is licensed under
 a permissive license, except libmp3lame which is LGPL license. Libmp3lame license 
-requirements are met by linking it as a separate library, and there are no changes
+requirements are met by linking it as a separate library, There are no changes
 made to the libmp3lame source code.
 
+# Setup Linux PC and Android Device
+
+To create or update miniApps the following setup steps are required:
+
+xxx ...
+
 # Creating a miniApp
+
+cd files/apps
+mkdir MyHello
+cd MyHello
+cp ../Template/templae.c my_hello.c
+cp ../Template/README .
+
+Edit the my_hello.c and README files, change "Hello\nWorld" to "My Hello"
+
+eztest build   # performs test build using Linux build env
+eztest runl    # builds and runs the app using Linux build env
+eztest runp    # runs the app using the PicoC C language interpreter
+
+Edit ../layout    # change one of the '-' to 'MyHello'
+
+ezput apps/MyHello/README apps/MyHello/my_hello.c apps/layout     # xxx simplify
+xxx should be ...
+ezput my_hello.c README ../layout
+
+Use 'ezsh logwatch' to view prints from your app.
+
+Run the app on your Android device
+
+to view log
+ezsh logwatch      # xxx logwatch should clear, both in android/bin and ezsh.alias
+  OR
+ezsh logwatch | grep --color=never MyHello
+
+
+kk
+
 
 
 

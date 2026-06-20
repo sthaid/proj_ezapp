@@ -88,6 +88,9 @@ int main(int argc, char **argv)
     char *device;
     pthread_t tid;
 
+    // set stdout to line buffered
+    setlinebuf(stdout);
+
     // get device and password from env variables;
     // - format of device is <hostname> OR <hostname>:<port>
     // - these env variables are optional, if not provided then the

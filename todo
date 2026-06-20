@@ -1,4 +1,25 @@
-ezApp -> ezApp
+DIFF: src/picoc/picoc_ezApp.c  xxx
+
+-----------
+
+test operation with files with spaces
+
+xxxxxxxx
+
+.png
+.json
+.dat
+.mp3
+params
+
+
+xxxxxxxxxxxxx
+
+run_linus: Log showing all lines as an error
+
+shouldnt have a svcs file, instead use another mechanism, that preservices svs state
+
+continue to run services even when ezApp is no longer running
 
 doc:
 - document the sdlx.h, utils.h, and svcs.h files
@@ -33,6 +54,9 @@ make new repo
   functionality. Common uses include quick services like food delivery, payments, and navigation
 
 test all apps
+
+doc comment
+When cloning a public GitHub repository, you should generally use the HTTPS URL format if you only intend to read or download the code. However, you should use the SSH URL format if you are the maintainer or a frequent contributor who needs to push code changes back to the repository
 
 document or fix picoc issues  
 - low_band = util_rms_float(&fft[first_bin], last_bin-first_bin+1);// yyy picoc isue requires &fft[first_bin]
