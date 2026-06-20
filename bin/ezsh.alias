@@ -4,7 +4,7 @@ l           local
 
 # adb logcat cmds
 logclr      logcat -c -b all
-logwatch    logcat -s --format=time,color EZAPP:I SDL:I SDL/APP:I AndroidRuntime:I '*:F'
+logwatch    logcat -c -b all; logcat -s --format=time,color EZAPP:I SDL:I SDL/APP:I AndroidRuntime:I '*:F'
 logcat      logcat -d -s --format=time,color EZAPP:I SDL:I SDL/APP:I AndroidRuntime:I '*:F'
 
 # adb abi
