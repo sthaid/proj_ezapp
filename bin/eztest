@@ -32,6 +32,8 @@ Default cmd is run_on_picoc.\n\
 }
 
 # ######## SCRIPT STARTS HERE ########
+# xxx indent all scripts 4 spaces
+# xxx add -h option
 
 # set APP_NAME variable
 APP_NAME=$(basename $(pwd))

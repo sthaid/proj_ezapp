@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# xxx add -h option, also to ezget
+
 # xxx comments
 # ezput
 # ezput .
@@ -79,7 +81,7 @@ if [ "$dev" = "" -o "$password" = "" ]; then
   exit 1
 fi
 
-# if no args then default to xfering the current directory
+# if no args then default to transferring the current directory
 if [ $# -eq 0 ]; then
   set -- "."
 fi
@@ -117,19 +119,20 @@ for fn in $find_output; do
 done
 
 # if some files were skipped, this is because they are data files that
-# might be on the devel PC, then print a message on how to override
+# might be on the devel PC, then print a message on how to override 
+# skipping of files
 if [ "$skipped" = "yes" ]; then
   echo "INFO: some files were skipped, override with -f"
   echo
 fi
 
-# if there are no files to xfer then exit
+# if there are no files to transfer then exit
 if [ -z "$files" ]; then
   echo "ERROR: no files to transfer"
   exit 1
 fi
 
-# create tar file, containing the files to xfer to Android device
+# create tar file, containing the files to transfer to Android device
 cd $files_dir
 tar -cf /tmp/ezput.tar  $files
 if [ $? -ne 0 ]; then

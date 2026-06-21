@@ -210,7 +210,7 @@ Ezsh runs on the Linux host, simulating a shell running on the Android device.\n
 \n\
 To use ezsh, the following ezApp settings must first be made on the Android device:\n\
 - Devel_Mode = ON\n\
-- Devel_Port = nnnn\n\
+- Devel_Port = nnnn  (optional, the 9000 default should be okay)\n\
 - Devel_Password\n\
 \n\
 For security, it is recommended to enable ezApp Devel_Mode when on a trusted network.\n\
