@@ -99,11 +99,10 @@ int sdlx_create_detached_thread(int (*thread_fn)(void*), char *thread_name, void
 
 extern int svc_eztest_mode;
 
-void svcs_init(int (*run_proc)(char *name, bool is_svc));
-void svcs_stop_all(void);
-void svcs_acquire_mutex(void);
-void svcs_release_mutex(void);
-void svcs_start_all_autostart_services(void);
+void svcs_init(int (*run_proc)(char *name, bool is_svc));  //xxx needed?
+void svcs_cleanup(void);  //xxx needed?
+void svcs_start(void);
+void svcs_stop(void);
 void svcs_display(int bg_color);
 
 // --------------------

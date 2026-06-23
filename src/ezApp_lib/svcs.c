@@ -5,6 +5,12 @@
 #include <svcs.h>
 #include <private.h>
 
+// xxx
+// - number of services
+// - test a delay in stopping, does it stay in delpending
+//   . can it get out of delpend
+// - scroll services menu
+
 //
 // defines
 //
@@ -42,7 +48,6 @@
 
 typedef struct {
     char            name[30];
-    char            autostart;   // y or n
     int             state;
     pthread_mutex_t mutex;
     pthread_cond_t  cond;
@@ -64,21 +69,19 @@ int svc_eztest_mode;
 // prototypes
 //
 
+static void update_list_of_svcs(void);
 static void process_svc_start_req(int id);
 static void process_svc_stop_req(int id);
-static void process_svc_stopped_callback(int id, int rc);
-static void run_svc(int id);
+static void run_svc(char *svc_name);
 static int svc_name_to_id(char *svc_name);
+static void remove_trailing_newline(char *s);
 
 // -----------------  SVCS ROUTINES USED BY MAIN.C  ---------------
 
+// xxx maybe dont need init and cleanup
 void svcs_init(int (*run_proc)(char *name, bool is_svc))
 {
-    static bool first_call = true;
-    FILE *fp;
-    char str[100];
-    int cnt, line=0;
-
+    // xxx is there a better way
     // The purpose of this is to  avoid circular library dependence, where
     // the ezApp_lib svcs.c file calls picoc lib to run a service; and
     // where picoc lib calls this ezApp_lib library, to make the platform calls.
@@ -87,71 +90,86 @@ void svcs_init(int (*run_proc)(char *name, bool is_svc))
     // avoids the circular library dependency.
     run = run_proc;
 
-    // on first call init the pthread mutex and condition
-    if (first_call) {
-        for (int i = 0; i < MAX_SVCS; i++) {
-            pthread_mutex_init(&svcs[i].mutex, NULL);
-            pthread_cond_init(&svcs[i].cond, NULL);
-        }
-        first_call = false;
-    }
+    // start all services that do not have 'stopped' file in their directory
+    svcs_start();
+}
 
-    // ensure that all svcs are stopped
-    svcs_stop_all();
+void svcs_cleanup(void)
+{
+    svcs_stop();
+}
 
-    // get svc names and autostart indicator from the svcs file
-    max_svcs = 0;
-    fp = fopen("svcs/svcs", "r");
-    if (fp == NULL) {
-        ERROR("failed to open svcs/svcs, %s\n", strerror(errno));
-        return;
-    }
-    while (fgets(str, sizeof(str), fp) != NULL) {
-        svc_t *x = &svcs[max_svcs];
-        line++;
+void svcs_start(void)
+{
+    char dir[2000];
+    bool stopped;
+    int  id;
 
-        // ignore lines that begin with '#', space, or newline
-        if (str[0] == '\n' || str[0] == ' ' || str[0] == '#') {
-            continue;
-        }
+    INFO("start services\n");
 
-        // line format: <name> <y/n>
-        cnt = sscanf(str, "%s %c", x->name, &x->autostart);
-        if (cnt != 2) {
-            ERROR("invalid line %d in svcs file\n", line);
-            fclose(fp);
-            max_svcs = 0;
-            return;
-        }
+    update_list_of_svcs();
 
-        // increment max_svcs
-        max_svcs++;
-
-        // if svcs table is full print error and break
-        if (max_svcs == MAX_SVCS) {
-            ERROR("svcs tbl is full\n");
-            break;
-        }
-    }
-    fclose(fp);
-
-#if 0
-    // print the list of services and autostart indicator that was
-    // just obtained by the preceeding code
-    INFO("Services ...\n");
-    for (int id = 0; id < max_svcs; id++) {
-        INFO("%20s  %c\n", svcs[id].name, svcs[id].autostart);
-    }
-#endif
-
-    // start all autostart svcs
-    for (int id = 0; id < max_svcs; id++) {
+    // start all svcs that are not tagged with 'stopped' file 
+    // and are in SERVICE_STATE_STOPPED
+    // xxx check for name is deleted
+    for (id = 0; id < max_svcs; id++) {
         svc_t *x = &svcs[id];
-        if (SERVICE_IS_STOPPED(x->state) && x->autostart == 'y') {
+
+        sprintf(dir, "svcs/%s", svcs[id].name);
+        stopped = util_file_exists(dir, "stopped");
+
+        if (!stopped && SERVICE_IS_STOPPED(x->state)) {
             memset(x->req, 0, sizeof(x->req));
             x->state = SERVICE_STATE_RUNNING;
-            run_svc(id);
+            run_svc(x->name);
         }
+    }
+}
+
+void svcs_stop(void)
+{
+    int id, duration_ms = 0;
+    bool all_stopped;
+
+    INFO("stop services\n");
+
+    for (id = 0; id < max_svcs; id++) {
+        // xxx all loops like this, skip 'deleted'
+        svc_t *x = &svcs[id];
+        if (x->state == SERVICE_STATE_RUNNING) {
+            x->state = SERVICE_STATE_STOPPING;
+            svc_make_req(svcs[id].name, SVC_REQ_ID_STOP, NULL, 0, 5);
+        }
+    }
+
+    while (true) {
+        all_stopped = true;
+        for (id = 0; id < max_svcs; id++) {
+            svc_t *x = &svcs[id];
+            if (!SERVICE_IS_STOPPED(x->state)) {
+                all_stopped = false;
+                break;
+            }
+        }
+
+        if (all_stopped) {
+            INFO("all services are stopped\n");
+            break;
+        }
+
+        if (duration_ms > 30000) {
+            ERROR("the following services have failed to stop ...\n");
+            for (id = 0; id < max_svcs; id++) {
+                svc_t *x = &svcs[id];
+                if (!SERVICE_IS_STOPPED(x->state)) {
+                    ERROR("- %-12s %s\n", x->name, SERVICE_STATE_STR(x->state));
+                }
+            }
+            break;
+        }
+
+        usleep(100*MS);
+        duration_ms += 100;
     }
 }
 
@@ -162,6 +180,7 @@ void svcs_display(int bg_color)
     bool        done = false;
     sdlx_loc_t  *loc;
     double      row;
+    char        dir[100];
 
     #define EVID_SVC_START    100
     #define EVID_SVC_STOP     200
@@ -170,6 +189,9 @@ void svcs_display(int bg_color)
 
     // handle the setting display
     while (true) {
+        // xxx comment
+        update_list_of_svcs();
+
         // init display and display title line
         sdlx_display_init(bg_color, PORTRAIT);
         sdlx_render_printf_ex2(sdlx_win_width/2, ROW2Y(1), 
@@ -214,10 +236,14 @@ void svcs_display(int bg_color)
         switch (event.event_id) {
         case EVID_SVC_START ... EVID_SVC_START + MAX_SVCS - 1:
             id = event.event_id - EVID_SVC_START;
+            sprintf(dir, "svcs/%s", svcs[id].name);
+            util_delete_file(dir, "stopped");
             process_svc_start_req(id);
             break;
         case EVID_SVC_STOP ... EVID_SVC_STOP + MAX_SVCS - 1:
             id = event.event_id - EVID_SVC_STOP;
+            sprintf(dir, "svcs/%s", svcs[id].name);
+            util_write_file(dir, "stopped", NULL, 0);
             process_svc_stop_req(id);
             break;
         case EVID_QUIT:
@@ -231,49 +257,101 @@ void svcs_display(int bg_color)
     }
 }
 
-void svcs_stop_all(void)
+// xxx comments needed
+static void update_list_of_svcs(void)
 {
-    int id, duration_ms = 0;
-    bool all_stopped;
+    FILE *fp;
+    char s[100];
+    char new[MAX_SVCS][30];
+    int  max_new = 0;
+    long new_mtime;
 
-    INFO("stopping all services\n");
+    static long mtime;
 
-    for (id = 0; id < max_svcs; id++) {
-        svc_t *x = &svcs[id];
-        if (x->state == SERVICE_STATE_RUNNING) {
-            x->state = SERVICE_STATE_STOPPING;
-            svc_make_req(svcs[id].name, SVC_REQ_ID_STOP, NULL, 0, 5);
+    new_mtime = util_file_mtime("svcs", NULL);
+    if (new_mtime == mtime) {
+        return;
+    }
+    mtime = new_mtime;
+
+    fp = popen("cd svcs; find * -maxdepth 0 -type d", "r");
+    while (fgets(s, sizeof(s), fp)) {
+        remove_trailing_newline(s);
+        strcpy(new[max_new++], s);
+        if (max_new == MAX_SVCS) {
+            break;
         }
     }
+    pclose(fp);
 
-    while (true) {
-        all_stopped = true;
-        for (id = 0; id < max_svcs; id++) {
-            svc_t *x = &svcs[id];
-            if (!SERVICE_IS_STOPPED(x->state)) {
-                all_stopped = false;
+    // for all existing svc names that are not in the new svc names, delete the svc
+    for (int id = 0; id < max_svcs; id++) {
+        svc_t *x = &svcs[id];
+        bool found_in_new_names = false;
+
+        for (int i = 0; i < max_new; i++) {
+            if (strcmp(x->name, new[i]) == 0) {
+                found_in_new_names = true;
                 break;
             }
         }
 
-        if (all_stopped) {
-            INFO("all services are stopped\n");
-            break;
-        }
+        if (!found_in_new_names) {
+            INFO("deleting svc %s\n", x->name);
 
-        if (duration_ms > 30000) {
-            ERROR("the following services have failed to stop ...\n");
-            for (id = 0; id < max_svcs; id++) {
-                svc_t *x = &svcs[id];
-                if (!SERVICE_IS_STOPPED(x->state)) {
-                    ERROR("- %-12s %s\n", x->name, SERVICE_STATE_STR(x->state));
-                }
+            // if svc is running then send it stop request
+            if (x->state == SERVICE_STATE_RUNNING) {
+                x->state = SERVICE_STATE_STOPPING;
+                svc_make_req(svcs[id].name, SVC_REQ_ID_STOP, NULL, 0, 5);
             }
-            break;
-        }
 
-        usleep(100*MS);
-        duration_ms += 100;
+            // wait for service to be in stopped state
+            strcpy(x->name, "delpend");
+            int ms = 0;
+            while (ms < 5000 && !SERVICE_IS_STOPPED(x->state)) {
+                usleep(100000);
+                ms += 100;
+            }
+
+            // xxx comment
+            if (SERVICE_IS_STOPPED(x->state)) {
+                strcpy(x->name, "deleted");
+                x->state = SERVICE_STATE_STOPPED;
+                pthread_mutex_destroy(&x->mutex);
+                pthread_cond_destroy(&x->cond);
+                memset(x->req, 0, sizeof(x->req));
+            }
+        }
+    }
+
+    // for all new svc names that don't exist, add entry to svcs tbl
+    for (int i = 0; i < max_new; i++) {
+        int id = svc_name_to_id(new[i]);
+        if (id == -1) {
+            // service name new[i] is not in svcs tbl; so add it
+            int j = svc_name_to_id("deleted");
+            svc_t *x;
+
+            if (j >= 0) {
+                x = &svcs[j];
+            } else if (max_svcs < MAX_SVCS) {
+                x = &svcs[max_svcs];
+                max_svcs++;
+            } else {
+                ERROR("svcs tbl is full\n");
+                break;
+            }
+            strcpy(x->name, new[i]);
+            x->state = SERVICE_STATE_STOPPED;
+            pthread_mutex_init(&x->mutex, NULL);
+            pthread_cond_init(&x->cond, NULL);
+            memset(x->req, 0, sizeof(x->req));
+        }
+    }
+
+    INFO("Services List ...\n");
+    for (int i = 0; i < max_svcs; i++) {
+        INFO("%20s\n", svcs[i].name);
     }
 }
 
@@ -462,7 +540,7 @@ static void process_svc_start_req(int id)
     
     memset(x->req, 0, sizeof(x->req));
     x->state = SERVICE_STATE_RUNNING;
-    run_svc(id);
+    run_svc(x->name);
 }
 
 static void process_svc_stop_req(int id)
@@ -480,37 +558,34 @@ static void process_svc_stop_req(int id)
     svc_make_req(x->name, SVC_REQ_ID_STOP, NULL, 0, 5);
 }
 
-static void process_svc_stopped_callback(int id, int rc)
-{
-    svc_t *x = &svcs[id];
-
-    INFO("called for id=%d name=%s rc=%d\n", id, x->name, rc);
-
-    x->state = (rc == 0 ? SERVICE_STATE_STOPPED : SERVICE_STATE_STOPPED_BY_ERROR);
-}   
-
 // -----------------  RUN A SVC  ------------------------------------
 
 static int svc_thread(void *cx);
 
-static void run_svc(int id)
+static void run_svc(char *svc_name_arg)
 {
-    char name[2000];
+    char thread_name[100];
+    char *svc_name = strdup(svc_name_arg);
 
-    sprintf(name, "svc_%s", svcs[id].name);
-    sdlx_create_detached_thread(svc_thread, name, (void*)(long)id);
+    sprintf(thread_name, "svc_%s", svc_name);
+    sdlx_create_detached_thread(svc_thread, thread_name, svc_name);
 }
 
 static int svc_thread(void *cx)
 {
-    int id = (int)(long)cx;
-    svc_t *x = &svcs[id];
-    int rc = 0;
+    #define IS_SVC true
 
-    rc = run(x->name, true);  // is_svc = true
+    char *svc_name = cx;
+    int   rc, id;
 
-    process_svc_stopped_callback(id, rc);
+    rc = run(svc_name, IS_SVC);
 
+    id = svc_name_to_id(svc_name);
+    if (id != -1) {
+        svcs[id].state = (rc == 0 ? SERVICE_STATE_STOPPED : SERVICE_STATE_STOPPED_BY_ERROR);
+    }
+
+    free(svc_name);
     return 0;
 }
 
@@ -529,3 +604,13 @@ static int svc_name_to_id(char *svc_name)
 
     return -1;
 }
+
+static void remove_trailing_newline(char *s)
+{
+    int len = strlen(s);
+
+    if (len > 0 && s[len-1] == '\n') {
+        s[len-1] = '\0';
+    }
+}
+
