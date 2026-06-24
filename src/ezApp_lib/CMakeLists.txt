@@ -15,6 +15,7 @@ set(LIB_SRCS
     utils_openssl.c
     utils_android.cpp
     logging.c
+    run.c
 )
 
 set(LIB_HEADERS

@@ -99,8 +99,6 @@ int sdlx_create_detached_thread(int (*thread_fn)(void*), char *thread_name, void
 
 extern int svc_eztest_mode;
 
-void svcs_init(int (*run_proc)(char *name, bool is_svc));  //xxx needed?
-void svcs_cleanup(void);  //xxx needed?
 void svcs_start(void);
 void svcs_stop(void);
 void svcs_display(int bg_color);
@@ -114,6 +112,12 @@ void util_android_utils_destroy(void);
 void util_start_foreground(void);
 void util_stop_foreground(void);
 bool util_is_foreground_enabled(void);
+
+// --------------------
+// run.c
+// --------------------
+
+int run(char *name, bool is_svc);
 
 #ifdef __cplusplus
 }

@@ -4,7 +4,6 @@
 #include <utils.h>
 #include <svcs.h>
 #include <private.h>
-#include <picoc_ezApp.h>
 
 #ifdef ANDROID
 #include <SDL3/SDL.h>
@@ -79,7 +78,7 @@ static perm_granted_t perm_granted;
 // prototypes
 //
 
-static void display_menu_cleanup(void);
+//xxx static void display_menu_cleanup(void);   del later?
 static void processing(void);
 static int devel_mode_server_thread(void *cx);
 
@@ -90,7 +89,6 @@ static void cleanup(void);
 static void sigusr2_hndlr(int signum);
 static void print_type_sizes(void) __attribute__ ((unused));
 static void create_files(int action);
-static int run(char *name, bool is_svc);
 
 int MAIN(int argc, char **argv)
 {
@@ -104,8 +102,6 @@ int MAIN(int argc, char **argv)
     processing();
 
     cleanup();
-
-    INFO("TERMINATING\n");
     return 0;
 }
 
@@ -208,8 +204,8 @@ static int init(void)
         util_stop_foreground();
     }
 
-    // init services, this will start all autostart svcs
-    svcs_init(run);
+    // start all services, that do not have a 'stopped' file in their dir
+    svcs_start();
 
     // success
     return 0;
@@ -223,10 +219,10 @@ static void cleanup(void)
     INFO("cleanup starting\n");
 
     INFO("stopping services\n");
-    svcs_cleanup();
+    svcs_stop();
 
-    INFO("free allocations\n");
-    display_menu_cleanup();
+    //INFO("free allocations\n");
+    //display_menu_cleanup();  // xxx needed ?
 
     INFO("destroying android utils\n");
     util_android_utils_destroy();
@@ -234,7 +230,7 @@ static void cleanup(void)
     INFO("quitting SDL subsystems\n");
     sdlx_quit(SUBSYS_VIDEO | SUBSYS_AUDIO | SUBSYS_SENSOR);
 
-    INFO("cleanup completed\n");
+    INFO("cleanup completed, program terminating\n");
 }
 
 static void create_files(int action)
@@ -398,64 +394,6 @@ static void processing(void)
     }
 }
 
-static int run(char *name, bool is_svc)
-{
-    char           dir_path[100];
-    int            rc;
-    DIR           *dir;
-    struct dirent *dirent;
-    char          *p;
-    char           picoc_args[1000];
-
-    // construct path to the directory of the app or svc being run
-    if (!is_svc) {
-        sprintf(dir_path, "apps/%s", name);
-    } else {
-        sprintf(dir_path, "svcs/%s", name);
-    }
-
-    // construct list of *.c files in the dir
-    picoc_args[0] = '\0';
-    dir = opendir(dir_path);
-    if (dir == NULL) {
-        ERROR("%s: failed to opendir %s, %s\n", name, dir_path, strerror(errno));
-        return 99;
-    }
-    p = picoc_args;
-    while ((dirent = readdir(dir)) != NULL) {
-        char *fn = dirent->d_name;
-        int len = strlen(fn);
-        if (len > 2 && strcmp(fn+len-2, ".c") == 0) {
-            p += sprintf(p, "%s/%s ", dir_path, fn);
-        }
-    }
-    closedir(dir);
-
-    // error if no source code found in dir_path
-    if (picoc_args[0] == '\0') {
-        ERROR("%s: no source code in %s\n", name, dir_path);
-        sdlx_show_toast("NO SOURCE CODE");
-        return 99;
-    }
-
-    // if running an app then add apps/lib/lib.c
-    if (!is_svc) {
-        p += sprintf(p, "%s", "apps/lib/lib.c ");
-    }
-
-    // add progname and data_dir args, which will be passed to the
-    // app or svc which will be run by picoc
-    p += sprintf(p, " - %s %s", name, dir_path);
-
-    // run the app using the picoc c language interpreter
-    INFO("%s: starting, args = %s\n", name, picoc_args);
-    rc = picoc_ezApp(picoc_args);
-    INFO("%s: completed, rc = %d\n", name, rc);
-
-    // return completion status
-    return rc;
-}
-
 // -----------------  DISPLAY MENU  -------------------------------
 
 static sdlx_texture_t *circle;
@@ -557,11 +495,13 @@ static void display_menu(void)
     }
 }
 
+#if 0 //xxx
 static void display_menu_cleanup(void)
 {
     sdlx_destroy_texture(circle);
     circle = NULL;
 }
+#endif
 
 static sdlx_texture_t *create_filled_circle_texture(int radius, sdlx_color_t color)
 {

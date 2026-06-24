@@ -17,6 +17,7 @@ LOCAL_C_INCLUDES += $(LOCAL_PATH)/include \
 
 LOCAL_SRC_FILES := \
     logging.c \
+    run.c \
     sdlx_audio.c \
     sdlx_event.c \
     sdlx_misc.c \

@@ -7,9 +7,11 @@
 
 // xxx
 // - number of services
+// - scroll services menu
+
+// xxx
 // - test a delay in stopping, does it stay in delpending
 //   . can it get out of delpend
-// - scroll services menu
 
 //
 // defines
@@ -36,7 +38,8 @@
 #define SERVICE_IS_STOPPED(state)  ((state) == SERVICE_STATE_STOPPED || \
                                     (state) == SERVICE_STATE_STOPPED_BY_ERROR)
 
-#define MAX_SVCS 10
+#define MAX_SVCS 20
+#define MAX_SVC_NAME 30
 #define MAX_SVC_REQ_QUEUE 5
 
 #define MS  1000L
@@ -47,7 +50,7 @@
 //
 
 typedef struct {
-    char            name[30];
+    char            name[MAX_SVC_NAME];
     int             state;
     pthread_mutex_t mutex;
     pthread_cond_t  cond;
@@ -60,7 +63,6 @@ typedef struct {
 
 static svc_t  svcs[MAX_SVCS];
 static int    max_svcs;
-static int  (*run)(char *name, bool is_svc);
 
 // set by eztest when testing a svc
 int svc_eztest_mode;
@@ -73,37 +75,19 @@ static void update_list_of_svcs(void);
 static void process_svc_start_req(int id);
 static void process_svc_stop_req(int id);
 static void run_svc(char *svc_name);
+static int svc_thread(void *cx);
+
 static int svc_name_to_id(char *svc_name);
 static void remove_trailing_newline(char *s);
 
 // -----------------  SVCS ROUTINES USED BY MAIN.C  ---------------
 
-// xxx maybe dont need init and cleanup
-void svcs_init(int (*run_proc)(char *name, bool is_svc))
-{
-    // xxx is there a better way
-    // The purpose of this is to  avoid circular library dependence, where
-    // the ezApp_lib svcs.c file calls picoc lib to run a service; and
-    // where picoc lib calls this ezApp_lib library, to make the platform calls.
-    // Instead the 'run' routine is provided by ezApp/main.c; this svcs.c file
-    // will call the run() routine provided here to run a service; which 
-    // avoids the circular library dependency.
-    run = run_proc;
-
-    // start all services that do not have 'stopped' file in their directory
-    svcs_start();
-}
-
-void svcs_cleanup(void)
-{
-    svcs_stop();
-}
-
 void svcs_start(void)
 {
-    char dir[2000];
+    char dir[100];
     bool stopped;
     int  id;
+    char tmp_name[MAX_SVC_NAME];
 
     INFO("start services\n");
 
@@ -115,7 +99,8 @@ void svcs_start(void)
     for (id = 0; id < max_svcs; id++) {
         svc_t *x = &svcs[id];
 
-        sprintf(dir, "svcs/%s", svcs[id].name);
+        strcpy(tmp_name, x->name); //xxx comment
+        snprintf(dir, sizeof(dir), "svcs/%s", tmp_name);
         stopped = util_file_exists(dir, "stopped");
 
         if (!stopped && SERVICE_IS_STOPPED(x->state)) {
@@ -262,7 +247,7 @@ static void update_list_of_svcs(void)
 {
     FILE *fp;
     char s[100];
-    char new[MAX_SVCS][30];
+    char new[MAX_SVCS][MAX_SVC_NAME]; // xxx
     int  max_new = 0;
     long new_mtime;
 
@@ -355,11 +340,67 @@ static void update_list_of_svcs(void)
     }
 }
 
+static void process_svc_start_req(int id)
+{
+    svc_t *x = &svcs[id];
+
+    INFO("called for id=%d name=%s\n", id, x->name);
+
+    if (!SERVICE_IS_STOPPED(x->state)) {
+        ERROR("id=%d name=%s state=%s\n", id, x->name, SERVICE_STATE_STR(x->state));
+        return;
+    }
+    
+    memset(x->req, 0, sizeof(x->req));
+    x->state = SERVICE_STATE_RUNNING;
+    run_svc(x->name);
+}
+
+static void process_svc_stop_req(int id)
+{
+    svc_t *x = &svcs[id];
+
+    INFO("called for id=%d name=%s\n", id, x->name);
+
+    if (x->state != SERVICE_STATE_RUNNING) {
+        ERROR("not running: id=%d name=%s state=%s\n", id, x->name, SERVICE_STATE_STR(x->state));
+        return;
+    }
+
+    x->state = SERVICE_STATE_STOPPING;
+    svc_make_req(x->name, SVC_REQ_ID_STOP, NULL, 0, 5);
+}
+
+static void run_svc(char *svc_name_arg)
+{
+    char thread_name[100];
+    char *svc_name = strdup(svc_name_arg);
+
+    sprintf(thread_name, "svc_%s", svc_name);
+    sdlx_create_detached_thread(svc_thread, thread_name, svc_name);
+}
+
+static int svc_thread(void *cx)
+{
+    #define IS_SVC true
+
+    char *svc_name = cx;
+    int   rc, id;
+
+    rc = run(svc_name, IS_SVC);
+
+    id = svc_name_to_id(svc_name);
+    if (id != -1) {
+        svcs[id].state = (rc == 0 ? SERVICE_STATE_STOPPED : SERVICE_STATE_STOPPED_BY_ERROR);
+    }
+
+    free(svc_name);
+    return 0;
+}
+
 // -----------------  SVCS ROUTINES AVAIL IN PICOC  ---------------
 
-//
-// routines called by apps
-//
+// ---- routines called by apps ----
 
 int svc_make_req(char *svc_name, int req_id, char *req_data, int req_data_len, int timeout_secs)
 {
@@ -454,9 +495,7 @@ int svc_make_req(char *svc_name, int req_id, char *req_data, int req_data_len, i
     return req_status;
 }
 
-//
-// routines called by svcs
-//
+// ---- routines called by svcs ----
 
 int svc_wait_for_req(char *svc_name, svc_req_t **req, long timeout_abstime_secs)
 {
@@ -523,70 +562,6 @@ void svc_req_completed(svc_req_t *req, int status)
     req->status = status;
     __sync_synchronize();
     req->completed = true;
-}
-
-// -----------------  HANDLERS  -----------------------------------
-
-static void process_svc_start_req(int id)
-{
-    svc_t *x = &svcs[id];
-
-    INFO("called for id=%d name=%s\n", id, x->name);
-
-    if (!SERVICE_IS_STOPPED(x->state)) {
-        ERROR("id=%d name=%s state=%s\n", id, x->name, SERVICE_STATE_STR(x->state));
-        return;
-    }
-    
-    memset(x->req, 0, sizeof(x->req));
-    x->state = SERVICE_STATE_RUNNING;
-    run_svc(x->name);
-}
-
-static void process_svc_stop_req(int id)
-{
-    svc_t *x = &svcs[id];
-
-    INFO("called for id=%d name=%s\n", id, x->name);
-
-    if (x->state != SERVICE_STATE_RUNNING) {
-        ERROR("not running: id=%d name=%s state=%s\n", id, x->name, SERVICE_STATE_STR(x->state));
-        return;
-    }
-
-    x->state = SERVICE_STATE_STOPPING;
-    svc_make_req(x->name, SVC_REQ_ID_STOP, NULL, 0, 5);
-}
-
-// -----------------  RUN A SVC  ------------------------------------
-
-static int svc_thread(void *cx);
-
-static void run_svc(char *svc_name_arg)
-{
-    char thread_name[100];
-    char *svc_name = strdup(svc_name_arg);
-
-    sprintf(thread_name, "svc_%s", svc_name);
-    sdlx_create_detached_thread(svc_thread, thread_name, svc_name);
-}
-
-static int svc_thread(void *cx)
-{
-    #define IS_SVC true
-
-    char *svc_name = cx;
-    int   rc, id;
-
-    rc = run(svc_name, IS_SVC);
-
-    id = svc_name_to_id(svc_name);
-    if (id != -1) {
-        svcs[id].state = (rc == 0 ? SERVICE_STATE_STOPPED : SERVICE_STATE_STOPPED_BY_ERROR);
-    }
-
-    free(svc_name);
-    return 0;
 }
 
 // -----------------  UTILS  ----------------------------------------
