@@ -1,3 +1,4 @@
+// xxx when recording, and slct something else, save the recording
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>

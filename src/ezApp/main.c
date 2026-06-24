@@ -222,11 +222,11 @@ static void cleanup(void)
 
     INFO("cleanup starting\n");
 
+    INFO("stopping services\n");
+    svcs_cleanup();
+
     INFO("free allocations\n");
     display_menu_cleanup();
-
-    INFO("stopping services\n");
-    svcs_stop_all();
 
     INFO("destroying android utils\n");
     util_android_utils_destroy();
@@ -286,10 +286,10 @@ static void create_files(int action)
             
     // remove existing apps and svcs, and recreate
     } else if (action ==  CREATE_FILES_RESET_APPS_AND_SVCS) {
-        svcs_stop_all();
+        svcs_stop();
         system("rm -rf apps svcs");
         system("tar -xvf files.tar apps svcs");
-        svcs_init(run);
+        svcs_start();
     } else {
         ERROR("invalid arg, action %d\n", action);
     }

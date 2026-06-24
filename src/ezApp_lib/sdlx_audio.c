@@ -482,6 +482,12 @@ void sdlx_audio_main_thread_periodic(void)
 // - mode           = joint stereo
 // - quality        = 2  (high)
 
+// xxx fail if already open
+// xxx or create a new gfp on every open
+// xxx how to prevent gfp memory leak
+// xxx do I also need a new mp3buf
+// xxx how long does it take to init a gfp?
+
 typedef struct {
     int  fd;
     char path[200];
@@ -1568,6 +1574,7 @@ void sdlx_create_test_file(char *dir, char *filename, int freq1, int freq2, int 
     }
 
     // create mp3 file from stereo samples
+    // xxx can't do this while recording
     cx = mp3_file_open(dir, filename, 2, false);
     mp3_file_write(cx, samples, num_samples);
     mp3_file_close(cx);

@@ -1,6 +1,29 @@
+mp3lame
+
+run
+
+xxxxxxxxxxxxxxxxxxxxx
+
+06-22 18:26:57.188 I/EZAPP   (25554): sdlx_audio_play_file: actual_spec: format=SDL_AUDIO_F32LE channels=2 freq=48000
+06-22 18:26:57.192 E/EZAPP   (25554): sdlx_audio_play_file: MIX_LoadAudio, Audio data is in unknown/unsupported/corrupt format
+06-22 18:26:59.064 I/EZAPP   (25554): lat/long/alt = 42.4223 -71.6226 445 msl 350 wgs84
+06-22 18:26:59.854 I/SDL/APP (25554): Low latency audio enabled
+06-22 18:26:59.854 I/EZAPP   (25554): Low latency audio enabled
+06-22 18:26:59.982 I/EZAPP   (25554): sdlx_audio_play_file: actual_spec: format=SDL_AUDIO_F32LE channels=2 freq=48000
+06-22 18:26:59.982 E/EZAPP   (25554): sdlx_audio_play_file: MIX_LoadAudio, Audio data is in unknown/unsupported/corrupt format
+06-22 18:27:01.003 I/EZAPP   (25554): Altitude: ymdh=0 5 21 18  altitude_ft=445
+06-22 18:27:02.471 I/SDL/APP (25554): Low latency audio enabled
+06-22 18:27:02.471 I/EZAPP   (25554): Low latency audio enabled
+06-22 18:27:02.588 I/EZAPP   (25554): sdlx_audio_play_file: actual_spec: format=SDL_AUDIO_F32LE channels=2 freq=48000
+06-22 18:27:02.589 E/EZAPP   (25554): sdlx_audio_play_file: MIX_LoadAudio, Audio data is in unknown/unsupported/corrupt format
+06-22 18:27:04.000 I/EZAPP   (25554): Location: periodic interval = 10 secs
+06-22 18:27:04.000 I/EZAPP   (25554): Location: returning saved location Bolton
+
+
+
 xxxxxxxxxxxxx  NEXT xxxxxxxxxxxxxx
 
-run_linus: Log showing all lines as an error
+run_linux: Log showing all lines as an error
 
 shouldnt have a svcs file, instead use another mechanism, that preservices svs state
 
@@ -44,6 +67,8 @@ make new repo
   functionality. Common uses include quick services like food delivery, payments, and navigation
 
 test all apps
+
+reinstall devel computer with Ubuntu 2604
 
 doc comment
 When cloning a public GitHub repository, you should generally use the HTTPS URL format if you only intend to read or download the code. However, you should use the SSH URL format if you are the maintainer or a frequent contributor who needs to push code changes back to the repository

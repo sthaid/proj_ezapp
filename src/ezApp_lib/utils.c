@@ -95,9 +95,12 @@ int util_write_file(char *dir, char *fn, void *buf, int len)
         return -1;
     }
 
-    ret = write(fd, buf, len);
-    if (ret != len) {
-        return -1;
+    if (buf && len > 0) {
+        ret = write(fd, buf, len);
+        if (ret != len) {
+            close(fd);
+            return -1;
+        }
     }
 
     close(fd);
