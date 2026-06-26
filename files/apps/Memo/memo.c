@@ -24,7 +24,7 @@
 
 #define FONT_CUSTOM 23  // char size fits 23 chars over display width
 
-#define BAR_AREA_HEIGHT 150
+#define BAR_AREA_HEIGHT 150  //xxx elim in all apps
 #define BAR_HEIGHT 75
 
 #define AUTO_STOP_SECS 3
@@ -106,7 +106,7 @@ int main(int argc, char **argv)
             // if y display location is above the top of the display region,
             // or below the bottom of the display region, then either continue or break
             y2 = y + ROW2Y(2*idx);
-            if (y2 < y_top - 2*sdlx_char_height_dflt) continue;
+            if (y2 < y_top - 2*sdlx_char_height_dflt) continue;  // xxx why '-2'
             if (y2 > y_bottom) break;
 
             // determine the color in which the filename[idx] will be displayed
