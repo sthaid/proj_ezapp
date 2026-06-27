@@ -42,9 +42,6 @@
 static sdlx_audio_state_t  state;
 static sdlx_audio_params_t audio_params = { DEFAULT_RECORD_GAIN, DEFAULT_RECORD_SILENCE };
 
-static lame_global_flags  *gfp;
-static unsigned char      *mp3buf;
-
 static SDL_AudioStream    *audio_stream_rec_mono;
 static SDL_AudioStream    *audio_stream_play_mono;
 static SDL_AudioStream    *audio_stream_play_stereo;
@@ -73,24 +70,6 @@ static void audio_print_list_of_devices(void);
 int sdlx_audio_init(void)
 {
     INFO("initializing\n");
-
-    // initialize lame mp3 encoder
-    gfp = lame_init();
-    if (gfp == NULL) {
-        ERROR("lame_init failed\n");
-        return -1;
-    }
-
-    lame_set_num_channels(gfp,2);
-    lame_set_in_samplerate(gfp,FRAMES_PER_SEC);
-    lame_set_brate(gfp,128);
-    lame_set_mode(gfp,MP3_LAME_MODE_JOINT_STEREO);
-    lame_set_quality(gfp,2);   // 2=high  5 = medium  7=low
-
-    if (lame_init_params(gfp) == -1) {
-        ERROR("lame_init_params failed\n");
-        return -1;
-    }
 
     // initialize SDL audio
     if (!SDL_InitSubSystem(SDL_INIT_AUDIO)) {
@@ -123,16 +102,6 @@ void sdlx_audio_quit(void)
 
     // quit SDL audio subsystem
     SDL_QuitSubSystem(SDL_INIT_AUDIO);
-
-    // cleanup lame mp3 encoder
-    if (gfp) {
-        lame_close(gfp);
-        gfp = NULL;
-    }
-    if (mp3buf) {
-        free(mp3buf);
-        mp3buf = NULL;
-    }
 }
 
 static void audio_print_list_of_devices(void)
@@ -482,18 +451,14 @@ void sdlx_audio_main_thread_periodic(void)
 // - mode           = joint stereo
 // - quality        = 2  (high)
 
-// xxx fail if already open
-// xxx or create a new gfp on every open
-// xxx how to prevent gfp memory leak
-// xxx do I also need a new mp3buf
-// xxx how long does it take to init a gfp?
+#define MAX_SAMPLES_MP3_FILE_WRITE 8192
+#define MAX_MP3_BUF (MAX_SAMPLES_MP3_FILE_WRITE / 2 + 7200)
 
 typedef struct {
-    int  fd;
-    char path[200];
+    int                fd;
+    lame_global_flags *gfp;
+    unsigned char      mp3buf[MAX_MP3_BUF];
 } mp3_file_cx_t;
-
-#define MAX_MP3_BUF 100000
 
 static void *mp3_file_open(char *dir, char *filename, int num_channels, bool append)
 {
@@ -501,21 +466,10 @@ static void *mp3_file_open(char *dir, char *filename, int num_channels, bool app
     int            fd, len;
     mp3_file_cx_t *cx;
 
-    // if gfp is not initialized then return error
-    if (gfp == NULL) {
-        ERROR("gfp not initialized\n");
-        return NULL;
-    }
-
     // only num_channels equal 2 is supported
     if (num_channels != 2) {
         ERROR("num_channels=%d, must be 2\n", num_channels);
         return NULL;
-    }
-
-    // if mp3buf is not allocated then allocate; it is never freed
-    if (mp3buf == NULL) {
-        mp3buf = calloc(MAX_MP3_BUF,1);
     }
 
     // create pathname, verify suffix is ".mp3"
@@ -542,10 +496,33 @@ static void *mp3_file_open(char *dir, char *filename, int num_channels, bool app
         lseek(fd, 0, SEEK_END);
     }
 
+    // initialize lame
+    lame_global_flags *gfp;
+    gfp = lame_init();
+    if (gfp == NULL) {
+        ERROR("lame_init failed\n");
+        close(fd);
+        unlink(path);
+        return NULL;
+    }
+
+    lame_set_num_channels(gfp,2);
+    lame_set_in_samplerate(gfp,FRAMES_PER_SEC);
+    lame_set_brate(gfp,128);
+    lame_set_mode(gfp,MP3_LAME_MODE_JOINT_STEREO);
+    lame_set_quality(gfp,2);   // 2=high  5 = medium  7=low
+    if (lame_init_params(gfp) == -1) {
+        ERROR("lame_init_params failed\n");
+        close(fd);
+        unlink(path);
+        lame_close(gfp);
+        return NULL;
+    }
+
     // allocate and init cx
     cx = calloc(1, sizeof(mp3_file_cx_t));
     cx->fd = fd;
-    strcpy(cx->path, path);
+    cx->gfp = gfp;
 
     // return cx
     return cx;
@@ -557,8 +534,6 @@ static void *mp3_file_open(char *dir, char *filename, int num_channels, bool app
 // - num_samples must be multiple of 2
 static void mp3_file_write(void *cx_arg, float *samples, int num_samples)
 {
-    #define MAX_SAMPLES_MP3_FILE_WRITE 8192
-
     int len;
     int process_samples;
     mp3_file_cx_t *cx = cx_arg;
@@ -585,14 +560,14 @@ static void mp3_file_write(void *cx_arg, float *samples, int num_samples)
         }
 
         // note: 3rd arg is number of samples per channel, thus the divide by 2
-        len = lame_encode_buffer_interleaved(gfp, samples_s16, process_samples/2, mp3buf, MAX_MP3_BUF);
+        len = lame_encode_buffer_interleaved(cx->gfp, samples_s16, process_samples/2, cx->mp3buf, MAX_MP3_BUF);
         if (len < 0) {
             ERROR("lame_encode_buffer failed, rc=%d\n", len);
             return;
         }
 
         if (len > 0) {
-            write(cx->fd, mp3buf, len);
+            write(cx->fd, cx->mp3buf, len);
         }
 
         samples += process_samples;
@@ -612,7 +587,7 @@ static void mp3_file_close(void *cx_arg)
 
     while (true) {
         // flush lame internal buffers
-        len = lame_encode_flush(gfp, mp3buf, MAX_MP3_BUF);
+        len = lame_encode_flush(cx->gfp, cx->mp3buf, MAX_MP3_BUF);
         if (len < 0) {
             ERROR("lame_encode_flush failed, rc=%d\n", len);
             break;
@@ -625,12 +600,13 @@ static void mp3_file_close(void *cx_arg)
 
         // write mp3 data
         if (len > 0) {
-            write(cx->fd, mp3buf, len);
+            write(cx->fd, cx->mp3buf, len);
         }
     }
 
-    // close mp3 file. and free cx
+    // cleanup
     close(cx->fd);
+    lame_close(cx->gfp);
     free(cx);
 }
 
@@ -1574,7 +1550,6 @@ void sdlx_create_test_file(char *dir, char *filename, int freq1, int freq2, int 
     }
 
     // create mp3 file from stereo samples
-    // xxx can't do this while recording
     cx = mp3_file_open(dir, filename, 2, false);
     mp3_file_write(cx, samples, num_samples);
     mp3_file_close(cx);
