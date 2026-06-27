@@ -1,4 +1,3 @@
-// xxx when recording, and slct something else, save the recording
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -64,6 +63,7 @@ void register_events(void);
 
 // utils
 void get_list_of_files(void);
+void rename_recording_mp3(void);
 char *get_new_mp3_filename_noext(void);
 char *get_state_str(void);
 char *secs_to_mmss_str(int secs, char *str);
@@ -91,6 +91,10 @@ int main(int argc, char **argv)
     // init variables
     sprintf(files_dir, "%s/files", data_dir);
     show_controls = true;
+
+    // there should not be a recording.mp3 file present when this
+    // miniApp starts; but if there is then it is removed
+    util_delete_file(data_dir, "recording.mp3");
 
     // initialize color organ
     color_organ_init();
@@ -159,11 +163,9 @@ int main(int argc, char **argv)
     color_organ_cleanup();
     state = STATE_STOPPED;
     playing_file[0] = '\0';
-    if (util_file_exists(data_dir, "recording.mp3")) {
-        char new_name[100];
-        sprintf(new_name, "%s.mp3", get_new_mp3_filename_noext());
-        util_rename_file(data_dir, "recording.mp3", files_dir, new_name);
-    }
+
+    // if recorded file exists then rename it
+    rename_recording_mp3();
 
     // terminate
     printf("I %s: terminating\n", progname);
@@ -203,6 +205,14 @@ void process_event(sdlx_event_t *ev, sdlx_audio_state_t *as)
     int new_play_file_time;
 
     if (ev->event_id >= EVID_PLAY_FILE && ev->event_id < EVID_PLAY_FILE+MAX_FILES) {
+        // stop playing or recording
+        sdlx_audio_stop();
+        state = STATE_STOPPED;
+        playing_file[0] = '\0';
+
+        // if recorded file exists then rename it
+        rename_recording_mp3();
+
         // play the selected file
         int idx = ev->event_id - EVID_PLAY_FILE;
         sdlx_audio_play_file(files_dir, files[idx]);
@@ -231,22 +241,13 @@ void process_event(sdlx_event_t *ev, sdlx_audio_state_t *as)
         switch (ev->event_id) {
         // stop audio
         case EVID_STOP:
+            // stop playing or recording
             sdlx_audio_stop();
             state = STATE_STOPPED;
             playing_file[0] = '\0';
 
             // if recorded file exists then rename it
-            if (util_file_exists(data_dir, "recording.mp3")) {
-                char new_name[100], *dflt_new_name, *input;
-                dflt_new_name = get_new_mp3_filename_noext();
-                input = sdlx_get_input_str("RecordedFileName", false, dflt_new_name);
-                if (input[0] != '\0') {
-                    sprintf(new_name, "%s.mp3", input);
-                } else {
-                    sprintf(new_name, "%s.mp3", dflt_new_name);
-                }
-                util_rename_file(data_dir, "recording.mp3", files_dir, new_name);
-            }
+            rename_recording_mp3();
             break;
 
         // monitor or record device, applies when in STATE_STOPPED
@@ -529,6 +530,38 @@ void get_list_of_files(void)
             max_files++;
         }
         pclose(fp);
+    }
+}
+
+void rename_recording_mp3(void)
+{
+    char new_name[100], *dflt_new_name, *input;
+
+    // must be called when audio is stopped
+    if (state != STATE_STOPPED) {
+        printf("E %s: rename_recording_mp3 must be called in STATE_STOPPED\n", progname);
+        return;
+    }
+
+    // if recording.mp3 file doesn't exist then return
+    if (!util_file_exists(data_dir, "recording.mp3")) {
+        return;
+    }
+
+    // get new file name
+    dflt_new_name = get_new_mp3_filename_noext();
+    input = sdlx_get_input_str("RecordedFileName", false, dflt_new_name);
+
+    // if new file name is provided then
+    //   rename recording.mp3 to the new file name
+    // else
+    //   delete the recording.mp3 file
+    // endif
+    if (input[0] != '\0') {
+        sprintf(new_name, "%s.mp3", input);
+        util_rename_file(data_dir, "recording.mp3", files_dir, new_name);
+    } else {
+        util_delete_file(data_dir, "recording.mp3");
     }
 }
 
