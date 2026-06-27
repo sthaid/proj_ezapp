@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include <private.h>
 
 #undef main
@@ -57,4 +58,10 @@ int main(int argc, char **argv)
         printf("E eztest_linux: error termination\n");
     }
     return rc;
+}
+
+int picoc_ezApp(char *args)
+{
+    printf("E eztest_linux: stub picoc_ezApp should not be called\n");
+    exit(1);
 }
