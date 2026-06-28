@@ -1,7 +1,7 @@
 #ifndef __PRIVATE_H__
 #define __PRIVATE_H__
 
-// xxx comment about being private
+// The declarations here (private.h) are not provided in picoc.
 
 #ifdef __cplusplus 
 extern "C" {
