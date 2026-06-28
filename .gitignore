@@ -28,7 +28,7 @@ files/apps/ColrOrgn/files/*.mp3
 params
 
 bin/ezsh
-bin/ezlogfilter
+bin/src/ezlogfilter
 
 cscope.files
 cscope.out
