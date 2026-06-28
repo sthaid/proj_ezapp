@@ -1,13 +1,17 @@
-eztest not working
+xxx
+cleanup dirs
+newrepo called ezApp
+delete the qne2 and any other repos no longer worth keeping
+
+run_linux: Log showing all lines as an error
+doc: - document the sdlx.h, utils.h, and svcs.h files
+
+--------------
 
 permissions after doing a ezget ?
 
 xxxxxxxxxxxxx  NEXT xxxxxxxxxxxxxx
 
-run_linux: Log showing all lines as an error
-
-doc:
-- document the sdlx.h, utils.h, and svcs.h files
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
