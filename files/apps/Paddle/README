@@ -2,7 +2,7 @@ NAME: Paddle
 
 DESCRIPTION:
 
-A Paddle and Ball game.
+Ball and Paddle game.
 
 Settings:
 - autonomous mode: computer plays itself

@@ -516,7 +516,6 @@ void apply_move(board_t *b, int move)
     b->whose_turn = OTHER_COLOR(b->whose_turn);
 }
 
-// xxx check sizeof
 int possible_move_tbl[] = {
     11, 18, 81, 88, 
     33, 34, 35, 36, 
@@ -538,6 +537,12 @@ int possible_move_tbl[] = {
 void get_possible_moves(board_t *b, possible_moves_t *pm)
 {
     int r, c, i, k, move, my_color, other_color;
+
+    if (sizeof(possible_move_tbl) != 64*sizeof(int)) {
+        printf("E %s: sizeof(possible_move_tbl) = %zd is incorrect\n",
+               progname, sizeof(possible_move_tbl));
+        exit(1);
+    }
 
     my_color = b->whose_turn;
     other_color = OTHER_COLOR(my_color);

@@ -181,7 +181,6 @@ int main(int argc, char **argv)
             run();
         }
 
-// xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
         // display scores
         sdlx_render_printf_ex1(0, 0, FONT_LARGE, COLOR_WHITE, "%d", computer_score);
         sdlx_render_printf_ex1(sdlx_win_width-2*sdlx_char_width(FONT_LARGE), 0,

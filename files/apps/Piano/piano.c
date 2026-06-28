@@ -11,9 +11,7 @@
 
 #include "apps/lib/lib.h"
 
-// xxx 
-// - timing of the key highlight vs the tone
-// - tempo for frere jacques
+// todo-later - check timing of the key highlight vs the tone
 
 // defines
 #define EVID_HLOCK         1
