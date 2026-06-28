@@ -32,7 +32,6 @@ Default cmd is run_on_picoc.\n\
 }
 
 # ######## SCRIPT STARTS HERE ########
-# xxx indent all scripts 4 spaces
 
 # set full path to the ezlogfilter program
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
