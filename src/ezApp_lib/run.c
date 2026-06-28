@@ -1,5 +1,6 @@
 #include <std_hdrs.h>
 
+#include <sdlx.h>
 #include <private.h>
 #include <picoc_ezApp.h>
 
@@ -39,7 +40,7 @@ int run(char *name, bool is_svc)
     // error if no source code found in dir_path
     if (picoc_args[0] == '\0') {
         ERROR("%s: no source code in %s\n", name, dir_path);
-        //xxx get this back  sdlx_show_toast("NO SOURCE CODE");
+        sdlx_show_toast("NO SOURCE CODE");
         return 99;
     }
 

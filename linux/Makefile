@@ -19,7 +19,7 @@ SDL SDL_ttf SDL_mixer lodepng kissfft cJSON libmp3lame ezApp_lib picoc:
 	cd build/$@; cmake --install .
 
 run: build_quick
-	cd ../files; ../linux/build/ezApp/ezApp 2>&1 | ezlogfilter
+	cd ../files; ../linux/build/ezApp/ezApp 2>&1 | ../bin/src/ezlogfilter
 
 clean:
 	rm -f  ../src/ezApp/version.h

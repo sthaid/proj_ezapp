@@ -11,8 +11,6 @@
 
 #include "version.h"
 
-// xxx do 0 len params work
-
 //
 // defines
 //
@@ -78,7 +76,6 @@ static perm_granted_t perm_granted;
 // prototypes
 //
 
-//xxx static void display_menu_cleanup(void);   del later?
 static void processing(void);
 static int devel_mode_server_thread(void *cx);
 
@@ -213,16 +210,13 @@ static int init(void)
 
 static void cleanup(void)
 {
-    // note that this routine may not free all program allocation;
+    // note that this routine may not free all allocations;
     // but that shouldn't matter, because the program is terminating
 
     INFO("cleanup starting\n");
 
     INFO("stopping services\n");
     svcs_stop();
-
-    //INFO("free allocations\n");
-    //display_menu_cleanup();  // xxx needed ?
 
     INFO("destroying android utils\n");
     util_android_utils_destroy();
@@ -495,14 +489,6 @@ static void display_menu(void)
     }
 }
 
-#if 0 //xxx
-static void display_menu_cleanup(void)
-{
-    sdlx_destroy_texture(circle);
-    circle = NULL;
-}
-#endif
-
 static sdlx_texture_t *create_filled_circle_texture(int radius, sdlx_color_t color)
 {
     int w, h;
@@ -608,12 +594,19 @@ static void get_list_of_apps(void)
 
         // store the app names, just read, to the apps[] array;
         // ignoring app names that are "-"
-        // xxx check for overflow
         for (i = 0; i < 3; i++) {
+            if (max_apps == MAX_APPS) {
+                break;
+            }
             if (strcmp(s[i], "-") != 0) {
                 apps[max_apps] = strdup(s[i]);
             }
             max_apps++;
+        }
+
+        // if apps tbl is full then break
+        if (max_apps == MAX_APPS) {
+            break;
         }
     }
     fclose(fp);
