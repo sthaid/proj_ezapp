@@ -1241,21 +1241,49 @@ static void page_11_process_event(sdlx_event_t *event)
 int page_12_x, page_12_y;
 double page_12_xrel, page_12_yrel;
 
-// xxx test SetRenderTarget when in landscape
 static void page_12_draw(void)
 {
+    int w=500, h=250;
+
+    // draw blue rectangle around display area
     sdlx_render_rect(0, 0, sdlx_win_width, sdlx_win_height, 3, COLOR_BLUE);
 
+    // create texture1:
+    // - wxh = 500 x 250
+    // - white rectangle around perimeter
+    // - yellow circle in center
+    // - 'Hello' text in center
+    texture1 = sdlx_create_texture(w, h);
+    sdlx_set_render_target(texture1);
+    sdlx_render_rect(0, 0, w, h, 5, COLOR_WHITE);
+    sdlx_render_fill_circle(w/2, h/2, h/2, COLOR_YELLOW);
+    sdlx_render_printf_ex2(w/2, h/2, FONT_NORMAL, COLOR_RED, FLAG_XY_CTR, "%s", "Hello");
+    sdlx_set_render_target(NULL);
+
+    // render texture1 to the display
+    // - top left, no scaling
+    sdlx_render_texture(texture1, 0, 0);
+    // - bottom right, scale = 0.5
+    sdlx_render_texture_ex1(texture1, sdlx_win_width-w/2, sdlx_win_height-h/2, w/2, h/2);
+    // - bottom left, rotated 90 degrees
+    sdlx_render_texture_ex2(texture1, -125, sdlx_win_height-h-125, w, h, 90);
+
+    // print the display area dimensions
     sdlx_render_printf_ex2(sdlx_win_width/2, ROW2Y(3),
                            FONT_NORMAL, COLOR_WHITE,
                            FLAG_X_CTR, 
                            "WxH = %d %d", sdlx_win_width, sdlx_win_height);
+
+    // display the motion location
     sdlx_render_printf_ex2(sdlx_win_width/2, ROW2Y(4), FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, 
            "xrel = %0.3f", page_12_xrel);
     sdlx_render_printf_ex2(sdlx_win_width/2, ROW2Y(5), FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, 
            "yrel = %0.3f", page_12_yrel);
     sdlx_render_point(page_12_x, page_12_y, COLOR_WHITE, 9);
     sdlx_register_event(NULL, EVID_MOTION);
+
+    // destroy texture1
+    sdlx_destroy_texture(texture1);
 }
 
 static void page_12_process_event(sdlx_event_t *ev)
