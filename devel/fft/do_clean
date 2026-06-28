@@ -1,3 +1,0 @@
-#!/bin/bash
-
-rm -rf example tester sine_wave_gen sine_*.raw

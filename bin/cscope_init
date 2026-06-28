@@ -1,6 +1,0 @@
-#!/bin/bash
-
-find . -type f \( -name "*.[ch]" -o -name "*.cpp" \) > cscope.files
-cscope -b -i cscope.files
-ctags -L cscope.files
-
