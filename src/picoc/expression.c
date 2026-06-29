@@ -736,11 +736,7 @@ void ExpressionPrefixOperator(struct ParseState *Parser,
             Typ = TopValue->Typ;
         if (Typ->FromType != NULL && Typ->FromType->Base == TypeStruct)
             Typ = Typ->FromType;
-        long sz = TypeSize(Typ, Typ->ArraySize, true);
-        if (sz == 0) {
-            ProgramFail(Parser, "picoc bug, sizeof is zero; to fix provide number of array elements");
-        }
-        ExpressionPushInt(Parser, StackTop, sz);
+        ExpressionPushInt(Parser, StackTop, TypeSize(Typ, Typ->ArraySize, true));
         break;
     default:
         /* an arithmetic operator */
