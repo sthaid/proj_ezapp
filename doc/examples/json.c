@@ -2,18 +2,37 @@
 #include <stdlib.h>
 #include <utils.h>
 
+char *json_text = 
+"{ \n\
+    \"type\": \"Feature\", \n\
+    \"properties\": { \n\
+        \"units\": \"miles\", \n\
+        \"periods\": [ \n\
+            { \n\
+                \"number\": 0, \n\
+                \"string\": \"string0\" \n\
+            }, \n\
+            { \n\
+                \"number\": 1, \n\
+                \"string\": \"string1\" \n\
+            } \n\
+        ] \n\
+    } \n\
+}";
+
 void print_json_value(json_value_t *x);
 
 int main()
 {
-    char *json_text;
     void *json_root;
 
-    // read and parse file example.json
-    json_text = util_read_file(".", "example.json", NULL);
+    // print the json_text
+    printf("%s\n\n", json_text);
+
+    // parse the json_text
     json_root = util_json_parse(json_text, NULL);
 
-    // print fields, remember to supply NULL as the last arg
+    // print fields, always provide NULL as the last arg to util_json_get_value
     print_json_value(util_json_get_value(json_root, "type", NULL));
     print_json_value(util_json_get_value(json_root, "properties", "units", NULL));
 
@@ -21,7 +40,7 @@ int main()
     print_json_value(util_json_get_value(json_root, "properties", "periods", "0", "number", NULL));
     print_json_value(util_json_get_value(json_root, "properties", "periods", "0", "string", NULL));
 
-    // print fields from periods array [1], illustrating a different approach than above
+    // print fields from periods array [1], illustrates a different approach than above
     json_value_t *jv = util_json_get_value(json_root, "properties", "periods", "1", NULL);
     void *period1 = jv->u.object;
     print_json_value(util_json_get_value(period1, "number", NULL));
@@ -29,7 +48,6 @@ int main()
 
     // cleanup
     util_json_free(json_root);
-    free(json_text);
     return 0;
 }
 
