@@ -1,9 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <utils.h>
 
-char *json_text = 
-"{ \n\
+char *json_text = "\
+{ \n\
     \"type\": \"Feature\", \n\
     \"properties\": { \n\
         \"units\": \"miles\", \n\
@@ -18,19 +19,30 @@ char *json_text =
             } \n\
         ] \n\
     } \n\
-}";
+} \n\
+{ \n\
+    \"another\": \"yes\", \n\
+} \
+";
 
 void print_json_value(json_value_t *x);
 
 int main()
 {
     void *json_root;
+    char *end_ptr;
 
     // print the json_text
-    printf("%s\n\n", json_text);
+    printf("-------- JSON --------\n");
+    printf("%s\n", json_text);
+    printf("------ JSON END ------\n\n");
 
     // parse the json_text
-    json_root = util_json_parse(json_text, NULL);
+    json_root = util_json_parse(json_text, &end_ptr);
+    if (strlen(end_ptr) > 0) {
+        printf("end_ptr = ...");
+        printf("%s\n\n", end_ptr);
+    }
 
     // print fields, always provide NULL as the last arg to util_json_get_value
     print_json_value(util_json_get_value(json_root, "type", NULL));
