@@ -1,7 +1,7 @@
 #include <string.h>
 #include <stdbool.h>
             
-#include <utils.h>
+#include <private.h>
 
 #include <openssl/evp.h>
 #include <openssl/err.h>

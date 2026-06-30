@@ -1548,6 +1548,8 @@ struct LibraryFunction UtilsFunctions[] = {
     { NULL, NULL } };
 
 const char UtilsDefs[] = "\
+/* time */ \n\
+#define MAX_TIME_STR 30 \n\
 /* json */ \n\
 #define JSON_TYPE_UNDEFINED 0 \n\
 #define JSON_TYPE_FLAG      1 \n\

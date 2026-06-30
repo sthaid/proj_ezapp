@@ -274,7 +274,7 @@ static void page_0_draw(void)
 {
     time_t t;
     struct tm *tm;
-    char str[100];
+    char str[MAX_TIME_STR];
     long usecs, delta_ms;
     static long usecs_last, usecs_first;
     

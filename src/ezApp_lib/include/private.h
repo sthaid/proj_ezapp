@@ -113,6 +113,22 @@ void util_start_foreground(void);
 void util_stop_foreground(void);
 bool util_is_foreground_enabled(void);
 
+// ----------------------
+// utils.c  openssl
+// ----------------------
+
+#define SSL_TEXTLEN 128
+
+typedef struct {
+    unsigned char nonce[12];
+    unsigned char tag[16]; 
+    unsigned char ciphertext[SSL_TEXTLEN];
+} ssl_payload_t;
+
+unsigned char *ssl_keygen(char *password);
+int ssl_encrypt(unsigned char *key, char *plaintext, ssl_payload_t *payload);
+int ssl_decrypt(unsigned char *key, ssl_payload_t *payload, char **plaintext);
+
 // --------------------
 // run.c
 // --------------------

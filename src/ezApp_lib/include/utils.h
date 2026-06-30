@@ -9,16 +9,38 @@ extern "C" {
 // TIME UTILS
 // --------------------
 
+#define MAX_TIME_STR 30
+
+// Returns monotonic time.
 long util_microsec_timer(void);
+
+// Returns real time, in microsecs since the Unix Epoch.
 long util_get_real_time_microsec(void);
-char *util_time2str(char * str, long us, int gmt, int display_ms, int display_date);
+
+// Converts real time in microsecs to time str, 
+// str arg should have size MAX_TIME_STR or larger.
+// For example, when gmt, display_ms, and display_data are all true:
+// "xxxxxxxxxxxxxxx".
+char *util_time2str(char *str, long us, int gmt, int display_ms, int display_date);
 
 // --------------------
 // FILE UTILS
 // --------------------
 
+// The ezApp Current Working Directory (CWD) is always the files directory.
+//
+// The following routines create the pathname by catenating the dir and fn args;
+// and then performs their operation.
+//
+// Notes:
+// - either dir or fn can be NULL
+// - caller of util_read_file must free the returned ptr
+// - util_read_file adds an extra '\0' char to the end of the data buffer;
+//   this extra char is not included in the returned file length
+// - util_file_mtime: returns modification time in Unix Epoch microsecs
+
 int util_write_file(char *dir, char *fn, void *data, int len);
-void *util_read_file(char *dir, char *fn, int *len);
+void *util_read_file(char *dir, char *fn, int *len_optional);
 void util_delete_file(char *dir, char *fn);
 void util_rename_file(char *old_dir, char *old_fn, char *new_dir, char *new_fn);
 bool util_file_exists(char *dir, char *fn);
@@ -29,37 +51,89 @@ long util_file_size(char *dir, char *fn);
 // DIRECTORY UTILS
 // --------------------
 
-void util_create_dir(char *dir, char *dir_to_create);  // "mkdir -p <dir>/<dir_to_create>"
-void util_delete_dir(char *dir, char *dir_to_delete);  // "rm -rf <dir>/<dir_to_delete>"
+// mkdir -p <dir>/<dir_to_create>
+void util_create_dir(char *dir, char *dir_to_create);
+
+// rm -rf <dir>/<dir_to_delete>
+void util_delete_dir(char *dir, char *dir_to_delete);
 
 // --------------------
 // MAP FILE UTILS
 // --------------------
 
+// Map file in to program address space.
+// Caller must call util_unmap_file when miniApp or miniSvc terminates, or
+// when the mapping is no longer needed.
+// Args:
+// - dir, file: are catenated to form pathname
+// - len: length of the mapping to create
+// - create_if_needed: if pathname does not exist a zero filled file is 
+//   first created, then mapped
+// - read_only: xxx maybe delete this
+// - created_flag: set to true if the file was created
 void *util_map_file(char *dir, char *file, int len, bool create_if_needed, 
-                    bool read_only, int *created_flag);
+                    bool read_only, int *created_flag_optional);
+
+// Remove the mapping, and flush changes to filesystem.
+// - addr: the address returned by util_map_file
+// - len: the length passed to util_map_file
 void util_unmap_file(void *addr, int len);
+
+// Flush changes made to the memory copy of the file to the filesystem.
+// Calling util_sync_file periodically helps to ensure that data is not lost;
+// for example, if the program were to crash.
 void util_sync_file(void *addr, int len);
 
 // --------------------
 // GET/SET PARAMS UTILS
 // --------------------
 
-char *util_get_str_param(char *dir, char *name, char *default_value);
-void util_set_str_param(char *dir, char *name, char *value);
-double util_get_numeric_param(char *dir, char *name, double default_value);
-void util_set_numeric_param(char *dir, char *name, double value);
+// MiniApps and miniSvcs can save values to a 'params' file.
+//
+// For example, the Morse miniApp saves the 'wpm' setting in 'apps/Morse/params'.
+// The Morse params file will contain "wpm = 10.000", when the Morse miniApp is
+// configured for Morse Code at 10 Words Per Minute.
+//
+// Notes:
+// - numeric params are written to the params file in "%0.3f" format.
+// - callers of util_get_str_param must free the returned string
+// - when getting a param that does not yet exist, the param is 
+//   created with caller supplied default_value
+// - util_print_params: debug prints the defined params
+
+char *util_get_str_param(char *dir, char *param_name, char *param_default_value);
+void util_set_str_param(char *dir, char *param_name, char *param_new_value);
+
+double util_get_numeric_param(char *dir, char *param_name, double param_default_value);
+void util_set_numeric_param(char *dir, char *param_name, double param_new_value);
+
 void util_print_params(char *dir);
 
 // --------------------
 // NETWORK UTILS    
 // --------------------
 
+// Util_get_ipaddr returns the device IP address, for example "192.168.1.10".
+// The IP address is returned in a static string; do not free it.
+
 char *util_get_ipaddr(void);
 
 // --------------------
 // JSON FILE UTILS   
 // --------------------
+
+// The json utils provide a simple API for parsing json, making use 
+// of the https://github.com/DaveGamble/cJSON json parser.
+//
+// First call util_json_parse, passing in the json_text. if the json_text 
+// contains multiple blocks of json, the end_ptr will return the location of
+// the next block. Util_json_parse returns opaque json_root.
+//
+// Next call util_json_get_value, repeatedly, to extract the values of interest.
+//
+// When done, call util_json_free(json_root).
+//
+// Refer to example: ezApp/doc/examples/json.c
 
 #define JSON_TYPE_UNDEFINED 0
 #define JSON_TYPE_FLAG      1
@@ -79,9 +153,9 @@ typedef struct {
     } u;
 } json_value_t;
 
-void *util_json_parse(char *str, char **end_ptr);
-void util_json_free(void *json_root);
+void *util_json_parse(char *str, char **end_ptr_optional);
 json_value_t *util_json_get_value(void *json_item, ...);
+void util_json_free(void *json_root);
 
 // --------------------
 // PNG FILE UTILS   
@@ -125,23 +199,6 @@ void util_toggle_flashlight(void);
 int util_start_playbackcapture(void);
 void util_stop_playbackcapture(void);
 int util_get_playbackcapture_audio(float *array, int num_array_elements);
-
-// ----------------------
-// OPENSSL
-// ----------------------
-
-#define SSL_TEXTLEN 128
-
-typedef struct {
-    unsigned char nonce[12];
-    unsigned char tag[16];
-    unsigned char ciphertext[SSL_TEXTLEN];
-} ssl_payload_t;
-
-unsigned char *ssl_keygen(char *password);
-
-int ssl_encrypt(unsigned char *key, char *plaintext, ssl_payload_t *payload);
-int ssl_decrypt(unsigned char *key, ssl_payload_t *payload, char **plaintext);
 
 #ifdef __cplusplus
 }
