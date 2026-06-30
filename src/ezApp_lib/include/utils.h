@@ -161,13 +161,22 @@ void util_json_free(void *json_root);
 // PNG FILE UTILS   
 // --------------------
 
-// these routines read/write 32-bit RGBA png files
+// These routines read/write 32-bit RGBA png files.
+// The https://github.com/lvandeve/lodepng PNG encoder/decoder is used.
+//
+// Callers of util_read_png_file must free pixels.
+
 int util_read_png_file(char *dir, char *filename, unsigned char **pixels, int *w, int *h);
 int util_write_png_file(char *dir, char *filename, unsigned char *pixels, int w, int h);
 
 // --------------------
 // FFT
 // --------------------
+
+// These util_fft routines perform Fast Fourier Transforms
+// The https://github.com/mborgerding/kissfft package is used.
+//
+// The util_rms routines compute the RMS magnitude of the supplied data.
 
 typedef struct {
     float r;
@@ -180,22 +189,39 @@ void util_fft_inverse_complex_to_real(int n_fft, complex_t *cpx_input, float *ou
 void util_fft_test(void);
 
 double util_rms_float(float *x, int n);
-double util_rms_complex(complex_t *x, int n);
+double util_rms_complex(complex_t *x, int n);  // xxx delete ?
 
 // ----------------------
 // CALL ANDROID JAVA CODE
 // ----------------------
 
-void util_get_location(double *latitude, double *longitude, double *altitude_ft, bool *alt_is_wgs84);
+// The routines in this section work when run on the Android device.
+// These routines are stubs when ezApp is being tested on Linux.
+//
+// To perform the functions, code in utils_android.cpp makes calls to NDK routines,
+// such as GetMethodID and CallDoubleMethod to access the ezApp SDL java code extensions.
 
+// Get location: latitude, longitude, and altitude.
+// Prior to Android 14 (API level34) Android did not support converting GPS altitude from
+// WGS84 to Mean Sea Level (MSL); in this case the less accurate WGS84 altitude is provided..
+// The returned alt_is_wgs84 flag indicates whether the altitude is WGS84 or MSL.
+void util_get_location(double *latitude_optional, double *longitude_optional, 
+                       double *altitude_ft_optional, bool *alt_is_wgs84_optional);
+
+// Invoke Android text-to-speech.
 void util_text_to_speech(char *text);
 void util_text_to_speech_stop(void);
 
+// Control flashlight.
 void util_turn_flashlight_on(void);
 void util_turn_flashlight_off(void);
 bool util_is_flashlight_on(void);
 void util_toggle_flashlight(void);
 
+// Capture device audio:
+// 1) call util_start_playbackcapture
+// 2) repeatedly call util_get_playbackcapture_audio to obtain raw audio samples.
+// 3) when done collecting audio samples, call util_stop_playbackcapture
 int util_start_playbackcapture(void);
 void util_stop_playbackcapture(void);
 int util_get_playbackcapture_audio(float *array, int num_array_elements);
