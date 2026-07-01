@@ -1584,14 +1584,11 @@ typedef struct { \n\
 void Svc_make_req(struct ParseState *Parser, struct Value *ReturnValue,
         struct Value **Param, int NumArgs)
 {
-    char *svc_name     = Param[0]->Val->Pointer;
-    int   req_id       = Param[1]->Val->Integer;
-    char *req_data     = Param[2]->Val->Pointer;
-    int   req_data_len = Param[3]->Val->Integer;
-    int   timeout_secs = Param[4]->Val->Integer;
-    int   ret;
+    char      *svc_name = Param[0]->Val->Pointer;
+    svc_req_t *req      = Param[1]->Val->Pointer;
+    int        ret;
 
-    ret = svc_make_req(svc_name, req_id, req_data, req_data_len, timeout_secs);
+    ret = svc_make_req(svc_name, req);
     ReturnValue->Val->Integer = ret;
 }
 
@@ -1602,22 +1599,23 @@ void Svc_make_req(struct ParseState *Parser, struct Value *ReturnValue,
 void Svc_wait_for_req(struct ParseState *Parser, struct Value *ReturnValue,
         struct Value **Param, int NumArgs)
 {
-    char       *svc_name             = Param[0]->Val->Pointer;
-    svc_req_t **req                  = Param[1]->Val->Pointer;
-    long        timeout_abstime_secs = Param[2]->Val->LongInteger;
-    int         ret;
+    char      *svc_name      = Param[0]->Val->Pointer;
+    svc_req_t *req           = Param[1]->Val->Pointer;
+    int        timeout_secs  = Param[2]->Val->Integer;
+    int        ret;
 
-    ret = svc_wait_for_req(svc_name, req, timeout_abstime_secs);
+    ret = svc_wait_for_req(svc_name, req, timeout_secs);
     ReturnValue->Val->Integer = ret;
 }
 
 void Svc_req_completed(struct ParseState *Parser, struct Value *ReturnValue,
         struct Value **Param, int NumArgs)
 {
-    svc_req_t *req         = Param[0]->Val->Pointer;
-    int        comp_status = Param[1]->Val->Integer;
+    char      *svc_name    = Param[0]->Val->Pointer;
+    svc_req_t *req         = Param[1]->Val->Pointer;
+    int        comp_status = Param[2]->Val->Integer;
 
-    svc_req_completed(req, comp_status);
+    svc_req_completed(svc_name, req, comp_status);
 }
 
 // -----------------  SVCS REGISTRATION  -------------------------------
@@ -1629,11 +1627,11 @@ void SvcsSetupFunction(Picoc *pc)
 
 struct LibraryFunction SvcsFunctions[] = {
     // routines called by apps
-    { Svc_make_req,              "int svc_make_req(char *svc_name, int req_id, char *req_data, int req_data_len, int timeout_secs);" },
+    { Svc_make_req,              "int svc_make_req(char *svc_name, srv_req_t *req);" },
 
     // routines called by svcs
-    { Svc_wait_for_req,          "int svc_wait_for_req(char *svc_name, svc_req_t **req, long timeout_abstime_secs);" },
-    { Svc_req_completed,         "void svc_req_completed(svc_req_t *req, int comp_status);" },
+    { Svc_wait_for_req,          "int svc_wait_for_req(char *svc_name, svc_req_t *req, int timeout_secs);" },
+    { Svc_req_completed,         "void svc_req_completed(char *svc_name, svc_req_t *req, int comp_status);" },
 
     { NULL, NULL } };
 
@@ -1641,28 +1639,13 @@ const char SvcsDefs[] = "\
 // common values for req_id \n\
 #define SVC_REQ_ID_STOP 1 \n\
 \n\
-// values returned by svc_make_req \n\
-#define SVC_REQ_OK                     0 \n\
-#define SVC_REQ_ERROR_NOT_COMPLETED    1 \n\
-#define SVC_REQ_ERROR_DATA_LEN         2 \n\
-#define SVC_REQ_ERROR_SVC_NOT_FOUND    3 \n\
-#define SVC_REQ_ERROR_SVC_NOT_RUNNING  4 \n\
-#define SVC_REQ_ERROR_QUEUE_FULL       5 \n\
-#define SVC_REQ_ERROR_INVALID_REQ      6 \n\
-#define SVC_REQ_ERROR                  7 \n\
-\n\
-// values returned by svc_wait_for_req \n\
-#define SVC_REQ_WAIT_OK                    0 \n\
-#define SVC_REQ_WAIT_ERROR_SVC_NOT_FOUND   1 \n\
-#define SVC_REQ_WAIT_ERROR_TIMEDOUT        2 \n\
-\n\
 // sizeof of req->data \n\
 #define MAX_SVC_REQ_DATA 100 \n\
 \n\
+// svc request struct \n\
 typedef struct { \n\
     int  req_id; \n\
-    bool completed; \n\
-    int  status; \n\
+    int  comp_status; \n\
     char data[MAX_SVC_REQ_DATA]; \n\
 } svc_req_t; \n\
 ";

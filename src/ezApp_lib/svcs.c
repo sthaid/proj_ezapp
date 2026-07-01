@@ -9,6 +9,13 @@
 // defines
 //
 
+#define MAX_SVCS     20
+#define MAX_SVC_NAME 30
+
+// --- the following defines relate to svc state ---
+
+#define SVC_STOP_TIMEOUT_SECS  5
+
 #define SERVICE_STATE_DELETED           0     // blue  (should not be seen)
 #define SERVICE_STATE_STOPPED           1     // white
 #define SERVICE_STATE_RUNNING           2     // green
@@ -36,15 +43,16 @@
 #define SERVICE_IS_STOPPED(state)  ((state) == SERVICE_STATE_STOPPED || \
                                     (state) == SERVICE_STATE_STOPPED_BY_ERROR)
 
-#define MAX_SVCS 20
-#define MAX_SVC_NAME 30
-#define MAX_SVC_REQ_QUEUE 5
+// --- the following defines relate to makeing requests to a svc ---
 
-#define MS  1000
-#define SEC 1000000
+#define REQ_STATE_IDLE         0
+#define REQ_STATE_PENDING      1
+#define REQ_STATE_IN_PROGRESS  2
+#define REQ_STATE_COMPLETED    3
 
-#define SVC_STOP_TIMEOUT_SECS  5
-#define SVC_STOP_TIMEOUT_MS    (SVC_STOP_TIMEOUT_SECS * MS)
+#define SVC_REQ_ERROR_SVC_NOT_FOUND     -1
+#define SVC_REQ_ERROR_SVC_NOT_RUNNING   -2
+#define SVC_REQ_ERROR_TIMEDOUT          -3
 
 //
 // typedefs
@@ -52,10 +60,11 @@
 
 typedef struct {
     char            name[MAX_SVC_NAME];
-    int             state;
-    pthread_mutex_t mutex;
-    pthread_cond_t  cond;
-    svc_req_t      *req[MAX_SVC_REQ_QUEUE];
+    int             svc_state;
+    int             req_state;
+    svc_req_t       req;
+    pthread_mutex_t req_mutex;
+    pthread_cond_t  req_cond;
 } svc_t;
 
 //
@@ -66,7 +75,7 @@ static svc_t  svcs[MAX_SVCS];
 static int    max_svcs;
 
 // set by eztest when testing a svc
-int svc_eztest_mode;
+//int svc_eztest_mode; // xxx del
 
 //
 // prototypes
@@ -93,7 +102,19 @@ void svcs_start(void)
     int  id;
     char tmp_name[MAX_SVC_NAME];
 
+    static bool first_call = true;
+
     INFO("start services\n");
+
+    // on first call init all mutex and cond
+    if (first_call) {
+        first_call = false;
+        for (id = 0; id < MAX_SVCS; id++) {
+            svc_t *x = svcs+id;
+            pthread_mutex_init(&x->req_mutex, NULL);
+            pthread_cond_init(&x->req_cond, NULL);
+        }
+    }
 
     // find all svc names, these are the svcs/* directories, and populates
     // the svcs tbl based on the names found
@@ -111,9 +132,10 @@ void svcs_start(void)
         stopped = util_file_exists(dir, "stopped");
 
         // if svc is not marked 'stopped', and its state is SERVICE_STATE_STOPPED, then run the svc
-        if (!stopped && SERVICE_IS_STOPPED(x->state)) {
-            memset(x->req, 0, sizeof(x->req));
-            x->state = SERVICE_STATE_RUNNING;
+        if (!stopped && SERVICE_IS_STOPPED(x->svc_state)) {
+            memset(&x->req, 0, sizeof(x->req));
+            x->svc_state = SERVICE_STATE_RUNNING;
+            x->req_state = REQ_STATE_IDLE; // xxx search for this
             run_svc(x->name);
         }
     }
@@ -124,6 +146,7 @@ void svcs_stop(void)
     int id, duration_ms = 0;
     bool all_stopped;
     bool stop_requested[MAX_SVCS];
+    svc_req_t stop_req = {SVC_REQ_ID_STOP};
 
     INFO("stop services\n");
 
@@ -132,9 +155,9 @@ void svcs_stop(void)
     for (id = 0; id < max_svcs; id++) {
         svc_t *x = &svcs[id];
 
-        if (x->state == SERVICE_STATE_RUNNING) {
-            x->state = SERVICE_STATE_STOPPING;
-            svc_make_req(svcs[id].name, SVC_REQ_ID_STOP, NULL, 0, SVC_STOP_TIMEOUT_SECS);
+        if (x->svc_state == SERVICE_STATE_RUNNING) {
+            x->svc_state = SERVICE_STATE_STOPPING;
+            svc_make_req(svcs[id].name, &stop_req);
             stop_requested[id] = true;
         }
     }
@@ -145,7 +168,7 @@ void svcs_stop(void)
         all_stopped = true;
         for (id = 0; id < max_svcs; id++) {
             svc_t *x = &svcs[id];
-            if (stop_requested[id] && !SERVICE_IS_STOPPED(x->state)) {
+            if (stop_requested[id] && !SERVICE_IS_STOPPED(x->svc_state)) {
                 all_stopped = false;
                 break;
             }
@@ -159,19 +182,19 @@ void svcs_stop(void)
 
         // if all services have not stopped within timeout then
         // print which services did not stop, and return
-        if (duration_ms > SVC_STOP_TIMEOUT_MS) {
+        if (duration_ms > (SVC_STOP_TIMEOUT_SECS*1000)) {
             ERROR("the following services have failed to stop ...\n");
             for (id = 0; id < max_svcs; id++) {
                 svc_t *x = &svcs[id];
-                if (stop_requested[id] && !SERVICE_IS_STOPPED(x->state)) {
-                    ERROR("- %-12s %s\n", x->name, SERVICE_STATE_STR(x->state));
+                if (stop_requested[id] && !SERVICE_IS_STOPPED(x->svc_state)) {
+                    ERROR("- %-12s %s\n", x->name, SERVICE_STATE_STR(x->svc_state));
                 }
             }
             break;
         }
 
         // short sleep
-        usleep(100*MS);
+        usleep(100000);
         duration_ms += 100;
     }
 }
@@ -214,7 +237,7 @@ void svcs_display(int bg_color)
             svc_t *x = &svcs[id];
 
             // if svc has been deleted then continue so that it is not displayed
-            if (x->state == SERVICE_STATE_DELETED) {
+            if (x->svc_state == SERVICE_STATE_DELETED) {
                 continue;
             }
 
@@ -230,17 +253,17 @@ void svcs_display(int bg_color)
             if (y2 > y_bottom) break;
 
             // display svc name
-            sdlx_render_printf_ex1(0, y2, FONT_NORMAL, SERVICE_STATE_TO_COLOR(x->state), "%-s", x->name);
+            sdlx_render_printf_ex1(0, y2, FONT_NORMAL, SERVICE_STATE_TO_COLOR(x->svc_state), "%-s", x->name);
 
             // display state info, or control for this svc
-            if (x->state == SERVICE_STATE_DELETING) {
+            if (x->svc_state == SERVICE_STATE_DELETING) {
                 sdlx_render_printf_ex1(COL2X(10), y2, FONT_NORMAL, COLOR_WHITE, "deleting");
-            } else if (x->state == SERVICE_STATE_STOPPING) {
+            } else if (x->svc_state == SERVICE_STATE_STOPPING) {
                 sdlx_render_printf_ex1(COL2X(10), y2, FONT_NORMAL, COLOR_WHITE, "stopping");
-            } else if (SERVICE_IS_STOPPED(x->state)) {
+            } else if (SERVICE_IS_STOPPED(x->svc_state)) {
                 loc = sdlx_render_printf_ex1(COL2X(10), y2, FONT_NORMAL, COLOR_LIGHT_BLUE, "start");
                 sdlx_register_event(loc, EVID_SVC_START+id);
-            } else if (x->state == SERVICE_STATE_RUNNING) {
+            } else if (x->svc_state == SERVICE_STATE_RUNNING) {
                 loc = sdlx_render_printf_ex1(COL2X(10), y2, FONT_NORMAL, COLOR_LIGHT_BLUE, "stop");
                 sdlx_register_event(loc, EVID_SVC_STOP+id);
             }
@@ -257,7 +280,7 @@ void svcs_display(int bg_color)
 
         // wait for an event, with 100 ms timeout;
         // if no event received then re-display
-        sdlx_get_event(100*MS, &event);
+        sdlx_get_event(100000, &event);
         if (event.event_id == -1) {
             continue;
         }
@@ -300,6 +323,7 @@ static void update_svcs_tbl(void)
     char new[MAX_SVCS][MAX_SVC_NAME];
     int  max_new = 0;
     long new_mtime;
+    svc_req_t stop_req = {SVC_REQ_ID_STOP};
 
     static bool first_call = true;
     static long mtime;
@@ -327,7 +351,7 @@ static void update_svcs_tbl(void)
         svc_t *x = &svcs[id];
 
         // if this svc is already deleted or deleting then continue
-        if (x->state == SERVICE_STATE_DELETED || x->state == SERVICE_STATE_DELETING) {
+        if (x->svc_state == SERVICE_STATE_DELETED || x->svc_state == SERVICE_STATE_DELETING) {
             continue;
         }
 
@@ -345,15 +369,15 @@ static void update_svcs_tbl(void)
             INFO("deleting svc %s\n", x->name);
 
             // if svc is running then send it stop request
-            if (x->state == SERVICE_STATE_RUNNING) {
-                x->state = SERVICE_STATE_STOPPING;
-                svc_make_req(x->name, SVC_REQ_ID_STOP, NULL, 0, SVC_STOP_TIMEOUT_SECS);
+            if (x->svc_state == SERVICE_STATE_RUNNING) {
+                x->svc_state = SERVICE_STATE_STOPPING;
+                svc_make_req(x->name, &stop_req);
             }
 
             // wait for service to be in stopped state
             int ms = 0;
-            while (ms < SVC_STOP_TIMEOUT_MS && !SERVICE_IS_STOPPED(x->state)) {
-                usleep(100*MS);
+            while (ms < (SVC_STOP_TIMEOUT_SECS*1000) && !SERVICE_IS_STOPPED(x->svc_state)) {
+                usleep(100000);
                 ms += 100;
             }
 
@@ -364,14 +388,13 @@ static void update_svcs_tbl(void)
             // else
             //   set svc state to SERVICE_STATE_DELETING
             // endif
-            if (SERVICE_IS_STOPPED(x->state)) {
+            if (SERVICE_IS_STOPPED(x->svc_state)) {
                 x->name[0] = '\0';
-                x->state = SERVICE_STATE_DELETED;
-                pthread_mutex_destroy(&x->mutex);
-                pthread_cond_destroy(&x->cond);
-                memset(x->req, 0, sizeof(x->req));
+                x->svc_state = SERVICE_STATE_DELETED;
+                memset(&x->req, 0, sizeof(x->req));
+                // xxx x->req_state = REQ_STATE_IDLE;  // xxx search and add where needed
             } else {
-                x->state = SERVICE_STATE_DELETING;
+                x->svc_state = SERVICE_STATE_DELETING;
             }
         }
     }
@@ -388,7 +411,7 @@ static void update_svcs_tbl(void)
         // find first free entry in svcs tbl;
         // if not found then add new entry to the end of svcs tbl
         for (id = 0; id < max_svcs; id++) {
-            if (svcs[id].state == SERVICE_STATE_DELETED) {
+            if (svcs[id].svc_state == SERVICE_STATE_DELETED) {
                 break;
             }
         }
@@ -403,10 +426,8 @@ static void update_svcs_tbl(void)
         // init the new svcs tbl entry for the new svc
         svc_t *x = svcs + id;
         strcpy(x->name, new[i]);
-        x->state = SERVICE_STATE_STOPPED;
-        pthread_mutex_init(&x->mutex, NULL);
-        pthread_cond_init(&x->cond, NULL);
-        memset(x->req, 0, sizeof(x->req));
+        x->svc_state = SERVICE_STATE_STOPPED;
+        memset(&x->req, 0, sizeof(x->req));
 
         // except on first call, the new svc is tagged 'stopped'
         if (!first_call) {
@@ -421,8 +442,8 @@ static void update_svcs_tbl(void)
     INFO("Services List ...\n");
     for (int id = 0; id < max_svcs; id++) {
         svc_t *x = &svcs[id];
-        if (x->state != SERVICE_STATE_DELETED) {
-            INFO("%15s %s\n", x->name, SERVICE_STATE_STR(x->state));
+        if (x->svc_state != SERVICE_STATE_DELETED) {
+            INFO("%15s %s\n", x->name, SERVICE_STATE_STR(x->svc_state));
         }
     }
 
@@ -436,29 +457,30 @@ static void process_svc_start_req(int id)
 
     INFO("called for id=%d name=%s\n", id, x->name);
 
-    if (!SERVICE_IS_STOPPED(x->state)) {
-        ERROR("id=%d name=%s state=%s\n", id, x->name, SERVICE_STATE_STR(x->state));
+    if (!SERVICE_IS_STOPPED(x->svc_state)) {
+        ERROR("id=%d name=%s state=%s\n", id, x->name, SERVICE_STATE_STR(x->svc_state));
         return;
     }
     
-    memset(x->req, 0, sizeof(x->req));
-    x->state = SERVICE_STATE_RUNNING;
+    memset(&x->req, 0, sizeof(x->req));
+    x->svc_state = SERVICE_STATE_RUNNING;
     run_svc(x->name);
 }
 
 static void process_svc_stop_req(int id)
 {
     svc_t *x = &svcs[id];
+    svc_req_t stop_req = {SVC_REQ_ID_STOP};
 
     INFO("called for id=%d name=%s\n", id, x->name);
 
-    if (x->state != SERVICE_STATE_RUNNING) {
-        ERROR("not running: id=%d name=%s state=%s\n", id, x->name, SERVICE_STATE_STR(x->state));
+    if (x->svc_state != SERVICE_STATE_RUNNING) {
+        ERROR("not running: id=%d name=%s state=%s\n", id, x->name, SERVICE_STATE_STR(x->svc_state));
         return;
     }
 
-    x->state = SERVICE_STATE_STOPPING;
-    svc_make_req(x->name, SVC_REQ_ID_STOP, NULL, 0, SVC_STOP_TIMEOUT_SECS);
+    x->svc_state = SERVICE_STATE_STOPPING;
+    svc_make_req(x->name, &stop_req);
 }
 
 static void run_svc(char *svc_name_arg)
@@ -481,7 +503,7 @@ static int svc_thread(void *cx)
 
     id = svc_name_to_id(svc_name);
     if (id != -1) {
-        svcs[id].state = (rc == 0 ? SERVICE_STATE_STOPPED : SERVICE_STATE_STOPPED_BY_ERROR);
+        svcs[id].svc_state = (rc == 0 ? SERVICE_STATE_STOPPED : SERVICE_STATE_STOPPED_BY_ERROR);
     }
 
     free(svc_name);
@@ -492,168 +514,147 @@ static int svc_thread(void *cx)
 
 // ---- routines called by apps ----
 
-int svc_make_req(char *svc_name, int req_id, char *req_data, int req_data_len, int timeout_secs)
+#define POLL_FOR(cond,mtx) \
+    do { \
+        long start_us = util_microsec_timer(); \
+        while (true) { \
+            if (cond) break; \
+            if (util_microsec_timer() - start_us > 5000000) break; \
+            if (mtx) pthread_mutex_unlock(mtx); \
+            usleep(10000); \
+            if (mtx) pthread_mutex_lock(mtx); \
+        } \
+    } while (0)
+
+// xxx prints in error paths
+
+
+// svc_make_req return values:
+// - ret >= 0: req comp_status, zero should usually be used to indicate success
+// - ret < 0:  one of the following negative error codes
+//             SVC_REQ_ERROR_SVC_NOT_FOUND
+//             SVC_REQ_ERROR_SVC_NOT_RUNNING
+//             SVC_REQ_ERROR_TIMEDOUT
+
+int svc_make_req(char *svc_name, svc_req_t *req_arg)
 {
-    int        svc_id, i, req_status;
-    svc_t     *x;
-    svc_req_t *req;
-    long       start_us;
-    bool       okay;
-
-    INFO("svc_name = %s req_id = %d\n", svc_name, req_id);
-
-    // check that req_data_len is valid
-    if (req_data_len > MAX_SVC_REQ_DATA) {
-        ERROR("req_data_len %d is too large, max allowed = %d\n",
-              req_data_len, MAX_SVC_REQ_DATA);
-        return SVC_REQ_ERROR_DATA_LEN;
-    }
-
-    // get svc id for the svc_name
-    svc_id = svc_name_to_id(svc_name);
-    if (svc_id == -1) {
-        ERROR("service %s not found\n", svc_name);
-        return SVC_REQ_ERROR_SVC_NOT_FOUND;
-    }
-
-    // verify svc state is okay to make a request to it
-    x = &svcs[svc_id];
-    okay = ((x->state == SERVICE_STATE_RUNNING) ||
-            (req_id == SVC_REQ_ID_STOP && x->state == SERVICE_STATE_STOPPING));
-    if (!okay) {
-        ERROR("service %s state %s invalid to make req\n",
-              x->name, SERVICE_STATE_STR(x->state));
-        return SVC_REQ_ERROR_SVC_NOT_RUNNING;
-    }
-
-    // acquire mutex
-    pthread_mutex_lock(&x->mutex);
-
-    // find avail entry in the svc req queue;
-    // if no entry found then return error
-    for (i = 0; i < MAX_SVC_REQ_QUEUE; i++) {
-        if (x->req[i] == NULL) {
-            break;
-        }
-    }
-    if (i == MAX_SVC_REQ_QUEUE) {
-        ERROR("service %s req queue is full\n", svc_name);
-        pthread_mutex_unlock(&x->mutex);
-        return SVC_REQ_ERROR_QUEUE_FULL;
-    }
-        
-    // allocate zeroed req, and init the req
-    req = calloc(1, sizeof(svc_req_t));
-    req->req_id = req_id;
-    req->status = SVC_REQ_ERROR_NOT_COMPLETED;
-    if (req_data) {
-        memcpy(req->data, req_data, req_data_len);
-    }
-
-    // queue the req,
-    req->status = SVC_REQ_ERROR_NOT_COMPLETED;
-    x->req[i] = req;
-
-    // wake the svc to process the req:
-    // - signal the condition
-    // - release mutex
-    pthread_cond_signal(&x->cond);
-    pthread_mutex_unlock(&x->mutex);
-
-    // poll for req to have completed (either ok or with an error)
-    start_us = util_microsec_timer();
-    while (true) {
-        if (req->completed) {
-            break;
-        }
-        if (util_microsec_timer() - start_us > (timeout_secs * SEC)) {
-            break;
-        }
-        usleep(100*MS);
-    }
-    INFO("duration = %ld secs\n", (util_microsec_timer() - start_us) / SEC);
-
-    // prepare to return req_status and req_data
-    req_status = req->status;
-    __sync_synchronize();
-    if (req_data) {
-        memcpy(req_data, req->data, req_data_len);
-    }
-
-    // free req
-    free(req);
-
-    // return req_status
-    return req_status;
-}
-
-// ---- routines called by svcs ----
-
-int svc_wait_for_req(char *svc_name, svc_req_t **req, long timeout_abstime_secs)
-{
-    struct timespec ts = {timeout_abstime_secs, 0 };
-    int             ret;
-    int             id;
-
-    //INFO("svc_name=%s timeout_abstime_secs=%ld time_until_timeout=%ld\n", 
-    //     svc_name, timeout_abstime_secs, timeout_abstime_secs-time(NULL));
- 
-    // this flag is set when eztest is run on a svc;
-    // improves eztest ability to test a svc
-    if (svc_eztest_mode) {
-        sleep(timeout_abstime_secs - time(NULL));
-        return SVC_REQ_WAIT_ERROR_TIMEDOUT;
-    }
-
-try_again:
+    int id;
+    svc_t *x;
+    bool okay;
 
     // get svc id for the svc_name
     id = svc_name_to_id(svc_name);
     if (id == -1) {
-        ERROR("svc_name %s not found\n", svc_name);
-        *req = NULL;
-        return SVC_REQ_WAIT_ERROR_SVC_NOT_FOUND;
+        ERROR("service %s not found\n", svc_name);
+        return SVC_REQ_ERROR_SVC_NOT_FOUND;
+    }
+    x = &svcs[id];
+
+    // verify svc state is okay to make a request
+    okay = ((x->svc_state == SERVICE_STATE_RUNNING) ||
+            (req_arg->req_id == SVC_REQ_ID_STOP && x->svc_state == SERVICE_STATE_STOPPING));
+    if (!okay) {
+        ERROR("service %s state %s invalid to make req\n", x->name, SERVICE_STATE_STR(x->svc_state));
+        return SVC_REQ_ERROR_SVC_NOT_RUNNING;
+    }
+
+    // lock mutex
+    pthread_mutex_lock(&x->req_mutex);
+
+    // wait for the req_state to become available
+    POLL_FOR(x->req_state == REQ_STATE_IDLE, &x->req_mutex);
+    if (x->req_state != REQ_STATE_IDLE) {
+        ERROR("service %s timedout waiting for REQ_STATE_IDLE\n", svc_name);
+        pthread_mutex_unlock(&x->req_mutex);
+        return SVC_REQ_ERROR_TIMEDOUT;
+    }
+
+    // set req_state to PENDING;
+    // copy the caller's req_arg to x->req;
+    // signal the cond to wake the svc which is waiting svc_wait_for_req call to pthread_cond_wait
+    x->req_state = REQ_STATE_PENDING;
+    x->req = *req_arg;
+    pthread_cond_signal(&x->req_cond);
+
+    // poll for req to no longer be PENDING or IN_PROGRESS
+    POLL_FOR(x->req_state != REQ_STATE_PENDING && x->req_state != REQ_STATE_IN_PROGRESS, &x->req_mutex);
+    if (x->req_state != REQ_STATE_COMPLETED) {
+        // this error will leave the req_state as not idle;
+        // the svc might have encountered a problem, and recovery is to restart ezApp
+        ERROR("service %s timedout waiting for REQ_STATE_COMPLETED\n", svc_name);
+        pthread_mutex_unlock(&x->req_mutex);
+        return SVC_REQ_ERROR_TIMEDOUT;
+    }
+
+    // copy req back to caller's buffer;
+    // set req_state to IDLE;
+    // unlock mutex;
+    // return the req comp_status, usually 0 should indicate success
+    *req_arg = x->req;
+    x->req_state = REQ_STATE_IDLE;
+    pthread_mutex_unlock(&x->req_mutex);
+    return req_arg->comp_status;
+}
+
+// ---- routines called by svcs ----
+
+int svc_wait_for_req(char *svc_name, svc_req_t *req_arg, int timeout_secs)
+{
+    struct timespec abstime;
+    int             id, ret;
+
+    // get svc id for the svc_name
+    id = svc_name_to_id(svc_name);
+    if (id == -1) {
+        ERROR("service %s not found\n", svc_name);
+        return SVC_REQ_ERROR_SVC_NOT_FOUND;
     }
     svc_t *x = &svcs[id];
 
+    // determine abstime of timeout for call to pthread_cond_timedwait
+    clock_gettime(CLOCK_REALTIME, &abstime);
+    abstime.tv_sec += timeout_secs;
+
     // acquire mutex
-    pthread_mutex_lock(&x->mutex);
+    pthread_mutex_lock(&x->req_mutex);
 
     // wait, with timeout, for a request to be available 
-    while (x->req[0] == NULL) {
-        ret = pthread_cond_timedwait(&x->cond, &x->mutex, &ts);
-        if (ret == ETIMEDOUT) {
-            *req = NULL;
-            pthread_mutex_unlock(&x->mutex);
-            return SVC_REQ_WAIT_ERROR_TIMEDOUT;
-        } else if (ret != 0) {
-            // sleep and try again, 
-            // perhaps the error is a glitch that will clear itself
-            ERROR("pthread_cond_timedwait ret=%d, retry in 10 secs\n", ret);
-            pthread_mutex_unlock(&x->mutex);
-            sleep(1);
-            goto try_again;
+    while (true) {
+        // if req is pending then return copy of the req
+        if (x->req_state == REQ_STATE_PENDING) {
+            x->req_state = REQ_STATE_IN_PROGRESS;
+            *req_arg = x->req;
+            pthread_mutex_unlock(&x->req_mutex);
+            return 0;
+        }
+
+        // wait for cond to be set, timeout at abstime
+        ret = pthread_cond_timedwait(&x->req_cond, &x->req_mutex, &abstime);
+        if (ret != 0) {
+            pthread_mutex_unlock(&x->req_mutex);
+            return SVC_REQ_ERROR_TIMEDOUT;
         }
     }
-
-    // return req;
-    // remove req from queue
-    *req = x->req[0];
-    memmove(&x->req[0], &x->req[1], (MAX_SVC_REQ_QUEUE-1)*sizeof(void*));
-    x->req[MAX_SVC_REQ_QUEUE-1] = NULL;
-
-    // release mutex
-    pthread_mutex_unlock(&x->mutex);
-
-    // success, req is being returned
-    return SVC_REQ_WAIT_OK;
 }
 
-void svc_req_completed(svc_req_t *req, int status)
+void svc_req_completed(char *svc_name, svc_req_t *req, int comp_status)
 {
-    req->status = status;
+    int id;
+
+    // get svc id for the svc_name
+    id = svc_name_to_id(svc_name);
+    if (id == -1) {
+        ERROR("service %s not found\n", svc_name);
+        return;
+    }
+
+    // set req comp_status
+    svc_t *x = &svcs[id];
+    x->req.comp_status = comp_status;
     __sync_synchronize();
-    req->completed = true;
+
+    // set req_state to completed
+    svcs[id].req_state = REQ_STATE_COMPLETED;
 }
 
 // -----------------  UTILS  ----------------------------------------
@@ -688,7 +689,7 @@ static int num_svcs(void)
 
     for (int id = 0; id < max_svcs; id++) {
         svc_t *x = svcs+id;
-        if (x->state != SERVICE_STATE_DELETED) {
+        if (x->svc_state != SERVICE_STATE_DELETED) {
             num++;
         }
     }
