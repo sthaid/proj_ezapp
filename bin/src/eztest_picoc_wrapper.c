@@ -17,12 +17,6 @@ if (strncmp(argv[1], "apps/", 5) == 0) {
     }
 }
 
-// if running a svc then set the svc_eztest_mode flag;
-// this will set svcs.c to test mode compatible with eztest_linux
-if (strncmp(argv[1], "svcs/", 5) == 0) {
-    svc_eztest_mode = 1;
-}
-
 // call app/svc main routine
 main(2, argv);
 

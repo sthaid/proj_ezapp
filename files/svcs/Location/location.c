@@ -41,9 +41,9 @@ void add_simulated_entries_to_loc_hist(void);
 
 int main(int argc, char **argv)
 {
-    svc_req_t    *req;
-    int           rc;
-    int           created;
+    svc_req_t *req;
+    int        rc;
+    int        created;
 
     // save args
     progname = argv[0];
@@ -87,22 +87,18 @@ int main(int argc, char **argv)
 
     // service runtime loop
     while (!end_program) {
-        // wait for req or 30 sec timeout
-        rc = svc_wait_for_req(progname, &req, time(NULL)+10);
+        // wait for req or 10 sec timeout
+        rc = svc_wait_for_req(progname, &req, 10);
 
-        // if an unexpected error is returned, then delay and try again
-        if (rc != 0 && rc != SVC_REQ_WAIT_ERROR_TIMEDOUT) {
-            printf("E %s: svc_wait_for_req returned unexpected error %d\n", progname, rc);
-            sleep(1);
-            continue;
-        }
-
-        // do periodic svc processing
-        periodic_processing();
-
-        // if req was recvd then process the req
-        if (req != NULL) {
+        // if req was received then
+        //   process the req
+        // else
+        //   do periodic processing
+        // endif
+        if (rc == 0) {
             process_req(req);
+        } else {
+            periodic_processing();
         }
     }
 
@@ -152,9 +148,9 @@ void periodic_processing(void)
 
 void process_req(svc_req_t *req)
 {
-    switch (req->req_id) {
+    switch (req->id) {
     case SVC_REQ_ID_STOP:
-        svc_req_completed(req, SVC_REQ_OK);
+        svc_req_completed(progname, req, 0);
         end_program = true;
         break;
     case SVC_LOCATION_REQ_GET_LOC_INFO: {
@@ -165,7 +161,7 @@ void process_req(svc_req_t *req)
         util_get_location(&latitude, &longitude, &altitude, &alt_is_wgs84);
         find_closest_loc_data(latitude, longitude, name, &miles);
         create_loc_data_str(time(NULL), latitude, longitude, altitude, alt_is_wgs84, name, req->data);
-        svc_req_completed(req, SVC_REQ_OK);
+        svc_req_completed(progname, req, 0);
         break; }
     case SVC_LOCATION_REQ_GET_LOC_NAME_FROM_LAT_LONG: {
         double latitude, longitude;
@@ -176,14 +172,14 @@ void process_req(svc_req_t *req)
         find_closest_loc_data(latitude, longitude, name, NULL);
 
         strcpy(req->data, name);
-        svc_req_completed(req, SVC_REQ_OK);
+        svc_req_completed(progname, req, 0);
         break; }
     case SVC_LOCATION_REQ_ADD_COUNTRY_INFO: {
         char *country_code = req->data;
 
         if (strlen(country_code) != 2) {
             printf("E %s: invalid country code '%s', len must be 2\n", progname, country_code);
-            svc_req_completed(req, SVC_REQ_ERROR);
+            svc_req_completed(progname, req, 99);
             break;
         }
 
@@ -193,7 +189,7 @@ void process_req(svc_req_t *req)
             
         download_country_loc_data(country_code);
         read_loc_data();
-        svc_req_completed(req, SVC_REQ_OK);
+        svc_req_completed(progname, req, 0);
         break; }
     case SVC_LOCATION_REQ_DEL_COUNTRY_INFO: {
         char filename[220];
@@ -201,7 +197,7 @@ void process_req(svc_req_t *req)
         sprintf(filename, "%s.loc", req->data);
         util_delete_file(data_dir, filename);
         read_loc_data();
-        svc_req_completed(req, SVC_REQ_OK);
+        svc_req_completed(progname, req, 0);
         break; }
     case SVC_LOCATION_REQ_LIST_COUNTRY_INFO: {
         FILE *fp;
@@ -211,7 +207,7 @@ void process_req(svc_req_t *req)
         fp = popen(cmd, "r");
         if (fp == NULL) {
             strcpy(req->data, "No Country Info");
-            svc_req_completed(req, SVC_REQ_OK);
+            svc_req_completed(progname, req, 0);
             break;
         }
         p = req->data;
@@ -223,15 +219,15 @@ void process_req(svc_req_t *req)
             }
         }
         pclose(fp);
-        svc_req_completed(req, SVC_REQ_OK);
+        svc_req_completed(progname, req, 0);
         break; }
     case SVC_LOCATION_REQ_CLEAR_HISTORY: {
         clear_loc_history();
-        svc_req_completed(req, SVC_REQ_OK);
+        svc_req_completed(progname, req, 0);
         break; }
     case SVC_LOCATION_REQ_QUERY_ENABLED: {
         req->data[0] = param_enabled;
-        svc_req_completed(req, SVC_REQ_OK);
+        svc_req_completed(progname, req, 0);
         break; }
     case SVC_LOCATION_REQ_SET_ENABLED: {
         param_enabled = req->data[0];
@@ -239,11 +235,11 @@ void process_req(svc_req_t *req)
         printf("I %s: history collection is now %s\n",
                progname,
                param_enabled ? "enabled" : "disabled");
-        svc_req_completed(req, SVC_REQ_OK);
+        svc_req_completed(progname, req, 0);
         break; }
     default:
-        printf("E %s: req %d is invalid\n", progname, req->req_id);
-        svc_req_completed(req, SVC_REQ_ERROR_INVALID_REQ);
+        printf("E %s: req %d is invalid\n", progname, req->id);
+        svc_req_completed(progname, req, 99);
         break;
     }
 }

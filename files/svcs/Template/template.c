@@ -21,7 +21,7 @@ void periodic_processing(void);
 
 int main(int argc, char **argv)
 {
-    svc_req_t req;
+    svc_req_t *req;
     int rc;
 
     // save args
@@ -44,7 +44,7 @@ int main(int argc, char **argv)
         //   do periodic processing
         // endif
         if (rc == 0) {
-            process_req(&req);
+            process_req(req);
         } else {
             periodic_processing();
         }
@@ -59,17 +59,17 @@ int main(int argc, char **argv)
 
 void process_req(svc_req_t *req)
 {
-    printf("I %s: got req_id %d\n", progname, req->req_id);
+    printf("I %s: got processing req id %d\n", progname, req->id);
 
     // process the request
-    switch (req->req_id) {
+    switch (req->id) {
     case SVC_REQ_ID_STOP:
-        svc_req_completed(progname, 0);
+        svc_req_completed(progname, req, 0);
         end_program = true;
         break;
     default:
-        printf("E %s: req %d is invalid\n", progname, req->req_id);
-        svc_req_completed(progname, 99);
+        printf("E %s: req %d is invalid\n", progname, req->id);
+        svc_req_completed(progname, req, 99);
         break;
     }
 }

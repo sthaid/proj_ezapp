@@ -57,22 +57,17 @@ int main(int argc, char **argv)
     // service runtime loop
     while (!end_program) {
         // wait for req or 10 sec timeout
-        rc = svc_wait_for_req(progname, &req, time(NULL)+10);
+        rc = svc_wait_for_req(progname, &req, 10);
 
-        // if an unexpected error is returned, then delay and try again
-        if (rc != 0 && rc != SVC_REQ_WAIT_ERROR_TIMEDOUT) {
-            printf("E %s: svc_wait_for_req rc=%d\n", progname, rc);
-            sleep(1);
-            continue;
-        }
-
-        // do periodic svc processing
-        periodic_processing();
-
-        // if req was recvd then process the req
-        if (req != NULL) {
-            printf("I %s: req=%p req->req_id=%d\n", progname, req, req->req_id);
+        // if req was received then
+        //   process the req
+        // else
+        //   do periodic processing
+        // endif
+        if (rc == 0) {
             process_req(req);
+        } else {
+            periodic_processing();
         }
     }
 
@@ -127,17 +122,17 @@ void cleanup(void)
 
 void process_req(svc_req_t *req)
 {
-    printf("I %s: got req_id %d\n", progname, req->req_id);
+    printf("I %s: processing req id %d\n", progname, req->id);
 
     // process the request
-    switch (req->req_id) {
+    switch (req->id) {
     case SVC_REQ_ID_STOP:
-        svc_req_completed(req, SVC_REQ_OK);
+        svc_req_completed(progname, req, 0);
         end_program = true;
         break;
     default:
-        printf("E %s: req %d is invalid\n", progname, req->req_id);
-        svc_req_completed(req, SVC_REQ_ERROR_INVALID_REQ);
+        printf("E %s: req %d is invalid\n", progname, req->id);
+        svc_req_completed(progname, req, 99);
         break;
     }
 }

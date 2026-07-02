@@ -7,6 +7,7 @@
 
 #include <sdlx.h>
 #include <utils.h>
+#include <svcs.h>
 
 #include "apps/lib/lib.h"
 
@@ -480,4 +481,25 @@ void reg_event_show_readme_file(void)
     reg_event(sdlx_win_width-2*sdlx_char_width(FONT_NORMAL), 0, 
               COLOR_LIGHT_BLUE, "?", EVID_SHOW_README_FILE);
 }
+
+// -----------------  SERVICE REQUEST INITIALIZER  ----------------
+
+svc_req_t *svc_req_init(int req_id, char *data, int data_len)
+{
+    static svc_req_t req;
+
+    // check data_len
+    if (data_len > MAX_SVC_REQ_DATA) {
+        printf("E lib: svc_req_init, data_len=%d, too large\n", data_len);
+        return NULL;
+    }
+            
+    // zero, and init the req
+    memset(&req, 0, sizeof(req)); 
+    req.id = req_id;
+    memcpy(req.data, data, data_len);
+
+    // return ptr to static defined req
+    return &req;
+}   
 

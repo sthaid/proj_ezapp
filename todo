@@ -1,3 +1,34 @@
+maybe need eztest or something similar
+E svc_wait_for_req: service Template not found
+I Template: periodic interval = 0 secs
+E svc_wait_for_req: service Template not found
+I Template: periodic interval = 0 secs
+E svc_wait_for_req: service Template not found
+I Template: periodic interval = 0 secs
+E svc_wait_for_req: service Template not found
+I Template: periodic interval = 0 secs
+
+
+xxxxxxxxxxxxxxxxxx
+
+continue fixing build of app/Location
+
+updae order of Settings Menu options,  move Sevices higher
+
+write Test stress test for message to service and reply
+
+
+
+drwx------ 2 haid haid 4.0K Jun 26 07:47 Altitude              ok
+drwx------ 2 haid haid 4.0K Jul  1 17:35 Location              ok
+drwx------ 2 haid haid 4.0K Jul  1 17:35 Steps                 ok
+drwx------ 2 haid haid 4.0K Jul  1 17:37 Template              ok
+
+
+stress svc reqs to template
+update the other svcs
+
+
 xxx
 cleanup dirs
 newrepo called ezApp

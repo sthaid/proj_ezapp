@@ -32,12 +32,6 @@ int main(int argc, char **argv)
         }
     }
 
-    // if running a svc then set the svc_eztest_mode flag;
-    // this will set svcs.c to test mode compatible with eztest_linux
-    if (strncmp(data_dir, "svcs/", 5) == 0) {
-        svc_eztest_mode = true;
-    }
-
     // call the mini app main routine
     rc = MAIN(argc, argv);
 

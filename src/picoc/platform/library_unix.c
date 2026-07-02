@@ -1592,6 +1592,18 @@ void Svc_make_req(struct ParseState *Parser, struct Value *ReturnValue,
     ReturnValue->Val->Integer = ret;
 }
 
+void Svc_make_req_ex(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
+{
+    char      *svc_name     = Param[0]->Val->Pointer;
+    svc_req_t *req          = Param[1]->Val->Pointer;
+    int        timeout_secs = Param[2]->Val->Integer;
+    int        ret;
+
+    ret = svc_make_req_ex(svc_name, req, timeout_secs);
+    ReturnValue->Val->Integer = ret;
+}
+
 //
 // routines called by svcs
 //
@@ -1599,10 +1611,10 @@ void Svc_make_req(struct ParseState *Parser, struct Value *ReturnValue,
 void Svc_wait_for_req(struct ParseState *Parser, struct Value *ReturnValue,
         struct Value **Param, int NumArgs)
 {
-    char      *svc_name      = Param[0]->Val->Pointer;
-    svc_req_t *req           = Param[1]->Val->Pointer;
-    int        timeout_secs  = Param[2]->Val->Integer;
-    int        ret;
+    char       *svc_name      = Param[0]->Val->Pointer;
+    svc_req_t **req           = Param[1]->Val->Pointer;
+    int         timeout_secs  = Param[2]->Val->Integer;
+    int         ret;
 
     ret = svc_wait_for_req(svc_name, req, timeout_secs);
     ReturnValue->Val->Integer = ret;
@@ -1622,21 +1634,21 @@ void Svc_req_completed(struct ParseState *Parser, struct Value *ReturnValue,
 
 void SvcsSetupFunction(Picoc *pc)
 {
-    PLATFORM_VAR(svc_eztest_mode, &pc->IntType, true);
 }
 
 struct LibraryFunction SvcsFunctions[] = {
     // routines called by apps
-    { Svc_make_req,              "int svc_make_req(char *svc_name, srv_req_t *req);" },
+    { Svc_make_req,              "int svc_make_req(char *svc_name, svc_req_t *req);" },
+    { Svc_make_req_ex,           "int svc_make_req_ex(char *svc_name, svc_req_t *req, int timeout_secs);" },
 
     // routines called by svcs
-    { Svc_wait_for_req,          "int svc_wait_for_req(char *svc_name, svc_req_t *req, int timeout_secs);" },
+    { Svc_wait_for_req,          "int svc_wait_for_req(char *svc_name, svc_req_t **req, int timeout_secs);" },
     { Svc_req_completed,         "void svc_req_completed(char *svc_name, svc_req_t *req, int comp_status);" },
 
     { NULL, NULL } };
 
 const char SvcsDefs[] = "\
-// common values for req_id \n\
+// common values for request id \n\
 #define SVC_REQ_ID_STOP 1 \n\
 \n\
 // sizeof of req->data \n\
@@ -1644,7 +1656,7 @@ const char SvcsDefs[] = "\
 \n\
 // svc request struct \n\
 typedef struct { \n\
-    int  req_id; \n\
+    int  id; \n\
     int  comp_status; \n\
     char data[MAX_SVC_REQ_DATA]; \n\
 } svc_req_t; \n\

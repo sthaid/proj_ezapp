@@ -13,16 +13,16 @@ extern "C" {
 
 // svc request struct
 typedef struct {
-    int  req_id;
+    int  id;
     int  comp_status;
     char data[MAX_SVC_REQ_DATA];
 } svc_req_t;
 
 int svc_make_req(char *svc_name, svc_req_t *req);
+int svc_make_req_ex(char *svc_name, svc_req_t *req, int timeout_secs);
 
-int svc_wait_for_req(char *svc_name, svc_req_t *req, int timeout_secs);
+int svc_wait_for_req(char *svc_name, svc_req_t **req, int timeout_secs);
 void svc_req_completed(char *svc_name, svc_req_t *req, int comp_status);
-
 
 // xxx update this ...
 // Routine called by miniApps, to make a request of a service:

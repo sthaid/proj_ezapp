@@ -38,4 +38,7 @@ void show_file(char *dir, char *filename);
 void reg_event(int x, int y, sdlx_color_t color, char *name, int event_id);
 void reg_event_show_readme_file(void);
 
+// init service request
+svc_req_t *svc_req_init(int req_id, char *data, int data_len);
+
 #endif

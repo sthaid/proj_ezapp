@@ -50,9 +50,10 @@
 #define REQ_STATE_IN_PROGRESS  2
 #define REQ_STATE_COMPLETED    3
 
-#define SVC_REQ_ERROR_SVC_NOT_FOUND     -1
-#define SVC_REQ_ERROR_SVC_NOT_RUNNING   -2
-#define SVC_REQ_ERROR_TIMEDOUT          -3
+#define SVC_REQ_ERROR_REQ_IS_NULL       -1
+#define SVC_REQ_ERROR_SVC_NOT_FOUND     -2
+#define SVC_REQ_ERROR_SVC_NOT_RUNNING   -3
+#define SVC_REQ_ERROR_TIMEDOUT          -4
 
 //
 // typedefs
@@ -73,9 +74,6 @@ typedef struct {
 
 static svc_t  svcs[MAX_SVCS];
 static int    max_svcs;
-
-// set by eztest when testing a svc
-//int svc_eztest_mode; // xxx del
 
 //
 // prototypes
@@ -135,7 +133,7 @@ void svcs_start(void)
         if (!stopped && SERVICE_IS_STOPPED(x->svc_state)) {
             memset(&x->req, 0, sizeof(x->req));
             x->svc_state = SERVICE_STATE_RUNNING;
-            x->req_state = REQ_STATE_IDLE; // xxx search for this
+            //x->req_state = REQ_STATE_IDLE; // xxx search for this
             run_svc(x->name);
         }
     }
@@ -514,33 +512,43 @@ static int svc_thread(void *cx)
 
 // ---- routines called by apps ----
 
-#define POLL_FOR(cond,mtx) \
+#define POLL_FOR(cond,mtx,tout_secs) \
     do { \
         long start_us = util_microsec_timer(); \
         while (true) { \
             if (cond) break; \
-            if (util_microsec_timer() - start_us > 5000000) break; \
+            if (util_microsec_timer() - start_us > ((tout_secs) * 1000000)) break; \
             if (mtx) pthread_mutex_unlock(mtx); \
             usleep(10000); \
             if (mtx) pthread_mutex_lock(mtx); \
         } \
     } while (0)
 
-// xxx prints in error paths
-
-
-// svc_make_req return values:
+// svc_make_req/svc_make_req_ex return values:
 // - ret >= 0: req comp_status, zero should usually be used to indicate success
 // - ret < 0:  one of the following negative error codes
+//             SVC_REQ_ERROR_REQ_IS_NULL
 //             SVC_REQ_ERROR_SVC_NOT_FOUND
 //             SVC_REQ_ERROR_SVC_NOT_RUNNING
 //             SVC_REQ_ERROR_TIMEDOUT
 
 int svc_make_req(char *svc_name, svc_req_t *req_arg)
 {
+    #define SVC_MAKE_REQ_DFLT_TOUT_SECS 5
+    return svc_make_req_ex(svc_name, req_arg, SVC_MAKE_REQ_DFLT_TOUT_SECS);
+}
+
+int svc_make_req_ex(char *svc_name, svc_req_t *req_arg, int timeout_secs)
+{
     int id;
     svc_t *x;
     bool okay;
+
+    // check if req_arg is NULL
+    if (req_arg == NULL) {
+        ERROR("req is NULL\n");
+        return SVC_REQ_ERROR_REQ_IS_NULL;
+    }
 
     // get svc id for the svc_name
     id = svc_name_to_id(svc_name);
@@ -552,7 +560,7 @@ int svc_make_req(char *svc_name, svc_req_t *req_arg)
 
     // verify svc state is okay to make a request
     okay = ((x->svc_state == SERVICE_STATE_RUNNING) ||
-            (req_arg->req_id == SVC_REQ_ID_STOP && x->svc_state == SERVICE_STATE_STOPPING));
+            (req_arg->id == SVC_REQ_ID_STOP && x->svc_state == SERVICE_STATE_STOPPING));
     if (!okay) {
         ERROR("service %s state %s invalid to make req\n", x->name, SERVICE_STATE_STR(x->svc_state));
         return SVC_REQ_ERROR_SVC_NOT_RUNNING;
@@ -561,10 +569,14 @@ int svc_make_req(char *svc_name, svc_req_t *req_arg)
     // lock mutex
     pthread_mutex_lock(&x->req_mutex);
 
-    // wait for the req_state to become available
-    POLL_FOR(x->req_state == REQ_STATE_IDLE, &x->req_mutex);
-    if (x->req_state != REQ_STATE_IDLE) {
-        ERROR("service %s timedout waiting for REQ_STATE_IDLE\n", svc_name);
+    // Wait for the req_state to become available for use, with 5 sec timeout.
+    // The check for REQ_STATE_COMPLETED allows for a prior call to svc_make_req_ex
+    // to have timedout.
+    POLL_FOR(x->req_state == REQ_STATE_IDLE || x->req_state == REQ_STATE_COMPLETED,
+             &x->req_mutex, 
+             5);
+    if (x->req_state != REQ_STATE_IDLE && x->req_state != REQ_STATE_COMPLETED) {
+        ERROR("service %s timedout waiting for REQ_STATE_IDLE or COMPLETED\n", svc_name);
         pthread_mutex_unlock(&x->req_mutex);
         return SVC_REQ_ERROR_TIMEDOUT;
     }
@@ -577,10 +589,12 @@ int svc_make_req(char *svc_name, svc_req_t *req_arg)
     pthread_cond_signal(&x->req_cond);
 
     // poll for req to no longer be PENDING or IN_PROGRESS
-    POLL_FOR(x->req_state != REQ_STATE_PENDING && x->req_state != REQ_STATE_IN_PROGRESS, &x->req_mutex);
+    POLL_FOR(x->req_state != REQ_STATE_PENDING && x->req_state != REQ_STATE_IN_PROGRESS, 
+             &x->req_mutex,
+             timeout_secs);
     if (x->req_state != REQ_STATE_COMPLETED) {
-        // this error will leave the req_state as not idle;
-        // the svc might have encountered a problem, and recovery is to restart ezApp
+        // this error will leave the req_state as either PENDING or IN_PROGRESS,
+        // the svc might have encountered a problem, recovery is to restart ezApp
         ERROR("service %s timedout waiting for REQ_STATE_COMPLETED\n", svc_name);
         pthread_mutex_unlock(&x->req_mutex);
         return SVC_REQ_ERROR_TIMEDOUT;
@@ -598,7 +612,7 @@ int svc_make_req(char *svc_name, svc_req_t *req_arg)
 
 // ---- routines called by svcs ----
 
-int svc_wait_for_req(char *svc_name, svc_req_t *req_arg, int timeout_secs)
+int svc_wait_for_req(char *svc_name, svc_req_t **req_arg, int timeout_secs)
 {
     struct timespec abstime;
     int             id, ret;
@@ -623,7 +637,7 @@ int svc_wait_for_req(char *svc_name, svc_req_t *req_arg, int timeout_secs)
         // if req is pending then return copy of the req
         if (x->req_state == REQ_STATE_PENDING) {
             x->req_state = REQ_STATE_IN_PROGRESS;
-            *req_arg = x->req;
+            *req_arg = &x->req;
             pthread_mutex_unlock(&x->req_mutex);
             return 0;
         }

@@ -92,14 +92,12 @@ int main(int argc, char **argv)
             settings_changed ||
             loc_hist->count != last_loc_hist_count)
         {
-            char req_data[MAX_SVC_REQ_DATA];
-
-            memset(req_data, 0, sizeof(req_data));
-            rc = svc_make_req("Location", SVC_LOCATION_REQ_GET_LOC_INFO, req_data, sizeof(req_data), 5);
+            svc_req_t *req = svc_req_init(SVC_LOCATION_REQ_GET_LOC_INFO, NULL, 0);
+            rc = svc_make_req("Location", req);
             if (rc != 0) {
                 strcpy(loc_curr, "Loc Svc Error");
             } else {
-                strncpy(loc_curr, req_data, MAX_SVC_REQ_DATA);
+                strncpy(loc_curr, req->data, MAX_SVC_REQ_DATA);
                 loc_curr[MAX_SVC_REQ_DATA-1] = '\0';
             }
             time_last_get_loc_info = time_now;
@@ -200,9 +198,13 @@ int main(int argc, char **argv)
 
 char countries[MAX_COUNTRIES][3];
 int  max_countries;
-long clear_history_ack_time;
 
 void get_countries(void);
+
+// xxx test download ctry timeout
+// xxx consider spacing of 2 rows instead of 3
+
+// xxx code review of settings
 
 void settings(void)
 {
@@ -210,15 +212,20 @@ void settings(void)
     sdlx_loc_t  *loc;
     sdlx_event_t event;
     int          rc;
-    char         query_enabled = false;
+    char         is_enabled;
+    svc_req_t   *req;
+    char         msg[21];
+    long         msg_time = 0;
 
-    rc = svc_make_req("Location",      
-                      SVC_LOCATION_REQ_QUERY_ENABLED,
-                      &query_enabled, sizeof(query_enabled),
-                      2);  // 2 sec timeout
-    if (rc != SVC_REQ_OK) {
+    // query current state of the Location service;
+    // if not enabled the Location service will not be updating the location history file
+    req = svc_req_init(SVC_LOCATION_REQ_QUERY_ENABLED, NULL, 0);
+    rc = svc_make_req("Location", req);
+    if (rc != 0) {
         printf("E: SVC_LOCATION_REQ_QUERY_ENABLED failed, rc=%d\n", rc);
-    }
+        // xxx display an error and return
+    } 
+    is_enabled = req->data[0];
 
     // get list of countries
     get_countries();
@@ -231,21 +238,20 @@ void settings(void)
         sdlx_print_set_default(FONT_NORMAL, COLOR_LIGHT_BLUE);
 
         // register for events ...
+
         // - CLEAR_HISTORY
         loc = sdlx_render_printf(0, ROW2Y(1), "%s", "Clear History");
         sdlx_register_event(loc, EVID_CLEAR_HISTORY);
-        if (util_microsec_timer() < clear_history_ack_time+3*SEC) {
-            sdlx_render_printf_ex1(sdlx_win_width-4*sdlx_char_width_dflt, ROW2Y(1),
-                                   FONT_NORMAL, COLOR_GREEN, "%s", "DONE");
-        }
+
         // - DISABLE/ENABLE_HISTORY
-        if (query_enabled) {
+        if (is_enabled) {
             loc = sdlx_render_printf(0, ROW2Y(4), "%s", "History is Enabled");
             sdlx_register_event(loc, EVID_DISABLE_HISTORY);
         } else {
             loc = sdlx_render_printf(0, ROW2Y(4), "%s", "History is Disabled");
             sdlx_register_event(loc, EVID_ENABLE_HISTORY);
         }
+
         // - ADD_COUNTRY
         if (max_countries < 5) {
             loc = sdlx_render_printf(0, ROW2Y(7), "%s", "Download Country");
@@ -267,6 +273,12 @@ void settings(void)
             sdlx_print_set_default(FONT_NORMAL, COLOR_WHITE);
         }
 
+        // display message for 3 seconds
+        if (util_microsec_timer() < msg_time+3000000) {
+            sdlx_color_t color = (strcmp(msg, "okay") == 0 ? COLOR_GREEN : COLOR_RED);
+            sdlx_render_printf_ex1(0, sdlx_win_height-sdlx_char_height_dflt, FONT_NORMAL, color, "%s", msg);
+        }
+
         // register for quit event
         sdlx_register_control_events(0, NULL, 0, NULL, EVID_QUIT, "X");
 
@@ -279,6 +291,10 @@ void settings(void)
             continue;
         }
 
+        // clear completion message
+        msg[0] = '\0';
+        msg_time = 0;
+
         // process events
         switch (event.event_id) {
         case EVID_QUIT:
@@ -289,21 +305,25 @@ void settings(void)
             char *country_code;
 
             country_code = sdlx_get_input_str("2 Char Country Code", false, NULL);
-            if (country_code == NULL) {
+            if (strlen(country_code) != 2) {
+                snprintf(msg, sizeof(msg), "cc must be 2 chars");
+                msg_time = util_microsec_timer();
                 break;
             }
-            printf("I %s: country_code '%s'\n", progname, country_code);
 
-            rc = svc_make_req("Location",      
-                              SVC_LOCATION_REQ_ADD_COUNTRY_INFO,
-                              country_code, strlen(country_code)+1, 
-                              20);  // 20 sec timeout
+            printf("I %s: adding country_code '%s'\n", progname, country_code);
+            req = svc_req_init(SVC_LOCATION_REQ_ADD_COUNTRY_INFO, country_code, 2);
+            rc = svc_make_req_ex("Location", req, 20);  // 20 sec timeout
             if (rc != 0) {
-                printf("E %s: SVC_LOCATION_REQ_ADD_COUNTRY_INFO '%s' failed, rc=%d\n", 
-                       progname, country_code, rc);
+                snprintf(msg, sizeof(msg), "add %s failed", country_code);
+                msg_time = util_microsec_timer();
+                break;
             }
 
             get_countries();
+
+            snprintf(msg, sizeof(msg), "okay");
+            msg_time = util_microsec_timer();
             break; }
 
         case EVID_DEL_COUNTRY+0:
@@ -314,58 +334,68 @@ void settings(void)
             int idx = event.event_id - EVID_DEL_COUNTRY;
             char prompt[50], *yn;
 
-            sprintf(prompt, "Delete %s", countries[idx]);
-            yn = sdlx_get_input_str(prompt, false, NULL);
+            sprintf(prompt, "Delete %s (y/n)", countries[idx]);
+            yn = sdlx_get_input_str(prompt, false, "y");
             if (yn[0] != 'y' && yn[0] != 'Y') {
-                printf("I %s: cancel delete %s\n", progname, countries[idx]);
+                snprintf(msg, sizeof(msg), "cancelled");
+                msg_time = util_microsec_timer();
                 break;
             }
 
             printf("I %s: deleteing %s\n", progname, countries[idx]);
-            rc = svc_make_req("Location",      
-                              SVC_LOCATION_REQ_DEL_COUNTRY_INFO,
-                              countries[idx], strlen(countries[idx])+1,
-                              5);  // 5 sec timeout
+            req = svc_req_init(SVC_LOCATION_REQ_DEL_COUNTRY_INFO, countries[idx], 2);
+            rc = svc_make_req("Location", req);
             if (rc != 0) {
-                printf("E %s: SVC_LOCATION_REQ_DEL_COUNTRY_INFO '%s' failed, rc=%d\n", 
-                       progname, countries[idx], rc);
+                snprintf(msg, sizeof(msg), "delete %s failed", countries[idx]);
+                msg_time = util_microsec_timer();
+                break;
             }
 
             get_countries();
+
+            snprintf(msg, sizeof(msg), "okay");
+            msg_time = util_microsec_timer();
             break; }
 
         case EVID_CLEAR_HISTORY: {
             char *yn;
 
-            yn = sdlx_get_input_str("Clear History", false, NULL);
+            yn = sdlx_get_input_str("Clear History (y/n)", false, "y");
             if (yn[0] != 'y' && yn[0] != 'Y') {
-                printf("I %s: cancel clear history\n", progname);
+                snprintf(msg, sizeof(msg), "cancelled");
+                msg_time = util_microsec_timer();
                 break;
             }
 
             printf("I %s: clearing history\n", progname);
-            rc = svc_make_req("Location",      
-                              SVC_LOCATION_REQ_CLEAR_HISTORY,
-                              NULL, 0,
-                              5);  // 5 sec timeout
+            req = svc_req_init(SVC_LOCATION_REQ_CLEAR_HISTORY, NULL, 0);
+            rc = svc_make_req("Location", req);
             if (rc != 0) {
-                printf("E %s: SVC_LOCATION_REQ_CLEAR_HISTORY failed, rc=%d\n", progname, rc);
+                snprintf(msg, sizeof(msg), "clear history failed");
+                msg_time = util_microsec_timer();
                 break;
             }
-            clear_history_ack_time = util_microsec_timer();
+
+            snprintf(msg, sizeof(msg), "okay");
+            msg_time = util_microsec_timer();
             break; }
+
         case EVID_ENABLE_HISTORY: 
         case EVID_DISABLE_HISTORY: {
-            char set_enabled = (event.event_id == EVID_ENABLE_HISTORY);
+            char enable = (event.event_id == EVID_ENABLE_HISTORY);
 
-            svc_make_req("Location",      
-                         SVC_LOCATION_REQ_SET_ENABLED,
-                         &set_enabled, sizeof(set_enabled),
-                         2);  // 2 sec timeout
-            svc_make_req("Location",      
-                         SVC_LOCATION_REQ_QUERY_ENABLED,
-                         &query_enabled, sizeof(query_enabled),
-                         2);  // 2 sec timeout
+            req = svc_req_init(SVC_LOCATION_REQ_SET_ENABLED, &enable, sizeof(enable));
+            rc = svc_make_req("Location", req);
+            if (rc != 0) {
+                snprintf(msg, sizeof(msg), "%s hist failed", enable ? "enable" : "disable");
+                msg_time = util_microsec_timer();
+                break;
+            }
+
+            is_enabled = enable;
+
+            snprintf(msg, sizeof(msg), "okay");
+            msg_time = util_microsec_timer();
             break; }
         }
     }
@@ -373,22 +403,21 @@ void settings(void)
 
 void get_countries(void)
 {
-    char *p, *p1;
-    int   rc;
-    char  req_data[MAX_SVC_REQ_DATA];
+    char      *p, *p1;
+    int        rc;
+    svc_req_t *req;
 
     memset(countries, 0, sizeof(countries));
     max_countries = 0;
 
-    rc = svc_make_req("Location",      
-                      SVC_LOCATION_REQ_LIST_COUNTRY_INFO,
-                      req_data, sizeof(req_data),
-                      5);  // 5 sec timeout
+    req = svc_req_init(SVC_LOCATION_REQ_LIST_COUNTRY_INFO, NULL, 0);
+    rc = svc_make_req("Location", req);     
     if (rc != 0) {
         printf("E %s: SVC_LOCATION_REQ_LIST_COUNTRY_INFO failed, rc=%d\n", progname, rc);
+        return;
     }
 
-    p = req_data;
+    p = req->data;
     while (true) {
         p1 = strchr(p, '\n');
         if (p1 == NULL) {
