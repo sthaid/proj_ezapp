@@ -1,6 +1,8 @@
 #ifndef __LIB_H__
 #define __LIB_H__
 
+#include <svcs.h>
+
 // device orientation
 int get_device_orientation(void);
 

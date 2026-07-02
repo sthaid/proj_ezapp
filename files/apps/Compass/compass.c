@@ -330,9 +330,10 @@ void init_mag_decl(void)
     memset(req_data, 0, sizeof(req_data));
     memcpy(&req_data[0], &latitude, 8);
     memcpy(&req_data[8], &longitude, 8);
-    rc = svc_make_req("Location", SVC_LOCATION_REQ_GET_LOC_NAME_FROM_LAT_LONG, req_data, sizeof(req_data), 5);
+    svc_req_t *req = svc_req_init(SVC_LOCATION_REQ_GET_LOC_NAME_FROM_LAT_LONG, req_data, sizeof(req_data));
+    rc = svc_make_req("Location", req);
     if (rc == 0) {
-        strncpy(mag_decl_locname, req_data, sizeof(mag_decl_locname)-1);
+        strncpy(mag_decl_locname, req->data, sizeof(mag_decl_locname)-1);
     } else {
         strncpy(mag_decl_locname, "Loc Not Found", sizeof(mag_decl_locname)-1);
     }
