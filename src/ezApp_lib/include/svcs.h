@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-// common values for req_id
+// common req id value; the miniSvc must terminate when SVC_REQ_ID_STOP is received
 #define SVC_REQ_ID_STOP 1
 
 // sizeof of req->data
@@ -18,38 +18,29 @@ typedef struct {
     char data[MAX_SVC_REQ_DATA];
 } svc_req_t;
 
-// start / stop a service;
-// NOTE: not normally used because services are controlled from Settings
+// Start and stop a miniSvc. Returns 0 on success.
+// Note: the svc_start and svc_stop routines may not be used often because
+// Settings, Services supports starting and stopping of miniSvcs.
 int svc_start(char *name);
 int svc_stop(char *name);
 
-// make service request routine, called by apps
+// The svc_make_req routine is called by miniApps to issue a request to a MiniSvc.
+// Return value is < 0 if the request could not be issued; otherwise the 
+// return value is the completion status (comp_status) value provided by the
+// miniSvc.
 int svc_make_req(char *svc_name, svc_req_t *req, int timeout_secs);
 
-// process service request routines, called by svcs
+// The following 2 routines are called by the miniSvcs:
+// - svc_wait_for_req waits for a request, or timeout. Return value 0
+//   indicates a request was received; non-zero return value indicates a
+//   timeout. MiniSvcs should make use of the timeout to perform periodic
+//   processing.
+// - svc_req_completed is called by a miniSvc after the miniSvc received
+//   and finished processing a request. The miniApp call to scv_make_req will
+//   return after the miniSvc has called svc_req_completed. 
+//   MiniSvc updates made to req data are returned to the miniApp.
 int svc_wait_for_req(char *svc_name, svc_req_t **req, int timeout_secs);
 void svc_req_completed(char *svc_name, svc_req_t *req, int comp_status);
-
-// xxx update this ...
-// Routine called by miniApps, to make a request of a service:
-// - svc_name:     name of the miniSvc
-// - req_id:       identifies the request, the req_id values should be defined in a
-//                 miniSvc header file
-// - req_data:     in/out buffer, containing request and response details
-// - req_data_len: length of the req_data buffer, not to exceed MAX_SVC_REQ_DATA
-// - timeout_secs: svc_make_req will return status SVC_REQ_ERROR_NOT_COMPLETED
-//                 if timeout occurred
-
-// miniSvc processing summary:
-// - call svc_wait_for_req: to wait, with timeout, for a request
-// - if timeout occurred then the miniSvc may perform periodic processing
-// - if a request was recevied, the miniSvc must process the request, and 
-//   acknowledge completion by calling svc_req_complete
-//
-// MiniSvcs must support receiving the SVC_REQ_ID_STOP request.
-// When received the service must cleanup and terminate.
-// Prior to terminating the miniSvc must acknowledge by calling 
-// svc_req_complete(req, SVC_REQ_OK),
 
 #ifdef __cplusplus
 }
