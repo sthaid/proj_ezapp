@@ -93,7 +93,7 @@ int main(int argc, char **argv)
             loc_hist->count != last_loc_hist_count)
         {
             svc_req_t *req = svc_req_init(SVC_LOCATION_REQ_GET_LOC_INFO, NULL, 0);
-            rc = svc_make_req("Location", req);
+            rc = svc_make_req("Location", req, 5);
             if (rc != 0) {
                 strcpy(loc_curr, "Loc Svc Error");
             } else {
@@ -220,7 +220,7 @@ void settings(void)
     // query current state of the Location service;
     // if not enabled the Location service will not be updating the location history file
     req = svc_req_init(SVC_LOCATION_REQ_QUERY_ENABLED, NULL, 0);
-    rc = svc_make_req("Location", req);
+    rc = svc_make_req("Location", req, 5);
     if (rc != 0) {
         printf("E: SVC_LOCATION_REQ_QUERY_ENABLED failed, rc=%d\n", rc);
         // xxx display an error and return
@@ -313,7 +313,7 @@ void settings(void)
 
             printf("I %s: adding country_code '%s'\n", progname, country_code);
             req = svc_req_init(SVC_LOCATION_REQ_ADD_COUNTRY_INFO, country_code, 2);
-            rc = svc_make_req_ex("Location", req, 20);  // 20 sec timeout
+            rc = svc_make_req("Location", req, 20);
             if (rc != 0) {
                 snprintf(msg, sizeof(msg), "add %s failed", country_code);
                 msg_time = util_microsec_timer();
@@ -344,7 +344,7 @@ void settings(void)
 
             printf("I %s: deleteing %s\n", progname, countries[idx]);
             req = svc_req_init(SVC_LOCATION_REQ_DEL_COUNTRY_INFO, countries[idx], 2);
-            rc = svc_make_req("Location", req);
+            rc = svc_make_req("Location", req, 5);
             if (rc != 0) {
                 snprintf(msg, sizeof(msg), "delete %s failed", countries[idx]);
                 msg_time = util_microsec_timer();
@@ -369,7 +369,7 @@ void settings(void)
 
             printf("I %s: clearing history\n", progname);
             req = svc_req_init(SVC_LOCATION_REQ_CLEAR_HISTORY, NULL, 0);
-            rc = svc_make_req("Location", req);
+            rc = svc_make_req("Location", req, 5);
             if (rc != 0) {
                 snprintf(msg, sizeof(msg), "clear history failed");
                 msg_time = util_microsec_timer();
@@ -385,7 +385,7 @@ void settings(void)
             char enable = (event.event_id == EVID_ENABLE_HISTORY);
 
             req = svc_req_init(SVC_LOCATION_REQ_SET_ENABLED, &enable, sizeof(enable));
-            rc = svc_make_req("Location", req);
+            rc = svc_make_req("Location", req, 5);
             if (rc != 0) {
                 snprintf(msg, sizeof(msg), "%s hist failed", enable ? "enable" : "disable");
                 msg_time = util_microsec_timer();
@@ -411,7 +411,7 @@ void get_countries(void)
     max_countries = 0;
 
     req = svc_req_init(SVC_LOCATION_REQ_LIST_COUNTRY_INFO, NULL, 0);
-    rc = svc_make_req("Location", req);     
+    rc = svc_make_req("Location", req, 5);     
     if (rc != 0) {
         printf("E %s: SVC_LOCATION_REQ_LIST_COUNTRY_INFO failed, rc=%d\n", progname, rc);
         return;

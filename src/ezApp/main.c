@@ -202,7 +202,7 @@ static int init(void)
     }
 
     // start all services, that do not have a 'stopped' file in their dir
-    svcs_start();
+    svcs_start_all();
 
     // success
     return 0;
@@ -216,7 +216,7 @@ static void cleanup(void)
     INFO("cleanup starting\n");
 
     INFO("stopping services\n");
-    svcs_stop();
+    svcs_stop_all();
 
     INFO("destroying android utils\n");
     util_android_utils_destroy();
@@ -276,10 +276,10 @@ static void create_files(int action)
             
     // remove existing apps and svcs, and recreate
     } else if (action ==  CREATE_FILES_RESET_APPS_AND_SVCS) {
-        svcs_stop();
+        svcs_stop_all();
         system("rm -rf apps svcs");
         system("tar -xvf files.tar apps svcs");
-        svcs_start();
+        svcs_start_all();
     } else {
         ERROR("invalid arg, action %d\n", action);
     }
@@ -723,24 +723,6 @@ static void settings(void)
             sdlx_register_event(loc, EVID_CREDITS);
         }
 
-        // display Devel_Mode
-        if (GET_Y2) {
-            loc = sdlx_render_printf(0, y2, "Devel_Mode = %s", params.devel_mode ? "ON" : "OFF");
-            sdlx_register_event(loc, EVID_DEVEL_MODE);
-        }
-
-        // display Devel_Port
-        if (GET_Y2) {
-            loc = sdlx_render_printf(0, y2, "Devel_Port = %d", params.devel_port);
-            sdlx_register_event(loc, EVID_DEVEL_PORT);
-        }
-
-        // display Devel_Password
-        if (GET_Y2) {
-            loc = sdlx_render_printf(0, y2, "Devel_Password");
-            sdlx_register_event(loc, EVID_DEVEL_PASSWORD);
-        }
-
         // display Services
         if (GET_Y2) {
             loc = sdlx_render_printf(0, y2, "Services");
@@ -797,6 +779,24 @@ static void settings(void)
         if (GET_Y2) {
             loc = sdlx_render_printf(0, y2, "Event_Box = %s", params.event_box_enable ? "ENABLED" : "DISABLED");
             sdlx_register_event(loc, EVID_EVENT_BOX_ENABLE);
+        }
+
+        // display Devel_Mode
+        if (GET_Y2) {
+            loc = sdlx_render_printf(0, y2, "Devel_Mode = %s", params.devel_mode ? "ON" : "OFF");
+            sdlx_register_event(loc, EVID_DEVEL_MODE);
+        }
+
+        // display Devel_Port
+        if (GET_Y2) {
+            loc = sdlx_render_printf(0, y2, "Devel_Port = %d", params.devel_port);
+            sdlx_register_event(loc, EVID_DEVEL_PORT);
+        }
+
+        // display Devel_Password
+        if (GET_Y2) {
+            loc = sdlx_render_printf(0, y2, "Devel_Password");
+            sdlx_register_event(loc, EVID_DEVEL_PASSWORD);
         }
 
         // change print color back to white

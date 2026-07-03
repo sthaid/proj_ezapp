@@ -664,7 +664,6 @@ void svc_req_completed(char *svc_name, svc_req_t *req, int comp_status)
     pthread_mutex_lock(&x->req_mutex2);
     x->req.comp_status = comp_status;
     x->req_state = REQ_STATE_COMPLETED;
-    printf("XXXXXXXX setting COMPLETED for %s %d\n", x->name, comp_status);
     pthread_mutex_unlock(&x->req_mutex2);
 }
 

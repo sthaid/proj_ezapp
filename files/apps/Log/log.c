@@ -231,11 +231,15 @@ int log_load(void)
 
     // read log lines, initialize array of lines and parallel array of colors
     while (fgets(s, sizeof(s), fp) != NULL) {
-        colors[num_lines] = COLOR_WHITE;
-        if (s[19] == 'I' && s[20] == '/') {
+        if (s[19] == 'I' && (s[20] == ' ' || s[20] == '/')) {
             colors[num_lines] = COLOR_GREEN;
-        } else {
+        } else if ((s[19] == 'E' && (s[20] == ' ' || s[20] == '/')) ||
+                   (strcasestr(s, "error") != NULL) ||
+                   (strcasestr(s, "fail") != NULL))
+        {
             colors[num_lines] = COLOR_RED;
+        } else {
+            colors[num_lines] = COLOR_WHITE;
         }
 
         lines[num_lines] = strdup(s);

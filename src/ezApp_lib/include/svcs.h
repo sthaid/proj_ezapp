@@ -18,9 +18,15 @@ typedef struct {
     char data[MAX_SVC_REQ_DATA];
 } svc_req_t;
 
-int svc_make_req(char *svc_name, svc_req_t *req);
-int svc_make_req_ex(char *svc_name, svc_req_t *req, int timeout_secs);
+// start / stop a service;
+// NOTE: not normally used because services are controlled from Settings
+int svc_start(char *name);
+int svc_stop(char *name);
 
+// make service request routine, called by apps
+int svc_make_req(char *svc_name, svc_req_t *req, int timeout_secs);
+
+// process service request routines, called by svcs
 int svc_wait_for_req(char *svc_name, svc_req_t **req, int timeout_secs);
 void svc_req_completed(char *svc_name, svc_req_t *req, int comp_status);
 

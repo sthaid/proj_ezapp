@@ -13,6 +13,7 @@
 
 #include "apps/Test/common.h"
 #include "apps/lib/lib.h"
+#include "svcs/Template/template.h"
 
 //
 // defines
@@ -69,6 +70,8 @@ static void page_11_process_event(sdlx_event_t *event);
 
 static void page_12_draw(void);
 static void page_12_process_event(sdlx_event_t *event);
+
+static void page_13_draw(void);
 
 // -----------------  MAIN  ------------------------------------------
 
@@ -140,10 +143,11 @@ char *page_title[] = {     // Page
         "Location",        //  10
         "Text Rotate",     //  11
         "Landscape",       //  12
+        "SvcMakeReq",      //  13
             };
 static int pagenum = 0;
 
-#define LAST_PAGE 12
+#define LAST_PAGE (sizeof(page_title)/sizeof(char*)-1)
 
 #define EVID_PREV_PAGE 1
 #define EVID_NEXT_PAGE 2
@@ -185,6 +189,7 @@ static void page_hndlr()
         case 10: page_10_draw(); break;
         case 11: page_11_draw(); break;
         case 12: page_12_draw(); break;
+        case 13: page_13_draw(); break;
         default:
             printf("E %s: invalid pagenum %d\n", progname, pagenum);
             end_program = true;
@@ -1297,3 +1302,31 @@ static void page_12_process_event(sdlx_event_t *ev)
         break;
     }
 }
+
+// -----------------  PAGE 13: SVC MAKE REQ  ------------------
+
+static void page_13_draw(void)
+{
+    int rc, result;
+    sdlx_color_t color;
+    static int test;
+
+    // This test repeatedly isses the SVC_TEMPLATE_REQ_ADD_ONE request to the Templae service.
+    // The response is checked, and displayed in GREEN if okay.
+    
+    test++;
+    svc_req_t *req = svc_req_init(SVC_TEMPLATE_REQ_ADD_ONE, (char*)&test, sizeof(test));
+
+    rc = svc_make_req("Template", req, 5);
+    if (rc != 0) {
+        printf("E %s: page_13, svc_make_req failed, rc=%d\n", progname, rc);
+        return;
+    }
+
+    result = *(int*)&req->data[0];
+
+    color = (result == test + 1 ? COLOR_GREEN : COLOR_RED);
+    sdlx_render_printf_ex2(sdlx_win_width/2, sdlx_win_height/2, FONT_NORMAL, color, FLAG_XY_CTR,
+                           "ADD1 %d -> %d", test, result);
+}
+

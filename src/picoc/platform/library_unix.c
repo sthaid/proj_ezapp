@@ -1577,22 +1577,34 @@ typedef struct { \n\
 
 // -----------------  SVCS PLATFORM ROUTINES  --------------------------
 
-//
-// routines called by apps
-//
+// start / stop a service;
+// NOTE: not normally used because services are controlled from Settings
 
-void Svc_make_req(struct ParseState *Parser, struct Value *ReturnValue,
+void Svc_start(struct ParseState *Parser, struct Value *ReturnValue,
         struct Value **Param, int NumArgs)
 {
-    char      *svc_name = Param[0]->Val->Pointer;
-    svc_req_t *req      = Param[1]->Val->Pointer;
-    int        ret;
+    char *svc_name = Param[0]->Val->Pointer;
+    int   ret;
 
-    ret = svc_make_req(svc_name, req);
+    ret = svc_start(svc_name);
     ReturnValue->Val->Integer = ret;
 }
 
-void Svc_make_req_ex(struct ParseState *Parser, struct Value *ReturnValue,
+void Svc_stop(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
+{
+    char *svc_name = Param[0]->Val->Pointer;
+    int   ret;
+
+    ret = svc_stop(svc_name);
+    ReturnValue->Val->Integer = ret;
+}
+
+//
+// make service request routine, called by apps
+//
+
+void Svc_make_req(struct ParseState *Parser, struct Value *ReturnValue,
         struct Value **Param, int NumArgs)
 {
     char      *svc_name     = Param[0]->Val->Pointer;
@@ -1600,12 +1612,12 @@ void Svc_make_req_ex(struct ParseState *Parser, struct Value *ReturnValue,
     int        timeout_secs = Param[2]->Val->Integer;
     int        ret;
 
-    ret = svc_make_req_ex(svc_name, req, timeout_secs);
+    ret = svc_make_req(svc_name, req, timeout_secs);
     ReturnValue->Val->Integer = ret;
 }
 
 //
-// routines called by svcs
+// process service request routines, called by svcs
 //
 
 void Svc_wait_for_req(struct ParseState *Parser, struct Value *ReturnValue,
@@ -1637,13 +1649,17 @@ void SvcsSetupFunction(Picoc *pc)
 }
 
 struct LibraryFunction SvcsFunctions[] = {
-    // routines called by apps
-    { Svc_make_req,              "int svc_make_req(char *svc_name, svc_req_t *req);" },
-    { Svc_make_req_ex,           "int svc_make_req_ex(char *svc_name, svc_req_t *req, int timeout_secs);" },
+    // start / stop a service;
+    // NOTE: not normally used because services are controlled from Settings
+    { Svc_start,         "int svc_start(char *name);" },
+    { Svc_stop,          "int svc_stop(char *name);" },
 
-    // routines called by svcs
-    { Svc_wait_for_req,          "int svc_wait_for_req(char *svc_name, svc_req_t **req, int timeout_secs);" },
-    { Svc_req_completed,         "void svc_req_completed(char *svc_name, svc_req_t *req, int comp_status);" },
+    // make service request routine, called by apps
+    { Svc_make_req,      "int svc_make_req(char *svc_name, svc_req_t *req, int timeout_secs);" },
+
+    // process service request routines, called by svcs
+    { Svc_wait_for_req,  "int svc_wait_for_req(char *svc_name, svc_req_t **req, int timeout_secs);" },
+    { Svc_req_completed, "void svc_req_completed(char *svc_name, svc_req_t *req, int comp_status);" },
 
     { NULL, NULL } };
 

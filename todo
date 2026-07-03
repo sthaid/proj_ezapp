@@ -2,13 +2,6 @@ fixup doc in svcs.h,  provide an example
 
 add svc test
 
-try timeout of the download ctry, how does that recover
-
-Log in linux mode
-
-Order of Settings  mv Devl mode down
-
-
 maybe need eztest or something similar
 E svc_wait_for_req: service Template not found
 I Template: periodic interval = 0 secs

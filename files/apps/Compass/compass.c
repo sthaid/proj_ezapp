@@ -328,10 +328,10 @@ void init_mag_decl(void)
     // get name of nearest city/town, and save in global variable mag_decl_locname
     char req_data[MAX_SVC_REQ_DATA];
     memset(req_data, 0, sizeof(req_data));
-    memcpy(&req_data[0], &latitude, 8);
-    memcpy(&req_data[8], &longitude, 8);
+    *(double*)(&req_data[0]) = latitude;
+    *(double*)(&req_data[8]) = longitude;
     svc_req_t *req = svc_req_init(SVC_LOCATION_REQ_GET_LOC_NAME_FROM_LAT_LONG, req_data, sizeof(req_data));
-    rc = svc_make_req("Location", req);
+    rc = svc_make_req("Location", req, 5);
     if (rc == 0) {
         strncpy(mag_decl_locname, req->data, sizeof(mag_decl_locname)-1);
     } else {

@@ -97,10 +97,8 @@ int sdlx_create_detached_thread(int (*thread_fn)(void*), char *thread_name, void
 // svc.c
 // --------------------
 
-extern int svc_eztest_mode;
-
-void svcs_start(void);
-void svcs_stop(void);
+void svcs_start_all(void);
+void svcs_stop_all(void);
 void svcs_display(int bg_color);
 
 // --------------------

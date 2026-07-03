@@ -6,6 +6,8 @@
 #include <sdlx.h>
 #include <svcs.h>
 
+#include "svcs/Template/template.h"
+
 // program args
 char *progname;
 char *data_dir;
@@ -59,13 +61,17 @@ int main(int argc, char **argv)
 
 void process_req(svc_req_t *req)
 {
-    printf("I %s: got processing req id %d\n", progname, req->id);
+    //printf("I %s: processing req id %d\n", progname, req->id);
 
     // process the request
     switch (req->id) {
     case SVC_REQ_ID_STOP:
         svc_req_completed(progname, req, 0);
         end_program = true;
+        break;
+    case SVC_TEMPLATE_REQ_ADD_ONE:
+        *(int*)(&req->data[0]) = *(int*)(&req->data[0]) + 1;
+        svc_req_completed(progname, req, 0);
         break;
     default:
         printf("E %s: req %d is invalid\n", progname, req->id);

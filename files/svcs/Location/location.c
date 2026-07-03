@@ -167,8 +167,8 @@ void process_req(svc_req_t *req)
         double latitude, longitude;
         char name[MAX_NAME];
 
-        memcpy(&latitude, &req->data[0], 8);
-        memcpy(&longitude, &req->data[8], 8);
+        latitude = *(double*)(&req->data[0]);
+        longitude = *(double*)(&req->data[8]);
         find_closest_loc_data(latitude, longitude, name, NULL);
 
         strcpy(req->data, name);
