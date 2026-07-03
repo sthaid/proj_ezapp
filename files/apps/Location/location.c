@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <string.h>
+#include <unistd.h>
 
 #include <sdlx.h>
 #include <utils.h>
@@ -95,7 +96,7 @@ int main(int argc, char **argv)
             svc_req_t *req = svc_req_init(SVC_LOCATION_REQ_GET_LOC_INFO, NULL, 0);
             rc = svc_make_req("Location", req, 5);
             if (rc != 0) {
-                strcpy(loc_curr, "Loc Svc Error");
+                strcpy(loc_curr, "ERROR");
             } else {
                 strncpy(loc_curr, req->data, MAX_SVC_REQ_DATA);
                 loc_curr[MAX_SVC_REQ_DATA-1] = '\0';
@@ -111,8 +112,15 @@ int main(int argc, char **argv)
         sdlx_render_printf_ex2(sdlx_win_width/2, y, FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, "%s", "Current");
         y += sdlx_char_height_dflt;
         // - display the current location
-        lines_loc_curr[0] = loc_curr;
-        sdlx_render_multiline_text(0, y, y, y+4*sdlx_char_height_dflt, FONT_NORMAL, lines_loc_curr, NULL, 1);
+        if (strncmp(loc_curr, "ERROR", 5) != 0) {
+            sdlx_render_printf_ex1(0, y,
+                                   FONT_NORMAL, COLOR_WHITE, 
+                                   "%s", loc_curr);
+        } else {
+            sdlx_render_printf_ex1(0, y+sdlx_char_height_dflt, 
+                                   FONT_NORMAL, COLOR_RED, 
+                                   "%s", "Location miniSvc\nNot Responding");
+        }
         y += 4.5 * sdlx_char_height_dflt;
 
         // display rectangle to separate the Current and History areas
@@ -201,11 +209,6 @@ int  max_countries;
 
 void get_countries(void);
 
-// xxx test download ctry timeout
-// xxx consider spacing of 2 rows instead of 3
-
-// xxx code review of settings
-
 void settings(void)
 {
     bool         done = false;
@@ -216,14 +219,23 @@ void settings(void)
     svc_req_t   *req;
     char         msg[21];
     long         msg_time = 0;
+    double       row;
+    double       row_init = 1;
+    double       row_delta = 2.5;
 
     // query current state of the Location service;
     // if not enabled the Location service will not be updating the location history file
     req = svc_req_init(SVC_LOCATION_REQ_QUERY_ENABLED, NULL, 0);
     rc = svc_make_req("Location", req, 5);
     if (rc != 0) {
-        printf("E: SVC_LOCATION_REQ_QUERY_ENABLED failed, rc=%d\n", rc);
-        // xxx display an error and return
+        sdlx_display_init(COLOR_BLACK, PORTRAIT);
+        sdlx_render_printf_ex2(
+            sdlx_win_width/2, sdlx_win_height/2, 
+            FONT_NORMAL, COLOR_RED, FLAG_XY_CTR,
+            "%s", "Location miniSvc\nNot Responding");
+        sdlx_display_present();
+        sleep(3);
+        return;
     } 
     is_enabled = req->data[0];
 
@@ -237,25 +249,31 @@ void settings(void)
         // print in LIGHT_BLUE
         sdlx_print_set_default(FONT_NORMAL, COLOR_LIGHT_BLUE);
 
+        // set starting row
+        row = row_init;
+
         // register for events ...
 
         // - CLEAR_HISTORY
-        loc = sdlx_render_printf(0, ROW2Y(1), "%s", "Clear History");
+        loc = sdlx_render_printf(0, ROW2Y(row), "%s", "Clear History");
         sdlx_register_event(loc, EVID_CLEAR_HISTORY);
+        row += row_delta;
 
         // - DISABLE/ENABLE_HISTORY
         if (is_enabled) {
-            loc = sdlx_render_printf(0, ROW2Y(4), "%s", "History is Enabled");
+            loc = sdlx_render_printf(0, ROW2Y(row), "%s", "History is Enabled");
             sdlx_register_event(loc, EVID_DISABLE_HISTORY);
         } else {
-            loc = sdlx_render_printf(0, ROW2Y(4), "%s", "History is Disabled");
+            loc = sdlx_render_printf(0, ROW2Y(row), "%s", "History is Disabled");
             sdlx_register_event(loc, EVID_ENABLE_HISTORY);
         }
+        row += row_delta;
 
         // - ADD_COUNTRY
         if (max_countries < 5) {
-            loc = sdlx_render_printf(0, ROW2Y(7), "%s", "Download Country");
+            loc = sdlx_render_printf(0, ROW2Y(row), "%s", "Download Country");
             sdlx_register_event(loc, EVID_ADD_COUNTRY);
+            row += row_delta;
         }
 
         // restore print color to WHITE
@@ -263,14 +281,14 @@ void settings(void)
 
         // display list of countries, with DEL event for each
         for (int i = 0; i < max_countries; i++) {
-            int y = ROW2Y(10+3*i);
-
-            sdlx_render_printf(0, y, "%s", countries[i]);
+            sdlx_render_printf(0, ROW2Y(row), "%s", countries[i]);
 
             sdlx_print_set_default(FONT_NORMAL, COLOR_LIGHT_BLUE);
-            loc = sdlx_render_printf(COL2X(10), y, "%s", "DEL");
+            loc = sdlx_render_printf(COL2X(10), ROW2Y(row), "%s", "DEL");
             sdlx_register_event(loc, EVID_DEL_COUNTRY+i);
             sdlx_print_set_default(FONT_NORMAL, COLOR_WHITE);
+
+            row += row_delta;
         }
 
         // display message for 3 seconds

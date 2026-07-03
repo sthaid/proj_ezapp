@@ -1,93 +1,78 @@
-fixup doc in svcs.h,  provide an example
+--- XXX ---
 
-add svc test
+files/apps/Location/location.c:// xxx test download ctry timeout
+files/apps/Location/location.c:// xxx consider spacing of 2 rows instead of 3
+files/apps/Location/location.c:// xxx code review of settings
+files/apps/Location/location.c:        // xxx display an error and return
+src/ezApp_lib/include/utils.h:// - read_only: xxx maybe delete this
+src/ezApp_lib/include/utils.h:double util_rms_complex(complex_t *x, int n);  // xxx delete ?
+src/ezApp_lib/svcs.c:        //xxx x->req_state = REQ_STATE_IDLE;
+src/ezApp_lib/svcs.c:        //xxx memset(&x->req, 0, sizeof(x->req));
+src/ezApp_lib/svcs.c:// xxx bad title
+src/ezApp_lib/svcs.c:    // xxx use -DEZTET
+
+
+--- TODO --
+
+android sdk install script
+
+xxx issues
 
 maybe need eztest or something similar
-E svc_wait_for_req: service Template not found
-I Template: periodic interval = 0 secs
-E svc_wait_for_req: service Template not found
-I Template: periodic interval = 0 secs
-E svc_wait_for_req: service Template not found
-I Template: periodic interval = 0 secs
-E svc_wait_for_req: service Template not found
-I Template: periodic interval = 0 secs
+  E svc_wait_for_req: service Template not found
 
-
-xxxxxxxxxxxxxxxxxx
-
-continue fixing build of app/Location
-
-updae order of Settings Menu options,  move Sevices higher
-
-write Test stress test for message to service and reply
-
-
-
-drwx------ 2 haid haid 4.0K Jun 26 07:47 Altitude              ok
-drwx------ 2 haid haid 4.0K Jul  1 17:35 Location              ok
-drwx------ 2 haid haid 4.0K Jul  1 17:35 Steps                 ok
-drwx------ 2 haid haid 4.0K Jul  1 17:37 Template              ok
-
-
-stress svc reqs to template
-update the other svcs
-
-
-xxx
-cleanup dirs
-newrepo called ezApp
-delete the qne2 and any other repos no longer worth keeping
-
-run_linux: Log showing all lines as an error
-doc: - document the sdlx.h, utils.h, and svcs.h files
-
---------------
 
 permissions after doing a ezget ?
 
-xxxxxxxxxxxxx  NEXT xxxxxxxxxxxxxx
+picoc
+- pioco print error if sizeof is 0   REMOVE THIS PICOC CHANGE ?
 
+doc:
+- doc: - document the sdlx.h, utils.h, and svcs.h files      IN PROG
+- document the sdlx.h, utils.h, and svcs.h files
+- check Android README
+- picoc restrictions - src/picoc/tests/shaid/101_ternary_op.output
+- what packages  are needed, how is libssl-dev already installed
+  sudo apt install libssl-dev
+  sudo apt install xxx cscope and tags
 
-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+record volume
+- check if this has been fixed in SDL
+- marking of altered SDL source
+
+consolidate to 1 bin dir, use README to document what is for minApp and what is for android
+
+--- REPO ---
+
+newrepo called ezApp
+
+delete the qne2 and any other repos no longer worth keeping
+
+--- REINSTALL PC & CHECk DOC INSTRUCTIONS ---
+
+reinstall devel PC
+
+--- RECHECKS ---
+
+cleanup logging prints
+audio: - audio code review and retest
+test all apps
+sdl return codes are now boolean
+mmap / munmap - code reveiw,  make sure fd is closed
+
+--- LATER ---
 
 continue to run services even when ezApp is no longer running
 
-doc:
-- document the sdlx.h, utils.h, and svcs.h files
-- check Android README
-- picoc restrictions
-   - src/picoc/tests/shaid/101_ternary_op.output
+find my phone miniApp
 
-what packages  are needed, how is libssl-dev already installed
-  sudo apt install libssl-dev
-  sudo apt install xxx cscope and tags
-  
-xxx search
+picoc should free all unfreed allocations  (maybe)
+- calloc, malloc, realloc, strdup
+- open, fopen
+- util_map_file 
 
-marking of altered SDL source
+--- DOC PICOC ISSUES ---
 
-picoc
-- pioco print error if sizeof is 0
-
-recheck:
-- cleanup logging prints
-- audio: - audio code review and retest
-
-make new repo
-- new name
-- Android mini apps are lightweight, web-based applications (often 2–4 MB) 
-  that run inside "super apps" (like Telegram or WeChat) via WebView, requiring 
-  no installation or complex download. They use HTML, CSS, and JavaScript for cross-platform 
-  functionality. Common uses include quick services like food delivery, payments, and navigation
-
-test all apps
-
-reinstall devel computer with Ubuntu 2604
-
-doc comment
-When cloning a public GitHub repository, you should generally use the HTTPS URL format if you only intend to read or download the code. However, you should use the SSH URL format if you are the maintainer or a frequent contributor who needs to push code changes back to the repository
-
-document or fix picoc issues  
 - low_band = util_rms_float(&fft[first_bin], last_bin-first_bin+1);// yyy picoc isue requires &fft[first_bin]
 - picoc ptr math
     vol = rms_float(fft+bin, 1);    fft+bin not working
@@ -101,18 +86,14 @@ document or fix picoc issues
 - ptr operations ?
 - short circuit eval
 
-code review
-- sdl return codes are now boolean
-- mmap / munmap - code reveiw,  make sure fd is closed
-- everything
+---- NEW APPS ----
 
-new apps:
-- speech to text
+speech to text
   https://developer.android.com/reference/android/speech/SpeechRecognizer
 
-cleanup
-- finally remove find_xxx
-- remove devel dir
+camera,  zoom
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 ==========
 doc notes
@@ -124,12 +105,6 @@ Essential Directories to AddAssuming your Android SDK is installed in the defaul
 later
 ========
 
-new camera app
-
-picoc should free all unfreed allocations  (maybe)
-- calloc, malloc, realloc, strdup
-- open, fopen
-- util_map_file 
 
 --------------------------------
 ---------- TODO -----------------
