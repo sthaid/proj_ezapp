@@ -16,7 +16,6 @@
 
 // defines
 #define CREATE_IF_NEEDED true
-#define READ_WRITE       false
 
 // variables
 loc_hist_t *loc_hist;
@@ -70,7 +69,7 @@ int main(int argc, char **argv)
 
     // map the loc_hist file
     loc_hist = util_map_file(data_dir, LOC_HIST_FILENAME, sizeof(loc_hist_t),
-                             CREATE_IF_NEEDED, READ_WRITE, &created);
+                             CREATE_IF_NEEDED, &created);
     if (loc_hist == NULL) {
         printf("E %s: failed to map %s\n", progname, LOC_HIST_FILENAME);
         return 1;

@@ -1135,11 +1135,10 @@ void Util_map_file (struct ParseState *Parser, struct Value *ReturnValue,
     char *file             = Param[1]->Val->Pointer;
     int   len              = Param[2]->Val->Integer;
     bool  create_if_needed = Param[3]->Val->Integer;
-    bool  read_only        = Param[4]->Val->Integer;
-    int   *created_flag    = Param[5]->Val->Pointer;
+    int   *created_flag    = Param[4]->Val->Pointer;
     void *addr;
 
-    addr = util_map_file(dir, file, len, create_if_needed, read_only, created_flag);
+    addr = util_map_file(dir, file, len, create_if_needed, created_flag);
     ReturnValue->Val->Pointer = addr;
 }
 
@@ -1505,7 +1504,7 @@ struct LibraryFunction UtilsFunctions[] = {
     { Util_create_dir,       "void util_create_dir(char *dir, char *dir_to_create);" },
     { Util_delete_dir,       "void util_delete_dir(char *dir, char *dir_to_delete);" },
     // file map
-    { Util_map_file,         "void *util_map_file(char *dir, char *file, int len, bool create_if_needed, bool read_only, int *created_flag);" },
+    { Util_map_file,         "void *util_map_file(char *dir, char *file, int len, bool create_if_needed, int *created_flag);" },
     { Util_unmap_file,       "void util_unmap_file(void *addr, int len);" },
     { Util_sync_file,        "void util_sync_file(void *addr, int len);" },
     // params get/set

@@ -13,7 +13,6 @@
 
 // defines
 #define CREATE_IF_NEEDED true
-#define READ_WRITE       false
 
 // program args
 char *progname;
@@ -89,7 +88,7 @@ int initialize(void)
     // map the steps data file;
     // create the file if needed because either it doesn't exist or has incorrect size
     steps_file = util_map_file(data_dir, STEPS_FILENAME, sizeof(steps_file_t),
-                               CREATE_IF_NEEDED, READ_WRITE, &created_flag);
+                               CREATE_IF_NEEDED, &created_flag);
     if (steps_file == NULL) {
         printf("E %s: failed to map %s\n", progname, STEPS_FILENAME);
         return -1;

@@ -13,7 +13,6 @@
 // defines
 #define ONE_SEC         1000000
 #define DO_NOT_CREATE   false
-#define READ_ONLY       true
 #define INCHES_PER_MILE (5280 * 12)
 
 #define EVID_VIEW_SELECT  1
@@ -121,8 +120,7 @@ int initialize(void)
     get_current_ymd(&year, &month, &day);
 
     // map steps.dat
-    steps_file = util_map_file("svcs/Steps", STEPS_FILENAME, sizeof(steps_file_t),
-                               DO_NOT_CREATE, READ_ONLY, NULL);
+    steps_file = util_map_file("svcs/Steps", STEPS_FILENAME, sizeof(steps_file_t), DO_NOT_CREATE, NULL);
     if (steps_file == NULL) {
         printf("E %s: failed to map %s\n", progname, STEPS_FILENAME);
         return -1;

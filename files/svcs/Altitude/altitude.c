@@ -13,7 +13,6 @@
 
 // defines
 #define CREATE_IF_NEEDED true
-#define READ_WRITE       false
 
 // program args
 char *progname;
@@ -89,7 +88,7 @@ int initialize(void)
     // map the altitude data file;
     // create the file if needed because either it doesn't exist or has incorrect size
     altitude_file = util_map_file(data_dir, ALTITUDE_FILENAME, sizeof(altitude_file_t),
-                                  CREATE_IF_NEEDED, READ_WRITE, &created_flag);
+                                  CREATE_IF_NEEDED, &created_flag);
     if (altitude_file == NULL) {
         printf("E %s: failed to map %s\n", progname, ALTITUDE_FILENAME);
         return -1;

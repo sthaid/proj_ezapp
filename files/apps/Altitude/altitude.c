@@ -13,7 +13,6 @@
 // defines
 #define ONE_SEC         1000000
 #define DO_NOT_CREATE   false
-#define READ_ONLY       true
 
 #define EVID_PRIOR      1
 #define EVID_NEXT       2
@@ -107,7 +106,7 @@ int initialize(void)
 
     // map altitude.dat file
     altitude_file = util_map_file("svcs/Altitude", ALTITUDE_FILENAME, sizeof(altitude_file_t),
-                               DO_NOT_CREATE, READ_ONLY, NULL);
+                               DO_NOT_CREATE, NULL);
     if (altitude_file == NULL) {
         printf("E %s: failed to map %s\n", progname, ALTITUDE_FILENAME);
         return -1;

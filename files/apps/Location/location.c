@@ -57,7 +57,6 @@ int main(int argc, char **argv)
     int          last_loc_hist_count = -1;
 
     char         loc_curr[MAX_SVC_REQ_DATA] = "Not Initialized";
-    char        *lines_loc_curr[1];
     char        *loc_hist_lines[MAX_LOC_HIST];
 
     // save args
@@ -71,9 +70,8 @@ int main(int argc, char **argv)
 
     // map location history file
     // - create_if_needed = false
-    // - read_only = true 
     // - created (return flag) = NULL
-    loc_hist = util_map_file("svcs/Location", LOC_HIST_FILENAME, sizeof(loc_hist_t), false, true, NULL);
+    loc_hist = util_map_file("svcs/Location", LOC_HIST_FILENAME, sizeof(loc_hist_t), false, NULL);
     if (loc_hist == NULL) {
         printf("E: %s failed to map %s\n", progname, LOC_HIST_FILENAME);
         return 1; 

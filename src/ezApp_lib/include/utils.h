@@ -69,10 +69,8 @@ void util_delete_dir(char *dir, char *dir_to_delete);
 // - len: length of the mapping to create
 // - create_if_needed: if pathname does not exist a zero filled file is 
 //   first created, then mapped
-// - read_only: xxx maybe delete this
 // - created_flag: set to true if the file was created
-void *util_map_file(char *dir, char *file, int len, bool create_if_needed, 
-                    bool read_only, int *created_flag_optional);
+void *util_map_file(char *dir, char *file, int len, bool create_if_needed, int *created_flag_optional);
 
 // Remove the mapping, and flush changes to filesystem.
 // - addr: the address returned by util_map_file
