@@ -1389,17 +1389,6 @@ void Util_rms_float(struct ParseState *Parser, struct Value *ReturnValue,
     ReturnValue->Val->FP = retval;
 }
 
-void Util_rms_complex(struct ParseState *Parser, struct Value *ReturnValue,
-        struct Value **Param, int NumArgs)
-{
-    complex_t * x = (complex_t *)Param[0]->Val->Pointer;
-    int         n = (int)Param[1]->Val->Integer;
-
-    double retval;
-    retval = util_rms_complex(x, n);
-    ReturnValue->Val->FP = retval;
-}
-
 //
 // utils java methods
 //
@@ -1528,7 +1517,6 @@ struct LibraryFunction UtilsFunctions[] = {
     { Util_fft_inverse_complex_to_real, "void util_fft_inverse_complex_to_real(int n_fft, complex_t *cpx_input, float *output, bool scale_by_n_fft);" },
     { Util_fft_test,            "void util_fft_test(void);" },
     { Util_rms_float,           "double util_rms_float(float *x, int n);" },
-    { Util_rms_complex,         "double util_rms_complex(complex_t *x, int n);" },
     // call java: location
     { Util_get_location,        "void util_get_location(double *latitude, double *longitude, double *altitude_ft, bool *alt_is_wgs84);" },
     // call java: text to speech

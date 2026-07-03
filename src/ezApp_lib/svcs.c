@@ -488,16 +488,13 @@ static int svc_thread(void *cx)
     if (id != -1) {
         svc_t *x = &svcs[id];
         x->svc_state = (rc == 0 ? SERVICE_STATE_STOPPED : SERVICE_STATE_STOPPED_BY_ERROR);
-        //xxx x->req_state = REQ_STATE_IDLE;
-        //xxx memset(&x->req, 0, sizeof(x->req));
     }
 
     free(svc_name);
     return 0;
 }
 
-// xxx bad title
-// -----------------  SVCS ROUTINES AVAIL IN PICOC  ---------------
+// -----------------  MAKE SVC REQUEST SUPPORT  -------------------
 
 // ---- routines called by apps ----
 

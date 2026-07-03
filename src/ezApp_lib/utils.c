@@ -1056,14 +1056,3 @@ double util_rms_float(float *x, int n)
     }
     return sqrt(sum / n);
 }
-
-double util_rms_complex(complex_t *x, int n)
-{       
-    double sum = 0;
-            
-    for (int i = 0; i < n; i++) {
-        sum += x[i].r * x[i].r + x[i].i * x[i].i;
-    }
-    return sqrt(sum / n);
-}
-

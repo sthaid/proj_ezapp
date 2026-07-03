@@ -1,7 +1,5 @@
 --- XXX ---
 
-src/ezApp_lib/include/utils.h:// - read_only: xxx maybe delete this
-src/ezApp_lib/include/utils.h:double util_rms_complex(complex_t *x, int n);  // xxx delete ?
 src/ezApp_lib/svcs.c:        //xxx x->req_state = REQ_STATE_IDLE;
 src/ezApp_lib/svcs.c:        //xxx memset(&x->req, 0, sizeof(x->req));
 src/ezApp_lib/svcs.c:// xxx bad title
