@@ -50,7 +50,7 @@
 #define REQ_STATE_IN_PROGRESS  2
 #define REQ_STATE_COMPLETED    3
 
-#define SVC_REQ_ERROR_REQ_IS_NULL       -1
+#define SVC_REQ_ERROR_FAILURE           -1
 #define SVC_REQ_ERROR_SVC_NOT_FOUND     -2
 #define SVC_REQ_ERROR_SVC_NOT_RUNNING   -3
 #define SVC_REQ_ERROR_TIMEDOUT          -4
@@ -76,11 +76,13 @@ typedef struct {
 static svc_t  svcs[MAX_SVCS];
 static int    max_svcs;
 
+static bool   initialized;
+
 //
 // prototypes
 //
 
-static void update_svcs_tbl(bool first_call);
+static void update_svcs_tbl(void);
 static void run_svc(char *svc_name);
 static int svc_thread(void *cx);
 
@@ -94,12 +96,10 @@ static int num_svcs(void);
 // a svc is tagged stopped if it has a 'stopped' file in its dir
 void svcs_start_all(void)
 {
-    static bool first_call = true;
-
     INFO("starting all services\n");
 
     // perform initialization on first call
-    if (first_call) {
+    if (!initialized) {
         // init pthread mutexs, and cond
         for (int id = 0; id < MAX_SVCS; id++) {
             svc_t *x = svcs+id;
@@ -108,12 +108,12 @@ void svcs_start_all(void)
             pthread_cond_init(&x->req_cond, NULL);
         }
 
-        // find all svc names, these are the svcs/* directories, and populates
-        // the svcs tbl based on the names found
-        update_svcs_tbl(first_call);
+        // find all svc names, these are the svcs/* directories, and
+        // populates the svcs tbl based on the names found
+        update_svcs_tbl();
 
-        // clear first_call flag
-        first_call = false;
+        // set initialized flag
+        initialized = true;
     }
 
 
@@ -176,7 +176,7 @@ void svcs_display(int bg_color)
     while (true) {
         // find all svc names, these are the svcs/* directories, and populates
         // the svcs tbl based on the names found
-        update_svcs_tbl(false);
+        update_svcs_tbl();
 
         // init display and display title line
         sdlx_display_init(bg_color, PORTRAIT);
@@ -264,7 +264,7 @@ void svcs_display(int bg_color)
     }
 }
 
-static void update_svcs_tbl(bool first_call)
+static void update_svcs_tbl(void)
 {
     FILE *fp;
     char s[100];
@@ -378,7 +378,7 @@ static void update_svcs_tbl(bool first_call)
         memset(&x->req, 0, sizeof(x->req));
 
         // except on first call, the new svc is tagged 'stopped'
-        if (!first_call) {
+        if (initialized) {
             char dir[100], tmp_name[MAX_SVC_NAME];
             strcpy(tmp_name, x->name);
             sprintf(dir, "svcs/%s", tmp_name);
@@ -394,7 +394,6 @@ static void update_svcs_tbl(bool first_call)
             INFO("%15s %s\n", x->name, SERVICE_STATE_STR(x->svc_state));
         }
     }
-    first_call = false;
 }
 
 int svc_start(char *name)
@@ -510,13 +509,9 @@ static int svc_thread(void *cx)
         } \
     } while (0)
 
-// svc_make_req/svc_make_req_ex return values:
+// svc_make_req return values:
 // - ret >= 0: req comp_status, zero should usually be used to indicate success
-// - ret < 0:  one of the following negative error codes
-//             SVC_REQ_ERROR_REQ_IS_NULL
-//             SVC_REQ_ERROR_SVC_NOT_FOUND
-//             SVC_REQ_ERROR_SVC_NOT_RUNNING
-//             SVC_REQ_ERROR_TIMEDOUT
+// - ret < 0:  one of the SVC_REQ_ERROR codes
 
 int svc_make_req(char *svc_name, svc_req_t *req_arg, int timeout_secs)
 {
@@ -524,10 +519,16 @@ int svc_make_req(char *svc_name, svc_req_t *req_arg, int timeout_secs)
     svc_t *x;
     bool okay;
 
+    // if not initialized then this code is being run by eztest
+    if (!initialized) {
+        ERROR("eztest support stub\n");
+        return SVC_REQ_ERROR_FAILURE;
+    }
+
     // check if req_arg is NULL
     if (req_arg == NULL) {
         ERROR("req is NULL\n");
-        return SVC_REQ_ERROR_REQ_IS_NULL;
+        return SVC_REQ_ERROR_FAILURE;
     }
 
     // get svc id for the svc_name
@@ -603,7 +604,12 @@ int svc_wait_for_req(char *svc_name, svc_req_t **req_arg, int timeout_secs)
     struct timespec abstime;
     int             id, ret;
 
-    // xxx use -DEZTET
+    // if not initialized then this code is being run by eztest
+    if (!initialized) {
+        ERROR("eztest support stub\n");
+        sleep(timeout_secs);
+        return SVC_REQ_ERROR_TIMEDOUT;
+    }
 
     // get svc id for the svc_name
     id = svc_name_to_id(svc_name);

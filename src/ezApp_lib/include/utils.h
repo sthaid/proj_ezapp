@@ -187,7 +187,6 @@ void util_fft_inverse_complex_to_real(int n_fft, complex_t *cpx_input, float *ou
 void util_fft_test(void);
 
 double util_rms_float(float *x, int n);
-double util_rms_complex(complex_t *x, int n);  // xxx delete ?
 
 // ----------------------
 // CALL ANDROID JAVA CODE

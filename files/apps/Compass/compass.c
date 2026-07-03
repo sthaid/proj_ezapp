@@ -226,7 +226,6 @@ int init_compass_texture(void)
 
 #define MAG_DECL_JSON "mag_decl.json"
 #define KEY           "zNEw7"
-#define TEN_YEAR      (10 * 365 * 86400)
 
 void init_mag_decl(void)
 {
@@ -237,7 +236,6 @@ void init_mag_decl(void)
     void         *json;
     int           len_ret;
     json_value_t *value;
-    time_t        param_mag_decl_t;
     double        param_mag_decl_lat;
     double        param_mag_decl_long;
     double        param_mag_decl_degrees;
@@ -258,12 +256,11 @@ void init_mag_decl(void)
     param_mag_decl_degrees = util_get_numeric_param(data_dir, "mag_decl_degrees", INVALID_NUMBER);
     if (param_mag_decl_degrees != INVALID_NUMBER) {
         // - read additional params and determine if param_mag_decl_degrees is okay to use
-        param_mag_decl_t    = util_get_numeric_param(data_dir, "mag_decl_t",    INVALID_NUMBER);
         param_mag_decl_lat  = util_get_numeric_param(data_dir, "mag_decl_lat",  INVALID_NUMBER);
         param_mag_decl_long = util_get_numeric_param(data_dir, "mag_decl_long", INVALID_NUMBER);
-        okay_to_use =  (labs(time(NULL) - param_mag_decl_t) < TEN_YEAR) &&
-                       (fabs(param_mag_decl_lat - latitude) < 1.0) &&
+        okay_to_use =  (fabs(param_mag_decl_lat - latitude) < 1.0) &&
                        (fabs(param_mag_decl_long - longitude) < 1.0);
+
         // - if okay to use then set global variables mag_decl_degrees and mag_decl_locname, and return
         if (okay_to_use) {
             // - set global mag_decl_degrees from param value
@@ -339,7 +336,6 @@ void init_mag_decl(void)
     }
 
     // save mag_decl in params
-    util_set_numeric_param(data_dir, "mag_decl_t",       time(NULL));
     util_set_numeric_param(data_dir, "mag_decl_lat",     latitude);
     util_set_numeric_param(data_dir, "mag_decl_long",    longitude);
     util_set_numeric_param(data_dir, "mag_decl_degrees", mag_decl_degrees);
