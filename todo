@@ -1,22 +1,9 @@
---- XXX ---
-
-src/ezApp_lib/svcs.c:        //xxx x->req_state = REQ_STATE_IDLE;
-src/ezApp_lib/svcs.c:        //xxx memset(&x->req, 0, sizeof(x->req));
-src/ezApp_lib/svcs.c:// xxx bad title
-src/ezApp_lib/svcs.c:    // xxx use -DEZTET
-
-
 --- TODO --
 
-android sdk install script
+consolidate to 1 bin dir, use README to document what is    STARTED
+  for minApp and what is for android
 
-xxx issues
-
-maybe need eztest or something similar
-  E svc_wait_for_req: service Template not found
-
-
-permissions after doing a ezget ?
+android sdk install script              STARTING
 
 picoc
 - pioco print error if sizeof is 0   REMOVE THIS PICOC CHANGE ?
@@ -34,7 +21,11 @@ record volume
 - check if this has been fixed in SDL
 - marking of altered SDL source
 
-consolidate to 1 bin dir, use README to document what is for minApp and what is for android
+xxx issues,  various doc issues remain
+
+--- TODO LOWER PRIO ----
+
+permissions after doing a ezget ?
 
 --- REPO ---
 

@@ -126,6 +126,10 @@ These steps are an example for Ubuntu 25.10.
 sudo apt install build-essential
 sudo apt install ssl-dev
 sudo apt install git
+xxx ...
+openjdk
+unzip
+cscope tags
 
 # git clone proj_ezApp
 cd $HOME
