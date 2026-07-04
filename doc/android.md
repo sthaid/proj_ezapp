@@ -10,6 +10,8 @@ xxx move some of this to top level readme
 INSTALL LINUX PACKAGES
 ===============================
 
+xxx reference the setup script
+
 sudo apt update
 sudo apt install build-essential
 sudo apt install openjdk-17-jdk
@@ -17,6 +19,8 @@ sudo apt install openjdk-17-jdk
 ===============================
 INSTALL ANDROID SDK
 ===============================
+
+xxx reference the setup script
 
 # if reinstalling the android sdk, first do this:
   # force kill any cached Gradle processes, and clear gradle daemon cache
@@ -39,7 +43,7 @@ mkdir cmdline-tools
 mv latest cmdline-tools
 
 # install sdk packages needed to build ezApp to run on Android
-sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0" "ndk;27.0.12077973"
+sdkmanager "platform-tools" "platforms;android-35" "build-tools;34.0.0" "ndk;27.0.12077973"
 
 # set android sdk environment varialbles
 export ANDROID_HOME=$HOME/android/sdk

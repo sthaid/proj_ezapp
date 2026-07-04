@@ -1,12 +1,6 @@
 --- TODO --
 
-consolidate to 1 bin dir, use README to document what is    STARTED
-  for minApp and what is for android
-
-android sdk install script              STARTING
-
-picoc
-- pioco print error if sizeof is 0   REMOVE THIS PICOC CHANGE ?
+README in bin dir
 
 doc:
 - doc: - document the sdlx.h, utils.h, and svcs.h files      IN PROG

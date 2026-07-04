@@ -20,7 +20,7 @@ long util_get_real_time_microsec(void);
 // Converts real time in microsecs to time str, 
 // str arg should have size MAX_TIME_STR or larger.
 // For example, when gmt, display_ms, and display_data are all true:
-// "xxxxxxxxxxxxxxx".
+// "xxx".
 char *util_time2str(char *str, long us, int gmt, int display_ms, int display_date);
 
 // --------------------

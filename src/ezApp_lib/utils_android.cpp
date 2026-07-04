@@ -312,11 +312,11 @@ double call_java3(const char *method_name, float *caller_array, int num_array_el
 
 // -----------------  NOT ANDROID - TEST CODE  ---------------------------
 
+#include <sdlx.h>
 #include <utils.h>
 #include <private.h>
 #include <stddef.h>
 #include <time.h>
-
 
 void util_android_utils_init(void) { }
 
@@ -367,6 +367,6 @@ bool util_is_flashlight_on(void) { return false; }
 
 int util_start_playbackcapture(void) { return -1; }
 void util_stop_playbackcapture(void) { }
-int util_get_playbackcapture_audio(float *array, int num_array_elements) { }
+int util_get_playbackcapture_audio(float *array, int num_array_elements) { return INVALID_NUMBER; }
 
 #endif

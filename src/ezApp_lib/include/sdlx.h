@@ -11,6 +11,14 @@ extern "C" {
 // VIDEO    
 // --------------------
 
+// xxx explain sdlx this is a layer on SDL
+// xxx intro
+// - w x h
+// - landscape / portrait
+// - general flow
+// xxx backbuffer?
+// describe how rendering takes place to a texture based on PORTRAIT / LANDSCAPE
+
 typedef unsigned int sdlx_color_t;
 
 typedef struct {
@@ -33,7 +41,14 @@ extern int sdlx_win_height;
 #define PORTRAIT  0
 #define LANDSCAPE 1
 
+// This is the first step when rendering the display.
+// The backbuffer is set to the color specified. And the
+// display orientation to be used (PORTRAIT or LANDSCAPE) 
+// is specified.
 void sdlx_display_init(sdlx_color_t color, int orientation);
+
+// This routine will present the dispaly. Making the backbuffer
+// visible by exchanging the backbuffer and frontbuffer.
 void sdlx_display_present(void);
 
 // - - - - - 
@@ -44,6 +59,7 @@ void sdlx_display_present(void);
 
 // reference: https://www.w3schools.com/colors/colors_converter.asp
 // these colors are opaque (alpha equals 255)
+//                                         Red      Green       Blue      Alpha
 #define COLOR_BLACK       ((sdlx_color_t)(   0  |    0<<8 |    0<<16 |  255<<24 ))
 #define COLOR_WHITE       ((sdlx_color_t)( 255  |  255<<8 |  255<<16 |  255<<24 ))
 #define COLOR_RED         ((sdlx_color_t)( 255  |    0<<8 |    0<<16 |  255<<24 ))
@@ -62,8 +78,10 @@ void sdlx_display_present(void);
 #define COLOR_GRAY        ((sdlx_color_t)( 128  |  128<<8 |  128<<16 |  255<<24 ))
 #define COLOR_DARK_GRAY   ((sdlx_color_t)(  64  |   64<<8 |   64<<16 |  255<<24 ))
 
+// The sdlx_color_t is the 32 bit RGBA value.
+// These routines perform their function and return the 32 bit RGBA value.
 sdlx_color_t sdlx_create_color(int r, int g, int b, int a);
-sdlx_color_t sdlx_scale_color(sdlx_color_t color, double inten);
+sdlx_color_t sdlx_scale_color(sdlx_color_t color, double intensity);
 sdlx_color_t sdlx_set_color_alpha(sdlx_color_t color, int alpha);
 sdlx_color_t sdlx_wavelength_to_color(int wavelength);
 
@@ -71,6 +89,7 @@ sdlx_color_t sdlx_wavelength_to_color(int wavelength);
 // render text
 // - - - - - - - 
 
+// xxx come back here
 #define FONT_TINY     40   // 40 chars fit in display width
 #define FONT_SMALL    30   // 30 chars fit in display width
 #define FONT_NORMAL   20   // etc
@@ -111,13 +130,14 @@ void sdlx_render_multiline_text(int x, int y, int y_top, int y_bottom,
 // render rectangle, lines, circles, points
 // - - - - - - - - - - - - - - - - - - - - -
 
+#define MAX_POINT_SIZE 9
+
 void sdlx_render_rect(int x, int y, int w, int h, int line_width, sdlx_color_t color);
 void sdlx_render_fill_rect(int x, int y, int w, int h, sdlx_color_t color);
 void sdlx_render_line(int x1, int y1, int x2, int y2, sdlx_color_t color);
 void sdlx_render_lines(sdlx_point_t *points, int count, sdlx_color_t color);
 void sdlx_render_circle(int x_ctr, int y_ctr, int radius, int line_width, sdlx_color_t color);
 void sdlx_render_fill_circle(int x_ctr, int y_ctr, int radius, sdlx_color_t color);
-#define MAX_POINT_SIZE 9
 void sdlx_render_point(int x, int y, sdlx_color_t color, int point_size);
 void sdlx_render_points(sdlx_point_t *points, int count, sdlx_color_t color, int point_size);
 
@@ -125,20 +145,60 @@ void sdlx_render_points(sdlx_point_t *points, int count, sdlx_color_t color, int
 // textures
 // - - - - - 
 
+// Textures are GPU memory buffers that can be selected as render target.
+// The texture can be rendered to a location in the backbuffer; during the              xxx reword
+// rendering to the backbuffer, the texture can optionally be scaled and rotated.
+//
+// For example, the Compass miniApp uses a texture to display the compass image:
+// - initialization
+//   . the compass image pixels are read from a png file
+//   - sdlx_create_texture is called to create a texture of the same width/height as the png file
+//   - sdlx_set_texture_pixels is called to copy the png file pixels to the texture
+// - run time
+//   - the compass_heading is determined from the Android magnetic field sensor
+//   - sdlx_render_texture_ex2 is called to copy the compass texture to the backbuffer;   xxx
+//     the compass texture is scaled to fit the backbuffer x,y,w,h; and rotated by 
+//     the compass heading angle
+// - termination
+//   - sdlx_destroy_texture is called to free the GPU memory 
+
+// Another way textures can be initialized is by using sdlx_set_render_target.
+// For example, during initialization, create a 100x100 texture containing a yellow circle:
+//    sdlx_texture_t *circle = sdlx_create_texture(100, 100);
+//    sdlx_set_render_target(circle);
+//    sdlx_render_fill_circle(50, 50, 50, COLOR_YELLOW);
+//    sdlx_set_render_target(NULL); // restores rendering to default rendering texture  xxx explain
+// At runtime, the circle texture can be scaled to fill the entire dispaly:
+//    sdlx_render_texture_ex1(circle, 0, 0, sdlx_win_width, sdlx_win_height);
+// Destroy the circle texture when the program terminates, freeing GPU memory:
+//    sdlx_destroy_texture(circle);
+
+// xxx comment all of these
 sdlx_texture_t *sdlx_create_texture(int w, int h);
+// xxx
 void sdlx_destroy_texture(sdlx_texture_t *t);
+// returns texture width and height
 void sdlx_query_texture(sdlx_texture_t *t, int *w, int *h);
+// xxx
 void sdlx_clear_texture(sdlx_texture_t *t, sdlx_color_t color);
+// adjusts r,g,b intensity; r,g,b args are range 0-1
 void sdlx_color_mod_texture(sdlx_texture_t *t, float r, float g, float b);
 
+// xxx
 void sdlx_set_texture_pixels(sdlx_texture_t *t, unsigned int *pixels);
+// xxx
 unsigned int *sdlx_get_texture_pixels(sdlx_texture_t *t, int *w, int *h);
 
+// xxx comments here
 void sdlx_render_texture(sdlx_texture_t *t, int x, int y);
+// xxx
 void sdlx_render_texture_ex1(sdlx_texture_t *t, int x, int y, int w, int h);
+// xxx
 void sdlx_render_texture_ex2(sdlx_texture_t *t, int x, int y, int w, int h, double angle);
+// xxx
 void sdlx_render_texture_ex3(sdlx_texture_t *texture, int x, int y, int w, int h, double angle, int xctr, int yctr);
 
+// xxx
 void sdlx_set_render_target(sdlx_texture_t *t);
 
 // --------------------
