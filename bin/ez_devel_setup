@@ -13,8 +13,14 @@ function install_pkgs()
 
 function install_android_sdk()
 {
-    # verify zip file exists, and is really a zip file
+    # verify arg supplied
     cmdlinetoolszip=$1
+    if [ "$cmdlinetoolszip" = "" ]; then
+        echo "ERROR: path to cmdlinetools.zip required"
+        exit 1
+    fi
+
+    # verify zip file exists, and is really a zip file
     if [ ! -f $cmdlinetoolszip ]; then
         echo "ERROR: $cmdlinetoolszip does not exist"
         exit 1
@@ -25,17 +31,20 @@ function install_android_sdk()
     fi
 
     # to avoid a potential problem, kill gradle daemon and remove gradle daemon directory
-    echo "Kill and cleanup gradle daemon"
-    pkill -f gradle 
-    rm -rf ~/.gradle/daemon/
-    echo
+    if true; then
+        echo "Kill and cleanup gradle daemon"
+        pkill -f gradle 
+        sleep 3
+        rm -rf ~/.gradle/daemon
+        echo
+    fi
 
     # if the ~/android dir exists then rename it to a save file
     if [ -d ~/android ]; then
         date_str=`date +%y%m%d_%H%M%S`
         android_save=~/android_save_$date_str
-        echo "Renaming existing ~/android to $android_save"
-        read -p "~/android already exits, it will be saved in $android_save, continue (y/n)? " yn
+        echo "About to rename existing ~/android to $android_save"
+        read -p "Continue (y/n)? " yn
         if [ "$yn" != "y" ]; then
             echo ABORT
             exit 1
@@ -66,32 +75,31 @@ function install_android_sdk()
 
     # install sdk packages needed to build ezApp to run on Android
     echo "Install android/sdk packages"
-    sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0" "ndk;27.0.12077973"
+    sdkmanager "platform-tools" "platforms;android-35" "build-tools;34.0.0" "ndk;27.0.12077973"
     echo
 
     # list installed sdk packages
     echo "List installed android/sdk packages"
     sdkmanager --list_installed
     echo
-
-    # Provide instructions regarding environment variables
-    echo "User must add the following environment variables ..."
-    echo "export ANDROID_HOME=$HOME/android/sdk"
-    echo "export ANDROID_NDK_ROOT=$ANDROID_HOME/ndk/27.0.12077973"
-    echo "export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools"
-    echo
 }
 
 # ######## MAIN ########
 
-if [ $? -eq 0 ]; then
+if [ $# -eq 0 ]; then
     echo "Usage:"
-    echo "- setup install_pkgs"
-    echo "- setup install_android_sdk <path_to_cmdlinetools_zip>"
+    echo "- ez_devel_setup install_pkgs"
+    echo "- ez_devel_setup install_android_sdk <path_to_cmdlinetools_zip>"
     echo
     echo "Notes:"
     echo "- commandlinetools-linux-nnnnnnnn_latest.zip is obtained from"
     echo "  https://developer.android.com/studio#command-line-tools-only"
+    echo
+    echo "- required env variables:"
+    echo '    export ANDROID_HOME=$HOME/android/sdk'
+    echo '    export ANDROID_NDK_ROOT=$ANDROID_HOME/ndk/27.0.12077973'
+    echo '    export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools'
+    echo '    export PATH=$PATH:~/ezApp/bin'
     exit 0
 fi
 
@@ -106,7 +114,7 @@ install_android_sdk)
     install_android_sdk $arg
     ;;
 *)
-    echo "ERROR: invalid $cmd "
+    echo "ERROR: invalid cmd: $cmd"
     ;;
 esac
 
