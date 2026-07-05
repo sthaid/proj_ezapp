@@ -1,3 +1,25 @@
+The GPL Rule: Because it is under the GPL, if you distribute a software package or project that includes the font file, you must also offer to make the font's source files available to users
+
+
+How to comply:Include the License: 
+
+Add a copy of the GPL v3 license text (usually named LICENSE.txt or COPYING) 
+in your app’s installation directory.
+
+Add an "About" Credit: In your app's "About" or "Legal Notices" screen, state 
+that you use FreeMonoBold and that it is licensed under the GPL v3 with Font 
+Exception.
+
+Provide the Source: You must make the source code of the font available to 
+your users. You can satisfy this easily by including the original GNU FreeFont 
+download link in your documentation, or by bundling the original .tar.gz source 
+archive with your download. (Note: You do not have to open-source your own 
+app's proprietary code, because the Font Exception protects your app from the 
+"viral" nature of the GPL).
+
+"FreeMonoBold source files can be obtained from the official GNU FreeFont project at gnu.org"
+
+
 --- TODO --
 
 README in bin dir

@@ -408,7 +408,7 @@ static void page_3_init(void)
 {
     for (int i = 0; i < MAX_LINES; i++) {
         lines[i] = malloc(50);
-        sprintf(lines[i], "Line %d:\n  Hello World\n", i);
+        sprintf(lines[i], "Line %d <cr>\n  Hello World abcdefghijklmnopqrstuvwxyz\n", i);
     }
 
     x_mlt = 0;
@@ -428,9 +428,10 @@ static void page_3_process_event(sdlx_event_t *event)
 {
     if (event->event_id == EVID_MOTION) {
         y_mlt += event->u.motion.yrel;
-        if (y_mlt >= y_mlt_top) {
-            y_mlt = y_mlt_top;
-        }
+        if (y_mlt >= y_mlt_top) y_mlt = y_mlt_top;
+
+        x_mlt += event->u.motion.xrel;
+        if (x_mlt > 0)  x_mlt = 0;
     }
 }
 
