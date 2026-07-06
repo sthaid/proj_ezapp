@@ -58,6 +58,7 @@ static void page_7_exit(void);
 
 static void page_8_init(void);
 static void page_8_draw(void);
+static void page_8_process_event(sdlx_event_t *event);
 static void page_8_exit(void);
 
 static void page_9_init(void);
@@ -254,6 +255,7 @@ static void page_hndlr()
         case 0: page_0_process_event(&event); break;
         case 3: page_3_process_event(&event); break;
         case 7: page_7_process_event(&event); break;
+        case 8: page_8_process_event(&event); break;
         case 11: page_11_process_event(&event); break;
         case 12: page_12_process_event(&event); break;
         }
@@ -1038,8 +1040,8 @@ static void page_7_exit(void)
 // -----------------  PAGE 8: SENSOR INFO TBL -----------------
 
 static sdlx_sensor_info_t *sit;
-static int                max_sit;
-static char              *sit_lines[100];
+static int                 max_sit;
+static char               *sit_lines[100];
 
 static void page_8_init(void)
 {
@@ -1050,30 +1052,65 @@ static void page_8_init(void)
         printf("E %s: sdlx_sensor_get_info_tbl failed\n", progname);
     }
 
-    x_mlt = 0;
-    y_mlt = ROW2Y(2); 
-    y_mlt_top = ROW2Y(2);
-    y_mlt_bottom = sdlx_win_height-3*sdlx_char_height_dflt;
+    y_mlt_top    = 4 * sdlx_char_height(FONT_SMALL);
+    y_mlt_bottom = sdlx_win_height;
+    x_mlt        = 0;
+    y_mlt        = y_mlt_top;
 
+    sit_lines[0] = strdup("ID TYPE     NAME");
     for (int i = 0; i < max_sit; i++) {
-        sprintf(str, "%2d %2d %s", sit[i].id, sit[i].type, sit[i].name);
-        sit_lines[i] = strdup(str);
+        sprintf(str, "%2d %4d %s", sit[i].id, sit[i].type, sit[i].name);
+        sit_lines[i+1] = strdup(str);
     }
 }
 
 static void page_8_draw(void)
 {
-    sdlx_render_multiline_text(x_mlt, y_mlt, y_mlt_top, y_mlt_bottom, FONT_SMALL, sit_lines, NULL, max_sit);
+    sdlx_render_multiline_text(x_mlt, y_mlt, y_mlt_top, y_mlt_bottom, 
+                               FONT_SMALL, sit_lines, NULL, max_sit+1);
+
+    sdlx_register_event(NULL, EVID_MOTION);
+}
+
+static void page_8_process_event(sdlx_event_t *event)
+{
+    double xrel = event->u.motion.xrel;
+    double yrel = event->u.motion.yrel;
+
+    if (fabs(xrel) > fabs(yrel)*1.5) x_mlt += xrel;
+    if (fabs(yrel) > fabs(xrel)*1.5) y_mlt += yrel;
+
+    if (y_mlt >= y_mlt_top) y_mlt = y_mlt_top;
+    if (x_mlt > 0) x_mlt = 0;
 }
 
 static void page_8_exit(void)
 {
-    for (int i = 0; i < max_sit; i++) {
+    for (int i = 0; i < max_sit+1; i++) {
         free(sit_lines[i]);
     }
 }
 
 // -----------------  PAGE 9: SENSOR DATA ---------------------
+
+// xxx update this
+
+#define ASENSOR_TYPE_ACCELEROMETER       1
+#define ASENSOR_TYPE_MAGNETIC_FIELD      2
+#define ASENSOR_TYPE_GYROSCOPE           4
+#define ASENSOR_TYPE_LIGHT               5
+#define ASENSOR_TYPE_PRESSURE            6
+#define ASENSOR_TYPE_PROXIMITY           8
+#define ASENSOR_TYPE_GRAVITY             9
+#define ASENSOR_TYPE_LINEAR_ACCELERATION 10
+#define ASENSOR_TYPE_ROTATION_VECTOR     11
+#define ASENSOR_TYPE_RELATIVE_HUMIDITY   12
+#define ASENSOR_TYPE_AMBIENT_TEMPERATURE 13
+#define ASENSOR_TYPE_SIGNIFICANT_MOTION  17
+#define ASENSOR_TYPE_STEP_DETECTOR       18
+#define ASENSOR_TYPE_STEP_COUNTER        19
+
+
 
 #define MAX_SENSOR_TEST_TBL 4
 
@@ -1345,6 +1382,7 @@ static void page_13_draw(void)
     rc = svc_make_req("Template", req, 5);
     if (rc != 0) {
         printf("E %s: page_13_draw, svc_make_req failed, rc=%d\n", progname, rc);
+        // xxx print to display too, or instead of this print
         return;
     }
 

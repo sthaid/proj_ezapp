@@ -15,7 +15,28 @@
 
 #define TEN_MS 10000
 
-#define ASENSOR_TYPE_STEP_COUNTER 19
+// xxx comment where these are from, and these are a subset
+#define ASENSOR_TYPE_ACCELEROMETER       1
+#define ASENSOR_TYPE_MAGNETIC_FIELD      2
+#define ASENSOR_TYPE_GYROSCOPE           4
+#define ASENSOR_TYPE_LIGHT               5
+#define ASENSOR_TYPE_PRESSURE            6
+#define ASENSOR_TYPE_PROXIMITY           8
+#define ASENSOR_TYPE_GRAVITY             9
+#define ASENSOR_TYPE_LINEAR_ACCELERATION 10
+#define ASENSOR_TYPE_ROTATION_VECTOR     11
+#define ASENSOR_TYPE_RELATIVE_HUMIDITY   12
+#define ASENSOR_TYPE_AMBIENT_TEMPERATURE 13
+#define ASENSOR_TYPE_SIGNIFICANT_MOTION  17
+#define ASENSOR_TYPE_STEP_DETECTOR       18
+#define ASENSOR_TYPE_STEP_COUNTER        19
+
+// xxx macro or routine to convert sensor type to string
+// xxx test sensors:
+// - light   5
+// - significant motion   17
+// - step detector   18
+
 
 //
 // typedefs
@@ -132,16 +153,6 @@ int sdlx_sensor_find(int type)
         }
     }
     if (i == max_sensor_info_tbl) {
-#if 0
-        char *type_str = (type == ASENSOR_TYPE_STEP_COUNTER        ? "STEP_COUNTER"        :
-                          type == ASENSOR_TYPE_ACCELEROMETER       ? "ACCELEROMETER"       :
-                          type == ASENSOR_TYPE_MAGNETIC_FIELD      ? "MAGNETIC_FIELD"      :
-                          type == ASENSOR_TYPE_PRESSURE            ? "PRESSURE"            :
-                          type == ASENSOR_TYPE_AMBIENT_TEMPERATURE ? "AMBIENT_TEMPERATURE" :
-                          type == ASENSOR_TYPE_RELATIVE_HUMIDITY   ? "RELATIVE_HUMIDITY"   :
-                                                                     "????");
-        INFO("no sensor found with type %2d %s\n", type, type_str);
-#endif
         return -1;
     }
 
@@ -212,6 +223,7 @@ int sdlx_sensor_read_step_counter(unsigned long *step_count_arg)
     }
 
     // if step_count value is 0 then return error
+    // xxx should this really be an error?
     if (step_count == 0) {
         *step_count_arg = INVALID_NUMBER;
         return -1;
@@ -582,6 +594,7 @@ ANDROID SENSOR EVENT STRUCT, FROM NDK
  * Information that describes a sensor event, refer to
  * <a href="/reference/android/hardware/SensorEvent">SensorEvent</a> for additional
  * documentation.
+ * xxx what is this reference
  *
  * NOTE: changes to this struct has to be backward compatible and reflected in
  * sensors_event_t

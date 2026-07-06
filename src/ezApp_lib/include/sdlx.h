@@ -367,59 +367,82 @@ void sdlx_create_test_file(char *dir, char *filename, int freq1, int freq2, int 
 // SENSORS
 // --------------------
 
-// these are from ndk android/sensor.h
-#define ASENSOR_TYPE_ACCELEROMETER       1
-#define ASENSOR_TYPE_MAGNETIC_FIELD      2
-#define ASENSOR_TYPE_GYROSCOPE           4
-#define ASENSOR_TYPE_LIGHT               5
-#define ASENSOR_TYPE_PRESSURE            6
-#define ASENSOR_TYPE_PROXIMITY           8
-#define ASENSOR_TYPE_GRAVITY             9
-#define ASENSOR_TYPE_LINEAR_ACCELERATION 10
-#define ASENSOR_TYPE_ROTATION_VECTOR     11
-#define ASENSOR_TYPE_RELATIVE_HUMIDITY   12
-#define ASENSOR_TYPE_AMBIENT_TEMPERATURE 13
-#define ASENSOR_TYPE_MAGNETIC_FIELD_UNCALIBRATED 14
-#define ASENSOR_TYPE_GAME_ROTATION_VECTOR 15
-#define ASENSOR_TYPE_GYROSCOPE_UNCALIBRATED 16
-#define ASENSOR_TYPE_SIGNIFICANT_MOTION 17
-#define ASENSOR_TYPE_STEP_DETECTOR 18
-#define ASENSOR_TYPE_STEP_COUNTER 19
-#define ASENSOR_TYPE_GEOMAGNETIC_ROTATION_VECTOR 20
-#define ASENSOR_TYPE_HEART_RATE 21
-#define ASENSOR_TYPE_POSE_6DOF 28
-#define ASENSOR_TYPE_STATIONARY_DETECT 29
-#define ASENSOR_TYPE_MOTION_DETECT 30
-#define ASENSOR_TYPE_HEART_BEAT 31
-#define ASENSOR_TYPE_DYNAMIC_SENSOR_META 32
-#define ASENSOR_TYPE_ADDITIONAL_INFO 33
-#define ASENSOR_TYPE_LOW_LATENCY_OFFBODY_DETECT 34
-#define ASENSOR_TYPE_ACCELEROMETER_UNCALIBRATED 35
-#define ASENSOR_TYPE_HINGE_ANGLE 36
-#define ASENSOR_TYPE_HEAD_TRACKER 37
-#define ASENSOR_TYPE_ACCELEROMETER_LIMITED_AXES 38
-#define ASENSOR_TYPE_GYROSCOPE_LIMITED_AXES 39
-#define ASENSOR_TYPE_ACCELEROMETER_LIMITED_AXES_UNCALIBRATED 40
-#define ASENSOR_TYPE_GYROSCOPE_LIMITED_AXES_UNCALIBRATED 41
-#define ASENSOR_TYPE_HEADING 42
+// - - - - - - - - - - - - 
+// High-Level Sensor Access
+// - - - - - - - - - - - - 
+
+// These routines read the Android device sensors.
+// The return value is 0 for success, and -1 for failure. 
+// When returning -1 for failure, the returned arg values are INVALID_NUMBER.
+
+// Provides number of steps since the Android device was booted.
+int sdlx_sensor_read_step_counter(unsigned long *step_count);
+
+// The magnetic sensor is read, this sensor provide magnetic field stength in the x,y,z directions.
+// The magnetic heading of the device is then calculated based on these 3 field strength values,
+// and adjusting for the device roll & pitch.
+// The device magnetic heading is provided in range 0 to 359.999 degrees,
+// referenced to the top of the device.
+int sdlx_sensor_read_mag_heading(double *mag_heading);
+
+// Reads accelerometer sensor. Units are m/s^2.
+// - x-axis: left to right
+// - y-axis: bottom to top
+// - z-axis: perpendicular to the screen pointing to user
+int sdlx_sensor_read_accelerometer(double *ax, double *ay, double *az);
+
+// The accelerometer sensor is read, providing acceleration values in the x,y,z directions.
+// The device roll & pitch is calculated from these 3 acceleration values.
+// The roll and pitch values are provided in degrees.
+// When the device is level, the roll and pitch are 0.
+// Roll is positive when the right side of the device is lowered.
+// Pitch is positive when the top of the device is raised.
+int sdlx_sensor_read_roll_pitch(double *roll, double *pitch);
+
+// Provides  atmospheric pressure in millibars.
+// Standard atmospheric pressure at sea level is 1,013.25 millibars.
+int sdlx_sensor_read_pressure(double *millibars);
+
+// Provides ambient temperature in Celsius.
+// Note that most Android devices do not have an ambient temperature sensor.
+int sdlx_sensor_read_temperature(double *degrees_c);
+
+// Provides relative humidity in percent.
+// Note that most Android devices do not have a humidity sensor.
+int sdlx_sensor_read_humidity(double *percent);
+
+// - - - - - - - - - - - - 
+// Low-Level Sensor Access
+// - - - - - - - - - - - - 
+
+// Android device sensors each have an:
+// - id:   identifies the sensor
+// - type  the type of sensor
+// - name: name of the sensor
+
+// The sensor type values can be found here:
+// ~/android/sdk/ndk/*/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/android/sensor.h
 
 typedef struct {
     int   id;
-    int   type;  // ASENSOR_TYPE
+    int   type;
     char *name;
 } sdlx_sensor_info_t;
 
+// Returns table of sdlx_sensor_into_t.
+// For an example see: files/apps/Test/test.c "PAGE 8: SENSOR INFO TBL".
 sdlx_sensor_info_t *sdlx_sensor_get_info_tbl(int *max);
-int sdlx_sensor_find(int type);  // returns sensor id, or -1 if not found
-int sdlx_sensor_read_raw(int id, float *data, int num_values);
 
-int sdlx_sensor_read_step_counter(unsigned long *step_count);
-int sdlx_sensor_read_mag_heading(double *mag_heading);
-int sdlx_sensor_read_accelerometer(double *ax, double *ay, double *az);
-int sdlx_sensor_read_roll_pitch(double *roll, double *pitch);
-int sdlx_sensor_read_pressure(double *millibars);
-int sdlx_sensor_read_temperature(double *degrees_c);
-int sdlx_sensor_read_humidity(double *percent);
+// Search for a sensor of the type specified.
+// Returns -1 if not found; otherwise the found sensor id is returned.
+// xxx rework this test
+int sdlx_sensor_find(int type);
+
+// Read the raw data from the specified sensor id.
+// xxx how to deal with step_count
+// xxx document that most sensors return float values
+// xxx doc how this routine can be used to read the step counter
+int sdlx_sensor_read_raw(int id, float *data, int num_values);
 
 // --------------------
 // EVENTS   
@@ -461,11 +484,14 @@ void sdlx_get_event(long timeout_us, sdlx_event_t *event);
 // MISC
 // --------------------
 
-// android show toast
+// Display a 'Toast' popup message.
 void sdlx_show_toast(char *message);
 
-// get string, uses virtual keyboard on Android
-char *sdlx_get_input_str(char *prompt, bool numeric_keybd, char *dflt_input_str);
+// Read input text string from user.
+// The return value points to a static variable, and must not be freed.
+// When numeric_keybd is true the Android numeric keyboard is displayed,
+// when false, the full keyboard is displayed.
+char *sdlx_get_input_str(char *prompt_optional, bool numeric_keybd, char *dflt_input_str_optional);
 
 #ifdef __cplusplus
 }

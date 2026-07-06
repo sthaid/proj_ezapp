@@ -1,3 +1,8 @@
+Android’s TYPE_ORIENTATION sensor is deprecated. To get azimuth, pitch, and roll, combine the TYPE_ACCELEROMETER and TYPE_MAGNETIC_FIELD sensors. Feed their raw data into SensorManager.getRotationMatrix(), then pass that matrix into SensorManager.getOrientation() to get your three angles.
+
+
+xxxxxxxxxxxxxx
+
 The GPL Rule: Because it is under the GPL, if you distribute a software package or project that includes the font file, you must also offer to make the font's source files available to users
 
 
@@ -18,6 +23,8 @@ app's proprietary code, because the Font Exception protects your app from the
 "viral" nature of the GPL).
 
 "FreeMonoBold source files can be obtained from the official GNU FreeFont project at gnu.org"
+
+https://spdx.org/licenses/GPL-3.0-only.html
 
 
 --- TODO --
