@@ -274,7 +274,7 @@ static void process_sdlx_event(SDL_Event *ev, sdlx_event_t *event)
             last_pressed_x = x;
             last_pressed_y = y;
         } else {
-            //int delta_x = x - last_pressed_x;
+            //int delta_x = x - last_pressed_x; xxx del
             //int delta_y = y - last_pressed_y;
             //INFO("button released xy = %d %d, delta xy = %d %d\n", x, y, delta_x, delta_y);
 

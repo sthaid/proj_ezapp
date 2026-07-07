@@ -1,16 +1,21 @@
 #ifndef __SDLX_H__
 #define __SDLX_H__
 
+// xxx 
+// - global rename to FONTID_NORMAL etc
+// - font size range
+// - use sdlx_color_t for pxiels, instead of unsigned int
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 // The sdlx routines are built upon the SDL, SDL_mixer, and SDL_ttf libraries.
-// The purpose of these routines is to provide easy to use access to SDL features
+// The purpose of these routines is to provide easy access to SDL features
 // applicable to miniApps.
 // 
 // Sdlx provides routines for:
-// - video:   graphics rendering to the display
+// - video:   rendering to the display
 // - audio:   audio play and record
 // - sensors: read Android device sensors
 // - events:  registration and detection of events
@@ -24,16 +29,28 @@ extern "C" {
 // Sdlx_video defines a logical display that has pixel dimensions based on orientation:
 // - Portrait WxH:  1000 x 2200
 // - Landscape WxH: 2200 x 1000
+// MiniApps do not use the real pixel dimensions of the physical display.
 // 
-// A texture of either (WxH) 1000x2200 (portrait), or 2200x1000 (landscape) is used by sdlx.
-// Rendering is performed to this texture. When preenting the display, this texture
-// is scaled (and rotated when in landscape mode), to fit the display.
+// A texture of either (WxH) 1000x2200 (portrait), or 2200x1000 (landscape) is defined by sdlx
+// Rendering is usually performed to this texture. When preenting the display, this texture
+// is scaled (and rotated when in landscape mode), to fit the physical display.
+//
+// Additional textures can be created. For example, the Compass miniApp creates a texture 
+// that is initialized to the compass image pixels.
+//
+// Terminology:
+// - display_texture: This is the 1000x2200 (portrait), or 2200x1000 (landscape texture.
+//                    This texture is defined when sdlx_display_init is called. 
+//                    And this texture becomes visible on the display when sdlx_display_present
+//                    is called.
+// - current_texture: This is texture that is selected for rendering. When sdlx_display_init 
+//                    is called the current_texture is set to the display_texture.
 // 
 // The top left of the display area is (x,y) = (0,0).
 // In Portrait Mode, the bottom right of the display is (x,y) = (999,2199).
 // In Landscape Mode, the bottom right of the display is (x,y) = (2199,999).
 // 
-// Sdlx video example:
+// Sdlx video example, display a purple circle:
 //    sdlx_display_init(COLOR_BLACK, PORTRAIT);
 //    int x_ctr = sdlx_win_width/2;
 //    int y_ctr = sdlx_win_height/2;
@@ -41,14 +58,11 @@ extern "C" {
 //    sdlx_render_fill_circle(x_ctr, y_ctr, radius, COLOR_PURPLE);
 //    sdlx_display_present();
 
-// xxx explain dflt and current texture
-// xxx xywh
-// xxx pixels are always logical
-
 typedef unsigned int sdlx_color_t;
 
 typedef struct {
-    int x, y, w, h;
+    int x, y;   // top left coords of rectangle
+    int w, h;   // rectangle width and height 
 } sdlx_loc_t;
 
 typedef struct {
@@ -67,18 +81,18 @@ extern int sdlx_win_width;
 extern int sdlx_win_height;
 
 // - - - - - - - - - - - - - 
-// Display Init and Present
+// Display Init and Present xxx change name to 'Video Display ...'
 // - - - - - - - - - - - - - 
 
 #define PORTRAIT  0
 #define LANDSCAPE 1
 
 // This is the first step when rendering the display.
-// The texture being rendered to is set to the color specified.
-// And the display orientation to be used (PORTRAIT or LANDSCAPE) is specified.
+// All pixels of the display_texture are set to the specified color.
+// The display orientation to be used (PORTRAIT or LANDSCAPE) is specified.
 void sdlx_display_init(sdlx_color_t color, int orientation);
 
-// Calling this routine will make the renderings visible.
+// Calling this routine makes the display_texture visible.
 void sdlx_display_present(void);
 
 // - - - - - 
@@ -120,11 +134,9 @@ sdlx_color_t sdlx_wavelength_to_color(int wavelength);
 // Render Text, Basic API
 // - - - - - - - - - - - 
 
-// xxx global rename to FONTID_NORMAL etc
-
 // The font used by ezApp is 'FreeMonoBold.ttf', which is a fixed width font.
 
-// When a miniApp starts the default fontid is preset to FONT_NORMAL, COLOR_WHITE.
+// When a miniApp starts the default fontid & color are preset to FONT_NORMAL, COLOR_WHITE.
 
 // These values use used for the fontid arg, and specify the size of the font.
 // Other values are okay to use, in range xxx (biggest) to xxx (smallest).
@@ -133,15 +145,16 @@ sdlx_color_t sdlx_wavelength_to_color(int wavelength);
 #define FONT_NORMAL   20   // etc
 #define FONT_LARGE    10
 
-// This routine changes the default fontid and color.
+// This routine sets the default fontid and color.
 void sdlx_print_set_default(int fontid, sdlx_color_t color);
 
-// This printf routine prints to the current texture.
-// X,y specify the upper left corner location of the print.
-// The default fontid and color are used.
+// This printf routine prints to the current_texture:
+// - x,y specify the upper left corner location of the printed text.
+// - the default fontid and color are used.
+// - xxx return value
 sdlx_loc_t *sdlx_render_printf(int x, int y, char *fmt, ...) __attribute__ ((format (printf, 3, 4)));
 
-// External variables providing the size of a font character,
+// External variables providing the size, in pixels, of a font character,
 // for the currently selected default fontid.
 extern int sdlx_char_width_dflt;
 extern int sdlx_char_height_dflt;
@@ -161,6 +174,7 @@ extern int sdlx_char_height_dflt;
 // - The main difference is the fontid, and color are provided as args,
 //   instead of using default fontid and color.
 // - The flags arg to sdlx_render_printf_ex2 provides additional capabilities, see below.
+// - xxx return value
 sdlx_loc_t *sdlx_render_printf_ex1(int x, int y, int fontid, sdlx_color_t color, 
                                    char * fmt, ...)
                                    __attribute__ ((format (printf, 5, 6)));
@@ -170,10 +184,11 @@ sdlx_loc_t *sdlx_render_printf_ex2(int x, int y, int fontid, sdlx_color_t color,
 
 // The sdlx_render_multiline_text routine displays text that spans multiple lines.
 // - The x,y args specify the location of the top left corner of the text.
-//   The x and y values can be negative. The x and y values are often adjusted 
-//   on receipt of the EVID_MOTION event.
-// - The y_top and y_bottom args specify range of y locations to which text will be printed;
-//   text is not printed above y_top or below y_bottom.
+//   The x and y values can be negative.
+// - The x and y values are often adjusted on receipt of the EVID_MOTION event,
+//   this scrolls the text horizontally and vertically.
+// - The y_top and y_bottom args specify range of y locations to which text will be displayed;
+//   text is not displayed above y_top or below y_bottom.
 // - The lines and colors args are parallel arrays. Color[n] specifies the color of line[n].
 // - There are 2 typical use cases:
 //     a) Just one line, with embedded newline chars.
@@ -205,7 +220,7 @@ int sdlx_char_height(int fontid);
 #define MAX_POINT_SIZE 9  // for call to sdlx_render_point and sdlx_render_points
 
 // These routines perform the function implied by their name.
-// xxx comments needed about where rendered to 
+// Rendering occurs to the current_texture.
 // - For sdlx_render_rect and sdlx_render_fill_rect, x,y are the top left corner
 //   of the rectangle.
 // - For sdlx_render_circle and sdlx_render_fill_circle, x_ctr,y_ctr are the 
@@ -226,29 +241,29 @@ void sdlx_render_points(sdlx_point_t *points, int count, sdlx_color_t color, int
 // - - - - - 
 
 // Textures are GPU memory buffers that can be selected as render target.
-// The texture can be rendered to a location in the backbuffer; during the              xxx reword
-// rendering to the backbuffer, the texture can optionally be scaled and rotated.
-//
+// Once set as render target, the texture is the current_texture.
+// Subsequent rendering occurs to the current_texture.
+
 // For example, the Compass miniApp uses a texture to display the compass image:
 // - initialization
 //   . the compass image pixels are read from a png file
 //   - sdlx_create_texture is called to create a texture of the same width/height as the png file
-//   - sdlx_set_texture_pixels is called to copy the png file pixels to the texture
+//   - sdlx_set_texture_pixels is called to copy the png file pixels to this new texture
 // - run time
 //   - the compass_heading is determined from the Android magnetic field sensor
-//   - sdlx_render_texture_ex2 is called to copy the compass texture to the backbuffer;   xxx
-//     the compass texture is scaled to fit the backbuffer x,y,w,h; and rotated by 
-//     the compass heading angle
+//   - sdlx_render_texture_ex2 is called to copy (scale & rotate) 
+//     the compass texture (current_texture) to the display_texture
 // - termination
 //   - sdlx_destroy_texture is called to free the GPU memory 
 
 // Another way textures can be initialized is by using sdlx_set_render_target.
 // For example, during initialization, create a 100x100 texture containing a yellow circle:
 //    sdlx_texture_t *circle = sdlx_create_texture(100, 100);
-//    sdlx_set_render_target(circle);
+//    sdlx_set_render_target(circle);  // sets current_texture to the created circle texture
 //    sdlx_render_fill_circle(50, 50, 50, COLOR_YELLOW);
-//    sdlx_set_render_target(NULL); // restores rendering to default rendering texture  xxx explain
-// At runtime, the circle texture can be scaled to fill the entire dispaly:
+//    sdlx_set_render_target(NULL);    // restores current_texture to display_texture
+// At runtime, the circle texture can be scaled to fill the entire display, the scaling
+// will result in the circle being stretched to an ellipse:
 //    sdlx_render_texture_ex1(circle, 0, 0, sdlx_win_width, sdlx_win_height);
 // Destroy the circle texture when the program terminates, freeing GPU memory:
 //    sdlx_destroy_texture(circle);
@@ -259,40 +274,38 @@ sdlx_texture_t *sdlx_create_texture(int w, int h);
 void sdlx_destroy_texture(sdlx_texture_t *t);
 // Query a texture for its width and height.
 void sdlx_query_texture(sdlx_texture_t *t, int *w, int *h);
-// Set all pixels of a texture to the color.
+// Set all pixels of a texture to the specified color.
 void sdlx_clear_texture(sdlx_texture_t *t, sdlx_color_t color);
 // Adjust all pixels in the texture; r,g,b args each range from 0 to 1.
-// For example, setting each of r,g,b to 0.5 would reduce the pixel intensity by half.
+// For example, setting each of r,g,b to 0.5 would reduce the intensity by half.
 void sdlx_color_mod_texture(sdlx_texture_t *t, float r, float g, float b);
 
 // Copy pixels to the texture. The pixels arg must contain texture_w * texture_h pixels.
 void sdlx_set_texture_pixels(sdlx_texture_t *t, unsigned int *pixels); // xxx use sdlx_color_t ?
-// Returns array containing the texture pixels; also returns texture width & height
-// in the w, h ptr args. Caller must free the returned pixels array.
+// Returns array containing the texture pixels; also returns texture width & height.
+// Caller must free the returned pixels array.
 unsigned int *sdlx_get_texture_pixels(sdlx_texture_t *t, int *w, int *h);  // xxx sdlx_color_t
 
-// Copy entire texture to location x,y of the current render target.
-// The current render target would usually be the default (portrait or landscape) texture;
-// unless another texture has been specified by call to sdlx_set_render_target.
+// Copy entire texture to location x,y of the current_texture.
 void sdlx_render_texture(sdlx_texture_t *t, int x, int y);
-// Copy entire texture to location x,y,w,h of the current render target. 
+// Copy entire texture to location x,y,w,h of the current_texture.
 // The texture is scaled to fit w X h.
 void sdlx_render_texture_ex1(sdlx_texture_t *t, int x, int y, int w, int h);
-// Same as above, except that the texture is also rotated by the specified angle, in degrees.
-// The texture is rotated about its center.
+// Same as above, except that the texture is also rotated, about its center, by angle degrees.
 void sdlx_render_texture_ex2(sdlx_texture_t *t, int x, int y, int w, int h, double angle);
 // Same as above, except the xctr, yctr args specify the point around which the 
 // texture is rotated. This is equivalent to the previous routine when xctr=w/2 and yctr=h/2.
 void sdlx_render_texture_ex3(sdlx_texture_t *texture, int x, int y, int w, int h, double angle, int xctr, int yctr);
 
-// Set the current render target to texture t.
-// It t==NULL, the current render target is set to the default (portraint/landscape) texture.
+// Set current_texture to 't'.
+// It t==NULL, the current_texture is set to the default_texture.
 void sdlx_set_render_target(sdlx_texture_t *t);
 
 // --------------------
 // AUDIO
 // --------------------
 
+// xxx do this section
 #define FRAMES_PER_SEC 48000
 
 #define AUDIO_STATE_IDLE                0
@@ -365,6 +378,8 @@ void sdlx_create_test_file(char *dir, char *filename, int freq1, int freq2, int 
 // --------------------
 // SENSORS
 // --------------------
+
+// xxx review left off here
 
 // - - - - - - - - - - - - 
 // High-Level Sensor Access
@@ -454,9 +469,8 @@ int sdlx_sensor_read_raw(int id, float *data, int num_values);
 // - EVID_QUIT:   This event is usually registered by call to 
 //                sdlx_register_control_events(..., EVID_QUIT, "X");
 //                When the "X" is tapped, the EVID_QUIT event is triggered.
-#define EVID_MOTION  9990
-#define EVID_KEYBD   9991   // xxx move out of here
-#define EVID_QUIT    9992
+#define EVID_MOTION  10000
+#define EVID_QUIT    10001
 
 // This structure returns the event that occurred, by call to sdlx_get_event.
 // When the display is tapped at a location which is associated with a registered
@@ -470,8 +484,8 @@ typedef struct {
             double x, y, xrel, yrel;
         } motion;
         struct {
-            int ch;
-        } keybd;
+            unsigned char bytes[32];
+        } data;
     } u;
 } sdlx_event_t;
 
@@ -483,6 +497,7 @@ typedef struct {
 // If EVID_MOTION is being registered then loc should be NULL.
 // Otherwise, a miniApp defined event is being registered, the display
 // location associated with the event is supplied by the caller in the loc arg.
+// The value of event_id for miniApp defined events should be in range 1 - 9999.
 void sdlx_register_event(sdlx_loc_t *loc, int event_id);
 
 // Register control area events. The control area is the Teal bar at the bottom
