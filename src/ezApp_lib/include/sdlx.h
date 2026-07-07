@@ -6,15 +6,14 @@ extern "C" {
 #endif
 
 // The sdlx routines are built upon the SDL, SDL_mixer, and SDL_ttf libraries.
-// The purpose of these routines is to provide easy to use access to SDL.
+// The purpose of these routines is to provide easy to use access to SDL features
+// applicable to miniApps.
 // 
 // Sdlx provides routines for:
 // - video:   graphics rendering to the display
 // - audio:   audio play and record
 // - sensors: read Android device sensors
 // - events:  registration and detection of events
-// 
-// Details provided in following sections.
 
 #define INVALID_NUMBER 999999999
 
@@ -448,11 +447,22 @@ int sdlx_sensor_read_raw(int id, float *data, int num_values);
 // EVENTS   
 // --------------------
 
-// define common events
+// Define common events:
+// - EVID_MOTION: This event is triggered when the display is tapped and dragged.
+//                The current x,y coordinates; and the relative motion in the x,y
+//                directions are returned by the call to sdlx_get_event.
+// - EVID_QUIT:   This event is usually registered by call to 
+//                sdlx_register_control_events(..., EVID_QUIT, "X");
+//                When the "X" is tapped, the EVID_QUIT event is triggered.
 #define EVID_MOTION  9990
-#define EVID_KEYBD   9991 
+#define EVID_KEYBD   9991   // xxx move out of here
 #define EVID_QUIT    9992
 
+// This structure returns the event that occurred, by call to sdlx_get_event.
+// When the display is tapped at a location which is associated with a registered
+// event, the registered event_id is returned.
+// If the EVID_MOTION event is registered, and the display is dragged, then 
+// the EVID_MOTION event is returned, along with the embedded motion struct.
 typedef struct {
     int event_id;
     union {
@@ -469,7 +479,19 @@ typedef struct {
 // Event Registration
 // - - - - - - - - - - 
 
+// Register an event.
+// If EVID_MOTION is being registered then loc should be NULL.
+// Otherwise, a miniApp defined event is being registered, the display
+// location associated with the event is supplied by the caller in the loc arg.
 void sdlx_register_event(sdlx_loc_t *loc, int event_id);
+
+// Register control area events. The control area is the Teal bar at the bottom
+// of the display. This bar is below the sdlx_win_height; and can only be 
+// rendered as a result of calling sdlx_register_control_events.
+// Up to 3 events can be registered in the control area.
+// Pass NULL for evstr1,2,3 to not register that event.
+// Usually evid3,evstr3 are set to EVID_QUIT,"X". And results in exitting 
+// a miniApp, or minimizing ezApp.
 void sdlx_register_control_events(int evid1, char *evstr1,
                                   int evid2, char *evstr2,
                                   int evid3, char *evstr3);
@@ -478,13 +500,18 @@ void sdlx_register_control_events(int evid1, char *evstr1,
 // Wait For Event
 // - - - - - - - - 
 
-void sdlx_get_event(long timeout_us, sdlx_event_t *event);
+// Wait for an event, if timeout occurs then event->event_id is set to -1.
+// Timeout_usecs values:
+//  -1:  wait forever
+//   0:  don't wait
+//  >0:  timeout interval in microsecs
+void sdlx_get_event(long timeout_usecs, sdlx_event_t *event);
 
 // --------------------
 // MISC
 // --------------------
 
-// Display a 'Toast' popup message.
+// Display an Android 'Toast' popup message.
 void sdlx_show_toast(char *message);
 
 // Read input text string from user.
