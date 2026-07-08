@@ -21,7 +21,7 @@ int get_device_orientation(void)
     static int orient = PORTRAIT;
     static bool error_printed;
 
-    rc = sdlx_sensor_read_accelerometer(&ax, &ay, &az);
+    rc = sdlx_sensor_read_gravity_accel(&ax, &ay, &az);
     if (rc != 0) {
         if (!error_printed) {
             printf("E lib: get_device_orientation failed to read accelerometer\n");

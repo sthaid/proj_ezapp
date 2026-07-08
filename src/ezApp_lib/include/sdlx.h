@@ -400,12 +400,15 @@ int sdlx_sensor_read_step_counter(unsigned long *step_count);
 // referenced to the top of the device.
 int sdlx_sensor_read_mag_heading(double *mag_heading);
 
+// xxx
 // Reads accelerometer sensor. Units are m/s^2.
 // - x-axis: left to right
 // - y-axis: bottom to top
 // - z-axis: perpendicular to the screen pointing to user
-int sdlx_sensor_read_accelerometer(double *ax, double *ay, double *az);
+int sdlx_sensor_read_gravity_accel(double *ax, double *ay, double *az);
+int sdlx_sensor_read_device_accel(double *ax, double *ay, double *az);
 
+// xxx
 // The accelerometer sensor is read, which provides acceleration values in the x,y,z directions.
 // The device roll & pitch is calculated from these acceleration values.
 // The roll and pitch values are provided in degrees.

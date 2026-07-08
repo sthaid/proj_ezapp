@@ -16,14 +16,14 @@
 #define TEN_MS 10000
 
 // xxx comment where these are from, and these are a subset
-#define ASENSOR_TYPE_ACCELEROMETER       1
+#define ASENSOR_TYPE_ACCELEROMETER       1    // device + gravity accel
 #define ASENSOR_TYPE_MAGNETIC_FIELD      2
 #define ASENSOR_TYPE_GYROSCOPE           4
 #define ASENSOR_TYPE_LIGHT               5
 #define ASENSOR_TYPE_PRESSURE            6
 #define ASENSOR_TYPE_PROXIMITY           8
-#define ASENSOR_TYPE_GRAVITY             9
-#define ASENSOR_TYPE_LINEAR_ACCELERATION 10
+#define ASENSOR_TYPE_GRAVITY             9    // gravity accel only
+#define ASENSOR_TYPE_LINEAR_ACCELERATION 10   // device accel only
 #define ASENSOR_TYPE_ROTATION_VECTOR     11
 #define ASENSOR_TYPE_SIGNIFICANT_MOTION  17
 #define ASENSOR_TYPE_STEP_DETECTOR       18
@@ -50,7 +50,8 @@ static int               max_sensor_info_tbl;
 static SDL_Sensor       *sensor[MAX_SENSOR_ID];  // indexed by id
 
 static int               id_step_counter;
-static int               id_accelerometer;
+static int               id_gravity_accel;
+static int               id_device_accel;
 static int               id_magnetic_field;
 static int               id_pressure;
 
@@ -109,10 +110,11 @@ int sdlx_sensor_init(void)
     SDL_free(ids);
 
     // find sensors by searching the sensor_info_tbl
-    id_step_counter        = sdlx_sensor_find(ASENSOR_TYPE_STEP_COUNTER);
-    id_accelerometer       = sdlx_sensor_find(ASENSOR_TYPE_ACCELEROMETER);
-    id_magnetic_field      = sdlx_sensor_find(ASENSOR_TYPE_MAGNETIC_FIELD);
-    id_pressure            = sdlx_sensor_find(ASENSOR_TYPE_PRESSURE);
+    id_step_counter   = sdlx_sensor_find(ASENSOR_TYPE_STEP_COUNTER);
+    id_gravity_accel  = sdlx_sensor_find(ASENSOR_TYPE_GRAVITY);
+    id_device_accel   = sdlx_sensor_find(ASENSOR_TYPE_LINEAR_ACCELERATION);
+    id_magnetic_field = sdlx_sensor_find(ASENSOR_TYPE_MAGNETIC_FIELD);
+    id_pressure       = sdlx_sensor_find(ASENSOR_TYPE_PRESSURE);
 
     // return success
     INFO("success\n");
@@ -228,23 +230,44 @@ int sdlx_sensor_read_step_counter(unsigned long *step_count_arg)
     return 0;
 }
 
+// xxx comment here and in include file
 // x-axis: left to right
 // y-axis: bottom to top
 // z-axis: perpendicular to the screen pointing to user
 // units: m/s^2
-int sdlx_sensor_read_accelerometer(double *ax, double *ay, double *az)
+int sdlx_sensor_read_device_accel(double *ax, double *ay, double *az)
 {
     float data[3];
     int   rc;
 
-    // read accelerometer sensor data
-    rc = sdlx_sensor_read_raw(id_accelerometer, data, 3);
+    // read device acceleration sensor data
+    rc = sdlx_sensor_read_raw(id_device_accel, data, 3);
     if (rc != 0) {
         *ax = *ay = *az = INVALID_NUMBER;
         return -1;
     }
 
-    // return accelerometer values
+    // return device accelerometer values
+    *ax = data[0];
+    *ay = data[1];
+    *az = data[2];
+    return 0;
+}
+
+// xxx comment
+int sdlx_sensor_read_gravity_accel(double *ax, double *ay, double *az)
+{
+    float data[3];
+    int   rc;
+
+    // read gravity acceleration sensor data
+    rc = sdlx_sensor_read_raw(id_gravity_accel, data, 3);
+    if (rc != 0) {
+        *ax = *ay = *az = INVALID_NUMBER;
+        return -1;
+    }
+
+    // return gravity accelerometer values
     *ax = data[0];
     *ay = data[1];
     *az = data[2];
@@ -257,8 +280,8 @@ int sdlx_sensor_read_roll_pitch(double *roll, double *pitch)
     double ax, ay, az;
     int    rc;
 
-    // read accelerometer data
-    rc = sdlx_sensor_read_raw(id_accelerometer, data, 3);
+    // read gravity acceleration data
+    rc = sdlx_sensor_read_raw(id_gravity_accel, data, 3);
     if (rc != 0) {
         *roll = *pitch = INVALID_NUMBER;
         return -1;

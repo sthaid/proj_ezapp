@@ -1,3 +1,15 @@
+retest on Motorola
+
+xxxxxxxxxxxx
+
+sdlx_sensor_read_accelerometer       ->  sdlx_sensor_read_device_accel
+                                         sdlx_sensor_read_gravity_accel
+
+xxxxxxxxxxxxxxxx
+
+ezput ignore *.swp
+xxxxxxxxxxxxx
+
 Android’s TYPE_ORIENTATION sensor is deprecated. To get azimuth, pitch, and roll, combine the TYPE_ACCELEROMETER and TYPE_MAGNETIC_FIELD sensors. Feed their raw data into SensorManager.getRotationMatrix(), then pass that matrix into SensorManager.getOrientation() to get your three angles.
 
 

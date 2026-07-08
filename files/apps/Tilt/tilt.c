@@ -112,12 +112,14 @@ int main(int argc, char **argv)
 
     // runtime loop
     while (!end_program) {
-        // obtain smoothed accelerometer values
-        rc = sdlx_sensor_read_accelerometer(&ax_raw, &ay_raw, &az_raw);
+        // read gravity accel sensor
+        rc = sdlx_sensor_read_gravity_accel(&ax_raw, &ay_raw, &az_raw);
         if (rc != 0) {
             no_accelerometer();
             continue;
         }
+
+        // smooth the sensor values
         smooth(ax_raw, &ax);
         smooth(ay_raw, &ay);
         smooth(az_raw, &az);

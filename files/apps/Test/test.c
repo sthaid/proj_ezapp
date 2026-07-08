@@ -1093,16 +1093,14 @@ static void page_8_exit(void)
 
 // -----------------  PAGE 9: SENSOR DATA ---------------------
 
-// xxx update this
-
-#define ASENSOR_TYPE_ACCELEROMETER       1
+#define ASENSOR_TYPE_ACCELEROMETER       1    // device + gravity accel
 #define ASENSOR_TYPE_MAGNETIC_FIELD      2
 #define ASENSOR_TYPE_GYROSCOPE           4
 #define ASENSOR_TYPE_LIGHT               5
 #define ASENSOR_TYPE_PRESSURE            6
 #define ASENSOR_TYPE_PROXIMITY           8
-#define ASENSOR_TYPE_GRAVITY             9
-#define ASENSOR_TYPE_LINEAR_ACCELERATION 10
+#define ASENSOR_TYPE_GRAVITY             9    // gravity accel only
+#define ASENSOR_TYPE_LINEAR_ACCELERATION 10   // device accel only
 #define ASENSOR_TYPE_ROTATION_VECTOR     11
 #define ASENSOR_TYPE_RELATIVE_HUMIDITY   12
 #define ASENSOR_TYPE_AMBIENT_TEMPERATURE 13
@@ -1110,67 +1108,56 @@ static void page_8_exit(void)
 #define ASENSOR_TYPE_STEP_DETECTOR       18
 #define ASENSOR_TYPE_STEP_COUNTER        19
 
-
-
-#define MAX_SENSOR_TEST_TBL 4
-
-struct sensor_test_s {
-    char *name;
-    int   type;
+struct raw_sensor_s {
     int   id;
-} sensor_test_tbl[MAX_SENSOR_TEST_TBL];
+    int   type;
+    char *short_name;
+} raw_sensor_tbl[20];
+int max_raw_sensor_tbl;
+
+static void add_to_raw_sensor_tbl(int type, char *short_name)
+{
+    int id = sdlx_sensor_find(type);
+    if (id == -1) return;
+
+    raw_sensor_tbl[max_raw_sensor_tbl].id = id;
+    raw_sensor_tbl[max_raw_sensor_tbl].short_name = short_name;
+    max_raw_sensor_tbl++;
+}
 
 static void page_9_init(void)
 {
-    sensor_test_tbl[0].name =  "stepc";
-    sensor_test_tbl[0].type =  ASENSOR_TYPE_STEP_COUNTER;
-    sensor_test_tbl[1].name =  "magf";
-    sensor_test_tbl[1].type =  ASENSOR_TYPE_MAGNETIC_FIELD;
-    sensor_test_tbl[2].name =  "accel";
-    sensor_test_tbl[2].type =  ASENSOR_TYPE_ACCELEROMETER;
-    sensor_test_tbl[3].name =  "press";
-    sensor_test_tbl[3].type =  ASENSOR_TYPE_PRESSURE;
-
-    for (int i = 0; i < MAX_SENSOR_TEST_TBL; i++) {
-        struct sensor_test_s *x = &sensor_test_tbl[i];
-        x->id = sdlx_sensor_find(x->type);
-    }
+    max_raw_sensor_tbl = 0;
+    add_to_raw_sensor_tbl(ASENSOR_TYPE_GRAVITY,             "a_grv");   // gravity accel only
+    add_to_raw_sensor_tbl(ASENSOR_TYPE_LINEAR_ACCELERATION, "a_dev");   // device accel only
+    add_to_raw_sensor_tbl(ASENSOR_TYPE_ACCELEROMETER,       "a_tot");   // device + gravity accel
+    add_to_raw_sensor_tbl(ASENSOR_TYPE_MAGNETIC_FIELD,      "magf ");
+    add_to_raw_sensor_tbl(ASENSOR_TYPE_GYROSCOPE,           "gyro ");
+    add_to_raw_sensor_tbl(ASENSOR_TYPE_LIGHT,               "light");
+    add_to_raw_sensor_tbl(ASENSOR_TYPE_PRESSURE,            "press");
+    add_to_raw_sensor_tbl(ASENSOR_TYPE_PROXIMITY,           "prox ");
+    add_to_raw_sensor_tbl(ASENSOR_TYPE_ROTATION_VECTOR,     "rot  ");
+    add_to_raw_sensor_tbl(ASENSOR_TYPE_SIGNIFICANT_MOTION,  "mtion");
+    add_to_raw_sensor_tbl(ASENSOR_TYPE_STEP_DETECTOR,       "stepd");
+    add_to_raw_sensor_tbl(ASENSOR_TYPE_STEP_COUNTER,        "stepc");
+    // xxx add humidyt and amb_temp
 }
 
 static void page_9_draw(void)
 {
-    float         data[3];
-    int           row = 3;
     int           rc;
     unsigned long step_count;
     double        mag_heading, roll, pitch, millibars;
     double        ax, ay, az;
+    int           row = 2;
 
-    static unsigned long first_step_count = -1;
+    //
+    // 'High-Level Sensor Access' test
+    //
 
-    if (first_step_count == -1) {
-        sdlx_sensor_read_step_counter(&first_step_count);
-    }
-
-    sdlx_print_set_default(FONT_SMALL, COLOR_WHITE);
-
-    for (int i = 0; i < MAX_SENSOR_TEST_TBL; i++) {
-        struct sensor_test_s *x = &sensor_test_tbl[i];
-        if (x->id != -1) {
-            sdlx_sensor_read_raw(x->id, data, 3);
-            sdlx_render_printf(0, ROW2Y(row++), "%-5s %6.2f %6.2f %6.2f", x->name, data[0], data[1], data[2]);
-        }
-    }
-
-    row++;
-
-    sdlx_print_set_default(FONT_NORMAL, COLOR_WHITE);
-
-    if (first_step_count != INVALID_NUMBER) {
-        rc = sdlx_sensor_read_step_counter(&step_count);
-        if (rc == 0) {
-            sdlx_render_printf(0, ROW2Y(row++), "stepc= %ld %ld", step_count, step_count-first_step_count);
-        }
+    rc = sdlx_sensor_read_step_counter(&step_count);
+    if (rc == 0) {
+        sdlx_render_printf(0, ROW2Y(row++), "stepc= %ld", step_count);
     }
 
     rc = sdlx_sensor_read_mag_heading(&mag_heading);
@@ -1178,9 +1165,14 @@ static void page_9_draw(void)
         sdlx_render_printf(0, ROW2Y(row++), "magh =% 3.0f", mag_heading);
     }
 
-    rc = sdlx_sensor_read_accelerometer(&ax, &ay, &az);
+    rc = sdlx_sensor_read_gravity_accel(&ax, &ay, &az);
     if (rc == 0) {
-        sdlx_render_printf(0, ROW2Y(row++), "accel=% 4.1f % 4.1f % 4.1f", ax, ay, az);;
+        sdlx_render_printf(0, ROW2Y(row++), "a_grv=% 4.1f % 4.1f % 4.1f", ax, ay, az);;
+    }
+
+    rc = sdlx_sensor_read_device_accel(&ax, &ay, &az);
+    if (rc == 0) {
+        sdlx_render_printf(0, ROW2Y(row++), "a_dev=% 4.1f % 4.1f % 4.1f", ax, ay, az);;
     }
 
     rc = sdlx_sensor_read_roll_pitch(&roll, &pitch);
@@ -1191,6 +1183,31 @@ static void page_9_draw(void)
     rc = sdlx_sensor_read_pressure(&millibars);
     if (rc == 0) {
         sdlx_render_printf(0, ROW2Y(row++), "press=% 5.0f", millibars);
+    }
+    
+    //
+    // 'Low-Level Sensor Access' test
+    //
+
+    row++;
+    for (int i = 0; i < max_raw_sensor_tbl; i++) {
+        struct raw_sensor_s *x = &raw_sensor_tbl[i];
+        float data[3];
+
+        sdlx_sensor_read_raw(x->id, data, 3);
+        if (strcmp(x->short_name, "stepc") != 0) {
+            sdlx_render_printf_ex1(0, ROW2Y(row++), 
+                                   FONT_SMALL, COLOR_WHITE,
+                                   "%s %7.2f %7.2f %7.2f", 
+                                   x->short_name, data[0], data[1], data[2]);
+        } else {
+            unsigned long stepc;
+            memcpy(&stepc, data, 8);
+            sdlx_render_printf_ex1(0, ROW2Y(row++), 
+                                   FONT_SMALL, COLOR_WHITE,
+                                   "%s %7ld", 
+                                   x->short_name, step_count);
+        }
     }
 }
 

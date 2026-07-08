@@ -622,7 +622,7 @@ void Sdlx_sensor_read_mag_heading(struct ParseState *Parser, struct Value *Retur
     ReturnValue->Val->Integer = retval;
 }
 
-void Sdlx_sensor_read_accelerometer(struct ParseState *Parser, struct Value *ReturnValue,
+void Sdlx_sensor_read_gravity_accel(struct ParseState *Parser, struct Value *ReturnValue,
         struct Value **Param, int NumArgs)
 {
     double * ax = (double *)Param[0]->Val->Pointer;
@@ -630,7 +630,19 @@ void Sdlx_sensor_read_accelerometer(struct ParseState *Parser, struct Value *Ret
     double * az = (double *)Param[2]->Val->Pointer;
 
     int retval;
-    retval = sdlx_sensor_read_accelerometer(ax, ay, az);
+    retval = sdlx_sensor_read_gravity_accel(ax, ay, az);
+    ReturnValue->Val->Integer = retval;
+}
+
+void Sdlx_sensor_read_device_accel(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
+{
+    double * ax = (double *)Param[0]->Val->Pointer;
+    double * ay = (double *)Param[1]->Val->Pointer;
+    double * az = (double *)Param[2]->Val->Pointer;
+
+    int retval;
+    retval = sdlx_sensor_read_device_accel(ax, ay, az);
     ReturnValue->Val->Integer = retval;
 }
 
@@ -798,7 +810,8 @@ struct LibraryFunction SdlFunctions[] = {
     { Sdlx_sensor_read_raw,          "int sdlx_sensor_read_raw(int id, float *data, int num_values);" },
     { Sdlx_sensor_read_step_counter, "int sdlx_sensor_read_step_counter(unsigned long *step_count);" },
     { Sdlx_sensor_read_mag_heading,  "int sdlx_sensor_read_mag_heading(double *mag_heading);" },
-    { Sdlx_sensor_read_accelerometer,"int sdlx_sensor_read_accelerometer(double *ax, double *ay, double *az);" },
+    { Sdlx_sensor_read_device_accel, "int sdlx_sensor_read_device_accel(double *ax, double *ay, double *az);" },
+    { Sdlx_sensor_read_gravity_accel,"int sdlx_sensor_read_gravity_accel(double *ax, double *ay, double *az);" },
     { Sdlx_sensor_read_roll_pitch,   "int sdlx_sensor_read_roll_pitch(double *roll, double *pitch);" },
     { Sdlx_sensor_read_pressure,     "int sdlx_sensor_read_pressure(double *millibars);" },
 
