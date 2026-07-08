@@ -327,7 +327,7 @@ static void process_sdlx_event(SDL_Event *ev, sdlx_event_t *event)
         //bool shift = (x->mod & SDL_KMOD_SHIFT) != 0;
         //INFO("GOT keycode 0x%x  shift=%d\n", keycode, shift);
         event->event_id = EVID_KEYBD;
-        event->u.keybd.ch = keycode;
+        event->u.data.bytes[0] = keycode;
         break; }
 
     case SDL_EVENT_QUIT: {

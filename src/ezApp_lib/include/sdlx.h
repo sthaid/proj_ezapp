@@ -3,7 +3,7 @@
 
 // xxx 
 // - global rename to FONTID_NORMAL etc
-// - font size range
+// - what is the font size range
 // - use sdlx_color_t for pxiels, instead of unsigned int
 
 #ifdef __cplusplus
@@ -11,7 +11,7 @@ extern "C" {
 #endif
 
 // The sdlx routines are built upon the SDL, SDL_mixer, and SDL_ttf libraries.
-// The purpose of these routines is to provide easy access to SDL features
+// The purpose of these routines is to provide easy access to the SDL features
 // applicable to miniApps.
 // 
 // Sdlx provides routines for:
@@ -19,6 +19,9 @@ extern "C" {
 // - audio:   audio play and record
 // - sensors: read Android device sensors
 // - events:  registration and detection of events
+
+// Refer to the miniApp source code for examples.
+// The files/apps/Template/template.c is a good example of a minimal miniApp.
 
 #define INVALID_NUMBER 999999999
 
@@ -151,7 +154,7 @@ void sdlx_print_set_default(int fontid, sdlx_color_t color);
 // This printf routine prints to the current_texture:
 // - x,y specify the upper left corner location of the printed text.
 // - the default fontid and color are used.
-// - xxx return value
+// - the returned sdlx_loc_t contains the location of the printed text
 sdlx_loc_t *sdlx_render_printf(int x, int y, char *fmt, ...) __attribute__ ((format (printf, 3, 4)));
 
 // External variables providing the size, in pixels, of a font character,
@@ -174,7 +177,7 @@ extern int sdlx_char_height_dflt;
 // - The main difference is the fontid, and color are provided as args,
 //   instead of using default fontid and color.
 // - The flags arg to sdlx_render_printf_ex2 provides additional capabilities, see below.
-// - xxx return value
+// - the returned sdlx_loc_t contains the location of the printed text
 sdlx_loc_t *sdlx_render_printf_ex1(int x, int y, int fontid, sdlx_color_t color, 
                                    char * fmt, ...)
                                    __attribute__ ((format (printf, 5, 6)));
@@ -379,8 +382,6 @@ void sdlx_create_test_file(char *dir, char *filename, int freq1, int freq2, int 
 // SENSORS
 // --------------------
 
-// xxx review left off here
-
 // - - - - - - - - - - - - 
 // High-Level Sensor Access
 // - - - - - - - - - - - - 
@@ -394,7 +395,7 @@ int sdlx_sensor_read_step_counter(unsigned long *step_count);
 
 // The magnetic sensor is read, this sensor provide magnetic field stength in the x,y,z directions.
 // The magnetic heading of the device is then calculated based on these 3 field strength values,
-// and adjusting for the device roll & pitch.
+// adjusting for the device roll & pitch.
 // The device magnetic heading is provided in range 0 to 359.999 degrees,
 // referenced to the top of the device.
 int sdlx_sensor_read_mag_heading(double *mag_heading);
@@ -405,10 +406,10 @@ int sdlx_sensor_read_mag_heading(double *mag_heading);
 // - z-axis: perpendicular to the screen pointing to user
 int sdlx_sensor_read_accelerometer(double *ax, double *ay, double *az);
 
-// The accelerometer sensor is read, providing acceleration values in the x,y,z directions.
-// The device roll & pitch is calculated from these 3 acceleration values.
+// The accelerometer sensor is read, which provides acceleration values in the x,y,z directions.
+// The device roll & pitch is calculated from these acceleration values.
 // The roll and pitch values are provided in degrees.
-// When the device is level, the roll and pitch are 0.
+// When the device is horizontal, the roll and pitch are 0.
 // Roll is positive when the right side of the device is lowered.
 // Pitch is positive when the top of the device is raised.
 int sdlx_sensor_read_roll_pitch(double *roll, double *pitch);
@@ -419,23 +420,26 @@ int sdlx_sensor_read_pressure(double *millibars);
 
 // Provides ambient temperature in Celsius.
 // Note that most Android devices do not have an ambient temperature sensor.
+// xxx delete
 int sdlx_sensor_read_temperature(double *degrees_c);
 
 // Provides relative humidity in percent.
 // Note that most Android devices do not have a humidity sensor.
+// xxx delete
 int sdlx_sensor_read_humidity(double *percent);
 
 // - - - - - - - - - - - - 
 // Low-Level Sensor Access
 // - - - - - - - - - - - - 
 
-// Android device sensors each have an:
+// Android device sensors each have:
 // - id:   identifies the sensor
 // - type  the type of sensor
 // - name: name of the sensor
 
 // The sensor type values can be found here:
-// ~/android/sdk/ndk/*/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/android/sensor.h
+//   ~/android/sdk/ndk/*/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/android/sensor.h
+// or in the "NOTES" section of src/ezApp_lib/sdlx_sensor.c.
 
 typedef struct {
     int   id;
@@ -445,17 +449,19 @@ typedef struct {
 
 // Returns table of sdlx_sensor_into_t.
 // For an example see: files/apps/Test/test.c "PAGE 8: SENSOR INFO TBL".
+// Do not free the returned sensor info table.
 sdlx_sensor_info_t *sdlx_sensor_get_info_tbl(int *max);
 
 // Search for a sensor of the type specified.
-// Returns -1 if not found; otherwise the found sensor id is returned.
+// Returns -1 if not found; otherwise the id of the sensor found is returned.
 // xxx rework this test
 int sdlx_sensor_find(int type);
 
 // Read the raw data from the specified sensor id.
-// xxx how to deal with step_count
-// xxx document that most sensors return float values
-// xxx doc how this routine can be used to read the step counter
+// Most sensors return float values; except for the step_counter sensor,
+// which returns uint64_t. To read the step_counter with this routine:
+//   unsigned long step_count;
+//   sdlx_sensor_read_raw(id_step_counter, (float*)&step_count, 2);
 int sdlx_sensor_read_raw(int id, float *data, int num_values);
 
 // --------------------
@@ -463,20 +469,21 @@ int sdlx_sensor_read_raw(int id, float *data, int num_values);
 // --------------------
 
 // Define common events:
-// - EVID_MOTION: This event is triggered when the display is tapped and dragged.
+// - EVID_MOTION: This event occurs when the display is tapped and dragged.
 //                The current x,y coordinates; and the relative motion in the x,y
 //                directions are returned by the call to sdlx_get_event.
-// - EVID_QUIT:   This event is usually registered by call to 
-//                sdlx_register_control_events(..., EVID_QUIT, "X");
-//                When the "X" is tapped, the EVID_QUIT event is triggered.
+// - EVID_QUIT:   This event is usually registered by calling 
+//                  sdlx_register_control_events(..., EVID_QUIT, "X");
+//                When the "X" is tapped, the EVID_QUIT event occurs.
 #define EVID_MOTION  10000
 #define EVID_QUIT    10001
 
 // This structure returns the event that occurred, by call to sdlx_get_event.
-// When the display is tapped at a location which is associated with a registered
+// When the display is tapped at a location associated with a registered
 // event, the registered event_id is returned.
 // If the EVID_MOTION event is registered, and the display is dragged, then 
-// the EVID_MOTION event is returned, along with the embedded motion struct.
+// the EVID_MOTION event is returned, along with the values contained in 
+// the embedded motion struct.
 typedef struct {
     int event_id;
     union {
@@ -498,6 +505,8 @@ typedef struct {
 // Otherwise, a miniApp defined event is being registered, the display
 // location associated with the event is supplied by the caller in the loc arg.
 // The value of event_id for miniApp defined events should be in range 1 - 9999.
+// Sdlx_register_event must be called for every display update, and called
+// following sdlx_display_init.
 void sdlx_register_event(sdlx_loc_t *loc, int event_id);
 
 // Register control area events. The control area is the Teal bar at the bottom
@@ -505,8 +514,7 @@ void sdlx_register_event(sdlx_loc_t *loc, int event_id);
 // rendered as a result of calling sdlx_register_control_events.
 // Up to 3 events can be registered in the control area.
 // Pass NULL for evstr1,2,3 to not register that event.
-// Usually evid3,evstr3 are set to EVID_QUIT,"X". And results in exitting 
-// a miniApp, or minimizing ezApp.
+// Usually evid3,evstr3 are set to EVID_QUIT,"X".
 void sdlx_register_control_events(int evid1, char *evstr1,
                                   int evid2, char *evstr2,
                                   int evid3, char *evstr3);
