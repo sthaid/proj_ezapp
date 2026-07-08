@@ -655,26 +655,6 @@ void Sdlx_sensor_read_pressure(struct ParseState *Parser, struct Value *ReturnVa
     ReturnValue->Val->Integer = retval;
 }
 
-void Sdlx_sensor_read_temperature(struct ParseState *Parser, struct Value *ReturnValue,
-        struct Value **Param, int NumArgs)
-{
-    double * degrees_c = (double *)Param[0]->Val->Pointer;
-
-    int retval;
-    retval = sdlx_sensor_read_temperature(degrees_c);
-    ReturnValue->Val->Integer = retval;
-}
-
-void Sdlx_sensor_read_humidity(struct ParseState *Parser, struct Value *ReturnValue,
-        struct Value **Param, int NumArgs)
-{
-    double * percent = (double *)Param[0]->Val->Pointer;
-
-    int retval;
-    retval = sdlx_sensor_read_humidity(percent);
-    ReturnValue->Val->Integer = retval;
-}
-
 //
 // events
 //
@@ -821,8 +801,6 @@ struct LibraryFunction SdlFunctions[] = {
     { Sdlx_sensor_read_accelerometer,"int sdlx_sensor_read_accelerometer(double *ax, double *ay, double *az);" },
     { Sdlx_sensor_read_roll_pitch,   "int sdlx_sensor_read_roll_pitch(double *roll, double *pitch);" },
     { Sdlx_sensor_read_pressure,     "int sdlx_sensor_read_pressure(double *millibars);" },
-    { Sdlx_sensor_read_temperature,  "int sdlx_sensor_read_temperature(double *degrees_c);" },
-    { Sdlx_sensor_read_humidity,     "int sdlx_sensor_read_humidity(double *percent);" },
 
     // events
     { Sdlx_register_event,           "void sdlx_register_event(sdlx_loc_t *loc, int event_id);" },

@@ -25,8 +25,6 @@
 #define ASENSOR_TYPE_GRAVITY             9
 #define ASENSOR_TYPE_LINEAR_ACCELERATION 10
 #define ASENSOR_TYPE_ROTATION_VECTOR     11
-#define ASENSOR_TYPE_RELATIVE_HUMIDITY   12
-#define ASENSOR_TYPE_AMBIENT_TEMPERATURE 13
 #define ASENSOR_TYPE_SIGNIFICANT_MOTION  17
 #define ASENSOR_TYPE_STEP_DETECTOR       18
 #define ASENSOR_TYPE_STEP_COUNTER        19
@@ -55,8 +53,6 @@ static int               id_step_counter;
 static int               id_accelerometer;
 static int               id_magnetic_field;
 static int               id_pressure;
-static int               id_ambient_temperature;
-static int               id_relative_humidity;
 
 //
 // prototypes
@@ -117,8 +113,6 @@ int sdlx_sensor_init(void)
     id_accelerometer       = sdlx_sensor_find(ASENSOR_TYPE_ACCELEROMETER);
     id_magnetic_field      = sdlx_sensor_find(ASENSOR_TYPE_MAGNETIC_FIELD);
     id_pressure            = sdlx_sensor_find(ASENSOR_TYPE_PRESSURE);
-    id_ambient_temperature = sdlx_sensor_find(ASENSOR_TYPE_AMBIENT_TEMPERATURE);
-    id_relative_humidity   = sdlx_sensor_find(ASENSOR_TYPE_RELATIVE_HUMIDITY);
 
     // return success
     INFO("success\n");
@@ -352,42 +346,6 @@ int sdlx_sensor_read_pressure(double *millibars)
 
     // return pressure
     *millibars = data[0];
-    return 0;
-}
-
-// note: not tested
-int sdlx_sensor_read_temperature(double *degrees_c)
-{
-    float data[3];
-    int   rc;
-
-    // read raw temperature sensor data
-    rc = sdlx_sensor_read_raw(id_ambient_temperature, data, 3);
-    if (rc != 0) {
-        *degrees_c = INVALID_NUMBER;
-        return -1;
-    }
-
-    // return temperature
-    *degrees_c = data[0];
-    return 0;
-}
-
-// note: not tested
-int sdlx_sensor_read_humidity(double *percent)
-{
-    float data[3];
-    int   rc;
-
-    // read raw sensor data
-    rc = sdlx_sensor_read_raw(id_relative_humidity, data, 3);
-    if (rc != 0) {
-        *percent = INVALID_NUMBER;
-        return -1;
-    }
-
-    // return humidity
-    *percent = data[0];
     return 0;
 }
 
