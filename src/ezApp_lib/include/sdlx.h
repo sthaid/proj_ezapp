@@ -308,9 +308,28 @@ void sdlx_set_render_target(sdlx_texture_t *t);
 // AUDIO
 // --------------------
 
-// xxx do this section
+// Capabilities:
+// - record from microphone to mp3 file
+// - record from Android device to mp3 file
+// - play tone sequence
+// - play buffer of raw samples
+// - play mp3 file
+//
+// The audio processing is performed in seperate threads.
+// Thus calls to routines that play or record audio will initiate
+// the operation, and return immedeately.
+//
+// Control routines are provided to stop, pause, and resume recording or playback.
+//
+// For routines that deal with audio samples, these samples are 
+// float values, in the range -1.0 to +1.0.
+
+// The frame rate is fixed at 48000 frames/sec.
+// A frame contains 1 sample for mono; and 2 samples for stereo.
+// A stereo frame caontains the left sample followed by the right sample.
 #define FRAMES_PER_SEC 48000
 
+// Values of sdlx_audio_state_t state field.
 #define AUDIO_STATE_IDLE                0
 #define AUDIO_STATE_PLAY_FILE           1
 #define AUDIO_STATE_PLAY_TONES_SEQUENCE 2
@@ -318,15 +337,18 @@ void sdlx_set_render_target(sdlx_texture_t *t);
 #define AUDIO_STATE_RECORD_FROM_MIC     4
 #define AUDIO_STATE_RECORD_FROM_DEVICE  5
 
+// For call to sdlx_get_audio_samples, arg which_channel.
 #define GET_SAMPLES_MONO          0
 #define GET_SAMPLES_LEFT_CHANNEL  1
 #define GET_SAMPLES_RIGHT_CHANNEL 2
 
+// Used by sdlx_audio_play_tones.
 typedef struct {
     short freq;
     short intvl_ms;
 } sdlx_tone_t;
 
+// Returned by sdlx_audio_get_state.
 typedef struct {
     int    state;
     bool   stopping;
@@ -343,25 +365,64 @@ typedef struct {
 // Control
 // - - - - - -
 
+// Stop, pause, or resume in progress playback or recording.
 int sdlx_audio_stop(void);
 void sdlx_audio_pause(void);
 void sdlx_audio_resume(void);
-void sdlx_audio_get_state(sdlx_audio_state_t * state);
-int sdlx_audio_file_duration_secs(char *dir, char *filename);
+
+// Get a copy of the current audio state.
+void sdlx_audio_get_state(sdlx_audio_state_t *state);
 
 // - - - - - -
 // Get/Downsample Most Recent Samples
 // - - - - - -
 
+// Get copy of the most recent audio samples, either being played or recorded.
+// - num_ret_samples: number of samples to return
+// - num_downsample:  downsample interval, 
+//                    use 1 to return all samples, 2 to return every other sample, etc
+// - which_channel:   GET_SAMPLES_MONO, GET_SAMPLES_LEFT_CHANNEL, or GET_SAMPLES_RIGHT_CHANNEL
+// - ret_samples:     array to hold the returned samples
+//
+// For an example, refer to the Color Organ miniApp (files/apps/ColrOrgn/color_organ.c).
 void sdlx_get_audio_samples(int num_ret_samples, int num_downsample, int which_channel, float *ret_samples);
 
 // - - - - - -
 // Playback
 // - - - - - -
 
+// The sdlx_audio_play_file, sdlx_audio_play_buff, and sdlx_audio_play_tones
+// routines return imedeately, the audio play is handled by a thread.
+
+// Play an audio file.
+// This routine uses SDL_mixer routines to play the file.
+// The specified file would usually be an mp3 file, because that is the file type
+//  created by sdlx_audio_record_from_mic and sdlx_audio_record_from_device.
+// However it should be possible to play a file that is in any format supported
+//  by SDL_mixer. SDL_mixer supported formats: MP3, WAV, Ogg Vorbis, FLAC, Opus, MIDI.
+// xxx test with wav and mp3 file
 int sdlx_audio_play_file(char *dir, char *filename);
+
+// When playing a file, the sdlx_audio_set_play_file_time routine will set the
+// file position to 'secs'.
 void sdlx_audio_set_play_file_time(int secs);
+
+// Play a sequence of tones and gaps, as specified in the tones array.
+// The tones array must be terminated with an entry containing intvl_ms=0.
+// Use 'freq' equal 0 for a gap.
 int sdlx_audio_play_tones(sdlx_tone_t *tones);
+
+// Play a buffer containing raw audio samples.
+// - samples:                array of raw audio samples; 
+//                           interleaved left,right when num_channels=2 (stereo);
+//                           sample value range is -1.0 to 1.0
+// - num_samples:            number of samples in the array
+// - num_channels:           number of channels, 1=mono, 2=stereo
+// - loops:                  play the buffer 'loops' times
+// - free_samples_when_done: when set, the samples buffer will be freed
+// For example:
+// - 1 second mono:   num_samples=48000, num_channes=1
+// - 1 second stereo: num_samples=96000, num_channes=2
 int sdlx_audio_play_buff(float *samples, int num_samples, int num_channels,
                          int loops, bool free_samples_when_done);
 
@@ -369,13 +430,29 @@ int sdlx_audio_play_buff(float *samples, int num_samples, int num_channels,
 // Record
 // - - - - - -
 
+// Record an mp3 file from the Android microphone.
+// - dir/filename:   path of the mp3 file to create
+// - audo_stop_secs: if greater than 0 the recording will automatically stop
+//                   following this number of seconds of silence
+// - append:         when set, the recording is appended to the specified dir/filename
+// - start_paused:   if set the recording state is initially paused;
+//                   a subsequent call to sdlx_audio_resume is needed to start recording
 int sdlx_audio_record_from_mic(char *dir, char *filename, int auto_stop_secs, bool append, bool start_paused);
+
+// Record an mp3 file from the Android device; for example record from YouTube Music.
+// - dir/filename:   path of the mp3 file to create
+// - append:         when set, the recording is appended to the specified dir/filename
+// - start_paused:   if set the recording state is initially paused;
+//                   a subsequent call to sdlx_audio_resume is needed to start recording
 int sdlx_audio_record_from_device(char *dir, char *filename, bool append, bool start_paused);
 
 // - - - - - -
 // Create Test File
 // - - - - - -
 
+// Create an mp3 file containing a frequency sweep from freq1 to freq2 of duration_secs.
+// The filename must have '.mp3' extension.
+// The created file is stereo.
 void sdlx_create_test_file(char *dir, char *filename, int freq1, int freq2, int duration_secs);
 
 // --------------------

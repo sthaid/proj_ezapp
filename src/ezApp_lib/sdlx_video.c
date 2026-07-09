@@ -93,6 +93,7 @@ int sdlx_video_init(void)
 
     INFO("initializing\n");
 
+    // xxx make a setting for this
 #if 0
     // commented out because it is not an important feature, and
     // enabling this may reduce battery life 
@@ -111,7 +112,7 @@ int sdlx_video_init(void)
         return -1;
     }
 
-#if 0
+#if 0 // xxx maybe enable this
     // display available and current video drivers
     int num, i;
     num = SDL_GetNumVideoDrivers();

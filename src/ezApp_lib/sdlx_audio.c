@@ -9,11 +9,11 @@
 #include <lame.h>
 
 // Capabilities:
-// - record from microphone
-// - record Android device audio
-// - play sequence of tones
-// - play buffer
-// - play file
+// - record from microphone to mp3 file
+// - record Android device audio to mp3 file
+// - play tone sequence
+// - play buffer of raw samples
+// - play mp3 file
 
 //
 // defines
