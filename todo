@@ -1,5 +1,5 @@
-retest on Motorola
 
+---- DOCS ----
 docs:
 - top level .md file
 - doc dir miniApp and android docs
@@ -16,11 +16,22 @@ doc:
   sudo apt install xxx cscope and tags
 - README in bin dir
 
-xxx tagged issues
+xxx arm64 arch only;  or maybe don't mention this
+xxx TOC ?
+xxx spellcheck
+xxx reinstall linux PC to check instructions,
+xxx doc Creating a miniSvc ?
+xxx section on building android APK
 
-xxxxxxxxxxxxxx
+If you expect to have dozens of Markdown files, a common best practice is to keep the root clean by placing your primary README.md at the top level and moving all other supplemental documentation into a dedicated /docs directory
 
 --- TODO --
+
+xxx add -h option to bindir tools
+
+xxx tagged issues
+
+retest on Motorola
 
 record volume
 - check if this has been fixed in SDL
