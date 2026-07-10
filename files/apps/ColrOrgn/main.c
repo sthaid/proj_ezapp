@@ -494,7 +494,7 @@ void get_list_of_files(void)
 {
     static long saved_mtime;
 
-    char s[200], cmd[300], *bn, *p;
+    char s[200], cmd[300], *p;
     FILE *fp;
     long  mtime;
 
@@ -503,7 +503,7 @@ void get_list_of_files(void)
     mtime = util_file_mtime(files_dir, NULL);
     if (mtime != saved_mtime) {
         saved_mtime = mtime;
-        printf("I %s: generate list of mp3/wav files\n", progname);
+        printf("I %s: generate list of files\n", progname);
 
         // free existing list
         for (int i = 0; i < max_files; i++) {
@@ -515,16 +515,15 @@ void get_list_of_files(void)
         max_files = 0;
 
         // create new list of files
-        sprintf(cmd, "/bin/ls -1 %s/*.mp3", files_dir);
+        sprintf(cmd, "/bin/ls -1 %s", files_dir);
         fp = popen(cmd, "r");
         while (fgets(s, sizeof(s), fp) != NULL) {
             str_remove_trailing_newline(s);
 
-            bn = basename(s);
-            files[max_files] = strdup(bn);
+            files[max_files] = strdup(s);
 
-            if ((p = strstr(bn, ".mp3")) != NULL) *p = '\0';
-            files_noext[max_files] = strdup(bn);
+            if ((p = strchr(s, '.')) != NULL) *p = '\0';
+            files_noext[max_files] = strdup(s);
 
             printf("I %s: files[%d] = %s\n", progname, max_files, files[max_files]);
             max_files++;

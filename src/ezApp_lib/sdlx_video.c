@@ -634,9 +634,11 @@ static sdlx_loc_t *render_text(int x, int y, int fontid, sdlx_color_t color, uns
     if (font[ptsize].font == NULL) {
         font_create(ptsize);
         if (font[ptsize].font == NULL) {
-            ERROR("failed to create font ptsize %d\n", ptsize);
+            ERROR("failed to create font ptsize %d for fontid %d\n", ptsize, fontid);
             loc.x = loc.y = loc.w = loc.h = 0;
             return &loc;
+        } else {
+            INFO("created font ptsize %d for fontid %d\n", ptsize, fontid);
         }
     }
 

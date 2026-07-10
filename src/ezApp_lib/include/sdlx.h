@@ -83,9 +83,8 @@ typedef struct sdlx_texture sdlx_texture_t;
 extern int sdlx_win_width;
 extern int sdlx_win_height;
 
-// - - - - - - - - - - - - - 
-// Display Init and Present xxx change name to 'Video Display ...'
-// - - - - - - - - - - - - - 
+// Video: Display Init and Present
+// -------------------------------
 
 #define PORTRAIT  0
 #define LANDSCAPE 1
@@ -98,9 +97,8 @@ void sdlx_display_init(sdlx_color_t color, int orientation);
 // Calling this routine makes the display_texture visible.
 void sdlx_display_present(void);
 
-// - - - - - 
-// Colors
-// - - - - - 
+// Video: Colors
+// -------------
 
 #define BYTES_PER_PIXEL   4
 
@@ -133,16 +131,15 @@ sdlx_color_t sdlx_scale_color(sdlx_color_t color, double intensity);
 sdlx_color_t sdlx_set_color_alpha(sdlx_color_t color, int alpha);
 sdlx_color_t sdlx_wavelength_to_color(int wavelength);
 
-// - - - - - - - - - - - 
-// Render Text, Basic API
-// - - - - - - - - - - - 
+// Video: Render Text, Basic API
+// -----------------------------
 
 // The font used by ezApp is 'FreeMonoBold.ttf', which is a fixed width font.
 
 // When a miniApp starts the default fontid & color are preset to FONT_NORMAL, COLOR_WHITE.
 
 // These values use used for the fontid arg, and specify the size of the font.
-// Other values are okay to use, in range xxx (biggest) to xxx (smallest).
+// Other values are okay to use, in range 5 (largest font) to 143 (smallest font).
 #define FONT_TINY     40   // 40 chars fit across portrait display
 #define FONT_SMALL    30   // 30 chars fit across portrait display
 #define FONT_NORMAL   20   // etc
@@ -166,9 +163,8 @@ extern int sdlx_char_height_dflt;
 #define ROW2Y(r) ((r) * sdlx_char_height_dflt)
 #define COL2X(c) ((c) * sdlx_char_width_dflt)
 
-// - - - - - - - - - - - - -
-// Render Text, Advanced API
-// - - - - - - - - - - - - -
+// Video: Render Text, Advanced API
+// --------------------------------
 
 // The Render Text Advanced API does not use the default font and color that are
 // used in the Basic API.
@@ -216,9 +212,8 @@ int sdlx_char_height(int fontid);
 #define FLAG_BG_WHITE      0x00040000   // use white background
 #define FLAG_XY_CTR        (FLAG_X_CTR | FLAG_Y_CTR)
 
-// - - - - - - - - - - - - - - - - - - - - -
-// Render Rectangle, Lines, Circles, Points
-// - - - - - - - - - - - - - - - - - - - - -
+// Video: Render Rectangle, Lines, Circles, Points
+// -----------------------------------------------
 
 #define MAX_POINT_SIZE 9  // for call to sdlx_render_point and sdlx_render_points
 
@@ -239,9 +234,8 @@ void sdlx_render_fill_circle(int x_ctr, int y_ctr, int radius, sdlx_color_t colo
 void sdlx_render_point(int x, int y, sdlx_color_t color, int point_size);
 void sdlx_render_points(sdlx_point_t *points, int count, sdlx_color_t color, int point_size);
 
-// - - - - - 
-// Textures
-// - - - - - 
+// Video: Textures
+// ---------------
 
 // Textures are GPU memory buffers that can be selected as render target.
 // Once set as render target, the texture is the current_texture.
@@ -284,10 +278,10 @@ void sdlx_clear_texture(sdlx_texture_t *t, sdlx_color_t color);
 void sdlx_color_mod_texture(sdlx_texture_t *t, float r, float g, float b);
 
 // Copy pixels to the texture. The pixels arg must contain texture_w * texture_h pixels.
-void sdlx_set_texture_pixels(sdlx_texture_t *t, unsigned int *pixels); // xxx use sdlx_color_t ?
+void sdlx_set_texture_pixels(sdlx_texture_t *t, unsigned int *pixels);
 // Returns array containing the texture pixels; also returns texture width & height.
 // Caller must free the returned pixels array.
-unsigned int *sdlx_get_texture_pixels(sdlx_texture_t *t, int *w, int *h);  // xxx sdlx_color_t
+unsigned int *sdlx_get_texture_pixels(sdlx_texture_t *t, int *w, int *h);
 
 // Copy entire texture to location x,y of the current_texture.
 void sdlx_render_texture(sdlx_texture_t *t, int x, int y);
@@ -361,9 +355,8 @@ typedef struct {
     double volume;
 } sdlx_audio_state_t;
 
-// - - - - - -
-// Control
-// - - - - - -
+// Audio: Control
+// --------------
 
 // Stop, pause, or resume in progress playback or recording.
 int sdlx_audio_stop(void);
@@ -373,9 +366,8 @@ void sdlx_audio_resume(void);
 // Get a copy of the current audio state.
 void sdlx_audio_get_state(sdlx_audio_state_t *state);
 
-// - - - - - -
-// Get/Downsample Most Recent Samples
-// - - - - - -
+// Audio: Get Most Recent Samples
+// ------------------------------
 
 // Get copy of the most recent audio samples, either being played or recorded.
 // - num_ret_samples: number of samples to return
@@ -387,9 +379,8 @@ void sdlx_audio_get_state(sdlx_audio_state_t *state);
 // For an example, refer to the Color Organ miniApp (files/apps/ColrOrgn/color_organ.c).
 void sdlx_get_audio_samples(int num_ret_samples, int num_downsample, int which_channel, float *ret_samples);
 
-// - - - - - -
-// Playback
-// - - - - - -
+// Audio: Playback
+// ---------------
 
 // The sdlx_audio_play_file, sdlx_audio_play_buff, and sdlx_audio_play_tones
 // routines return imedeately, the audio play is handled by a thread.
@@ -398,9 +389,8 @@ void sdlx_get_audio_samples(int num_ret_samples, int num_downsample, int which_c
 // This routine uses SDL_mixer routines to play the file.
 // The specified file would usually be an mp3 file, because that is the file type
 //  created by sdlx_audio_record_from_mic and sdlx_audio_record_from_device.
-// However it should be possible to play a file that is in any format supported
+// However it is possible to play a file that is in any format supported
 //  by SDL_mixer. SDL_mixer supported formats: MP3, WAV, Ogg Vorbis, FLAC, Opus, MIDI.
-// xxx test with wav and mp3 file
 int sdlx_audio_play_file(char *dir, char *filename);
 
 // When playing a file, the sdlx_audio_set_play_file_time routine will set the
@@ -426,9 +416,8 @@ int sdlx_audio_play_tones(sdlx_tone_t *tones);
 int sdlx_audio_play_buff(float *samples, int num_samples, int num_channels,
                          int loops, bool free_samples_when_done);
 
-// - - - - - -
-// Record
-// - - - - - -
+// Audio: Record
+// -------------
 
 // Record an mp3 file from the Android microphone.
 // - dir/filename:   path of the mp3 file to create
@@ -446,9 +435,8 @@ int sdlx_audio_record_from_mic(char *dir, char *filename, int auto_stop_secs, bo
 //                   a subsequent call to sdlx_audio_resume is needed to start recording
 int sdlx_audio_record_from_device(char *dir, char *filename, bool append, bool start_paused);
 
-// - - - - - -
-// Create Test File
-// - - - - - -
+// Audio: Create Test File
+// -----------------------
 
 // Create an mp3 file containing a frequency sweep from freq1 to freq2 of duration_secs.
 // The filename must have '.mp3' extension.
@@ -459,9 +447,8 @@ void sdlx_create_test_file(char *dir, char *filename, int freq1, int freq2, int 
 // SENSORS
 // --------------------
 
-// - - - - - - - - - - - - 
-// High-Level Sensor Access
-// - - - - - - - - - - - - 
+// Sensors: High-Level Sensor Access
+// ---------------------------------
 
 // These routines read the Android device sensors.
 // The return value is 0 for success, and -1 for failure. 
@@ -477,18 +464,19 @@ int sdlx_sensor_read_step_counter(unsigned long *step_count);
 // referenced to the top of the device.
 int sdlx_sensor_read_mag_heading(double *mag_heading);
 
-// xxx
-// Reads accelerometer sensor. Units are m/s^2.
+// Read gravity accelerometer sensor. Units are m/s^2.
 // - x-axis: left to right
 // - y-axis: bottom to top
 // - z-axis: perpendicular to the screen pointing to user
 int sdlx_sensor_read_gravity_accel(double *ax, double *ay, double *az);
+
+// Read device acceleration sensor; this is the acceleration of the device
+// with the acceleration due to gravity removed.
 int sdlx_sensor_read_device_accel(double *ax, double *ay, double *az);
 
-// xxx
-// The accelerometer sensor is read, which provides acceleration values in the x,y,z directions.
-// The device roll & pitch is calculated from these acceleration values.
-// The roll and pitch values are provided in degrees.
+// The gravity accelerometer sensor is read.
+// The device roll & pitch are calculated from the gravity acceleration sensor values.
+// The roll and pitch values are in degrees.
 // When the device is horizontal, the roll and pitch are 0.
 // Roll is positive when the right side of the device is lowered.
 // Pitch is positive when the top of the device is raised.
@@ -498,19 +486,8 @@ int sdlx_sensor_read_roll_pitch(double *roll, double *pitch);
 // Standard atmospheric pressure at sea level is 1,013.25 millibars.
 int sdlx_sensor_read_pressure(double *millibars);
 
-// Provides ambient temperature in Celsius.
-// Note that most Android devices do not have an ambient temperature sensor.
-// xxx delete
-int sdlx_sensor_read_temperature(double *degrees_c);
-
-// Provides relative humidity in percent.
-// Note that most Android devices do not have a humidity sensor.
-// xxx delete
-int sdlx_sensor_read_humidity(double *percent);
-
-// - - - - - - - - - - - - 
-// Low-Level Sensor Access
-// - - - - - - - - - - - - 
+// Sensors: Low-Level Sensor Access
+// --------------------------------
 
 // Android device sensors each have:
 // - id:   identifies the sensor
@@ -534,7 +511,6 @@ sdlx_sensor_info_t *sdlx_sensor_get_info_tbl(int *max);
 
 // Search for a sensor of the type specified.
 // Returns -1 if not found; otherwise the id of the sensor found is returned.
-// xxx rework this test
 int sdlx_sensor_find(int type);
 
 // Read the raw data from the specified sensor id.
@@ -576,9 +552,8 @@ typedef struct {
     } u;
 } sdlx_event_t;
 
-// - - - - - - - - - - 
-// Event Registration
-// - - - - - - - - - - 
+// Events: Registration
+// --------------------
 
 // Register an event.
 // If EVID_MOTION is being registered then loc should be NULL.
@@ -599,9 +574,8 @@ void sdlx_register_control_events(int evid1, char *evstr1,
                                   int evid2, char *evstr2,
                                   int evid3, char *evstr3);
 
-// - - - - - - - - 
-// Wait For Event
-// - - - - - - - - 
+// Events: Wait For Event
+// ----------------------
 
 // Wait for an event, if timeout occurs then event->event_id is set to -1.
 // Timeout_usecs values:
