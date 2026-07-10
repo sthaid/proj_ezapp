@@ -71,10 +71,10 @@ void print_json_value(json_value_t *jv)
     }
 
     switch (jv->type) {
-    // xxx is this all of them?
     case JSON_TYPE_FLAG:   printf("FLAG   %d\n", jv->u.flag);   break;
     case JSON_TYPE_NUMBER: printf("NUMBER %g\n", jv->u.number); break;
     case JSON_TYPE_STRING: printf("STRING %s\n", jv->u.string); break;
+    case JSON_TYPE_ARRAY:  printf("ARRAY  %p\n", jv->u.array);  break;
     case JSON_TYPE_OBJECT: printf("OBJECT %p\n", jv->u.object); break;
     default:
         printf("ERROR: bad json_value type %d\n", jv->type);
