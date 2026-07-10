@@ -1,11 +1,6 @@
 #ifndef __SDLX_H__
 #define __SDLX_H__
 
-// xxx 
-// - global rename to FONTID_NORMAL etc
-// - what is the font size range
-// - use sdlx_color_t for pxiels, instead of unsigned int
-
 #ifdef __cplusplus
 extern "C" {
 #endif

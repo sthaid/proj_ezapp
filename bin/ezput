@@ -43,14 +43,16 @@ function okay_to_xfer()
           "$1" == *".json" || \
           "$1" == *".dat" || \
           "$1" == *".mp3" || \
+          "$1" == *".wav" || \
+          "$1" == *".swp" || \
           "$1" == *"params" || \
           "$1" == *"FreeMonoBold.ttf" || \
           "$1" == *"credits" || \
           "$1" == *"licenses" ]]; \
     then
-        return 1
+        return 1  # not okay
     else
-        return 0
+        return 0  # okay
     fi
 }
 

@@ -1,47 +1,10 @@
 retest on Motorola
 
-xxxxxxxxxxxx
-
-sdlx_sensor_read_accelerometer       ->  sdlx_sensor_read_device_accel
-                                         sdlx_sensor_read_gravity_accel
-
-xxxxxxxxxxxxxxxx
-
-ezput ignore *.swp
-xxxxxxxxxxxxx
-
-Android’s TYPE_ORIENTATION sensor is deprecated. To get azimuth, pitch, and roll, combine the TYPE_ACCELEROMETER and TYPE_MAGNETIC_FIELD sensors. Feed their raw data into SensorManager.getRotationMatrix(), then pass that matrix into SensorManager.getOrientation() to get your three angles.
-
-
-xxxxxxxxxxxxxx
-
-The GPL Rule: Because it is under the GPL, if you distribute a software package or project that includes the font file, you must also offer to make the font's source files available to users
-
-
-How to comply:Include the License: 
-
-Add a copy of the GPL v3 license text (usually named LICENSE.txt or COPYING) 
-in your app’s installation directory.
-
-Add an "About" Credit: In your app's "About" or "Legal Notices" screen, state 
-that you use FreeMonoBold and that it is licensed under the GPL v3 with Font 
-Exception.
-
-Provide the Source: You must make the source code of the font available to 
-your users. You can satisfy this easily by including the original GNU FreeFont 
-download link in your documentation, or by bundling the original .tar.gz source 
-archive with your download. (Note: You do not have to open-source your own 
-app's proprietary code, because the Font Exception protects your app from the 
-"viral" nature of the GPL).
-
-"FreeMonoBold source files can be obtained from the official GNU FreeFont project at gnu.org"
-
-https://spdx.org/licenses/GPL-3.0-only.html
-
-
---- TODO --
-
-README in bin dir
+docs:
+- top level .md file
+- doc dir miniApp and android docs
+- include top level README.md in Settings
+  - check order of Settings
 
 doc:
 - doc: - document the sdlx.h, utils.h, and svcs.h files      IN PROG
@@ -51,18 +14,23 @@ doc:
 - what packages  are needed, how is libssl-dev already installed
   sudo apt install libssl-dev
   sudo apt install xxx cscope and tags
+- README in bin dir
+
+xxx tagged issues
+
+xxxxxxxxxxxxxx
+
+--- TODO --
 
 record volume
 - check if this has been fixed in SDL
 - marking of altered SDL source
 
-xxx issues,  various doc issues remain
-
 --- TODO LOWER PRIO ----
 
 permissions after doing a ezget ?
 
---- REPO ---
+--- REPOs ---
 
 newrepo called ezApp
 
@@ -74,11 +42,10 @@ reinstall devel PC
 
 --- RECHECKS ---
 
+code review
+- mmap / munmap - code reveiw,  make sure fd is closed
+apps sanity checks
 cleanup logging prints
-audio: - audio code review and retest
-test all apps
-sdl return codes are now boolean
-mmap / munmap - code reveiw,  make sure fd is closed
 
 --- LATER ---
 
@@ -90,6 +57,8 @@ picoc should free all unfreed allocations  (maybe)
 - calloc, malloc, realloc, strdup
 - open, fopen
 - util_map_file 
+
+Android’s TYPE_ORIENTATION sensor is deprecated. To get azimuth, pitch, and roll, combine the TYPE_ACCELEROMETER and TYPE_MAGNETIC_FIELD sensors. Feed their raw data into SensorManager.getRotationMatrix(), then pass that matrix into SensorManager.getOrientation() to get your three angles.
 
 --- DOC PICOC ISSUES ---
 
