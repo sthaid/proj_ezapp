@@ -523,6 +523,7 @@ static void get_list_of_apps(void)
         return;
     }
 
+// xxx and the apps dir has not changed
     // if layout file has not changed then 
     // return without updating the list of apps
     if (statbuf.st_mtime == layout_file_mtime) {
@@ -610,6 +611,14 @@ static void get_list_of_apps(void)
         }
     }
     fclose(fp);
+
+    // xxx
+    // advance max_apps to multiple of 3 
+// xxxxxxxxx
+// get list of apps/* dirs
+// loop over the list of dirs
+//   if dir not in layout then add new app at end of list
+
 
 #if 0
     // debug print the list of apps names
@@ -838,10 +847,10 @@ static void settings(void)
         // process the event
         switch (event.event_id) {
         case EVID_LICENSES:
-            show_file("licenses", PORTRAIT, FONT_TINY);
+            show_file("LICENSE", PORTRAIT, FONT_TINY);
             break;
         case EVID_CREDITS:
-            show_file("credits", LANDSCAPE, FONT_SMALL);
+            show_file("CREDITS", LANDSCAPE, FONT_SMALL);
             break;
         case EVID_DEVEL_MODE:
             params.devel_mode = (params.devel_mode ? 0 : 1);
