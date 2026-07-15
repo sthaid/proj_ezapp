@@ -33,3 +33,4 @@ bin/src/ezlogfilter
 cscope.files
 cscope.out
 tags
+*.swp
