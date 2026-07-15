@@ -1,23 +1,28 @@
+xxx get rid of doc/examples dir,  maybe move it to the include dir with utils.h
+
+xxx search all for proj_ezApp
+
+xxx make layout optional
 
 ---- DOCS ----
+
 docs:
-- top level .md file
-- doc dir miniApp and android docs
-- include top level README.md in Settings
+- top level .md file                           GETTING CLOSE
+- doc dir miniApp and android docs             NEXT  
+- include top level README.md in Settings      NEXT
   - check order of Settings
 
 doc:
-- doc: - document the sdlx.h, utils.h, and svcs.h files      IN PROG
-- document the sdlx.h, utils.h, and svcs.h files
-- check Android README
+- document the sdlx.h, utils.h, and svcs.h files    NEEDS REVIEW, AND SPELLCHECK
 - picoc restrictions - src/picoc/tests/shaid/101_ternary_op.output
-- what packages  are needed, how is libssl-dev already installed
+- what packages  are needed on linux, check the 
   sudo apt install libssl-dev
   sudo apt install xxx cscope and tags
 - README in bin dir
 
-xxx arm64 arch only;  or maybe don't mention this
-xxx TOC ?
+bin dir README.md
+
+xxx MD TOC ?
 xxx spellcheck
 xxx reinstall linux PC to check instructions,
 xxx doc Creating a miniSvc ?

@@ -1,5 +1,6 @@
 #!/bin/bash
 
+// xxx remove this
 function install_pkgs()
 {
     sudo apt update
@@ -17,6 +18,7 @@ function install_android_sdk()
     cmdlinetoolszip=$1
     if [ "$cmdlinetoolszip" = "" ]; then
         echo "ERROR: path to cmdlinetools.zip required"
+        # xxx usage
         exit 1
     fi
 
@@ -30,7 +32,7 @@ function install_android_sdk()
         exit 1
     fi
 
-    # to avoid a potential problem, kill gradle daemon and remove gradle daemon directory
+    # to avoid a possible problem, kill gradle daemon and remove gradle daemon directory
     if true; then
         echo "Kill and cleanup gradle daemon"
         pkill -f gradle 

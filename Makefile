@@ -52,6 +52,6 @@ install_android:
 clean:
 	git clean -fdx
 	rm -rf src/SDL src/SDL_mixer src/SDL_ttf android/SDL
-	@echo "Remaing files:"; git ls-files --other
+	@echo "Remaining files:"; git ls-files --other
 
 .PHONY: clean

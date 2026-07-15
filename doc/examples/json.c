@@ -38,6 +38,7 @@ int main()
     printf("------ JSON END ------\n\n");
 
     // parse the json_text
+    // xxx test for json_root
     json_root = util_json_parse(json_text, &end_ptr);
     if (strlen(end_ptr) > 0) {
         printf("end_ptr = ...");

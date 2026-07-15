@@ -5,8 +5,11 @@
 EzApp runs miniApps and miniSvcs that are written in the C Language.
 These miniApps and miniSvcs are executed by the PicoC C language interpreter.
 
+xxx explain intended to run on Android app; 
+xxx also runs on Linux PC for testing; without Android sensors
+
 Users can develop their own miniApps and miniSvcs.
-To develop miniApps and miniSvcs a Linux PC is required.
+To develop miniApps and miniSvcs a PC is required. Refer to xxx for instructions.
 
 When ezApp is first run on your Android device, the following permissions
 will be requested:
