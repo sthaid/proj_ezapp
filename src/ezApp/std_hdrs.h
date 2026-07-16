@@ -8,6 +8,7 @@
 #include <stdarg.h>
 #include <stddef.h>
 #include <unistd.h>
+#include <libgen.h>
 #include <string.h>
 #include <errno.h>
 #include <dirent.h>

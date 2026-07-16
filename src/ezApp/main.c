@@ -392,6 +392,7 @@ static void processing(void)
 
 static sdlx_texture_t *circle;
 static sdlx_texture_t *create_filled_circle_texture(int radius, sdlx_color_t color);
+static bool app_name_exists(char *name);
 static void sanitize_input(char *s);
 
 static void display_menu(void)
@@ -506,30 +507,39 @@ static sdlx_texture_t *create_filled_circle_texture(int radius, sdlx_color_t col
 
 static void get_list_of_apps(void)
 {
-    const char *layout_file_path = "apps/layout";
     struct stat statbuf;
+    bool        layout_file_changed;
+    bool        apps_dir_changed;
     int         rc, i, cnt, secs, n, line_num;
     FILE       *fp;
     char        str[200], s[3][100];
 
     static long layout_file_mtime;
+    static long apps_dir_mtime;
     static bool first_call = true;
 
-    // if layout file doesn't exist then
-    // return without changing the list of apps,
-    // because the file may have just been temporarily deleted
-    rc = stat(layout_file_path, &statbuf);
+    // determine if layout file has changed
+    rc = stat("apps/layout", &statbuf);
     if (rc != 0) {
+        ERROR("stat apps/layout failed, %s\n", strerror(errno));
         return;
     }
-
-// xxx and the apps dir has not changed
-    // if layout file has not changed then 
-    // return without updating the list of apps
-    if (statbuf.st_mtime == layout_file_mtime) {
-        return;
-    }
+    layout_file_changed = (statbuf.st_mtime != layout_file_mtime);
     layout_file_mtime = statbuf.st_mtime;
+
+    // determine if apps dir has changed
+    rc = stat("apps", &statbuf);
+    if (rc != 0) {
+        ERROR("stat apps failed, %s\n", strerror(errno));
+        return;
+    }
+    apps_dir_changed = (statbuf.st_mtime != apps_dir_mtime);
+    apps_dir_mtime = statbuf.st_mtime;
+
+    // if neither layout file or apps dir has changed then return
+    if (!layout_file_changed && !apps_dir_changed) {
+        return;
+    }
 
     // obtain the list of apps from the layout file ...
 
@@ -568,9 +578,9 @@ static void get_list_of_apps(void)
     }
     max_apps = 0;
 
-    // read the app names, which must be the same as their dir names, from the layout file
+    // read the app names, which are the same as their dir names, from the layout file
     line_num = 0;
-    fp = fopen(layout_file_path, "r");
+    fp = fopen("apps/layout", "r");
     while (fgets(str, sizeof(str), fp)) {
         line_num++;
 
@@ -612,13 +622,24 @@ static void get_list_of_apps(void)
     }
     fclose(fp);
 
-    // xxx
-    // advance max_apps to multiple of 3 
-// xxxxxxxxx
-// get list of apps/* dirs
-// loop over the list of dirs
-//   if dir not in layout then add new app at end of list
-
+    // if there are additional app dirs that are not contained in the
+    // layout file, then add the app dir to the list of apps
+    fp = popen("find apps -maxdepth 1 -type d | sort", "r");
+    while (fgets(str, sizeof(str), fp)) {
+        str[strcspn(str, "\n")] = '\0';
+        char *name = basename(str);
+        if (strcmp(name, "apps") == 0 || strcmp(name, "lib") == 0) {
+            continue;
+        }
+        if (!app_name_exists(name)) {
+            if (max_apps == MAX_APPS) {
+                break;
+            }
+            INFO("adding '%s' which is not in layout fille\n", name);
+            apps[max_apps++] = strdup(name);
+        }
+    }
+    pclose(fp);
 
 #if 0
     // debug print the list of apps names
@@ -629,6 +650,16 @@ static void get_list_of_apps(void)
         }
     }
 #endif
+}
+
+static bool app_name_exists(char *name)
+{
+    for (int i = 0; i < max_apps; i++) {
+        if (apps[i] && strcmp(apps[i], name) == 0) {
+            return true;
+        }
+    }
+    return false;
 }
 
 static void sanitize_input(char *s)
