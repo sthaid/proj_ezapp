@@ -1,10 +1,8 @@
-
-move tree to ~/ezApp
+move tree to ~/ezApp   IN PROG
+- rebuild all
 
 include top level README.md in Settings      NEXT
   - check order of Settings
-
-xxx get rid of doc/examples dir,  maybe move it to the include dir with utils.h
 
 xxx number sequence the doc dir md files
 

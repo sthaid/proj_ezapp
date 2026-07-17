@@ -7,6 +7,7 @@ src/picoc/devel/libgen_out2.h
 src/picoc/devel/libgen
 src/openssl/libs
 src/openssl/include
+src/ezApp_lib/include/examples/json
 
 linux/build
 linux/local

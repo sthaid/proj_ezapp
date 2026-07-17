@@ -131,7 +131,7 @@ char *util_get_ipaddr(void);
 //
 // When done, call util_json_free(json_root).
 //
-// Refer to example: ezApp/doc/examples/json.c
+// Refer to examples/json.c
 
 #define JSON_TYPE_UNDEFINED 0
 #define JSON_TYPE_FLAG      1
