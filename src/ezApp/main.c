@@ -707,18 +707,19 @@ static void settings(void)
 
     #define RECORD_TEST_FILENAME "record_test.mp3"
 
-    #define EVID_LICENSES             1001
-    #define EVID_CREDITS              1002
-    #define EVID_DEVEL_MODE           1003
-    #define EVID_DEVEL_PORT           1004
-    #define EVID_DEVEL_PASSWORD       1005
-    #define EVID_SERVICES             1006
-    #define EVID_RECORD_GAIN          1007
-    #define EVID_RECORD_SILENCE       1008
-    #define EVID_RECORD_TEST          1009
-    #define EVID_RESET_APPS_AND_SVCS  1010
-    #define EVID_FOREGROUND           1011
-    #define EVID_EVENT_BOX_ENABLE     1012
+    #define EVID_README               1001
+    #define EVID_LICENSES             1002
+    #define EVID_CREDITS              1003
+    #define EVID_DEVEL_MODE           1004
+    #define EVID_DEVEL_PORT           1005
+    #define EVID_DEVEL_PASSWORD       1006
+    #define EVID_SERVICES             1007
+    #define EVID_RECORD_GAIN          1008
+    #define EVID_RECORD_SILENCE       1009
+    #define EVID_RECORD_TEST          1010
+    #define EVID_RESET_APPS_AND_SVCS  1011
+    #define EVID_FOREGROUND           1012
+    #define EVID_EVENT_BOX_ENABLE     1013
 
     #define GET_Y2 ({ y2 += 2*sdlx_char_height_dflt; \
                       y2 >= y_top - 1.5 * sdlx_char_height_dflt && y2 <= y_bottom; })
@@ -748,10 +749,16 @@ static void settings(void)
     while (true) {
         // init display and font size/color
         sdlx_display_init(BG_COLOR, PORTRAIT);
-
-        // display Licenses 
         sdlx_print_set_default(FONT_NORMAL, COLOR_LIGHT_BLUE);
         y2 = nearbyint(y - 2*sdlx_char_height_dflt);
+
+        // display Readme
+        if (GET_Y2) {
+            loc = sdlx_render_printf(0, y2, "Readme");
+            sdlx_register_event(loc, EVID_README);
+        }
+
+        // display Licenses 
         if (GET_Y2) {
             loc = sdlx_render_printf(0, y2, "Licenses");
             sdlx_register_event(loc, EVID_LICENSES);
@@ -877,11 +884,14 @@ static void settings(void)
 
         // process the event
         switch (event.event_id) {
+        case EVID_README:
+            show_file("README.md", PORTRAIT, FONT_TINY);
+            break;
         case EVID_LICENSES:
             show_file("LICENSE", PORTRAIT, FONT_TINY);
             break;
         case EVID_CREDITS:
-            show_file("CREDITS", LANDSCAPE, FONT_SMALL);
+            show_file("CREDITS", PORTRAIT, FONT_TINY);
             break;
         case EVID_DEVEL_MODE:
             params.devel_mode = (params.devel_mode ? 0 : 1);
@@ -1015,7 +1025,7 @@ static double get_number(char *prompt_arg, double min, double max)
 
 static void show_file(char *filename, int orientation, int fontid)
 {
-    double      y;
+    double      x, y;
     int         y_top, y_bottom;
     int         len;
     sdlx_event_t event;
@@ -1033,6 +1043,7 @@ static void show_file(char *filename, int orientation, int fontid)
     sdlx_print_set_default(fontid, COLOR_BLACK);
 
     // init vars
+    x        = 0;
     y_top    = 0;
     y_bottom = sdlx_win_height;
     y        = y_top;
@@ -1041,7 +1052,7 @@ static void show_file(char *filename, int orientation, int fontid)
     while (true) {
         // display file lines and register for motion (scrolling) & exit events
         sdlx_display_init(COLOR_WHITE, orientation);
-        sdlx_render_multiline_text(0, y, y_top, y_bottom, fontid, lines, NULL, 1);
+        sdlx_render_multiline_text(x, y, y_top, y_bottom, fontid, lines, NULL, 1);
         sdlx_register_control_events(0, NULL, 0, NULL, EVID_QUIT, "X");
         sdlx_register_event(NULL, EVID_MOTION);
         sdlx_display_present();
@@ -1052,12 +1063,16 @@ static void show_file(char *filename, int orientation, int fontid)
         }
 
         switch (event.event_id) {
-        case EVID_MOTION:
-            y += event.u.motion.yrel;
-            if (y >= y_top) {
-                y = y_top;
-            }
-            break;
+        case EVID_MOTION: {
+            double xrel = event.u.motion.xrel;
+            double yrel = event.u.motion.yrel;
+
+            if (fabs(xrel) > fabs(yrel)*1.5) x += xrel;
+            if (fabs(yrel) > fabs(xrel)*1.5) y += yrel;
+
+            if (y >= y_top) y = y_top;
+            if (x > 0) x = 0;
+            break; }
         case EVID_QUIT:
             done = true;
             break;
