@@ -2,7 +2,10 @@
 
 #include <sdlx.h>
 #include <private.h>
-#include <picoc_ezApp.h>
+
+// note: can not '#include <picoc_ezApp.h>' here because of a circular
+// build dependency between ezApp_lib and picoc
+extern int picoc_ezApp(char *args);
 
 int run(char *name, bool is_svc)
 {

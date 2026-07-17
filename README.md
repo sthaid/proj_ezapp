@@ -1,6 +1,8 @@
-# UNDER CONSTRUCTION
+UNDER CONSTRUCTION
+==================
 
-# ezApp
+ezApp
+=====
 
 EzApp runs miniApps and miniSvcs that are written in the C Language.
 These miniApps and miniSvcs are executed by the PicoC C language interpreter.
@@ -27,7 +29,8 @@ the Step counter will not function.
 Source code is here xxx: https://github.com/sthaid/proj_ezApp.git.
 See the doc directory for details.
 
-# miniApps
+miniApps
+========
 
 The following miniApps are included, along with their C language source code.
 Each miniApp contains a README which can be viewed by tapping the '?'.
@@ -52,7 +55,8 @@ Each miniApp contains a README which can be viewed by tapping the '?'.
 - Tilt:     Level, supports horizontal and vertical orientations, and calibration.
 - Weather   View and speaks the weather forecast, from weather.gov.
 
-# miniSvcs
+miniSvcs
+========
 
 MiniSvcs run in the background while ezApp is active. The MiniSvcs continue
 to run when ezApp is backgrounded, or the Android is in Doze Mode. 
