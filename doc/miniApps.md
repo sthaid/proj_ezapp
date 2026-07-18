@@ -112,31 +112,31 @@ PicoC is not intended to be a complete implementation of ISO C:
 - refer to ezApp/src/picoc/README.md, especially the "How PicoC differs from C90" section.
 
 When the PicoC interpreter encounters code that it doesn't understand the error location
-is identifiec, for example:
+is identified, for example:
 ```
-$ cat t1.c
-int main() {
-    return "hello";
-}
+    $ cat t1.c
+    int main() {
+        return "hello";
+    }
 
-$ ./picoc t1.c
-    return "hello";
-           ^
-t1.c:2:10 can't assign int from char*
+    $ ./picoc t1.c
+        return "hello";
+            ^
+    t1.c:2:10 can't assign int from char*
 ```
 
 The primary limitations of PicoC are outlined below.
 
-Macros must not be defined within a procedure, and macros must return a value.
-Examples of good macros:
+* Macros must not be defined within a procedure, and macros must return a value.
+Examples of supported macros:
 ```C
-#define ACOSD(x)  (acos(x)*RAD2DEG)
-#define DEG2RAD   (M_PI / 180.)
+    #define RAD2DEG (180. / M_PI)
+    #define ACOSD(x)  (acos(x) * RAD2DEG)
 ```
 
-The goto statement is implemented but only supports forward gotos, not backward.
+* The goto statement is implemented but only supports forward gotos, not backward.
 
-Short-circuit evaluation is not supported. For example the following code
+* Short-circuit evaluation is not supported. For example the following code
 will print "x=0" in standard C, and print "x=1" in PicoC.
 ```C
     int x = 0;
@@ -145,41 +145,39 @@ will print "x=0" in standard C, and print "x=1" in PicoC.
     }
 ```
 
-Pointers to procedures are not supported.
+* Pointers to procedures are not supported.
 
-Stdarg is not supported, '#include <stdarg.h>' will fail.
+* Stdarg is not supported, '#include <stdarg.h>' will fail.
 
-Floating point numbers must not start with '.'. For example ```x = .123;``` is not supported.
+* Floating point numbers must not start with '.'. For example ```x = .123;``` is not supported.
 Instead use ```x = 0.123```.
 
-Nested ternary operator may give incorrect result. For exmple: ```(true ? 1 : true ? 2 : 3);``` evaluates 
+* Nested ternary operator may give incorrect result. For exmple: ```(true ? 1 : true ? 2 : 3);``` evaluates 
 to 2 in PicoC, it should evaluate to 1. Instead use ```(true ? 1 : (true ? 2 : 3))```.
 
-Static array declarations must include the number of array elements. For example:
+* Static array declarations must include the number of array elements. For example:
 ```static int x[] = {1,2,3};``` fails. Instead use ```static int x[3] = {1,2,3};```
 
-Pointer arithmetic issue:
-```
-int x[] = {1,2,3};
-printf("%p\n", x+1);    // this fails to execute in PicoC
-printf("%p\n", &x[1]);  // use this instead
-
-```
-
-Another pointer arithmetic issue:
-```
-int x[] = {1,2,3};
-printf("%ld\n", &x[1] - &x[0]);    // prints '1' in standard C
-printf("%ld\n", &x[1] - &x[0]);    // prints '4' in PicoC
-
+* Pointer arithmetic issue:
+```C
+    int x[] = {1,2,3};
+    printf("%p\n", x+1);    // this fails to execute in PicoC
+    printf("%p\n", &x[1]);  // use this instead
 ```
 
-Initializing an array of struct is not supported. This fails in PicoC:
+* Another pointer arithmetic issue:
+```C
+    int x[] = {1,2,3};
+    printf("%ld\n", &x[1] - &x[0]);    // prints '1' in standard C
+    printf("%ld\n", &x[1] - &x[0]);    // prints '4' in PicoC
 ```
-struct { 
-    int x; 
-    int y; 
-} array[3] = { {0,0}, {1,1}, {2,2} };
+
+* Initializing an array of struct is not supported. This fails in PicoC:
+```C
+    struct { 
+        int x; 
+        int y; 
+    } array[3] = { {0,0}, {1,1}, {2,2} };
 ```
 
 bin dir 
