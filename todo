@@ -1,3 +1,16 @@
+HOME2 | main | ezApp]$ 
+[HOME2 | main | ezApp]$ EZAPP_DEVICE=192.168.1.243 ezsh ls apps
+connecting to 192.168.1.243: 192.168.1.243:9000
+total 73
+drwx------ 2 u0_a412 u0_a412 3452 2026-07-17 09:32 Altitude
+drwx------ 2 u0_a412 u0_a412 3452 2026-07-17 09:32 Calc
+drwx------ 2 u0_a412 u0_a412 3452 2026-07-17 09:32 Clock
+drwx------ 3 u0_a412 u0_a412 3452 2026-07-17 09:32 ColrOrgn
+drwx------ 2 u0_a412 u0_a412 3452 2026-07-17 09:32 Compass
+drwx------ 2 u0_a412 u0_a412 3452 2026-07-17 09:32 FlshLite
+drwx------ 2 u0_a412 u0_a412 3452 2026-07-17 09:32 Light
+
+
 swipe on main page
 
 xxx number sequence the doc dir md files

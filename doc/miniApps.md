@@ -1,33 +1,39 @@
-Create a miniApp xxx UNDER CONSTRUCTION 
-=======================================
+Create a miniApp
+================
 
-xxx description
+This document describes how to:
+- install and setup ezApp on your Android Smartphone
+- create a new miniApp using a Development PC
+- transfer the new miniApp from the Development PC to the ezApp
+- run the new miniApp on your Android Smartphone
 
 Install ezApp on your Android device
 ====================================
 
-xxx instructions - load from Google Play
+Install ezApp from the Google Play Store.
 
-can stop here and just use the provided miniApps
+Open ezApp, accept the permission requests, and try out the miniApps that
+are included with ezApp. Select Settings > Readme for a brief description of the
+miniApps that are included.
 
-xxx enable ezApp developer mode
+If you want to create a new miniApp then continue with the steps described in this document.
 
-env vars to use ezsh, mention options if you dont want to do this
-export EZAPP_DEVICE=<dev-ip-addr>
-export EZAPP_PASSWD=<devel-mode-password>
+Enable ezApp Developer Mode.
+- Open ezApp, 'Settings' selection should be at bottom right of display
+- Settings > Devel_Mode > Tap to set ON
+- Settings > Devel_Password > Tap to choose a password
 
-xxx you do not need to enable Android devel mode
+You do not need to enable Android Device Developer Options to create miniApps.
 
 Setup Development PC
 ====================
 
-requires devel PC
-The instructions provided by this document have been tested on:
-- Ubuntu 25.10   xxx
-- Ubuntu 26.04   xxx
-- Wsl            xxx
+A PC running Windows 11 or Ubuntu 25.10 (or newer) is required.
+Other Linux distros may also work.
 
-Install packages:
+xxx describe steps for Windows 11 wsl
+
+Install Ubuntu Linux packages:
 ```
 sudo apt update
 sudo apt install -y git
@@ -37,20 +43,48 @@ sudo apt install -y ssl-dev
 sudo apt install -y cscope universal-ctags
 ```
 
-Clone ezApp ```cd ~; git clone https://github.com/sthaid/ezApp.git```
+Clone ezApp from github:
+```
+cd ~
+git clone https://github.com/sthaid/ezApp.git
+```
 
-Set PATH environment variable  ```export PATH=$PATH:~/ezApp/bin```
+Set environment variable
+- The Android device should be connected to a trusted Wi-Fi network
+- The Android Device IP address is displayed in ezApp > Settings
+- The android-device-ip-addr can be an IP address, such as 192.168.1.101 or a Hostname (if available)
+- The [:port] is only needed if the ezApp Devel_Port had been changed to something other than the default 9000
+```
+    export PATH=$PATH:~/ezApp/bin
+    export EZAPP_DEVICE=<android-device-ip-addr[:port]>   # example: 192.168.1.101
+    export EZAPP_PASSWD=<devel-mode-password>             # example: my-secret-password
+```
 
-Build ezApp: ```cd ~/ezApp; make```
-This will take several minutes, and performs the following steps:
-- clone_sdl: git clone the SDL repos
-- bin/src: build tools in the bin dir
-- linux: build a version of ezApp that runs on the devel PC
-- test_build_apps_and_svcs: performs test build of all provided miniApps and miniSvcs
+Build ezApp: This will take several minutes, and performs the following steps:
+- git clone the SDL repos
+- build tools in the bin/src dir
+- build a version of ezApp that runs on the devel PC
+- perform a test build of all included miniApps and miniSvcs
+```
+    cd ~/ezApp
+    make
+```
 
-Perform tests to validate the setup was successful.
-- cd ~/ezApp/linux; make run
-- ezsh ls apps
+Tests to validate.
+
+* Run a Linux build of ezApp on the Devel PC.
+```
+    cd ~/ezApp/linux
+    make run
+    terminate with ctrl-c
+```
+
+* Verify ezsh, running on the Devel PC, can connect to the Android ezApp, and execute the 'ls' cmd.
+This should list the contents of the /data/data/org.sthaid.ezApp/files/apps directory on the 
+Android device.
+```
+    ezsh ls apps
+```
 
 Create a new miniApp
 ====================
@@ -58,16 +92,16 @@ Create a new miniApp
 Create a new miniApp, starting with a copy of the Template miniApp.
 
 ```
-cd ~/ezApp/files/apps
-cp -r Template NewApp
-cd NewApp
-vi template.c    # change "Hello\nWorld" to "NewApp"
+    cd ~/ezApp/files/apps
+    cp -r Template NewApp
+    cd NewApp
+    vi template.c    # change "Hello\nWorld" to "NewApp"
 ```
 
 Test the new miniApp on the Devel PC
 ====================================
 
-xxx
+xxx left off here xxx
 Why do this ..
 
 Perform test build the miniApp on the Linux devel PC; and run it using picoc
@@ -109,7 +143,7 @@ PicoC Limitations
 
 PicoC is not intended to be a complete implementation of ISO C:
 - PicoC supports the essential aspects of the C language.
-- refer to ezApp/src/picoc/README.md, especially the "How PicoC differs from C90" section.
+- For more info, refer to ezApp/src/picoc/README.md, especially the "How PicoC differs from C90" section.
 
 When the PicoC interpreter encounters code that it doesn't understand the error location
 is identified, for example:
@@ -125,7 +159,7 @@ is identified, for example:
     t1.c:2:10 can't assign int from char*
 ```
 
-The primary limitations of PicoC are outlined below.
+PicoC limitations are described below.
 
 * Macros must not be defined within a procedure, and macros must return a value.
 Examples of supported macros:
