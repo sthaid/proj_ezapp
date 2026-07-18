@@ -1,8 +1,10 @@
-# Create a miniApp xxx UNDER CONSTRUCTION 
+Create a miniApp xxx UNDER CONSTRUCTION 
+=======================================
 
 xxx description
 
-# Install ezApp on your Android device
+Install ezApp on your Android device
+====================================
 
 xxx instructions - load from Google Play
 
@@ -16,7 +18,8 @@ export EZAPP_PASSWD=<devel-mode-password>
 
 xxx you do not need to enable Android devel mode
 
-# Setup Development PC
+Setup Development PC
+====================
 
 requires devel PC
 The instructions provided by this document have been tested on:
@@ -49,7 +52,8 @@ Perform tests to validate the setup was successful.
 - cd ~/ezApp/linux; make run
 - ezsh ls apps
 
-# Create a new miniApp
+Create a new miniApp
+====================
 
 Create a new miniApp, starting with a copy of the Template miniApp.
 
@@ -60,7 +64,8 @@ cd NewApp
 vi template.c    # change "Hello\nWorld" to "NewApp"
 ```
 
-# Test the new miniApp on Development PC
+Test the new miniApp on the Devel PC
+====================================
 
 xxx
 Why do this ..
@@ -71,38 +76,114 @@ eztest runp
 
 Perform Test cd linux make run, also optional
 
-# Run the new miniApp on Android
+Run the new miniApp on Android
+==============================
 
 Start ezApp on your Android device. Ensure developer mode is enabled and 
 password is set. xxx reword.
 
-In a new terminal session run ```ezsh logwatch``` to view ezApp log messages.
+In a new terminal session run ```ezsh logwatch``` to view ezApp debug print messages.
 
 Copy the the new miniApp to the Android Device.
 ```cd ~/ezApp/files/apps/NewApp; ezput```
 
-On Android ezApp menu, locate and tap NewApp.
+On Android ezApp menu, locate and tap NewApp.  xxx 2nd page
 
-# APIs available for use by miniApps
+APIs available for use by miniApps
+==================================
 
-Picoc is extended to support the APIs defined in src/exApp_lib/include/...
-
-These APIs are availabe for use by miniApps
-
-Refer to src/exApp_lib/include/ ...
+Picoc is extended to support the APIs defined in src/exApp_lib/include.
+Refer to these files for documentation of the APIs.
 - sdlx.h
 - utils.h
 - svcs.h
 
-How these are incorporated in picoc
+How these are incorporated in picoc  xxx
 
-cstldlib in picoc
+cstldlib in picoc  xxx
 
-give an example of cstdlib file
+give an example of cstdlib file xxx
 
-# PicoC Limitations
+PicoC Limitations
+=================
 
-# bin dir 
+PicoC is not intended to be a complete implementation of ISO C:
+- PicoC supports the essential aspects of the C language.
+- refer to ezApp/src/picoc/README.md, especially the "How PicoC differs from C90" section.
+
+When the PicoC interpreter encounters code that it doesn't understand the error location
+is identifiec, for example:
+```
+$ cat t1.c
+int main() {
+    return "hello";
+}
+
+$ ./picoc t1.c
+    return "hello";
+           ^
+t1.c:2:10 can't assign int from char*
+```
+
+The primary limitations of PicoC are outlined below.
+
+Macros must not be defined within a procedure, and macros must return a value.
+Examples of good macros:
+```C
+#define ACOSD(x)  (acos(x)*RAD2DEG)
+#define DEG2RAD   (M_PI / 180.)
+```
+
+The goto statement is implemented but only supports forward gotos, not backward.
+
+Short-circuit evaluation is not supported. For example the following code
+will print "x=0" in standard C, and print "x=1" in PicoC.
+```C
+    int x = 0;
+    if (true || x++) {
+        printf("x=%d\n", x);
+    }
+```
+
+Pointers to procedures are not supported.
+
+Stdarg is not supported, '#include <stdarg.h>' will fail.
+
+Floating point numbers must not start with '.'. For example ```x = .123;``` is not supported.
+Instead use ```x = 0.123```.
+
+Nested ternary operator may give incorrect result. For exmple: ```(true ? 1 : true ? 2 : 3);``` evaluates 
+to 2 in PicoC, it should evaluate to 1. Instead use ```(true ? 1 : (true ? 2 : 3))```.
+
+Static array declarations must include the number of array elements. For example:
+```static int x[] = {1,2,3};``` fails. Instead use ```static int x[3] = {1,2,3};```
+
+Pointer arithmetic issue:
+```
+int x[] = {1,2,3};
+printf("%p\n", x+1);    // this fails to execute in PicoC
+printf("%p\n", &x[1]);  // use this instead
+
+```
+
+Another pointer arithmetic issue:
+```
+int x[] = {1,2,3};
+printf("%ld\n", &x[1] - &x[0]);    // prints '1' in standard C
+printf("%ld\n", &x[1] - &x[0]);    // prints '4' in PicoC
+
+```
+
+Initializing an array of struct is not supported. This fails in PicoC:
+```
+struct { 
+    int x; 
+    int y; 
+} array[3] = { {0,0}, {1,1}, {2,2} };
+```
+
+bin dir 
+=======
 
 xxx check that these all have -h 
 

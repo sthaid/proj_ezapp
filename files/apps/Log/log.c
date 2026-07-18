@@ -221,6 +221,7 @@ int log_load(void)
 #ifdef ANDROID
     sprintf(cmd, "logcat -s -d --format=time EZAPP:I SDL:I SDL/APP:I AndroidRuntime:I | tail -%d", MAX_LINES);
 #else
+    // - to test when ezApp is run on Linux
     sprintf(cmd, "cat apps/Log/test.log | tail -%d", MAX_LINES);
 #endif
     fp = popen(cmd, "r");
