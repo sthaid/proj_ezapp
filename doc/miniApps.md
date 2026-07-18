@@ -55,9 +55,9 @@ Set environment variable
 - The android-device-ip-addr can be an IP address, such as 192.168.1.101 or a Hostname (if available)
 - The [:port] is only needed if the ezApp Devel_Port had been changed to something other than the default 9000
 ```
-    export PATH=$PATH:~/ezApp/bin
-    export EZAPP_DEVICE=<android-device-ip-addr[:port]>   # example: 192.168.1.101
-    export EZAPP_PASSWD=<devel-mode-password>             # example: my-secret-password
+export PATH=$PATH:~/ezApp/bin
+export EZAPP_DEVICE=<android-device-ip-addr[:port]>   # example: 192.168.1.101
+export EZAPP_PASSWD=<devel-mode-password>             # example: my-secret-password
 ```
 
 Build ezApp: This will take several minutes, and performs the following steps:
@@ -66,11 +66,11 @@ Build ezApp: This will take several minutes, and performs the following steps:
 - build a version of ezApp that runs on the devel PC
 - perform a test build of all included miniApps and miniSvcs
 ```
-    cd ~/ezApp
-    make
+cd ~/ezApp
+make
 ```
 
-Tests to validate.
+Tests to validate the setup:
 
 * Run a Linux build of ezApp on the Devel PC.
 ```
@@ -92,74 +92,88 @@ Create a new miniApp
 Create a new miniApp, starting with a copy of the Template miniApp.
 
 ```
-    cd ~/ezApp/files/apps
-    cp -r Template NewApp
-    cd NewApp
-    vi template.c    # change "Hello\nWorld" to "NewApp"
+cd ~/ezApp/files/apps
+cp -r Template NewApp
+cd NewApp
+vi template.c    # change "Hello\nWorld" to "NewApp"
 ```
 
 Test the new miniApp on the Devel PC
 ====================================
 
-xxx left off here xxx
-Why do this ..
+These tests are optional, but also very helpful.
 
-Perform test build the miniApp on the Linux devel PC; and run it using picoc
-This step is recomended, but not required.
-eztest runp
+Test 1: perform test build of the miniApp using the gcc compilerA; and if the test
+build passes, the miniApp is run on the Devel PC using PicoC.
+```
+cd ~/ezApp/files/apps/NewApp
+eztest
+```
 
-Perform Test cd linux make run, also optional
+Test 2: runs ezApp on the Linux Devel PC. This is especially helpful when testing
+a miniApp that interacts with a miniSvc. The interaction between miniApp and miniSvc
+is not covered by Test 1.
+```
+cd ~/ezApp/Linux
+make run
+terminate with ctrl-c
+```
 
 Run the new miniApp on Android
 ==============================
 
-Start ezApp on your Android device. Ensure developer mode is enabled and 
-password is set. xxx reword.
+Ensure ezApp is Running on the Android device; and that the ezApp Devel_Mode is ON.
 
-In a new terminal session run ```ezsh logwatch``` to view ezApp debug print messages.
+In a new terminal session, on the Devel PC, run ```ezsh logwatch```
+to view ezApp debug print messages.
 
 Copy the the new miniApp to the Android Device.
-```cd ~/ezApp/files/apps/NewApp; ezput```
+```
+cd ~/ezApp/files/apps/NewApp
+ezput
+```
 
-On Android ezApp menu, locate and tap NewApp.  xxx 2nd page
+The NewApp should appear on the Android Device ezApp menu. Tap the '>' to page
+through the menu to locate the NewApp.
+
+Tap the NewApp to run it.
 
 APIs available for use by miniApps
 ==================================
 
-Picoc is extended to support the APIs defined in src/exApp_lib/include.
-Refer to these files for documentation of the APIs.
-- sdlx.h
-- utils.h
-- svcs.h
+Picoc is extended to support the APIs defined in ~/ezApp/src/ezApp_lib/include:
+- sdlx.h: provides miniApp access to SDL features: video, audio, events, and sensors.
+- utils.h: various utilities, including json, png, fft, files, time, location, text-to-speech, ...
+- svcs.h: provides miniApp the ability to make a request to a miniSvc
+Refer to these files for documentation of the APIs they provide.
 
-How these are incorporated in picoc  xxx
+These APIs have been added to PicoC via the ezApp/src/picoc/platform/library_unix.c file.
 
-cstldlib in picoc  xxx
-
-give an example of cstdlib file xxx
+To view the standard C APIs provided by PicoC, inspect files in ezApp/src/picoc/cstdlib.
 
 PicoC Limitations
 =================
 
 PicoC is not intended to be a complete implementation of ISO C:
 - PicoC supports the essential aspects of the C language.
-- For more info, refer to ezApp/src/picoc/README.md, especially the "How PicoC differs from C90" section.
+- For more info on PicoC, refer to ezApp/src/picoc/README.md.
 
 When the PicoC interpreter encounters code that it doesn't understand the error location
 is identified, for example:
 ```
-    $ cat t1.c
-    int main() {
-        return "hello";
-    }
+$ cat t1.c
+int main() {
+    return "hello";
+}
 
-    $ ./picoc t1.c
-        return "hello";
-            ^
-    t1.c:2:10 can't assign int from char*
+$ ./picoc t1.c
+    return "hello";
+           ^
+t1.c:2:10 can't assign int from char*
 ```
 
-PicoC limitations are described below.
+PicoC limitations are described below. It is important to be aware of these
+limitations when writing miniApp code.
 
 * Macros must not be defined within a procedure, and macros must return a value.
 Examples of supported macros:
