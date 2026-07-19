@@ -1,21 +1,41 @@
-xxx make this a .md file,  and document this bin dir
+This document provides an overview of the scripts provided in this directory.
 
-ezget
-ezput
-ezsh
-ezsh.alias
-eztest
+Develop and Deploy miniApps & miniSvcs
+======================================
 
+For each of these, provide the '-h' option for help.
+xxx check that the -h option is provided
 
+ezsh: Simulates a shell running on the Android device. 
 
-adb_abi
-adb_connect
-adb_logcat
-adb_logclr
-adb_logwatch
-adb_meminfo
-adb_top
+ezput: Copy miniApp and miniSvc files from Devel PC to Android device.
 
-setup
+ezget: Copy miniApp and miniSvc files from Android device to Devel PC
 
+eztest: test build and run a miniApp or miniSvc on the Devel PC
 
+Install the Android SDK
+=======================
+
+install_android_sdk: install the Android Software Development Kit on the Devel PC
+
+Build and Test ezApp On the Android Device
+==========================================
+
+Prior to using these scripts 'Developer options' must be enabled on the Android Device.
+Refer to ezApp/doc/android.md for instructions.  xxx check name
+
+adb_connect: establish a wireless debugging connection between your computer 
+and your Android device; this needs to be performed occasionally after having 
+enabled Android device 'Developer options'
+
+adb_logcat, adb_logwatch, adb_logclr: monitor or clear the Android log
+
+adb_meminfo, adb_top: display ezApp Android device resource utilization
+
+adb_abi: displays the Android Device Application Binary Interface
+
+Other Scripts
+=============
+
+cscope_init: create cscope and tags database files

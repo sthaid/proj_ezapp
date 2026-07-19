@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# xxx put comments in all these files
+
 if [ "$1" = "" ]; then
   echo "ERROR: device name or ipaddr required"
   exit 1

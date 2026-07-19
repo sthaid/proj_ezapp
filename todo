@@ -1,3 +1,23 @@
+add help cmd to ezsh
+
+
+xxxxxxxxxxxx
+
+bin dir 
+=======
+
+xxx check that these all have -h
+
+These are the main bin xxx used to develop miniApps
+
+eztest: performs a test run of a miniApp or miniSvc on the Devel PC
+ezput:  copies miniApps and miniSvcs to Android
+ezsh:   establishes a network connection to ezApp on Android, and simulates a shell running on the Android device
+
+Refer to bin/README.md for more.
+
+xxxxxxxxxxxxxxxxxxxxxxxxx
+
 HOME2 | main | ezApp]$ 
 [HOME2 | main | ezApp]$ EZAPP_DEVICE=192.168.1.243 ezsh ls apps
 connecting to 192.168.1.243: 192.168.1.243:9000

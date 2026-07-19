@@ -228,16 +228,10 @@ to 2 in PicoC, it should evaluate to 1. Instead use ```(true ? 1 : (true ? 2 : 3
     } array[3] = { {0,0}, {1,1}, {2,2} };
 ```
 
-bin dir 
-=======
+miniSvcs
+========
 
-xxx check that these all have -h 
-
-These are the main bin xxx used to develop miniApps
-
-eztest: performs a test run of a miniApp or miniSvc on the Devel PC
-ezput:  copies miniApps and miniSvcs to Android
-ezsh:   establishes a network connection to ezApp on Android, and simulates a shell running on the Android device
-
-Refer to bin/README.md for more.
+xxx todo
+- example
+- how to communicate between miniApp and miniSvc
 

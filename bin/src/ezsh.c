@@ -114,6 +114,7 @@ int main(int argc, char **argv)
             quiet = true;
             break;
         case 'h':
+//xxx  add help cmd
         default:
             help();
             return 0;
@@ -236,15 +237,15 @@ Commands that require special processing are:\n\
 \n\
 The device and password can be provided using environment variables EZAPP_DEVICE and\n\
 EZAPP_PASSWORD, or via the ezsh -d and -p options. See the following examples:\n\
+xxx give exmaples\n\
+  - EZAPP_DEVICE=192.168.1.101\n\
+  - EZAPP_PASSWD=my-secret-password\n\
 \n\
 Examples:\n\
 - ezsh\n\
-- ezsh -d samsung -p secret\n\
-- ezsh -d 192.168.1.2:9000 -p secret\n\
-- ezsh ls\n\
+- ezsh -d 192.168.1.101 -p my-secret-password\n\
+- ezsh -d 192.168.1.101:9001 -p my-secret-password\n\
 - ezsh \"ls -l\"\n\
-- ezsh -- ls -l\n\
-- ezsh echo hello world\n\
 \n\
 ";
     printf("%s", help_text);
