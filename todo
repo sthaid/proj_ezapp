@@ -1,86 +1,32 @@
-add help cmd to ezsh
-
-
-xxxxxxxxxxxx
-
-bin dir 
-=======
-
-xxx check that these all have -h
-
-These are the main bin xxx used to develop miniApps
-
-eztest: performs a test run of a miniApp or miniSvc on the Devel PC
-ezput:  copies miniApps and miniSvcs to Android
-ezsh:   establishes a network connection to ezApp on Android, and simulates a shell running on the Android device
-
-Refer to bin/README.md for more.
-
-xxxxxxxxxxxxxxxxxxxxxxxxx
-
-HOME2 | main | ezApp]$ 
-[HOME2 | main | ezApp]$ EZAPP_DEVICE=192.168.1.243 ezsh ls apps
-connecting to 192.168.1.243: 192.168.1.243:9000
-total 73
-drwx------ 2 u0_a412 u0_a412 3452 2026-07-17 09:32 Altitude
-drwx------ 2 u0_a412 u0_a412 3452 2026-07-17 09:32 Calc
-drwx------ 2 u0_a412 u0_a412 3452 2026-07-17 09:32 Clock
-drwx------ 3 u0_a412 u0_a412 3452 2026-07-17 09:32 ColrOrgn
-drwx------ 2 u0_a412 u0_a412 3452 2026-07-17 09:32 Compass
-drwx------ 2 u0_a412 u0_a412 3452 2026-07-17 09:32 FlshLite
-drwx------ 2 u0_a412 u0_a412 3452 2026-07-17 09:32 Light
-
-
 swipe on main page
 
-xxx number sequence the doc dir md files
-
-xxx search all for proj_ezApp
+test using Wsl
 
 ---- DOCS ----
 
+number sequence the doc dir md files
+
+review and spellcheck the docs
+
 docs:
-- top level .md file                           GETTING CLOSE
-- doc dir miniApp and android docs             NEXT  
-- document the sdlx.h, utils.h, and svcs.h files    NEEDS REVIEW, AND SPELLCHECK
-- picoc restrictions - src/picoc/tests/shaid/101_ternary_op.output
-- what packages  are needed on linux
-- doc Creating a miniSvc ?
-- section on building android APK
-- spellcheck
-- MD TOC ?
-
-bin dir 
-- README.md
-- do they all have -h
-
-xxx reinstall linux PC to check instructions,
+- doc dir: android.md  minisvcs.md
+- section on building android
+- wsl
 
 --- TODO --
 
-xxx add -h option to bindir tools
+new ezApp repo, and populate with a fresh copy
+- run a full diff of the trees
+
+search all for proj_ezApp
 
 xxx tagged issues
 
-retest on Motorola
+retest on Motorola device
 
 record volume
 - check if this has been fixed in SDL
 - marking of altered SDL source
-
---- TODO LOWER PRIO ----
-
-permissions after doing a ezget ?
-
---- REPOs ---
-
-newrepo called ezApp
-
-delete the qne2 and any other repos no longer worth keeping
-
---- REINSTALL PC & CHECk DOC INSTRUCTIONS ---
-
-reinstall devel PC
 
 --- RECHECKS ---
 
@@ -89,62 +35,46 @@ code review
 apps sanity checks
 cleanup logging prints
 
---- LATER ---
+--- REPOs ---
+
+delete the qne2 and any other repos no longer worth keeping
+
+=============
+=== LATER ===
+=============
 
 continue to run services even when ezApp is no longer running
-
-find my phone miniApp
 
 picoc should free all unfreed allocations  (maybe)
 - calloc, malloc, realloc, strdup
 - open, fopen
 - util_map_file 
 
-Android’s TYPE_ORIENTATION sensor is deprecated. To get azimuth, pitch, and roll, combine the TYPE_ACCELEROMETER and TYPE_MAGNETIC_FIELD sensors. Feed their raw data into SensorManager.getRotationMatrix(), then pass that matrix into SensorManager.getOrientation() to get your three angles.
+Android’s TYPE_ORIENTATION sensor is deprecated. To get azimuth, pitch, and roll,
+combine the TYPE_ACCELEROMETER and TYPE_MAGNETIC_FIELD sensors. Feed their raw data into 
+SensorManager.getRotationMatrix(), then pass that matrix into SensorManager.getOrientation()
+to get your three angles.
 
 --- DOC PICOC ISSUES ---
 
-- low_band = util_rms_float(&fft[first_bin], last_bin-first_bin+1);// yyy picoc isue requires &fft[first_bin]
-- picoc ptr math
-    vol = rms_float(fft+bin, 1);    fft+bin not working
 - picoc sizeof(x) not working, when x is an array of struct
-- other picoc restriction - short circuit
-- deal with xxx in picoc tests
-- library_unix.c, search xxx
-- search FIXME 
-- picoc numbers .333,  needs leading 0
-- ifdef code for ANDROID, check apps for other places ifdef ANDROID used
-- ptr operations ?
-- short circuit eval
 
----- NEW APPS ----
+- search FIXME 
+
+---------------------------
+---- POSSIBLE NEW APPS ----
+---------------------------
 
 speech to text
   https://developer.android.com/reference/android/speech/SpeechRecognizer
 
 camera,  zoom
 
-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+find my phone miniApp
 
-==========
-doc notes
-==========
-
-Essential Directories to AddAssuming your Android SDK is installed in the default Linux location (~/Android/Sdk), you should add the following four directories to your PATH:~/Android/Sdk/platform-toolsContains vital debug and testing binaries, most notably adb (Android Debug Bridge) and fastboot.~/Android/Sdk/cmdline-tools/latest/binHouses modern core CLI tools, primarily sdkmanager (for managing SDK packages) and avdmanager (for managing virtual devices).
-
-========
-later
-========
-
-
---------------------------------
----------- TODO -----------------
---------------------------------
-
-documentation
-- toplevel README.md
-- make a doc dir, for other README files
-  - document foreground , and Settings
+=======================================================
+==================== LEFT OFF HERE ====================
+=======================================================
 
 Apps
 - Paddle
@@ -201,9 +131,9 @@ issues with open source ...
       - ask SDL team bout LogicalPresentation issues
 - picoc, many issues
 
-===========================================================
-====================  LATER  ==============================
-===========================================================
+=================================================
+=================================================
+=================================================
 
 what API level and API_PLATFORM, are needed for
 - audio capture
@@ -234,14 +164,6 @@ start app in background
 - when booting and when installing
    - check into auto start   SampleForegroundService
 - what are the 4 pillars of Android called
-
-===================
-PREPARE FOR RELEASE
-===================
-
-Android -
-- why is android build only building arm64-v8a
-- make the ezApp icon
 
 ===================
 SDL ISSUES

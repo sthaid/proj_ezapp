@@ -216,8 +216,8 @@ to 2 in PicoC, it should evaluate to 1. Instead use ```(true ? 1 : (true ? 2 : 3
 * Another pointer arithmetic issue:
 ```C
     int x[] = {1,2,3};
-    printf("%ld\n", &x[1] - &x[0]);    // prints '1' in standard C
-    printf("%ld\n", &x[1] - &x[0]);    // prints '4' in PicoC
+    // the following prints '1' in standard C; prints 4 in PicoC
+    printf("%ld\n", &x[1] - &x[0]);
 ```
 
 * Initializing an array of struct is not supported. This fails in PicoC:
@@ -227,6 +227,10 @@ to 2 in PicoC, it should evaluate to 1. Instead use ```(true ? 1 : (true ? 2 : 3
         int y; 
     } array[3] = { {0,0}, {1,1}, {2,2} };
 ```
+
+xxx freeing allocations
+
+xxx check for problem with local automaitc variable
 
 miniSvcs
 ========
