@@ -9,27 +9,30 @@ EzApp must be running on the Android device, and have DeveloperMode enabled.
 This script must be run from a directory in the files hierarchy.
 
 Options:
-  -h             : display usage and exit
-  -d <dev>       : dev name (such as from /etc/hosts), or dev ipaddr
+  -h             : display help and exit
+  -d <dev>       : <dev_name|dev_ipaddr>[:port]
   -p <password>  : ezApp devel mode password
   -f             : force xfer of data files; data files are not normally copied
 Environment variables EZAPP_DEVICE and EZAPP_PASSWD may be used instead
 of the -d and -p options.
 
 Usage examples:
-  # in these examples, the data files are not included in the files copied to Android
-  #
-  # copy all files in MyNewApp and lib dirs, and the apps/layout file to Android
-  cd files/apps/MyNewApp
-  ezput . ../lib ../layput 
-  #
-  # copy all files in Morse dir to Adnroid
-  cd files/apps/Morse
-  ezput
-  #
-  # copy all of the files hierarchy to Android
-  cd files
-  ezput
+
+# Note: in these examples data files are not copied to Android, 
+# because the '-f' option is not set. Files that are not copied are
+# indicated with 'SKIPPING'.
+
+# copy files in Morse dir to Adnroid
+cd files/apps/Morse
+ezput
+
+# copy files in NewApp and lib dirs, and the apps/layout file to Android
+cd files/apps/NewApp
+ezput . ../lib ../layput 
+
+# copy all of the files hierarchy to Android
+cd files
+ezput
 EOF
 }
 

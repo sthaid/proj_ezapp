@@ -20,12 +20,12 @@ function usage()
 {
 echo -e "\
 \n\
-This script builds or runs the app or svc in the current directory.\n\
+This script builds and runs the app or svc in the current directory.\n\
 \n\
 Usage: eztest <cmd>\n\
-- run_on_picoc, runp: run this app/svc using picoc\n\
-- run_on_linux, runl: run this app/svc using linux\n\
-- build: build this app/svc using linux\n\
+- run_on_picoc, runp: build on linux, then run using picoc\n\
+- run_on_linux, runl: build and run on linux
+- build: test build on linux\n\
 \n\
 Default cmd is run_on_picoc.\n\
 "

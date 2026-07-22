@@ -1,3 +1,6 @@
+xxx instructions to enable Android developer mde
+xxx if this filename changes , also update bin/README.md
+
 This README was prepared while using Ubuntu 25.10.
 
 The steps to build and install a developer created version

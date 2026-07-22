@@ -4,7 +4,6 @@ Develop and Deploy miniApps & miniSvcs
 ======================================
 
 For each of these, provide the '-h' option for help.
-xxx check that the -h option is provided
 
 ezsh: Simulates a shell running on the Android device. 
 
@@ -19,14 +18,14 @@ Install the Android SDK
 
 install_android_sdk: install the Android Software Development Kit on the Devel PC
 
-Build and Test ezApp On the Android Device
-==========================================
+Build and Test ezApp
+====================
 
 Prior to using these scripts 'Developer options' must be enabled on the Android Device.
-Refer to ezApp/doc/android.md for instructions.  xxx check name
+Refer to ezApp/doc/android.md for instructions.
 
 adb_connect: establish a wireless debugging connection between your computer 
-and your Android device; this needs to be performed occasionally after having 
+and your Android device; this needs to be re-done occasionally after having 
 enabled Android device 'Developer options'
 
 adb_logcat, adb_logwatch, adb_logclr: monitor or clear the Android log

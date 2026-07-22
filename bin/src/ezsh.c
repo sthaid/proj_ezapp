@@ -73,7 +73,7 @@ jmp_buf  err_jmp_buf;
 
 // -----------------  MAIN  -------------------------------------------------
 
-void help(void);
+int display_help(void);
 void remove_leading_and_trailing_spaces_and_newline(char *s);
 void connect_to_android(void);
 char *get_str_con_to_android(FILE *fp, char *s, int s_len);
@@ -114,9 +114,8 @@ int main(int argc, char **argv)
             quiet = true;
             break;
         case 'h':
-//xxx  add help cmd
         default:
-            help();
+            display_help();
             return 0;
         }
     }
@@ -204,7 +203,7 @@ int main(int argc, char **argv)
     }
 }
 
-void help(void)
+int display_help(void)
 {
     char help_text[] = "\
 Ezsh runs on the Linux host, simulating a shell running on the Android device.\n\
@@ -213,6 +212,12 @@ To use ezsh, the following ezApp settings must first be made on the Android devi
 - Devel_Mode = ON\n\
 - Devel_Port = nnnn  (optional, the 9000 default should be okay)\n\
 - Devel_Password\n\
+\n\
+Options:\n\
+  -h             : display help and exit\n\
+  -d <dev>       : <dev_name|dev_ipaddr>[:port]\n\
+  -p <password>  : ezApp devel mode password\n\
+  -q             : do not display message when connecting\n\
 \n\
 For security, it is recommended to enable ezApp Devel_Mode when on a trusted network.\n\
 \n\
@@ -234,6 +239,7 @@ Commands that require special processing are:\n\
           Example: vi apps/Clock/clock.c\n\
 - alias : Print the command aliases which are provided in the ezsh.alias file.\n\
 - local : Execute a command on the host.\n\
+- help  : Display help.\n\
 \n\
 The device and password can be provided using environment variables EZAPP_DEVICE and\n\
 EZAPP_PASSWORD, or via the ezsh -d and -p options. See the following examples:\n\
@@ -249,6 +255,7 @@ Examples:\n\
 \n\
 ";
     printf("%s", help_text);
+    return 0;
 }
 
 void remove_leading_and_trailing_spaces_and_newline(char *s)
@@ -331,10 +338,12 @@ void connect_to_android(void)
     // connect to android
     struct sockaddr_in *ipv4 = (struct sockaddr_in *)result[0].ai_addr;
     if (!quiet && first_call) {
-        printf("connecting to %s: %s:%s\n", 
-                hostname, 
-                inet_ntoa(ipv4->sin_addr),
-                port_str);
+        char *ipaddr_str = inet_ntoa(ipv4->sin_addr);
+        if (strncmp(hostname, ipaddr_str, strlen(hostname)) != 0) {
+            printf("connecting to %s - %s:%s\n", hostname, ipaddr_str, port_str);
+        } else {
+            printf("connecting to %s:%s\n", ipaddr_str, port_str);
+        }
     }
     ret = connect(sockfd, result[0].ai_addr, result[0].ai_addrlen);
     if (ret != 0) {
@@ -714,6 +723,8 @@ int run_special_cmd(char *cmdline)
         return special_cmd_vi(arg1);
     } else if (strcmp(cmd, "local") == 0) {
         return special_cmd_local(cmdline);
+    } else if (strcmp(cmd, "help") == 0) {
+        return display_help();
     } else {
         return NOT_A_SPECIAL_CMD;
     }
