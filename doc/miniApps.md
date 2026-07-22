@@ -228,9 +228,12 @@ to 2 in PicoC, it should evaluate to 1. Instead use ```(true ? 1 : (true ? 2 : 3
     } array[3] = { {0,0}, {1,1}, {2,2} };
 ```
 
-xxx freeing allocations
-
-xxx check for problem with local automaitc variable
+* The base version of picoc runs a C program, when that program terminates,
+picoc terminates; the OS then frees all allocations made by the picoc process.
+When ezApp calls picoc to run a miniApp and the miniApp terminates, allocations
+made by the miniApp (such as malloc, or fopen) are not automatically cleaned up.
+MiniApps should be sure to free all memory allocations and close all files
+to avoid memory leaks.
 
 miniSvcs
 ========
