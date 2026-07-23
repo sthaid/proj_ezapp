@@ -616,43 +616,40 @@ void util_print_params(char *dir)
 
 // -----------------  NETWORK  -------------------------------
 
-// xxx maybe pass in a str
-char *util_get_ipaddr(void)
+char *util_get_ipaddr(char *ipaddr_str)
 {
-    static char ipaddr[20];
     int rc, a=0, b=0, c=0, d=0;
     unsigned int addr;
     struct ifaddrs *ifap, *ifap_orig;;
 
-    strcpy(ipaddr, "xxx.xxx.xxx.xxx");
+    strcpy(ipaddr_str, "xxx.xxx.xxx.xxx");
 
     rc = getifaddrs(&ifap_orig);
     if (rc != 0) {
         ERROR("getifaddrs, %s\n", strerror(errno));
-        return ipaddr;
+        return ipaddr_str;
     }
 
     ifap = ifap_orig;
     while (ifap) {
-        //printf("ifa_name = %s\n", ifap->ifa_name);
+        //INFO("ifa_name = %s\n", ifap->ifa_name);
         if (ifap->ifa_addr->sa_family == AF_INET) {
             struct sockaddr_in *x = (struct sockaddr_in*)ifap->ifa_addr;
 
             addr = htonl(x->sin_addr.s_addr);
-
-            if (((addr >> 24) & 0xff) == 127) {
-                goto next;
-            }
-
             a = (addr >> 24) & 0xff;
             b = (addr >> 16) & 0xff;
             c = (addr >>  8) & 0xff;
             d = (addr >>  0) & 0xff;
 
-            if (a == 192 || a == 10) {
-                sprintf(ipaddr, "%d.%d.%d.%d", a,b,c,d);
-                break;
+            // skip over loopback and docker0 networks;
+            // the docker0 network may be present when running the ezApp linux version
+            if (a == 127 || a == 172) {
+                goto next;
             }
+
+            INFO("getifaddrs found %d.%d.%d.%d\n", a,b,c,d);
+            sprintf(ipaddr_str, "%d.%d.%d.%d", a,b,c,d);
         }
             
 next:
@@ -661,11 +658,7 @@ next:
 
     freeifaddrs(ifap_orig);
 
-    if (ipaddr[0] == 'x' && a != 0) {
-        sprintf(ipaddr, "%d.%d.%d.%d", a,b,c,d);
-    }
-
-    return ipaddr;
+    return ipaddr_str;
 }
 
 // ----------------- JSON --------------------

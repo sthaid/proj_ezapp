@@ -1178,10 +1178,9 @@ void Util_print_params(struct ParseState *Parser, struct Value *ReturnValue,
 void Util_get_ipaddr(struct ParseState *Parser, struct Value *ReturnValue,
         struct Value **Param, int NumArgs)
 {
-    char *ipaddr;
+    char *ipaddr_str = (char*)Param[0]->Val->Pointer;
 
-    ipaddr = util_get_ipaddr();
-    ReturnValue->Val->Pointer = ipaddr;
+    ReturnValue->Val->Pointer = util_get_ipaddr(ipaddr_str);
 }
 
 //
@@ -1458,7 +1457,7 @@ struct LibraryFunction UtilsFunctions[] = {
     { Util_set_numeric_param,"void util_set_numeric_param(char *dir, char *name, double value);" },
     { Util_print_params,     "void util_print_params(char *dir);" },
     // network
-    { Util_get_ipaddr,       "char *util_get_ipaddr(void);" },
+    { Util_get_ipaddr,       "char *util_get_ipaddr(char *ipaddr_str);" },
     // json
     { Util_json_parse,       "void *util_json_parse(char *str, char **end_ptr);" },
     { Util_json_free,        "void util_json_free(void *json_root);" },

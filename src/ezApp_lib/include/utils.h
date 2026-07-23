@@ -111,10 +111,9 @@ void util_print_params(char *dir);
 // NETWORK UTILS    
 // --------------------
 
-// Util_get_ipaddr returns the device IP address, for example "192.168.1.10".
-// The IP address is returned in a static string; do not free it. xxx
-
-char *util_get_ipaddr(void);
+// Util_get_ipaddr returns the device IP address, in the caller supplied str.
+// Recommended sizeof str is >= 30.
+char *util_get_ipaddr(char *str); 
 
 // --------------------
 // JSON FILE UTILS   

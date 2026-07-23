@@ -287,6 +287,7 @@ static void page_0_draw(void)
     struct tm *tm;
     char str[MAX_TIME_STR];
     long usecs, delta_ms;
+    char ipaddr_str[30];
     static long usecs_last, usecs_first;
     
     // draw rect around sdlx_win perimeter
@@ -315,7 +316,9 @@ static void page_0_draw(void)
         (usecs-usecs_first)/1000000., delta_ms);
 
     // print ipaddr
-    sdlx_render_printf_ex2(sdlx_win_width/2, ROW2Y(11), FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, "%s", util_get_ipaddr());
+    sdlx_render_printf_ex2(sdlx_win_width/2, ROW2Y(11), 
+                           FONT_NORMAL, COLOR_WHITE, FLAG_X_CTR, 
+                           "%s", util_get_ipaddr(ipaddr_str));
 
     // test mouse motion
     sdlx_render_printf_ex2(sdlx_win_width/2, ROW2Y(13),

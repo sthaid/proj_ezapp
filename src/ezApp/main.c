@@ -727,7 +727,7 @@ static void settings(void)
     bool                done = false;
     sdlx_event_t        event;
     sdlx_loc_t         *loc;
-    char               *ipaddr;
+    char                ipaddr_str[30];
     int                 record_test_state = IDLE;
     sdlx_audio_params_t ap;
     sdlx_audio_state_t  as;
@@ -737,7 +737,7 @@ static void settings(void)
     int                 y2;
 
     // get this device ipaddr
-    ipaddr = util_get_ipaddr();
+    util_get_ipaddr(ipaddr_str);
 
     // init variables which define the vertical region of the display
     // being used for the filename list
@@ -866,7 +866,7 @@ static void settings(void)
                                "%s", "Settings");
         sdlx_render_printf(0, ROW2Y(1), "Version = %s", VERSION);
         sdlx_render_printf(0, ROW2Y(2), "%s", BUILD_DATE);
-        sdlx_render_printf(0, ROW2Y(3), "%s:%d", ipaddr, params.devel_port);
+        sdlx_render_printf(0, ROW2Y(3), "%s:%d", ipaddr_str, params.devel_port);
 
         // register motion and control events
         sdlx_register_event(NULL, EVID_MOTION);
