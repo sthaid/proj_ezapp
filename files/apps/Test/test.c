@@ -1366,22 +1366,10 @@ static void page_12_process_event(sdlx_event_t *ev)
 
 static void page_13_init(void)
 {
-    int rc;
-
-    rc = svc_start("Template");
-    if (rc != 0) {
-        printf("E %s, page_13_init, svc_start rc=%d\n", progname, rc);
-    }
 }
 
 static void page_13_exit(void)
 {
-    int rc;
-
-    rc = svc_stop("Template");
-    if (rc != 0) {
-        printf("E %s, page_13_init, svc_start rc=%d\n", progname, rc);
-    }
 }
 
 static void page_13_draw(void)
@@ -1398,8 +1386,10 @@ static void page_13_draw(void)
 
     rc = svc_make_req("Template", req, 5);
     if (rc != 0) {
-        printf("E %s: page_13_draw, svc_make_req failed, rc=%d\n", progname, rc);
-        // xxx print to display too, or instead of this print
+        sdlx_render_printf_ex2(
+            sdlx_win_width/2, sdlx_win_height/2, 
+            FONT_NORMAL, COLOR_RED, FLAG_XY_CTR,
+            "svc_make_req failed\nrc = %s", svc_make_req_status_to_str(rc));
         return;
     }
 

@@ -50,11 +50,6 @@
 #define REQ_STATE_IN_PROGRESS  2
 #define REQ_STATE_COMPLETED    3
 
-#define SVC_REQ_ERROR_FAILURE           -1
-#define SVC_REQ_ERROR_SVC_NOT_FOUND     -2
-#define SVC_REQ_ERROR_SVC_NOT_RUNNING   -3
-#define SVC_REQ_ERROR_TIMEDOUT          -4
-
 //
 // typedefs
 //
@@ -83,6 +78,8 @@ static bool   initialized;
 //
 
 static void update_svcs_tbl(void);
+static int svc_start(char *name);  
+static int svc_stop(char *name);  
 static void run_svc(char *svc_name);
 static int svc_thread(void *cx);
 
@@ -396,7 +393,7 @@ static void update_svcs_tbl(void)
     }
 }
 
-int svc_start(char *name)
+static int svc_start(char *name)
 {
     int id;
     char dir[100];
@@ -432,7 +429,7 @@ int svc_start(char *name)
     return 0;
 }
 
-int svc_stop(char *name)
+static int svc_stop(char *name)
 {
     int id;
     char dir[100];
@@ -595,6 +592,22 @@ int svc_make_req(char *svc_name, svc_req_t *req_arg, int timeout_secs)
     pthread_mutex_unlock(&x->req_mutex2);
     pthread_mutex_unlock(&x->req_mutex1);
     return req_arg->comp_status;
+}
+
+char *svc_make_req_status_to_str(int rc)
+{
+    switch (rc) {
+    case SVC_REQ_ERROR_FAILURE: 
+        return "FAILURE";
+    case SVC_REQ_ERROR_SVC_NOT_FOUND: 
+        return "SVC_NOT_FOUND";
+    case SVC_REQ_ERROR_SVC_NOT_RUNNING: 
+        return "SVC_NOT_RUNNING";
+    case SVC_REQ_ERROR_TIMEDOUT: 
+        return "TIMEDOUT";
+    default:
+        return "FAILURE";
+    }
 }
 
 // ---- routines called by svcs ----

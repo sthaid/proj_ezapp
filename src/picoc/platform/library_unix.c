@@ -1519,29 +1519,6 @@ typedef struct { \n\
 
 // -----------------  SVCS PLATFORM ROUTINES  --------------------------
 
-// start / stop a service;
-// NOTE: not normally used because services are controlled from Settings
-
-void Svc_start(struct ParseState *Parser, struct Value *ReturnValue,
-        struct Value **Param, int NumArgs)
-{
-    char *svc_name = Param[0]->Val->Pointer;
-    int   ret;
-
-    ret = svc_start(svc_name);
-    ReturnValue->Val->Integer = ret;
-}
-
-void Svc_stop(struct ParseState *Parser, struct Value *ReturnValue,
-        struct Value **Param, int NumArgs)
-{
-    char *svc_name = Param[0]->Val->Pointer;
-    int   ret;
-
-    ret = svc_stop(svc_name);
-    ReturnValue->Val->Integer = ret;
-}
-
 //
 // make service request routine, called by apps
 //
@@ -1556,6 +1533,14 @@ void Svc_make_req(struct ParseState *Parser, struct Value *ReturnValue,
 
     ret = svc_make_req(svc_name, req, timeout_secs);
     ReturnValue->Val->Integer = ret;
+}
+
+void Svc_make_req_status_to_str(struct ParseState *Parser, struct Value *ReturnValue,
+        struct Value **Param, int NumArgs)
+{
+    int rc = Param[0]->Val->Integer;
+
+    ReturnValue->Val->Pointer = svc_make_req_status_to_str(rc);
 }
 
 //
@@ -1591,13 +1576,11 @@ void SvcsSetupFunction(Picoc *pc)
 }
 
 struct LibraryFunction SvcsFunctions[] = {
-    // start / stop a service;
-    // NOTE: not normally used because services are controlled from Settings
-    { Svc_start,         "int svc_start(char *name);" },
-    { Svc_stop,          "int svc_stop(char *name);" },
-
     // make service request routine, called by apps
-    { Svc_make_req,      "int svc_make_req(char *svc_name, svc_req_t *req, int timeout_secs);" },
+    { Svc_make_req, "int svc_make_req(char *svc_name, svc_req_t *req, int timeout_secs);" },
+
+    // convert status return from svc_make_req to string
+    { Svc_make_req_status_to_str, "char *svc_make_req_status_to_str(int rc);" },
 
     // process service request routines, called by svcs
     { Svc_wait_for_req,  "int svc_wait_for_req(char *svc_name, svc_req_t **req, int timeout_secs);" },

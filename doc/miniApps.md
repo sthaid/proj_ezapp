@@ -21,9 +21,9 @@ If you want to create a new miniApp then continue with the steps described in th
 Enable ezApp Developer Mode.
 - Open ezApp, 'Settings' selection should be at bottom right of display
 - Settings > Devel_Mode > Tap to set ON
-- Settings > Devel_Password > Tap to choose a password
+- Settings > Devel_Password > Tap to set your password
 
-You do not need to enable Android Device Developer Options to create miniApps.
+You do not need to enable Android Device 'Developer options' to create miniApps.
 
 Setup Development PC
 ====================
@@ -52,7 +52,7 @@ git clone https://github.com/sthaid/ezApp.git
 Set environment variable
 - The Android device should be connected to a trusted Wi-Fi network
 - The Android Device IP address is displayed in ezApp > Settings
-- The android-device-ip-addr can be an IP address, such as 192.168.1.101 or a Hostname (if available)
+- The 'android-device-ip-addr' can be an IP address, such as 192.168.1.101 or a Hostname (if available)
 - The [:port] is only needed if the ezApp Devel_Port had been changed to something other than the default 9000
 ```
 export PATH=$PATH:~/ezApp/bin
@@ -63,7 +63,7 @@ export EZAPP_PASSWD=<devel-mode-password>             # example: my-secret-passw
 Build ezApp: This will take several minutes, and performs the following steps:
 - git clone the SDL repos
 - build tools in the bin/src dir
-- build a version of ezApp that runs on the devel PC
+- build a version of ezApp that runs on the Devel PC
 - perform a test build of all included miniApps and miniSvcs
 ```
 cd ~/ezApp
@@ -101,18 +101,18 @@ vi template.c    # change "Hello\nWorld" to "NewApp"
 Test the new miniApp on the Devel PC
 ====================================
 
-These tests are optional, but also very helpful.
+These tests are optional, but very helpful.
 
-Test 1: perform test build of the miniApp using the gcc compilerA; and if the test
-build passes, the miniApp is run on the Devel PC using PicoC.
+Test 1: perform test build of the miniApp using the gcc compiler; if the test
+build succeeds, the miniApp is run on the Devel PC using PicoC.
 ```
 cd ~/ezApp/files/apps/NewApp
 eztest
 ```
 
 Test 2: runs ezApp on the Linux Devel PC. This is especially helpful when testing
-a miniApp that interacts with a miniSvc. The interaction between miniApp and miniSvc
-is not covered by Test 1.
+a miniApp that interacts with a miniSvc. The interactions between miniApp and miniSvc
+are not covered by Test 1.
 ```
 cd ~/ezApp/Linux
 make run
@@ -143,7 +143,7 @@ APIs available for use by miniApps
 
 Picoc is extended to support the APIs defined in ~/ezApp/src/ezApp_lib/include:
 - sdlx.h: provides miniApp access to SDL features: video, audio, events, and sensors.
-- utils.h: various utilities, including json, png, fft, files, time, location, text-to-speech, ...
+- utils.h: various utilities, including json, png, fft, file access, time, location, text-to-speech, ...
 - svcs.h: provides miniApp the ability to make a request to a miniSvc
 Refer to these files for documentation of the APIs they provide.
 
@@ -239,6 +239,37 @@ miniSvcs
 ========
 
 xxx todo
-- example
-- how to communicate between miniApp and miniSvc
 
+when ezApp starts
+
+Settings > Services
+
+stopped file
+
+each service runs (by picoc) in a separate thread
+- design of picoc allows for this
+
+services must not make sdlx calls that update the display, and ...
+make list of okay calls  AND doc which are not ok in the include files
+- SENSORS
+- sdlx_show_toast 
+- int svc_wait_for_req(char *svc_name, svc_req_t **req, int timeout_secs);
+- void svc_req_completed(char *svc_name, svc_req_t *req, int comp_status);
+- utils ??
+  - review them all
+  - make fft okay ??
+Doc API files, if they can not be called from a svc
+
+services run all the time that ezApp is running;  miniApps just run when selected
+- even when the ezApp is in the background, or the Android is dozing
+
+xxx maybe dont say this, it is obvious
+the purpose of the miniSvcs provided is to save values for later access by a miniApp
+
+The Steps miniSvc saves step counts to steps.dat file. The steps.dat file is mapped
+into the ezApp memory space by call to util_map_file (which calls mmap). When the Steps
+miniApp starts, it also cals util_map_file, to obtain memory mappiing of the steps.dat file.
+The Steps miniApp then simply reads from memory to obtain the step count values that it
+displays.
+
+Another interaction: miniApps can interact with miniSvc is to xxx make a request

@@ -1435,6 +1435,7 @@ void sdlx_show_toast(char *message)
     #define GRAVITY_CENTER  0x11
     #define GRAVITY_BOTTOM  0x50
 
+    // this is safe to call from any thread
     SDL_ShowAndroidToast(message, DURATION_LONG, GRAVITY_BOTTOM, 0, 0);
 #endif
 }

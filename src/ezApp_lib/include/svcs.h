@@ -11,6 +11,12 @@ extern "C" {
 // sizeof of req->data
 #define MAX_SVC_REQ_DATA 100
 
+// Status values returned by svc_make_req.
+#define SVC_REQ_ERROR_FAILURE           -1
+#define SVC_REQ_ERROR_SVC_NOT_FOUND     -2
+#define SVC_REQ_ERROR_SVC_NOT_RUNNING   -3
+#define SVC_REQ_ERROR_TIMEDOUT          -4
+
 // svc request struct
 typedef struct {
     int  id;
@@ -18,17 +24,14 @@ typedef struct {
     char data[MAX_SVC_REQ_DATA];
 } svc_req_t;
 
-// Start and stop a miniSvc. Returns 0 on success.
-// Note: the svc_start and svc_stop routines may not be used often because
-// Settings, Services supports starting and stopping of miniSvcs.
-int svc_start(char *name);
-int svc_stop(char *name);
-
 // The svc_make_req routine is called by miniApps to issue a request to a MiniSvc.
 // Return value is < 0 if the request could not be issued; otherwise the 
 // return value is the completion status (comp_status) value provided by the
 // miniSvc.
 int svc_make_req(char *svc_name, svc_req_t *req, int timeout_secs);
+
+// Convert status value returned by svc_make_req to string.
+char *svc_make_req_status_to_str(int rc);
 
 // The following 2 routines are called by the miniSvcs:
 // - svc_wait_for_req waits for a request, or timeout. Return value 0

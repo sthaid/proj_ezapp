@@ -616,6 +616,7 @@ void util_print_params(char *dir)
 
 // -----------------  NETWORK  -------------------------------
 
+// xxx maybe pass in a str
 char *util_get_ipaddr(void)
 {
     static char ipaddr[20];
@@ -1032,6 +1033,7 @@ static struct {
 
 static kiss_fftr_cfg cached_alloc_fftr(int n_fft, bool inverse)
 {
+    // xxx make this thread safe
     for (int i = 0; i < MAX_CACHE; i++) {
         if (cache[i].n_fft == n_fft && cache[i].inverse == inverse) {
             return cache[i].cfg;
