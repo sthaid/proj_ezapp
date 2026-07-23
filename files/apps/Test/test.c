@@ -759,7 +759,6 @@ static void add_terminator(sdlx_tone_t **t)
 
 static void page_7_init(void)
 {
-    util_fft_test();
 }
 
 static void helper(float low_freq, float high_freq, float *fft, float delta_f, sdlx_color_t color, int x, int y);
@@ -873,6 +872,20 @@ static void page_7_draw(void)
         helper(60,  150,  fft, delta_f, COLOR_RED,   0,   y);
         helper(200, 600,  fft, delta_f, COLOR_GREEN, 333, y);
         helper(800, 2200, fft, delta_f, COLOR_BLUE,  666, y);
+    }
+
+    // run util_fft_test, and display result
+    int  rc;
+    long duration_usec;
+    rc = util_fft_test(&duration_usec);
+    if (rc == 0) {
+        sdlx_render_printf_ex1(0, sdlx_win_height - 4 * sdlx_char_height_dflt,
+                               FONT_NORMAL, COLOR_GREEN, 
+                               "FftTest OK %ld usec", duration_usec);
+    } else {
+        sdlx_render_printf_ex1(0, sdlx_win_height - 4 * sdlx_char_height_dflt,
+                               FONT_NORMAL, COLOR_RED, 
+                               "FftTest FAILED");
     }
 }
 

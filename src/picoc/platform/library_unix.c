@@ -1329,7 +1329,9 @@ void Util_fft_inverse_complex_to_real(struct ParseState *Parser, struct Value *R
 void Util_fft_test(struct ParseState *Parser, struct Value *ReturnValue,
         struct Value **Param, int NumArgs)
 {
-    util_fft_test();
+    long * duration_usec = (long *)Param[0]->Val->Pointer;
+
+    ReturnValue->Val->Integer = util_fft_test(duration_usec);
 }
 
 void Util_rms_float(struct ParseState *Parser, struct Value *ReturnValue,
@@ -1469,7 +1471,7 @@ struct LibraryFunction UtilsFunctions[] = {
     { Util_fft_real_to_real,    "void util_fft_real_to_real(int n_fft, float *input, float *output, bool scale_by_n_fft);" },
     { Util_fft_real_to_complex, "void util_fft_real_to_complex(int n_fft, float *input, complex_t *cpx_output, bool scale_by_n_fft);" },
     { Util_fft_inverse_complex_to_real, "void util_fft_inverse_complex_to_real(int n_fft, complex_t *cpx_input, float *output, bool scale_by_n_fft);" },
-    { Util_fft_test,            "void util_fft_test(void);" },
+    { Util_fft_test,            "int util_fft_test(long *duration_usec);" },
     { Util_rms_float,           "double util_rms_float(float *x, int n);" },
     // call java: location
     { Util_get_location,        "void util_get_location(double *latitude, double *longitude, double *altitude_ft, bool *alt_is_wgs84);" },
