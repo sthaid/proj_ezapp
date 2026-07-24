@@ -514,7 +514,8 @@ struct LibraryFunction UnistdFunctions[] =
     {UnistdAccess, "int access(char*, int);"},
     {UnistdAlarm, "unsigned int alarm(unsigned int);"},
 /*    {UnistdBrk, "int brk(void*);"}, */
-    {UnistdChdir, "int chdir(char*);"},
+/*    {UnistdChdir, "int chdir(char*);"},  EZAPP: chdir not allowed */
+/*    {UnistdFchdir, "int fchdir(int);"},  EZAPP: fchdir not allowed */
     {UnistdChroot, "int chroot(char*);"},
     {UnistdChown, "int chown(char*, uid_t, gid_t);"},
     {UnistdClose, "int close(int);"},
@@ -534,7 +535,6 @@ struct LibraryFunction UnistdFunctions[] =
 /*    {UnistdExecvp, "int execvp(char*, char* []);"}, */
     {Unistd_Exit, "void _exit(int);"},
     {UnistdFchown, "int fchown(int, uid_t, gid_t);"},
-    {UnistdFchdir, "int fchdir(int);"},
     {UnistdFdatasync, "int fdatasync(int);"},
     {UnistdFork, "pid_t fork(void);"},
     {UnistdFpathconf, "long fpathconf(int, int);"},

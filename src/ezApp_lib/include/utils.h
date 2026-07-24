@@ -20,7 +20,7 @@ long util_get_real_time_microsec(void);
 // Converts real time in microsecs to time str, 
 // str arg should have size MAX_TIME_STR or larger.
 // For example, when gmt, display_ms, and display_data are all true:
-// "xxx".
+// "07/24/26 12:15:39.173 GMT"
 char *util_time2str(char *str, long us, int gmt, int display_ms, int display_date);
 
 // --------------------
@@ -162,7 +162,6 @@ void util_json_free(void *json_root);
 // The https://github.com/lvandeve/lodepng PNG encoder/decoder is used.
 //
 // Callers of util_read_png_file must free pixels.
-// xxx search for 'must free' or similar
 
 int util_read_png_file(char *dir, char *filename, unsigned char **pixels, int *w, int *h);
 int util_write_png_file(char *dir, char *filename, unsigned char *pixels, int w, int h);
@@ -173,22 +172,21 @@ int util_write_png_file(char *dir, char *filename, unsigned char *pixels, int w,
 
 // These util_fft routines perform Fast Fourier Transforms
 // The https://github.com/mborgerding/kissfft package is used.
-//
-// The util_rms routines compute the RMS magnitude of the supplied data.
 
 typedef struct {
     float r;
     float i;
 } complex_t;
 
-// xxx update so that these can these be called from svc
 void util_fft_real_to_real(int n_fft, float *input, float *output, bool scale_by_n_fft);
 void util_fft_real_to_complex(int n_fft, float *input, complex_t *cpx_output, bool scale_by_n_fft);
 void util_fft_inverse_complex_to_real(int n_fft, complex_t *cpx_input, float *output, bool scale_by_n_fft);
 
-// xxx comment
+// Used for unit_test, by the Test miniApp. Returns 0 on success.
+// Returns duration in microsecs of 1000 sample real-to-real fft.
 int util_fft_test(long *duration_usec);
 
+// The util_rms routines computes the RMS magnitude of the supplied data.
 double util_rms_float(float *x, int n);
 
 // ----------------------
@@ -208,13 +206,11 @@ double util_rms_float(float *x, int n);
 void util_get_location(double *latitude_optional, double *longitude_optional, 
                        double *altitude_ft_optional, bool *alt_is_wgs84_optional);
 
-// Invoke Android text-to-speech.
-// xxx dont call from a svc
+// Android text-to-speech.
 void util_text_to_speech(char *text);
 void util_text_to_speech_stop(void);
 
 // Control flashlight.
-// xxx can this be called from a svc
 void util_turn_flashlight_on(void);
 void util_turn_flashlight_off(void);
 bool util_is_flashlight_on(void);
@@ -224,7 +220,6 @@ void util_toggle_flashlight(void);
 // 1) call util_start_playbackcapture
 // 2) repeatedly call util_get_playbackcapture_audio to obtain raw audio samples.
 // 3) when done collecting audio samples, call util_stop_playbackcapture
-// xxx dont call from a svc
 int util_start_playbackcapture(void);
 void util_stop_playbackcapture(void);
 int util_get_playbackcapture_audio(float *array, int num_array_elements);

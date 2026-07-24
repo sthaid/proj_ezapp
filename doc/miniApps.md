@@ -238,38 +238,45 @@ to avoid memory leaks.
 miniSvcs
 ========
 
-xxx todo
+The purpose of miniSvcs is to supply information to miniApps about events or state
+that occurs while a miniApp is not running. For example, the Steps miniSvc provides
+step counts values to the Steps miniApp. These step count values are provided for
+all time intervals, as long as the Steps miniSvc is running. Thus, the Steps miniApp
+is able to display step count history.
 
-when ezApp starts
+When ezApp starts, the miniSvcs are automatically started:
+- a thread is created for each miniSvc
+- each miniSvc is run by PicoC in the thread created for it
+- if a file named 'stopped' exists in the miniSvc directory, that miniSvc is not started
 
-Settings > Services
+Services can be Started and Stopped from 'Settings' > 'Services'. When a 
+miniSvc has been started, the 'stopped' file is removed. When a miniSvc has been
+stopped, the 'stopped' file is created.
 
-stopped file
+A miniSvc that is running continues to run in the background, even when:
+- ezApp is stopped; i.e. the user has switched to a different Android app
+- the Android device is dozing; note that the miniSvc will run at a reduced rate
 
-each service runs (by picoc) in a separate thread
-- design of picoc allows for this
+The miniSvcs provided with ezApp (Altitude, Location, and Steps), each save
+information to a data file. The data file is read, and contents displayed, by a miniApp.
 
-services must not make sdlx calls that update the display, and ...
-make list of okay calls  AND doc which are not ok in the include files
-- SENSORS
-- sdlx_show_toast 
-- int svc_wait_for_req(char *svc_name, svc_req_t **req, int timeout_secs);
-- void svc_req_completed(char *svc_name, svc_req_t *req, int comp_status);
-- utils ??
-  - review them all
-  - make fft okay ??
-Doc API files, if they can not be called from a svc
+MiniSvcs can also receive and respond to requests from miniApps.
+Refer to svcs.h for API details; and view example in the Template miniSvc.
 
-services run all the time that ezApp is running;  miniApps just run when selected
-- even when the ezApp is in the background, or the Android is dozing
+The following APIs can be used by miniSvcc.
+- sdlx.h: SENSORS, sdlx_show_toast
+- svc.h: svc_wait_for_req, svc_req_completed
+- utils.h: all utils.h APIS are okay to use, except:
+  - Android text-to-speech
+  - Capture device audio
+- picoc/cstdlib/*.h
 
-xxx maybe dont say this, it is obvious
-the purpose of the miniSvcs provided is to save values for later access by a miniApp
-
-The Steps miniSvc saves step counts to steps.dat file. The steps.dat file is mapped
-into the ezApp memory space by call to util_map_file (which calls mmap). When the Steps
-miniApp starts, it also cals util_map_file, to obtain memory mappiing of the steps.dat file.
-The Steps miniApp then simply reads from memory to obtain the step count values that it
-displays.
-
-Another interaction: miniApps can interact with miniSvc is to xxx make a request
+To create a new miniSvc:
+- On Devel PC:
+```
+cd ezApp/files/svcs
+cp -r Template NewSvc
+cd NewSvc/
+ezput
+```
+- On ezApp: 'Settings' > 'Services'; tap NewSvc to start the new miniSvc.
