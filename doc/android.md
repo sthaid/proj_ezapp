@@ -1,155 +1,106 @@
-xxx instructions to enable Android developer mde
-xxx if this filename changes , also update bin/README.md
+Developer build and install ezApp on your Android device
+========================================================
 
-This README was prepared while using Ubuntu 25.10.
+This document describes how to:
+- install the Android SDK on your Devel PC
+- enable Developer Options on your Android device
+- build ezApp on your Devel PC
+- install your ezApp build on your Android device
 
-The steps to build and install a developer created version
-of ezApp, on your Android device, are described.
+Prior to using the steps described in this document; the
+steps described in miniApps.md, "Setup Development PC" must
+have been performed.
 
-xxx more packages?
-xxx move some of this to top level readme
+Install the Android SDK on your Devel PC
+========================================
 
-===============================
-INSTALL LINUX PACKAGES
-===============================
+Download the Linux Android SDK command line tools zip file.
+from https://developer.android.com/studio#command-line-tools-only.
 
-xxx reference the setup script
+Run ezApp/bin/install_android_sdk script to install the Android SDK.
+The SDK will be created in ~/android/sdk.
+```
+install_android_sdk ~/Downloads/commandlinetools-linux-nnnnnnnn_latest.zip
+```
+Setup the enviroment variables as described by the ```install_android_sdk``` script.
 
-sudo apt update
-sudo apt install build-essential
-sudo apt install openjdk-17-jdk
+Enable Developer Options on your Android device
+===============================================
 
-===============================
-INSTALL ANDROID SDK
-===============================
-
-xxx reference the setup script
-
-# if reinstalling the android sdk, first do this:
-  # force kill any cached Gradle processes, and clear gradle daemon cache
-    pkill -f gradle
-    rm -rf ~/.gradle/daemon/
-  # remove the existing android sdk
-    rm -rf ~/android
-
-# download android sdk linux command line tools from here:
-https://developer.android.com/studio#command-line-tools-only
-
-# unzip the cmdlinetools
-mkdir -p ~/android/sdk
-cd ~/android/sdk
-unzip ~/Downloads/commandlinetools-linux-nnnnnnnn_latest.zip
-
-# move the cmdline-tools, to use the required directory structure
-mv cmdline-tools latest
-mkdir cmdline-tools
-mv latest cmdline-tools
-
-# install sdk packages needed to build ezApp to run on Android
-sdkmanager "platform-tools" "platforms;android-35" "build-tools;34.0.0" "ndk;27.0.12077973"
-
-# set android sdk environment varialbles
-export ANDROID_HOME=$HOME/android/sdk
-export ANDROID_NDK_ROOT=$ANDROID_HOME/ndk/27.0.12077973
-export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools
-
-===============================
-CLONE & BUILD PROJ_EZAPP
-===============================
-
-# set environment varialbles
-export EZAPP=/your/path/to/proj_ezApp
-export PATH=$PATH:$EZAPP/bin:$EXAPP/android/bin
-
-# git clone
-cd $(dirname $EZAPP)
-git clone https://github.com/sthaid/proj_ezApp.git
-
-# build
-cd $EZAPP
-make build
-make build_android
-
-==========================================
-CONNECT DEVEL COMPUTER WITH ANDROID DEVICE
-==========================================
-
-On Android Device
-- Enable developer mode by tapping build number 8 times.
+On Android device:
+- Enable developer mode by tapping "Build number" 8 times.
   - Settings -> About Phone -> Software Information -> Build Number
-- Go to Developer Options , and enable
+- Go to Settings > Developer options , and enable
   - USB Debugging
   - Stay Awake
 
-Connect using USB Data cable:
-- Connect USB Data cable between Computer and Device
-  - select 'allow access' on the device.
-- Test connection: adb shell
+Establish connection using USB **Data** cable. 
+- Connect USB **Data** cable from Devel PC to Android device
+- When prompted on Android device, tap:
+  - Always allow from this computer
+  - Allow
+- Test connection, from Devel PC ```adb shell```
 
-Or, Connect using Wifi:
-- Connect USB Data cable between Computer and Device
-  - select 'allow access' on the device.
-- On computer: adb tcpip 5555
+Optional additional steps to connect using Wi-Fi:
+- On Devel PC ```adb tcpip 5555```
 - Disconnect USB Data cable
-- On computer: adb connect <ipaddr|hostname>
-- Test connection: adb shell
+- Get IP address of Android device, either from:
+  - Android Settings > About Phone > Status information
+  - ezApp Settings
+- On Devel PC: ```adb connect <ipaddr>```
+- Test Wi-Fi connection ```adb shell```
 
 Notes:
-- to restart adb server, if needed: adb kill-server; adb start-server
-- to list connected devices: adb devices
-- to use a static IP address:
-  - configure router to assign a static IP address to your Android device
-  - may also need to configure your Android device to not used randomized MAC
-      Connections -> Wifi -> Gear -> View More -> MAC Address Type -> Pnone MAC
+- It is recommended to use the optional Wi-Fi procedure only on a trusted network.
+- Use ```ezApp/bin/adb_connect <ipaddr>``` instead of ```adb connect <ipaddr>```
+  to resolve connection issues. Refer to comments in that script.
+- You will occasionally need to re-issue  ```ezApp/bin/adb_connect <ipaddr>```.
+- On home network, recommend adjusting router setting to use static IP address for your
+  Android device.
 
-===============================
-INSTALL EZAPP ON ANDROID
-===============================
+Summary of adb commands related to connecting to your Android device:
+- adb help:                show help
+- adb tcpip PORT           restart ADB daemon listening on TCP on PORT
+- adb connect HOST[:PORT]: connect to a device via TCP/IP [default port=5555]
+- adb disconnect:          disconnect from all devices
+- adb devices:             list connected devices
+- adb kill-server; adb start-server: 
+                           restart Android Debug Bridge (ADB) daemon on Devel PC
 
-cd $EZAPP
-make install_android
+Build ezApp on your Devel PC
+============================
 
-=============================================
-============  ADDITIONAL INFO  ==============
-=============================================
+```
+cd ~/ezApp/android
+make build
+```
 
-===============================
-ADB COMMAND EXAMPLES
-===============================
+Install your ezApp build on your Android device
+===============================================
 
-adb help
+```
+cd ~/ezApp/android
+make install
+```
 
-adb logcat --help
-adb logcat -c -b all                      # clear Android log
-adb logcat -s SDL SDL/APP AndroidRuntime  # view logs from SDL SDL/APP AndroidRuntime components
+APPENDICES
+==========
 
-adb shell                             # run remote shell
-adb shell getprop ro.product.cpu.abi  # get Application Binary Interface
+android version info
+--------------------
 
-adb tcpip 5555             # restart Android Debug Bridge Daemon listening on TCP port 5555
-adb connect 192.168.1.205  # connect to device
+Reference: https://apilevels.com/
 
-adb devices  # list connected devices
-
-adb kill-server   # restart adb server
-adb start-server
-
-===============================
-ANDROID VERSION NUMBERS
-===============================
-
-References:
-- https://apilevels.com/
-- Google: "list of android architecture versions and API levels"
-
-                Android(*)
-Codename        Version     API Level   Year    (subset)
---------        -------     ---------   ----
-Baklava         16          36          2025
-Nougat          7.0         24          2016
-Lollipop        5           21          2015
-
-(*) Android Version found here:: Setup -> About phone -> Software information
+Android Version found here:: Setup -> About phone -> Software information. 
+Some examples:
+```
+                    Android   
+    Codename        Version     SDK / API Level   Year
+    --------        -------     ---------------   ----
+    Baklava           16             36           2025
+    Nougat            7.0            24           2016
+    Lollipop          5              21           2015
+```
 
 From Google AI ...
 
@@ -188,28 +139,19 @@ NDK Version:
   will automatically select a default version that it is known to be
   compatible with
 
-===============================
-MISC
-===============================
+miscellaneous notes
+-------------------
 
-sdkmanager --help  (summary)
-  Usage:
-    sdkmanager [--uninstall] [<common args>] [--package_file=<file>] [<packages>...]
-    sdkmanager --update [<common args>]
-    sdkmanager --list [<common args>]
-    sdkmanager --list_installed [<common args>]
-    sdkmanager --licenses [<common args>]
-    sdkmanager --version
-  With --install (optional), installs or updates packages.
-      By default, the listed packages are installed or (if already installed)
-      updated to the latest version.
+* To list what files are contained in the APK:
+```
+    cd ~/ezApp/android
+    unzip -l SDL/build/org.sthaid.ezApp/app/build/outputs/apk/debug/app-debug.apk
+    apkanalyzer files list SDL/build/org.sthaid.ezApp/app/build/outputs/apk/debug/app-debug.apk
+    apkanalyzer files list SDL/build/org.sthaid.ezApp/app/build/outputs/apk/debug/app-debug.apk | grep lib
+```
 
-To list what files are contained in the APK:
-  ln -s ./SDL3-3.2.28/build/org.sthaid.ezApp/app/build/outputs/apk/debug/app-debug.apk app-debug.zip
-  unzip -l app-debug.zip | grep lib
+* Virtually all modern Android devices run on ARM64 architecture.
 
-To specify which ABIS to build:
-  ./gradlew assembleDebug -PANDROID_ABIS=arm64-v8a
+* gradle requires a Java Development Kit (JDK) or Java Runtime Environment 
+  JRE) of version 17 or higher to run its engine
 
-gradle requires a Java Development Kit (JDK) or Java Runtime Environment 
-JRE) of version 17 or higher to run its engine

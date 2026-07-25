@@ -2,7 +2,7 @@
 
 # This script will install the Android SDK Command Line Tools.
 # The Android SDK is required to build and install the ezApp 
-# Android Package (APK).
+# Android Package Kit (APK).
 #
 # After running this script, be sure to set the environment variables
 # as directed.

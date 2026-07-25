@@ -1,11 +1,12 @@
+need a script to remove an app or svc
+
 update scripts:
 	../../../bin/adb_deep_doze
 	../../../bin/adb_light_doze
 
-miniSvcs doc, and updates to utils.c/h  ALMOST DONE
-
 make sure ezApp still works even with developer mode off
 
+remove doc/miniSvcs.md
 
 swipe on main page
 
