@@ -37,13 +37,16 @@ test_build_apps_and_svcs:
 
 .PHONY: build clone_sdl bin/src linux test_build_apps_and_svcs 
 
-# --- android build & install ---
+# --- android build & install  ---
 
 build_android: 
-	make -C android
+	make -C android build
 
 install_android: 
 	make -C android install
+
+build_and_install_android: 
+	make -C android build_and_install
 
 .PHONY: android_build android_install
 

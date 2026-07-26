@@ -19,11 +19,12 @@ build: SDL gen_version gen_assets openssl
 	cd SDL/build/org.sthaid.ezApp; \
         ./gradlew assembleDebug
 
-install: build
-	echo
+install:
 	adb devices
 	cd SDL/build/org.sthaid.ezApp; \
         adb install -r ./app/build/outputs/apk/debug/app-debug.apk
+
+build_and_install: build install
 
 uninstall:
 	adb uninstall org.sthaid.ezApp
@@ -46,7 +47,7 @@ gen_assets:
 openssl:
 	make -C ../src/openssl
 
-.PHONY: build install uninstall gen_version gen_assets openssl
+.PHONY: build install build_and_install uninstall gen_version gen_assets openssl
 
 # --------------------
 
