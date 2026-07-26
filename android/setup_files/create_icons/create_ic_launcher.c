@@ -43,7 +43,7 @@ int main(int argc, char **argv)
     sdlx_clear_texture(t_proposed, COLOR_PURPLE);
     sdlx_render_printf_ex2(
         PROPOSED_ICON_SIZE/2, PROPOSED_ICON_SIZE/2 - sdlx_char_height(5) * 0.10,
-        5, COLOR_BLUE, FLAG_XY_CTR, "ez");
+        5, COLOR_WHITE, FLAG_XY_CTR, "ez");
 
     // display the proposed launcher icon;
     // user selects 'OK' to proceed with generating the png files

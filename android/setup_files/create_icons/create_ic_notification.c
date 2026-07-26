@@ -44,7 +44,7 @@ int main(int argc, char **argv)
     sdlx_clear_texture(t_proposed, COLOR_PURPLE);
     sdlx_render_printf_ex2(
         WIDTH/2, Y,
-        5, COLOR_BLUE, FLAG_X_CTR, "ez");
+        5, COLOR_WHITE, FLAG_X_CTR, "ez");
 
     // display the proposed notification icon;
     // user selects 'OK' to proceed with generating the png files
