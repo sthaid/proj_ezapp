@@ -1,23 +1,34 @@
-# Overview
+ezApp Overview
+==============
+
+EzApp is intended to run on Android Smartphones.
+
+EzApp runs miniApps and miniSvcs that are written in the C Language. These
+miniApps and miniSvcs are executed by a C language interpreter.
+
+Users can develop their own miniApps and miniSvcs. To develop miniApps and 
+miniSvcs a PC is required. Refer to miniApps.md for how to build miniApps
+and miniSvcs.
 
 The Simple DirectMedia Layer (SDL) provides the framework from which the
-Android ezApp APK is built. SDL provides an Android Java Shim, which calls the C language
-ezApp entry point, SDL_main, found in src/ezApp/main.c.
+Android ezApp APK is built. SDL provides an Android Java Shim, which calls
+the C language ezApp entry point, SDL_main, found in src/ezApp/main.c.
 
-SDL provides functions for: Graphics & Rendering, Input Handling, Audio, Events, and more.
+SDL provides support for: Graphics & Rendering, Input Handling, Audio, Events, and more.
 
-The PicoC C language interpreter is used to execute the miniApps. PicoC includes support
-for some standard C language header files, such as stdio.h, string.h, etc.
+The PicoC C language interpreter is used to execute the miniApps. PicoC includes
+support for some standard C language header files, such as stdio.h, string.h, etc.
 
-Additional header files are added to PicoC to provide additional APIs for miniApps. The following
-header files are provided in picoc by code in picoc/platform/library_unix.c.
-- sdlx.h:  provides core SDL functions that are required by miniApps.
+Additional header files are added to PicoC to provide APIs needed for miniApps.
+The following header files are provided in picoc by code in src/picoc/platform/library_unix.c.
+- sdlx.h:  provides core functions that are required by miniApps. These functions
+           rely on SDL, and are named sdlx_<name>.
 - utils.h: miscellaneous utilities, including: file access, json, png, fft, location, 
            text to speech, and playback capture.
 - svcs.h:  provides ability for a miniApp to make a request to a miniSvc.
 
 The sdlx.h, utils.h, and svcs.h files are also provided in src/ezApp_lib/include.
-These files should be viewed there for documentation of the APIs they provide.
+API documentation is included in these files.
 
 Directory structure:
 - files/apps: miniApps Altitude, Calc, Clock, ...
@@ -30,15 +41,22 @@ Directory structure:
   - cJSON, kissfft, libmp3lame, lodepng, picoc: copies of code from git repos
   - openssl: populated and built when android Makefile is run to build the Android APK
 - bin: contains tools used to develop miniApps for your device
-- android: the Android Package Kit (APK) is built here
+- android: the Android Package Kit (APK) is built and installed from here
+- doc: this directory
 
-Licenses: Refer to files/licenses, and files/credits.
-All source code used is licensed under a permissive license, except:
-- libmp3lame: LGPL license.
-- FreeMonoBold.ttf: GPL-3.0-or-later, with the Font-exception-2.0
+ezApp Settings
+==============
 
-# Settings
-
-xxx todo
-
-
+Select ezApp 'Settings':
+- Readme, Licenses, Credits: view these files
+- Services: stop or start miniSvcs
+- Rec_Gain: adjust record gain
+- Rec_Silence: adjust record volume silence level
+- RecTest: make a test recording and playback
+- Foreground: allow ezApp miniSvcs to continue running when the device is dozing
+- Event_box: display box around available selections
+- Devel_Mode: enable developer mode
+- Devel_Port: set devel mode port, usually no need to modify the default
+- Devel_Password: set devel mode password, min 4 chars
+- Reset_Apps_And_svcs: reset apps and svcs to their original contents,
+  WARNING all files that have been created will be lost
