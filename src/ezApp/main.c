@@ -810,12 +810,6 @@ static void settings(void)
             }
         }
 
-        // display Reset_Apps_And_svcs
-        if (GET_Y2) {
-            loc = sdlx_render_printf(0, y2, "Reset_Apps_And_Svcs");
-            sdlx_register_event(loc, EVID_RESET_APPS_AND_SVCS);
-        }
-
         // display Foreground
         if (GET_Y2) {
             loc = sdlx_render_printf(0, y2, "Foreground = %s", params.foreground_enabled ? "ENABLED" : "DISABLED");
@@ -844,6 +838,12 @@ static void settings(void)
         if (GET_Y2) {
             loc = sdlx_render_printf(0, y2, "Devel_Password");
             sdlx_register_event(loc, EVID_DEVEL_PASSWORD);
+        }
+
+        // display Reset_Apps_And_svcs
+        if (GET_Y2) {
+            loc = sdlx_render_printf(0, y2, "Reset_Apps_And_Svcs");
+            sdlx_register_event(loc, EVID_RESET_APPS_AND_SVCS);
         }
 
         // change print color back to white
@@ -958,10 +958,17 @@ static void settings(void)
             break; }
         case EVID_RESET_APPS_AND_SVCS: {
             char *str; 
-            str = sdlx_get_input_str("Reset y/n", false, NULL);
+            str = sdlx_get_input_str(
+                    "WARNING all created\n"
+                    "files will be lost\n"
+                    "\n"
+                    "Reset y/n", 
+                    false, NULL);
             if (strcasecmp(str, "y") != 0) {
+                INFO("aborting RESET_APPS_AND_SVCS\n");
                 break;
             }
+            INFO("performing  RESET_APPS_AND_SVCS\n");
             create_files(CREATE_FILES_RESET_APPS_AND_SVCS);
             sdlx_show_toast("RESET DONE");
             break; }
