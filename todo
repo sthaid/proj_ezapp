@@ -1,29 +1,27 @@
-need a script to remove an app or svc
+xxx issues
 
-update scripts:
-	../../../bin/adb_deep_doze
-	../../../bin/adb_light_doze
+test CREATE_FILES_RESET_APPS_AND_SVCS on Linux
 
-make sure ezApp still works even with developer mode off
+make new repo
+- clone sub repos
+- copy in all other files
 
-remove doc/miniSvcs.md
+Develop miniApps for Android in C.
 
-swipe on main page
+xxxxxxxxxxxxxxxxxxxx
 
-test using Wsl
+wsl
+
+check my 
+- minSdkversion targetSdkVersion compileSdkVdersion
+- need a script to remove an app or svc
 
 ---- DOCS ----
 
-number sequence the doc dir md files
-
 review and spellcheck the docs
+windows / wsl doc
 
-docs:
-- doc dir: android.md  minisvcs.md
-- section on building android
-- wsl
-
---- TODO --
+--- TODO ----
 
 new ezApp repo, and populate with a fresh copy
 - run a full diff of the trees

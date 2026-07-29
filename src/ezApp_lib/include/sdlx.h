@@ -466,7 +466,10 @@ int sdlx_sensor_read_mag_heading(double *mag_heading);
 int sdlx_sensor_read_gravity_accel(double *ax, double *ay, double *az);
 
 // Read device acceleration sensor; this is the acceleration of the device
-// with the acceleration due to gravity removed.
+// with the acceleration due to gravity removed. Units are m/s^2.
+// - x-axis: left to right
+// - y-axis: bottom to top
+// - z-axis: perpendicular to the screen pointing to user
 int sdlx_sensor_read_device_accel(double *ax, double *ay, double *az);
 
 // The gravity accelerometer sensor is read.
@@ -590,6 +593,7 @@ void sdlx_show_toast(char *message);
 // The return value points to a static variable, and must not be freed.
 // When numeric_keybd is true the Android numeric keyboard is displayed,
 // when false, the full keyboard is displayed.
+// The prompt arg can contain newline characters.
 char *sdlx_get_input_str(char *prompt_optional, bool numeric_keybd, char *dflt_input_str_optional);
 
 #ifdef __cplusplus

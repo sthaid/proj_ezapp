@@ -5,7 +5,7 @@ UNDER CONSTRUCTION
 ezApp
 =====
 
-EzApp is designed to be run on Android
+EzApp is intended to run on Android
 Smartphones.
 
 EzApp runs miniApps and miniSvcs that

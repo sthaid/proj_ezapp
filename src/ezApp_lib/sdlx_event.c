@@ -260,13 +260,13 @@ static void process_sdlx_event(SDL_Event *ev, sdlx_event_t *event)
         static int last_pressed_y = -1;
         int x, y;
 
-       //INFO("MOUSE_BUTTON button=%s state=%s x=%d y=%d\n",
-       //        (ev->button.button == SDL_BUTTON_LEFT   ? "LEFT" :
-       //         ev->button.button == SDL_BUTTON_MIDDLE ? "MIDDLE" :
-       //         ev->button.button == SDL_BUTTON_RIGHT  ? "RIGHT" : "???"),
-       //        (ev->button.down ? "DOWN" : "UP"),
-       //        ev->button.x,
-       //        ev->button.y);
+        //INFO("MOUSE_BUTTON button=%s state=%s x=%d y=%d\n",
+        //        (ev->button.button == SDL_BUTTON_LEFT   ? "LEFT" :
+        //         ev->button.button == SDL_BUTTON_MIDDLE ? "MIDDLE" :
+        //         ev->button.button == SDL_BUTTON_RIGHT  ? "RIGHT" : "???"),
+        //        (ev->button.down ? "DOWN" : "UP"),
+        //        ev->button.x,
+        //        ev->button.y);
         x = ev->button.x / scale_events_x;
         y = ev->button.y / scale_events_y;
 
@@ -274,18 +274,12 @@ static void process_sdlx_event(SDL_Event *ev, sdlx_event_t *event)
             last_pressed_x = x;
             last_pressed_y = y;
         } else {
-            //int delta_x = x - last_pressed_x; xxx del
-            //int delta_y = y - last_pressed_y;
-            //INFO("button released xy = %d %d, delta xy = %d %d\n", x, y, delta_x, delta_y);
-
             for (i = max_event-1; i >= 0; i--) {
                 if (AT_LOC(x, y, event_tbl[i].loc)) {
                     break;
                 }
             }
-            if (i >= 0 &&
-                AT_LOC(last_pressed_x, last_pressed_y, event_tbl[i].loc))
-            {
+            if (i >= 0 && AT_LOC(last_pressed_x, last_pressed_y, event_tbl[i].loc)) {
                 event->event_id = event_tbl[i].event_id;
             }
         }
@@ -298,6 +292,26 @@ static void process_sdlx_event(SDL_Event *ev, sdlx_event_t *event)
             //    ev->motion.y,
             //    ev->motion.xrel,
             //    ev->motion.yrel);
+
+#if 0 // xxx add the peep code
+            while (true) {
+                int rc;
+                //int peep_cnt=0; //xxx
+                SDL_Event tmp_ev;
+
+                rc = SDL_PeepEvents(
+                        &tmp_ev, 1, SDL_GETEVENT,
+                        SDL_EVENT_MOUSE_MOTION, SDL_EVENT_MOUSE_MOTION);
+                if (rc != 1) break;
+                if ((tmp_ev.motion.state & SDL_BUTTON_LMASK) == 0) break;
+
+                ev->motion.x    += tmp_ev.motion.x;
+                ev->motion.y    += tmp_ev.motion.y;
+                ev->motion.xrel += tmp_ev.motion.xrel;
+                ev->motion.yrel += tmp_ev.motion.yrel;
+                //INFO("peep count %d\n", ++peep_cnt); //xxx
+            }
+#endif
 
             event->event_id = EVID_MOTION;
             if (orientation == PORTRAIT) {

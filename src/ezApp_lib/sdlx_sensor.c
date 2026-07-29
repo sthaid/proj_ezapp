@@ -15,7 +15,9 @@
 
 #define TEN_MS 10000
 
-// xxx comment where these are from, and these are a subset
+// these sensor type defines are a subset of the sensor types; 
+// full list is in the NDK:
+// ~/android/sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/android/sensor.h
 #define ASENSOR_TYPE_ACCELEROMETER       1    // device + gravity accel
 #define ASENSOR_TYPE_MAGNETIC_FIELD      2
 #define ASENSOR_TYPE_GYROSCOPE           4
@@ -25,16 +27,11 @@
 #define ASENSOR_TYPE_GRAVITY             9    // gravity accel only
 #define ASENSOR_TYPE_LINEAR_ACCELERATION 10   // device accel only
 #define ASENSOR_TYPE_ROTATION_VECTOR     11
+#define ASENSOR_TYPE_RELATIVE_HUMIDITY   12   // not supported on most smartphone devices
+#define ASENSOR_TYPE_AMBIENT_TEMPERATURE 13   // not supported on most smartphone devices
 #define ASENSOR_TYPE_SIGNIFICANT_MOTION  17
 #define ASENSOR_TYPE_STEP_DETECTOR       18
 #define ASENSOR_TYPE_STEP_COUNTER        19
-
-// xxx macro or routine to convert sensor type to string
-// xxx test sensors:
-// - light   5
-// - significant motion   17
-// - step detector   18
-
 
 //
 // typedefs
@@ -219,7 +216,6 @@ int sdlx_sensor_read_step_counter(unsigned long *step_count_arg)
     }
 
     // if step_count value is 0 then return error
-    // xxx should this really be an error?
     if (step_count == 0) {
         *step_count_arg = INVALID_NUMBER;
         return -1;
@@ -230,11 +226,11 @@ int sdlx_sensor_read_step_counter(unsigned long *step_count_arg)
     return 0;
 }
 
-// xxx comment here and in include file
-// x-axis: left to right
-// y-axis: bottom to top
-// z-axis: perpendicular to the screen pointing to user
-// units: m/s^2
+// This routine reads the acceleration of the device with the 
+// acceleration due to gravity removed. Units m/s^2.
+// - x-axis: left to right
+// - y-axis: bottom to top
+// - z-axis: perpendicular to the screen pointing to user
 int sdlx_sensor_read_device_accel(double *ax, double *ay, double *az)
 {
     float data[3];
@@ -254,7 +250,10 @@ int sdlx_sensor_read_device_accel(double *ax, double *ay, double *az)
     return 0;
 }
 
-// xxx comment
+// Reads the gravity acceleration sensor. Unit m/s^2.
+// - x-axis: left to right
+// - y-axis: bottom to top
+// - z-axis: perpendicular to the screen pointing to user
 int sdlx_sensor_read_gravity_accel(double *ax, double *ay, double *az)
 {
     float data[3];
@@ -390,8 +389,8 @@ REFERENCES
     https://source.android.com/docs/core/interaction/sensors/sensor-types
 - SensorType Enum - non portable sensor types
     https://learn.microsoft.com/en-us/dotnet/api/android.hardware.sensortype?view=net-android-35.0
-- Android SDK, NDK 29 sensor.h
-    ~/android_sdk/ndk/29.0.13846066/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/android/sensor.h
+- Android NDK, sensor.h
+    ~/android/sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/android/sensor.h
 - Permissions
     https://developer.android.com/guide/topics/permissions/overview
     https://developer.android.com/reference/android/Manifest.permission
@@ -459,8 +458,7 @@ typedef enum SDL_SensorType {
 SENSOR NON PORTABLE TYPES
 --------------------------
 
-From:
-~/android_sdk/ndk/29.0.13846066/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/android/sensor.h
+~/android/sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/android/sensor.h
 
 #define ASENSOR_TYPE_ACCELEROMETER       1
 #define ASENSOR_TYPE_MAGNETIC_FIELD      2
@@ -571,14 +569,11 @@ ANDROID SENSORS ON MY DEVICE
 ANDROID SENSOR EVENT STRUCT, FROM NDK
 --------------------------------------
 
+/home/haid/android/sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/android
+
 /**
  * Information that describes a sensor event, refer to
- * <a href="/reference/android/hardware/SensorEvent">SensorEvent</a> for additional
- * documentation.
- * xxx what is this reference
- *
- * NOTE: changes to this struct has to be backward compatible and reflected in
- * sensors_event_t
+ *  https://developer.android.com/reference/android/hardware/SensorEvent
  */
 typedef struct ASensorEvent {
     /* sizeof(struct ASensorEvent) */

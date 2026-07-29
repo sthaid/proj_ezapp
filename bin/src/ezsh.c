@@ -242,15 +242,17 @@ Commands that require special processing are:\n\
 - help  : Display help.\n\
 \n\
 The device and password can be provided using environment variables EZAPP_DEVICE and\n\
-EZAPP_PASSWORD, or via the ezsh -d and -p options. See the following examples:\n\
-xxx give exmaples\n\
-  - EZAPP_DEVICE=192.168.1.101\n\
-  - EZAPP_PASSWD=my-secret-password\n\
+EZAPP_PASSWORD, or via the ezsh -d and -p options.\n\
 \n\
 Examples:\n\
+- export EZAPP_DEVICE=192.168.1.101\n\
+- export EZAPP_PASSWD=my-secret-password\n\
 - ezsh\n\
+\n\
 - ezsh -d 192.168.1.101 -p my-secret-password\n\
+\n\
 - ezsh -d 192.168.1.101:9001 -p my-secret-password\n\
+\n\
 - ezsh \"ls -l\"\n\
 \n\
 ";

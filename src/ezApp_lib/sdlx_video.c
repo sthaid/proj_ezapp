@@ -94,7 +94,7 @@ int sdlx_video_init(void)
     INFO("initializing\n");
 
     // xxx make a setting for this
-#if 0
+#if 1  //xxx
     // commented out because it is not an important feature, and
     // enabling this may reduce battery life 
     //
@@ -112,15 +112,14 @@ int sdlx_video_init(void)
         return -1;
     }
 
-#if 0 // xxx maybe enable this
-    // display available and current video drivers
+    // display list of video drivers
     int num, i;
     num = SDL_GetNumVideoDrivers();
+    INFO("Current Video Drivers: %s", SDL_GetCurrentVideoDriver());
     INFO("Available Video Drivers: ");
     for (i = 0; i < num; i++) {
         INFO("   %s\n",  SDL_GetVideoDriver(i));
     }
-#endif
 
 #ifdef ANDROID
     // Android code to create SDL Window and Renderer

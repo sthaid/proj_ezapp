@@ -1,7 +1,7 @@
 #ifndef __PRIVATE_H__
 #define __PRIVATE_H__
 
-// The declarations here (private.h) are not provided in picoc.
+// The declarations in this file (private.h) are not available in picoc.
 
 #ifdef __cplusplus 
 extern "C" {
@@ -113,7 +113,7 @@ void util_stop_foreground(void);
 bool util_is_foreground_enabled(void);
 
 // ----------------------
-// utils.c  openssl
+// utils.c  openssl support
 // ----------------------
 
 #define SSL_TEXTLEN 128

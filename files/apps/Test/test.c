@@ -1118,8 +1118,8 @@ static void page_8_exit(void)
 #define ASENSOR_TYPE_GRAVITY             9    // gravity accel only
 #define ASENSOR_TYPE_LINEAR_ACCELERATION 10   // device accel only
 #define ASENSOR_TYPE_ROTATION_VECTOR     11
-#define ASENSOR_TYPE_RELATIVE_HUMIDITY   12
-#define ASENSOR_TYPE_AMBIENT_TEMPERATURE 13
+#define ASENSOR_TYPE_RELATIVE_HUMIDITY   12   // not supported on most smartphone devices
+#define ASENSOR_TYPE_AMBIENT_TEMPERATURE 13   // not supported on most smartphone devices
 #define ASENSOR_TYPE_SIGNIFICANT_MOTION  17
 #define ASENSOR_TYPE_STEP_DETECTOR       18
 #define ASENSOR_TYPE_STEP_COUNTER        19
@@ -1153,10 +1153,11 @@ static void page_9_init(void)
     add_to_raw_sensor_tbl(ASENSOR_TYPE_PRESSURE,            "press");
     add_to_raw_sensor_tbl(ASENSOR_TYPE_PROXIMITY,           "prox ");
     add_to_raw_sensor_tbl(ASENSOR_TYPE_ROTATION_VECTOR,     "rot  ");
+    add_to_raw_sensor_tbl(ASENSOR_TYPE_RELATIVE_HUMIDITY,   "humid");
+    add_to_raw_sensor_tbl(ASENSOR_TYPE_AMBIENT_TEMPERATURE, "temp ");
     add_to_raw_sensor_tbl(ASENSOR_TYPE_SIGNIFICANT_MOTION,  "mtion");
     add_to_raw_sensor_tbl(ASENSOR_TYPE_STEP_DETECTOR,       "stepd");
     add_to_raw_sensor_tbl(ASENSOR_TYPE_STEP_COUNTER,        "stepc");
-    // xxx add humidyt and amb_temp
 }
 
 static void page_9_draw(void)
