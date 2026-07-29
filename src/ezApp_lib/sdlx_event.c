@@ -293,15 +293,12 @@ static void process_sdlx_event(SDL_Event *ev, sdlx_event_t *event)
             //    ev->motion.xrel,
             //    ev->motion.yrel);
 
-#if 0 // xxx add the peep code
+            // consolidate possible additional MOUSE_MOTION events into this event
             while (true) {
-                int rc;
-                //int peep_cnt=0; //xxx
                 SDL_Event tmp_ev;
-
-                rc = SDL_PeepEvents(
-                        &tmp_ev, 1, SDL_GETEVENT,
-                        SDL_EVENT_MOUSE_MOTION, SDL_EVENT_MOUSE_MOTION);
+                int rc = SDL_PeepEvents(
+                            &tmp_ev, 1, SDL_GETEVENT,
+                            SDL_EVENT_MOUSE_MOTION, SDL_EVENT_MOUSE_MOTION);
                 if (rc != 1) break;
                 if ((tmp_ev.motion.state & SDL_BUTTON_LMASK) == 0) break;
 
@@ -309,9 +306,7 @@ static void process_sdlx_event(SDL_Event *ev, sdlx_event_t *event)
                 ev->motion.y    += tmp_ev.motion.y;
                 ev->motion.xrel += tmp_ev.motion.xrel;
                 ev->motion.yrel += tmp_ev.motion.yrel;
-                //INFO("peep count %d\n", ++peep_cnt); //xxx
             }
-#endif
 
             event->event_id = EVID_MOTION;
             if (orientation == PORTRAIT) {
