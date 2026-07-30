@@ -154,8 +154,7 @@ public class ezApp_media_fgsvc extends Service {
                 } else {
                     Log.e(TAG, "get_playbackcapture_audio STATE_FAILED");
                 }
-                short[] error = new short[0];
-                return error;  // xxx or use error_data
+                return error_data;
             }
             SystemClock.sleep(100);
             millisecs += 100;
