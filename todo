@@ -1,4 +1,3 @@
-xxx issues
 
 test CREATE_FILES_RESET_APPS_AND_SVCS on Linux
 
@@ -9,6 +8,8 @@ make new repo
 Develop miniApps for Android in C.
 
 xxxxxxxxxxxxxxxxxxxx
+
+review logging
 
 wsl
 
